@@ -28,6 +28,9 @@ if (!builder.Environment.IsDevelopment())
         // Cap trace ingestion for the student deployment's small telemetry budget.
         options.AzureMonitor.TracesPerSecond = 2;
         options.AzureMonitor.EnableLiveMetrics = false;
+        // SQL statements can contain user data; Atlas emits its own bounded
+        // operation metrics rather than sending raw SQL client diagnostics.
+        options.Instrumentation.EnableSqlClientInstrumentation = false;
     });
     builder.Services.ConfigureOpenTelemetryTracerProvider(
         (_, tracer) => tracer.AddSource("Atlas.Contracts"));
