@@ -6,6 +6,7 @@ variable "service_plan_id" { type = string }
 variable "app_subnet_id" { type = string }
 variable "identity_id" { type = string }
 variable "sql_connection" { type = string }
+variable "expected_database" { type = string }
 variable "runtime_identity_client_id" { type = string }
 variable "admin_identity_client_id" { type = string }
 variable "tags" { type = map(string) }
@@ -52,6 +53,7 @@ resource "azurerm_linux_web_app" "admin" {
     ASPNETCORE_ENVIRONMENT        = "Production"
     WEBSITE_SKIP_RUNNING_KUDUAGENT = "false"
     ATLAS_DEPLOYMENT_VARIANT      = var.variant
+    ATLAS_EXPECTED_DATABASE      = var.expected_database
     ATLAS_SQL_CONNECTION_STRING   = var.sql_connection
     ATLAS_RUNTIME_MI_CLIENT_ID    = var.runtime_identity_client_id
     ATLAS_ADMIN_MI_CLIENT_ID      = var.admin_identity_client_id
