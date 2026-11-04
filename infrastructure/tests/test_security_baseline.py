@@ -14,28 +14,62 @@ import unittest
 from pathlib import Path
 
 import hcl2
+from hcl2 import SerializationOptions
 
+
+# This suite only reads values. python-hcl2 v8 defaults preserve comments,
+# HCL string quoting and block metadata for round-trip reconstruction; use its
+# documented value-oriented options instead of comparing source syntax.
+HCL_OPTIONS = SerializationOptions(
+    strip_string_quotes=True,
+    explicit_blocks=False,
+    with_comments=False,
+    preserve_heredocs=False,
+)
 
 ROOT = Path(__file__).resolve().parents[1] / "terraform"
 
 
 def read_hcl(relative_path: str) -> dict:
     with (ROOT / relative_path).open(encoding="utf-8") as source:
-        return hcl2.load(source)
+        return hcl2.load(source, serialization_options=HCL_OPTIONS)
+
+
+def find_labeled_block(value: object, *labels: str) -> dict:
+    """Follow HCL block labels through the parser's list-of-dicts nesting.
+
+    For example, resource "azurerm_linux_web_app" "atlas" {...} becomes
+    {"resource": [{"azurerm_linux_web_app": [{"atlas": {...}}]}]}.
+    Unlike a Terraform object, each repeated HCL block is a list entry.
+    """
+    if isinstance(value, list):
+        for item in value:
+            try:
+                return find_labeled_block(item, *labels)
+            except LookupError:
+                continue
+    elif isinstance(value, dict):
+        if not labels:
+            return value
+        if labels[0] in value:
+            return find_labeled_block(value[labels[0]], *labels[1:])
+    raise LookupError("Cannot find HCL block labels " + ".".join(labels))
 
 
 def resource(relative_path: str, resource_type: str, name: str) -> dict:
-    for block in read_hcl(relative_path).get("resource", []):
-        if resource_type in block and name in block[resource_type]:
-            return block[resource_type][name]
-    raise AssertionError(f"Expected Terraform resource: {resource_type}.{name}")
+    try:
+        return find_labeled_block(read_hcl(relative_path).get("resource", []), resource_type, name)
+    except LookupError as exc:
+        raise AssertionError(
+            f"Expected Terraform resource: {relative_path}: {resource_type}.{name}"
+        ) from exc
 
 
 def variable(name: str) -> dict:
-    for block in read_hcl("variables.tf")["variable"]:
-        if name in block:
-            return block[name]
-    raise AssertionError(f"Expected Terraform variable: {name}")
+    try:
+        return find_labeled_block(read_hcl("variables.tf").get("variable", []), name)
+    except LookupError as exc:
+        raise AssertionError(f"Expected Terraform variable: {name}") from exc
 
 
 class TerraformSecurityBaselineTests(unittest.TestCase):
@@ -52,13 +86,12 @@ class TerraformSecurityBaselineTests(unittest.TestCase):
         admin = resource("modules/admin/main.tf", "azurerm_linux_web_app", "admin")
         for app in (web, admin):
             self.assertEqual(app["identity"][0]["type"], "UserAssigned")
-            self.assertIn("var.identity_id", app["identity"][0]["identity_ids"])
+            self.assertIn("var.identity_id", str(app["identity"][0]["identity_ids"]))
         # Each environment has a runtime identity AND a separate operations identity.
-        main = read_hcl("main.tf")
-        declarations = {name for block in main["resource"]
-                        for kind, instances in block.items() if kind == "azurerm_user_assigned_identity"
-                        for name in instances}
-        self.assertTrue({"runtime", "operations"}.issubset(declarations))
+        self.assertIn("local.variants", resource(
+            "main.tf", "azurerm_user_assigned_identity", "runtime")["for_each"])
+        self.assertIn("local.variants", resource(
+            "main.tf", "azurerm_user_assigned_identity", "operations")["for_each"])
 
     def test_sql_has_no_public_endpoint_or_public_firewall_rules(self) -> None:
         sql_path = "modules/sql/main.tf"
