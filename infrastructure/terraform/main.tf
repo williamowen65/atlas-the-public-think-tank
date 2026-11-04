@@ -112,5 +112,6 @@ module "admin_sites" {
   enable_bootstrap   = var.enable_sql_bootstrap
   bootstrap_username = var.sql_admin_username
   bootstrap_password = var.sql_admin_password
+  demo_seed_password = each.key == "demo" ? var.demo_seed_password : null
   tags               = merge(local.tags, { variant = each.key, role = "database-operations" })
 }
