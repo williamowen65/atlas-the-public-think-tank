@@ -98,7 +98,14 @@ public static class SqlStorage
         // Development keeps the documented local fixture password. A deployment
         // must inject a unique password so seeded accounts are not publicly known.
         var demoPassword = Environment.GetEnvironmentVariable("ATLAS_DEMO_PASSWORD");
-        if (string.IsNullOrWhiteSpace(demoPassword)) demoPassword = DemoParticipants.Password;
+        if (string.IsNullOrWhiteSpace(demoPassword))
+        {
+            // The fixed development fixture password must never be used on
+            // a public Azure SQL database, even if someone bypasses the runbook.
+            if (_connectionString?.Contains(".database.windows.net", StringComparison.OrdinalIgnoreCase) == true)
+                throw new InvalidOperationException("Cloud demo seed requires ATLAS_DEMO_PASSWORD.");
+            demoPassword = DemoParticipants.Password;
+        }
         var ids = new List<Guid>(DemoParticipants.Accounts.Length);
         foreach (var demo in DemoParticipants.Accounts)
         {
