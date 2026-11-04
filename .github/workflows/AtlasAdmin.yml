@@ -113,8 +113,8 @@ jobs:
           # Verify the target App Service's protected configuration, not just its name.
           actual_variant="$(az webapp config appsettings list --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --query "[?name=='ATLAS_DEPLOYMENT_VARIANT'].value | [0]" -o tsv)"
           [[ "$actual_variant" == "$VARIANT" ]] || { echo "Admin site variant mismatch"; exit 1; }
-          # Uploading code is not an invocation. The only invocation is below.
-          az webapp deploy --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --src-path ./admin-package/atlas-admin-webjobs.zip --type zip --clean false
+          # Wait for the ZIP deployment. This package contains triggered jobs only.
+          az webapp deploy --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --src-path ./admin-package/atlas-admin-webjobs.zip --type zip --clean false --async false --track-status false
           start_time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           az webapp webjob triggered run --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --webjob-name "$job"
           # Poll the ARM history so a triggered job that fails does not appear successful.
