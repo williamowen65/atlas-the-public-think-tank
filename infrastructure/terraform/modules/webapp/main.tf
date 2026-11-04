@@ -13,13 +13,13 @@ variable "connection_string" {
 variable "tags" { type = map(string) }
 
 resource "azurerm_linux_web_app" "atlas" {
-  name                = var.name
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  service_plan_id     = var.service_plan_id
-  https_only          = true
+  name                                     = var.name
+  resource_group_name                      = var.resource_group_name
+  location                                 = var.location
+  service_plan_id                          = var.service_plan_id
+  https_only                               = true
   ftp_publish_basic_authentication_enabled = false
-  tags                = var.tags
+  tags                                     = var.tags
 
   identity {
     type = "SystemAssigned"
@@ -43,7 +43,7 @@ resource "azurerm_linux_web_app" "atlas" {
     XDT_MicrosoftApplicationInsights_Mode       = "recommended"
     XDT_MicrosoftApplicationInsights_PreemptSdk = "1"
     ATLAS_DEPLOYMENT_VARIANT                    = var.variant
-  }, var.connection_string == null ? {} : {
+    }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
   })
 }
