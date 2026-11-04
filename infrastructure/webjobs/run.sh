@@ -25,10 +25,10 @@ case "$job" in
     atlas-bootstrap)
         : "${ATLAS_BOOTSTRAP_SQL_USERNAME:?First-time bootstrap not enabled in Terraform}"
         : "${ATLAS_BOOTSTRAP_SQL_PASSWORD:?First-time bootstrap not enabled in Terraform}"
-        exec dotnet ./Atlas.Console.dll --bootstrap-cloud-identities
+        exec dotnet ./Atlas.Admin.dll --bootstrap-cloud-identities
         ;;
     atlas-schema)
-        exec dotnet ./Atlas.Console.dll --setup-database
+        exec dotnet ./Atlas.Admin.dll --setup-database
         ;;
     atlas-seed-demo)
         if [[ "$ATLAS_DEPLOYMENT_VARIANT" != "demo" ]]; then
@@ -36,7 +36,7 @@ case "$job" in
             exit 1
         fi
         : "${ATLAS_DEMO_PASSWORD:?Demo seed password is required}"
-        exec dotnet ./Atlas.Console.dll --seed-demo
+        exec dotnet ./Atlas.Admin.dll --seed-demo
         ;;
     *)
         echo "Unknown WebJob; refusing to run." >&2
