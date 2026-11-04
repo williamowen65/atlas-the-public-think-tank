@@ -4,6 +4,7 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 
 | Area | Purpose |
 |---|---|
+| [Transparency](TRANSPARENCY.md) | Public-source, explainability, algorithm versioning, auditability, and open-change commitments |
 | [Requirements](requirements/README.md) | Requirement catalog, stable IDs, acceptance criteria, and traceability |
 | [Architecture](architecture/README.md) | Boundary map, data ownership, and architectural decisions |
 | [Contracts](contracts/README.md) | Published communication shapes and compatibility expectations |
