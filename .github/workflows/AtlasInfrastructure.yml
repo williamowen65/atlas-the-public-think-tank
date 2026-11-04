@@ -1,0 +1,29 @@
+name: Atlas Terraform validation
+
+on:
+  push:
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/AtlasInfrastructure.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+      - name: Initialize without remote state
+        run: terraform init -backend=false -input=false
+      - name: Validate configuration
+        run: terraform validate -no-color
