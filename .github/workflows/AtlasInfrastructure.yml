@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'infrastructure/**'
+      - 'tests/Atlas.Infrastructure.Tests/**'
       - '.github/workflows/AtlasInfrastructure.yml'
 
 permissions:
@@ -30,7 +31,7 @@ jobs:
       - name: Install HCL parser for Atlas policy tests
         run: python -m pip install --disable-pip-version-check "python-hcl2==8.1.4"
       - name: Enforce Atlas security and free-tier invariants
-        run: python -m unittest discover -s ../tests -p 'test_*.py' -v
+        run: python -m unittest discover -s ../../tests/Atlas.Infrastructure.Tests -p 'test_*.py' -v
       # New security findings are visible here before we decide which controls
       # should be enforced globally. This step must not conceal baseline failures.
       - name: Review infrastructure security findings (advisory)
