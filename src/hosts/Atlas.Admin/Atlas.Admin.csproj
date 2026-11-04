@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Cloud-only command host: no interactive console UI, HTTP endpoints, or
-       development menu dependencies. It shares tested application services. -->
+  <!-- Dedicated command host for local setup and protected Azure WebJobs.
+       No interactive Console UI or public HTTP endpoints. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Atlas.Admin</AssemblyName>
+    <!-- Same local User Secrets store as Atlas.Api and Atlas.Console. -->
+    <UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +17,7 @@
     <ProjectReference Include="../../Atlas.Identity/Atlas.Identity.csproj" />
     <ProjectReference Include="../../Atlas.Persistence/Atlas.Persistence.csproj" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.14" />
   </ItemGroup>
 
 </Project>
