@@ -6,6 +6,7 @@ variable "service_plan_id" { type = string }
 variable "app_subnet_id" { type = string }
 variable "app_service_sku" { type = string }
 variable "insights_connection" { type = string }
+variable "identity_id" { type = string }
 variable "connection_string" {
   type      = string
   default   = null
@@ -21,10 +22,12 @@ resource "azurerm_linux_web_app" "atlas" {
   virtual_network_subnet_id                = var.app_subnet_id
   https_only                               = true
   ftp_publish_basic_authentication_enabled = false
+  webdeploy_publish_basic_authentication_enabled = false
   tags                                     = var.tags
 
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [var.identity_id]
   }
 
   site_config {
@@ -37,7 +40,8 @@ resource "azurerm_linux_web_app" "atlas" {
     }
   }
 
-  # The separate app-specific SQL login is required before this host can start.
+  # Passwordless connection: the corresponding database identity is provisioned
+  # separately by the protected initial bootstrap WebJob before app startup.
   app_settings = merge({
     ASPNETCORE_ENVIRONMENT                      = "Production"
     APPLICATIONINSIGHTS_CONNECTION_STRING       = var.insights_connection
