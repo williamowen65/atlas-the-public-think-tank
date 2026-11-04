@@ -24,7 +24,6 @@ module "sql" {
   resource_group_name = azurerm_resource_group.atlas.name
   admin_username      = var.sql_admin_username
   admin_password      = var.sql_admin_password
-  database_sku        = var.sql_database_sku
   variants            = local.variants
   allowed_ipv4        = var.sql_allowed_ipv4
   tags                = local.tags
