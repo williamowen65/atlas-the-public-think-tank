@@ -27,15 +27,15 @@ variable "bootstrap_password" {
 # authorized GitHub OIDC deployment can upload and run triggered WebJobs.
 # The WebJob runtime uses VNet integration to access private SQL.
 resource "azurerm_linux_web_app" "admin" {
-  name                                      = var.name
-  location                                  = var.location
-  resource_group_name                       = var.resource_group_name
-  service_plan_id                           = var.service_plan_id
-  virtual_network_subnet_id                 = var.app_subnet_id
-  https_only                                = true
-  ftp_publish_basic_authentication_enabled = false
+  name                                           = var.name
+  location                                       = var.location
+  resource_group_name                            = var.resource_group_name
+  service_plan_id                                = var.service_plan_id
+  virtual_network_subnet_id                      = var.app_subnet_id
+  https_only                                     = true
+  ftp_publish_basic_authentication_enabled       = false
   webdeploy_publish_basic_authentication_enabled = false
-  tags                                      = var.tags
+  tags                                           = var.tags
 
   identity {
     type         = "UserAssigned"
@@ -55,20 +55,20 @@ resource "azurerm_linux_web_app" "admin" {
   }
 
   app_settings = merge({
-    ASPNETCORE_ENVIRONMENT        = "Production"
+    ASPNETCORE_ENVIRONMENT         = "Production"
     WEBSITE_SKIP_RUNNING_KUDUAGENT = "false"
-    ATLAS_DEPLOYMENT_VARIANT      = var.variant
-    ATLAS_EXPECTED_DATABASE      = var.expected_database
-    ATLAS_SQL_CONNECTION_STRING   = var.sql_connection
-    DOTNET_ENVIRONMENT            = "Production"
-    ATLAS_RUNTIME_MI_CLIENT_ID    = var.runtime_identity_client_id
-    ATLAS_ADMIN_MI_CLIENT_ID      = var.admin_identity_client_id
+    ATLAS_DEPLOYMENT_VARIANT       = var.variant
+    ATLAS_EXPECTED_DATABASE        = var.expected_database
+    ATLAS_SQL_CONNECTION_STRING    = var.sql_connection
+    DOTNET_ENVIRONMENT             = "Production"
+    ATLAS_RUNTIME_MI_CLIENT_ID     = var.runtime_identity_client_id
+    ATLAS_ADMIN_MI_CLIENT_ID       = var.admin_identity_client_id
     }, var.enable_bootstrap ? {
     # Only present during the manually approved first-time identity bootstrap.
     # Toggle back to false and apply Terraform after successful grant.
     ATLAS_BOOTSTRAP_SQL_USERNAME = var.bootstrap_username
     ATLAS_BOOTSTRAP_SQL_PASSWORD = var.bootstrap_password
-  } : {}, var.variant == "demo" && var.demo_seed_password != null ? {
+    } : {}, var.variant == "demo" && var.demo_seed_password != null ? {
     ATLAS_DEMO_PASSWORD = var.demo_seed_password
   } : {})
 }
