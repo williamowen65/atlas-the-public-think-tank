@@ -95,6 +95,10 @@ public static class SqlStorage
                 throw new InvalidOperationException("Demo seed requires an empty Atlas database; SQL data was not changed.");
         }
 
+        // Development keeps the documented local fixture password. A deployment
+        // must inject a unique password so seeded accounts are not publicly known.
+        var demoPassword = Environment.GetEnvironmentVariable("ATLAS_DEMO_PASSWORD");
+        if (string.IsNullOrWhiteSpace(demoPassword)) demoPassword = DemoParticipants.Password;
         var ids = new List<Guid>(DemoParticipants.Accounts.Length);
         foreach (var demo in DemoParticipants.Accounts)
         {
@@ -102,7 +106,7 @@ public static class SqlStorage
             var accounts = scope.ServiceProvider.GetRequiredService<AtlasAccounts>();
             var registration = await accounts.RegisterAsync(
                 demo.Email,
-                DemoParticipants.Password,
+                demoPassword,
                 demo.DisplayName
             );
             if (!registration.Result.Succeeded || registration.ParticipantId is null)
