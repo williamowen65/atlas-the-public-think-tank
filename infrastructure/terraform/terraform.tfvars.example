@@ -1,0 +1,13 @@
+# Copy to an UNTRACKED terraform.tfvars; replace identifiers and review costs.
+subscription_id   = "REPLACE_WITH_SUBSCRIPTION_ID"
+name_prefix       = "atlas-student-unique"
+location          = "westus2"
+app_service_sku   = "B1"
+sql_database_sku  = "Basic"
+enable_demo       = false
+
+# After the first apply, add required App Service outbound IPs here and apply again.
+# 0.0.0.0 is never an appropriate Azure-wide allow rule.
+sql_allowed_ipv4 = {}
+
+# Supply sql_admin_password / runtime_connection_strings privately, not here.
