@@ -2,17 +2,17 @@
 
 **Status:** Terraform and GitHub Actions foundation for PTT-169. These files do **not** mean Azure has been provisioned, the site is running, or the school report has passed.
 
-The goals are **production parity** with the tested local product behavior, minimum recurring Azure costs, a reproducible deployment, visible telemetry, and documented evidence for the school report.
+The goals are **production parity** with the tested local product behavior, minimum feasible recurring Azure costs with private SQL networking, a reproducible deployment, visible telemetry, and documented evidence for the school report.
 
 ## 1. Deployment architecture
 
 - A single Linux Azure App Service plan runs an ASP.NET Core 10 API, with the compiled SvelteKit static SPA bundled into `wwwroot`. One HTTPS origin serves browser routes and all API requests; no Vite server is present in production.
 - `/atlas-public-api/*` and `/atlas-session-api/*` are rewritten by the .NET host to `/api/*`, just as the local Vite development proxy rewrites them. Public requests do not carry session credentials; session requests retain credentials and require server-side authorization/CSRF checks.
-- Azure SQL stores durable Identity and Atlas data. App Service HTTPS, restricted SQL firewall rules and least-privilege runtime credentials protect the initial deployment. No public Azure-wide SQL firewall rule is enabled.
+- Azure SQL stores durable Identity and Atlas data. App Service HTTPS and Azure SQL **Private Link** provide a public website with a **non-public database**. Both web apps use a delegated VNet integration subnet; SQL has `public_network_access_enabled = false`. An NSG allows TCP 1433 to the SQL private endpoint subnet from the app subnet and denies other VNet sources. Private DNS resolves Azure SQL's normal FQDN inside the VNet. Least-privilege SQL runtime credentials are still a separate required setup step.
 - Application Insights and a Log Analytics workspace provide cloud observability. Atlas.Api has a production OpenTelemetry exporter: verify real request/log/metric ingestion and audit delivery separately before reporting success.
 - The default demo variant provisions another web app on the **same App Service plan** and a distinct SQL database. Demo can contain the known seed data; live must be separately initialized and protected. This is **two deployment configurations**, not a randomized statistically measured A/B experiment yet. See PTT-171.
 
-The default is now **F1 Linux App Service plus the explicitly enabled Azure SQL free offer** (through the AzAPI provider). Microsoft describes F1 as a limited learning tier, not a production SLA. Free SQL offers can pause when the monthly allowance is exhausted; those pauses can make Atlas unavailable. These defaults are for a student proof-of-concept, not a high-availability public service.\n\nThe original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
+The default now uses **B1 Linux App Service**, the least-capacity Basic plan supporting VNet integration, plus explicitly enabled **Azure SQL free-offer databases** (through AzAPI). The virtual network itself and App Service VNet integration add no usage charge, but B1 and the SQL Private Endpoint / private DNS zone are billable. SQL free-offer databases can pause when the monthly allowance is exhausted. This is a cost-conscious student deployment, not a free or high-availability production environment.\n\nThe original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
 
 ## 2. Local prerequisites and Azure selection
 
@@ -28,7 +28,7 @@ dotnet --version
 node --version
 ```
 
-Confirm subscription permissions and inspect Azure student credits, quotas and region/SKU availability. Record subscription identifiers in **private configuration**, not source files. Validate Azure SQL Full-Text Search support in the chosen database tier before committing to that SKU.
+Confirm subscription permissions and inspect Azure student credits, quotas and region/SKU availability for **B1, SQL free offer, private endpoints and private DNS**. Record subscription identifiers in **private configuration**, not source files. Validate Azure SQL Full-Text Search support in the chosen database tier before committing to that SKU.
 
 ## 3. Terraform state bootstrap (one-time)
 
@@ -65,7 +65,9 @@ Additional useful commands:
 terraform fmt -check -recursive
 terraform state list
 terraform output site_urls
-terraform output possible_outbound_ipv4
+terraform output virtual_network
+terraform output sql_private_endpoint_id
+terraform output sql_private_dns_zone
 terraform plan
 terraform plan -destroy
 ```
@@ -74,17 +76,19 @@ Review every `plan` before applying. A `-target` apply is **not** the default wo
 
 ## 5. SQL reachability, credentials and migrations
 
-The first Terraform apply creates **no Azure SQL firewall exceptions**. Read the App Service outbound IP list from `terraform output possible_outbound_ipv4`, add the needed IPs to `sql_allowed_ipv4` as a map of named exact IPv4 entries, and re-run `terraform plan` and `terraform apply`. For direct local migration access, temporarily allow only your own current public IP and remove it when done.
+The initial Terraform apply now configures **no public SQL endpoint**: `public_network_access_enabled = false`. The [network module](terraform/modules/network/main.tf) creates the VNet, delegated application subnet, private-endpoint subnet, private DNS zone/link, SQL Private Endpoint and an NSG with a narrowly scoped SQL rule. There are no SQL public firewall exceptions to add. Follow [security design](SECURITY.md) for the network boundaries.
 
-App Service egress IPs can be shared: IP allowlisting is only one control, **not** proof of app identity. Evaluate private endpoints/VNet integration later if costs permit; do not silently change the SQL firewall to `0.0.0.0`, which can allow connections from Azure generally.
+**Public site, private data:** the web applications remain available on public HTTPS, but outgoing database connections travel over VNet integration to the private SQL endpoint. VNet DNS resolves `<server>.database.windows.net` to a private address. Never put the private IP directly in the SQL connection string.
 
-Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege SQL users** for demo/live, not the Terraform provisioning administrator. This initial Terraform accepts sensitive per-variant connection strings through `TF_VAR_runtime_connection_strings` or a local ignored file; Terraform state still contains the values. A managed-identity/Key Vault path can reduce this risk in a follow-on. Protect credentials, SQL backups, and operator access.
+Your laptop and GitHub-hosted runners **cannot directly open a connection** to that SQL endpoint. Do not temporarily enable public SQL access to apply migrations. Run database initialization from a controlled process already integrated into the VNet. The proposed least-cost pattern is an on-demand **triggered App Service WebJob** using a separately secured, management-only identity and a published self-contained Console or migration executable. Microsoft supports WebJobs on Linux code-based App Service and Azure CLI provides `az webapp webjob triggered run`. This management job is **not yet provisioned or wired into the deploy pipeline**; `Initialize-AtlasDatabase.ps1` is only for an environment with existing private SQL connectivity. See [private network operations](PRIVATE-NETWORK-OPERATIONS.md).
+
+Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege SQL users or Entra-managed identities** for demo/live, never the Terraform provisioning administrator in the public web host. The initial Terraform can take sensitive variant-specific connection strings, but Terraform state still contains them; move to Entra/Key Vault as part of credential hardening. Protect credentials, SQL backups, and operator access.
 
 Migrations, Identity schema creation, SQL Full-Text indexes and seed setup run through our version-controlled [database initializer](scripts/Initialize-AtlasDatabase.ps1), rather than Terraform resource side effects or application startup. They are automated **on operator invocation** using existing Console commands. Live must not be seeded; demo requires a unique `ATLAS_DEMO_PASSWORD` from a secure environment variable. A separate SQL principal/managed-identity bootstrap is still needed to replace admin access with least privilege. Follow [SQL instructions](../docs/PTT-87-SQL-Server.md) and [seed guide](../docs/workflows/local-demo-seed.md), verifying commands against the target database. Never seed the live database using demo-only credentials.
 
 ### Database initialization from versioned code
 
-After SQL access and a least-privilege maintenance connection have been established, run the following from the repository root, with `ATLAS_SQL_CONNECTION_STRING` set privately for the **intended** database:
+Only from an **authorized VNet-connected administrative execution environment** with SQL migration permissions, run the following from the repository root, with `ATLAS_SQL_CONNECTION_STRING` set privately for the **intended** database:
 
 ```powershell
 ./infrastructure/scripts/Initialize-AtlasDatabase.ps1 -Variant live -ExpectedDatabase "<prefix>-live"
@@ -98,7 +102,7 @@ For the demo database, set a **unique secret** `ATLAS_DEMO_PASSWORD` (do not use
 
 The initializer checks the connection-string database against the explicit name and variant, applies checked-in migrations and Full-Text indexes, and refuses demo seeding against `live`. It refuses repeated seeding against an existing populated database. No console or SQL passwords should appear in committed config or CI logs. These are automated deployment operations, not Terraform-managed Azure resources.
 
-Check Full-Text population readiness and Azure SQL free-tier serverless cold-resume/retry behavior before declaring the site healthy. The database initializer currently runs from an authorized operator environment with controlled SQL connectivity, not automatically from a generic GitHub runner (whose public egress IP is variable). An integrated cloud migration job is a follow-up once runner networking and credential handling are secure.
+Check Full-Text population readiness and Azure SQL free-tier serverless cold-resume/retry behavior before declaring the site healthy. The script cannot reach SQL from your home PC or a standard GitHub-hosted runner. Its eventual cloud execution will use a management-only triggered WebJob or an equivalent VNet-attached runner, with separate migration privileges and no public SQL access. This integration is not yet implemented.
 
 See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable cloud-audit follow-up.
 
@@ -132,6 +136,6 @@ A demo environment must be clearly labeled and should restrict writes to seeded 
 
 ## 8. Budget and school evidence
 
-The sample now defaults to **F1** App Service and **Azure SQL General Purpose serverless with `useFreeLimit=true` and `AutoPause`**. Azure SQL free databases have monthly compute/storage limits; eligibility depends on subscription and region. The infrastructure does not silently replace an ineligible free database with a paid SKU. F1 has tight CPU/storage limits and no production SLA. Log Analytics usage above the included free allowance, Terraform state storage and other Azure services can still incur charges. Compare subscription eligibility, student credits and region restrictions before applying. Set a budget alert using a documented IaC-managed approach before enabling a paid upgrade.
+The sample now defaults to a **paid B1 App Service plan** for private VNet integration and Azure SQL **General Purpose serverless free offer** with `useFreeLimit=true` and `AutoPause`. Azure SQL free databases have monthly compute/storage limits; eligibility depends on subscription and region. The infrastructure does not silently replace an ineligible free database with a paid SKU. F1 cannot provide App Service VNet integration. B1 is billable even when SQL is within its free allowance. The SQL Private Endpoint has a recurring charge, and the private DNS zone may have usage charges. Log Analytics above its included allowance, Terraform state storage and other Azure services can also incur charges. Compare subscription eligibility, student credits and region restrictions before applying. Set a budget alert using a documented IaC-managed approach before enabling a paid upgrade.
 
 For the WGU deployment report (PTT-170), capture the chosen architecture, Terraform `plan` summary (redacted), workflow runs/commit SHA, HTTPS URL, two variants if enabled, SQL persistence/FTS evidence, auth and security checks, and Application Insights screenshots with no sensitive identifiers. Target the first deployment evidence by **November 16**, first report submission by **November 19**, and confirmed pass before November 30.
