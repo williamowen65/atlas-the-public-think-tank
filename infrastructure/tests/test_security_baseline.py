@@ -47,9 +47,18 @@ class TerraformSecurityBaselineTests(unittest.TestCase):
         self.assertEqual(site["ftps_state"], "Disabled")
         self.assertGreaterEqual(float(site["minimum_tls_version"]), 1.2)
 
-    def test_web_apps_have_managed_identity(self) -> None:
+    def test_public_and_admin_apps_have_distinct_managed_identities(self) -> None:
         web = resource("modules/webapp/main.tf", "azurerm_linux_web_app", "atlas")
-        self.assertEqual(web["identity"][0]["type"], "SystemAssigned")
+        admin = resource("modules/admin/main.tf", "azurerm_linux_web_app", "admin")
+        for app in (web, admin):
+            self.assertEqual(app["identity"][0]["type"], "UserAssigned")
+            self.assertIn("var.identity_id", app["identity"][0]["identity_ids"])
+        # Each environment has a runtime identity AND a separate operations identity.
+        main = read_hcl("main.tf")
+        declarations = {name for block in main["resource"]
+                        for kind, instances in block.items() if kind == "azurerm_user_assigned_identity"
+                        for name in instances}
+        self.assertTrue({"runtime", "operations"}.issubset(declarations))
 
     def test_sql_has_no_public_endpoint_or_public_firewall_rules(self) -> None:
         sql_path = "modules/sql/main.tf"
