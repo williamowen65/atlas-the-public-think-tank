@@ -46,7 +46,8 @@ resource "azapi_resource" "variant" {
 
   body = {
     sku = {
-      name     = "GP_S_Gen5_2"
+      # ARM returns the SKU family name separately from its two-vCore capacity.
+      name     = "GP_S_Gen5"
       tier     = "GeneralPurpose"
       family   = "Gen5"
       capacity = 2
