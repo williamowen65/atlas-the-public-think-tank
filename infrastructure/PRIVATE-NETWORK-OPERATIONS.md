@@ -19,7 +19,7 @@ Use **triggered Azure App Service WebJobs** on Linux, with a management-only web
 az webapp webjob triggered run --name "<admin-app-name>" --resource-group "<resource-group>" --webjob-name "atlas-database-setup"
 ```
 
-That command is a **planned interface**, not currently runnable: the admin web app, WebJob package, least-privilege deployment/migration identities and authorization rules are still to be implemented.
+The Terraform admin App Service module, dedicated [Atlas.Admin](../src/hosts/Atlas.Admin/README.md) executable, WebJob package and manually protected [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml) workflow are now **implemented in PR #398**, but they have **not yet been deployed or tested against Azure**. Do not assume the sample command can run until the corresponding Azure resources and GitHub OIDC environment are configured.
 
 The management app should **not** expose a public website or unauthenticated API route for executing SQL operations. Allow only a trusted deployment identity to trigger administrative operations. It can share the **existing paid App Service plan** to avoid an additional always-on compute plan, although it shares memory/CPU capacity and may need scheduling during low traffic.
 
@@ -32,7 +32,7 @@ Separate the jobs so permissions and consequences stay clear:
 | Inspect/search readiness | Read-only schema/index readiness | On demand or post-deploy verification | Safe status logs, no SQL secrets or user content |
 | Grant operator/moderator roles | Narrow operator privilege | Separate privileged command with audit | Authenticated authorization and logged changes; never public API |
 
-The existing [`Initialize-AtlasDatabase.ps1`](scripts/Initialize-AtlasDatabase.ps1) is version-controlled and checks the selected database. The Console has `--setup-database` and `--seed-demo`. These can be packaged into **published Linux executables** for triggered jobs instead of running the PowerShell script from your own machine. A Linux App Service image normally has the .NET runtime but **not the SDK**: package/publish the executable rather than trying `dotnet run` in the cloud.
+The existing [`Initialize-AtlasDatabase.ps1`](scripts/Initialize-AtlasDatabase.ps1) is a **Windows/development operator helper**, invoking the interactive Console's maintenance commands where SQL is already reachable. It does not provide Azure SQL Private Link connectivity from your home PC. Azure uses a separate, non-interactive [`Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) .NET 10 executable with exactly three initial operations: SQL identity bootstrap, schema/Full-Text setup, and guarded demo seeding. GitHub publishes that executable into Linux triggered WebJob packages. The `run.sh` file launches one such command only when Azure triggers that WebJob, **not** when the public Atlas app starts.
 
 ## Secure execution sequence (target design)
 
@@ -56,7 +56,7 @@ The endpoint subnet's **Network Security Group (NSG)** provides a subnet-level, 
 - Package and deploy schema/Full-Text and demo seed executables as triggered WebJobs. Validate that WebJob invocation runs inside the VNet integration context and uses the correct private DNS.
 - Bootstrap the chosen database authentication model, grant least-privilege per-database runtime/ops access, and rotate/revoke provisioning credentials.
 - Protect GitHub Environments/OIDC subjects, trigger privileges and job outputs; never log secrets, connection strings or user content.
-- Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.
+- Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.\n- Design explicit GlobalModerator grant/revoke commands with operator approval, auditing, and session invalidation. The current interactive local Console workflow is **not** packaged into Azure. A private interactive administration portal would be a distinct feature, not a WebJob.
 - Check Azure SQL free-offer eligibility and private endpoint billing; capture security evidence for PTT-169/170.
 
 Microsoft documentation: [App Service VNet integration](https://learn.microsoft.com/azure/app-service/overview-vnet-integration), [WebJobs overview](https://learn.microsoft.com/azure/app-service/overview-webjobs), [run a triggered WebJob](https://learn.microsoft.com/cli/azure/webapp/webjob/triggered), [SQL Private Link](https://learn.microsoft.com/azure/azure-sql/database/private-endpoint-overview).
