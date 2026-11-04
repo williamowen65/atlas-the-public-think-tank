@@ -67,6 +67,7 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - uses: actions/checkout@v4
       - name: Verify explicit operation and target
         shell: bash
         env:
