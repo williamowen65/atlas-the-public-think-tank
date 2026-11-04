@@ -76,8 +76,8 @@ jobs:
         run: |
           set -uo pipefail
           # No -out option: do not persist a sensitive Terraform plan artifact.
-          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode
-          exit_code=$?
+          exit_code=0
+          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode || exit_code=$?
           if [[ "$exit_code" -eq 0 ]]; then
             echo "No infrastructure changes proposed."
             exit 0
