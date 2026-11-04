@@ -24,6 +24,19 @@ variable "app_service_sku" {
     error_message = "SQL Private Link requires App Service VNet integration; Free/Shared App Service plans do not support it."
   }
 }
+variable "sql_entra_admin_login" {
+  description = "Display name of the Microsoft Entra user/group permitted to administer Azure SQL. Prefer an operator security group."
+  type        = string
+}
+variable "sql_entra_admin_object_id" {
+  description = "Microsoft Entra object ID of the designated SQL administrator."
+  type        = string
+  validation {
+    condition     = can(regex("^[0-9a-fA-F-]{36}$", var.sql_entra_admin_object_id))
+    error_message = "Provide the 36-character Entra principal object GUID."
+  }
+}
+
 variable "sql_admin_username" {
   type    = string
   default = "atlasprovisioner"
