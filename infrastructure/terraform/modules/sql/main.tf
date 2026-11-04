@@ -42,9 +42,9 @@ resource "azapi_resource" "variant" {
       capacity = 2
     }
     properties = {
-      useFreeLimit                 = true
-      freeLimitExhaustionBehavior  = "AutoPause"
-      maxSizeBytes                 = 34359738368
+      useFreeLimit                     = true
+      freeLimitExhaustionBehavior      = "AutoPause"
+      maxSizeBytes                     = 34359738368
       requestedBackupStorageRedundancy = "Local"
     }
   }
