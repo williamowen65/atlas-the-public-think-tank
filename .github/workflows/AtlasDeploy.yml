@@ -1,0 +1,95 @@
+name: Atlas manual Azure deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: Isolated Azure environment
+        required: true
+        type: choice
+        options:
+          - live
+          - demo
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build SvelteKit static site
+        working-directory: src/hosts/Atlas.Web
+        run: |
+          npm ci
+          npm run build
+          test -f dist/index.html
+      - name: Publish ASP.NET Core API
+        run: dotnet publish src/hosts/Atlas.Api/Atlas.Api.csproj --configuration Release --output "$RUNNER_TEMP/atlas-publish"
+      - name: Bundle frontend into the same-origin API host
+        run: |
+          mkdir -p "$RUNNER_TEMP/atlas-publish/wwwroot"
+          cp -a src/hosts/Atlas.Web/dist/. "$RUNNER_TEMP/atlas-publish/wwwroot/"
+          test -f "$RUNNER_TEMP/atlas-publish/wwwroot/index.html"
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-api-with-web
+          path: ${{ runner.temp }}/atlas-publish/
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: atlas-${{ inputs.variant }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: atlas-api-with-web
+          path: ./atlas-publish
+      - name: Require a configured Azure App Service target
+        env:
+          APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          test -n "$APP_NAME" || { echo "Set AZURE_WEBAPP_NAME for the GitHub Environment."; exit 1; }
+      - name: Sign in to Azure using GitHub OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy Atlas
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          package: ./atlas-publish
+      - name: Smoke test public HTTPS liveness and home page
+        env:
+          APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          url="https://$APP_NAME.azurewebsites.net"
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 10 "$url/health/live" &&
+               curl --fail --silent --show-error --max-time 10 "$url/" > /dev/null; then
+              echo "Verified deployed liveness and root page at $url"
+              exit 0
+            fi
+            echo "Deployment not ready for public HTTP smoke test (attempt $attempt)"
+            sleep 10
+          done
+          echo "Azure deployment smoke test failed."
+          exit 1

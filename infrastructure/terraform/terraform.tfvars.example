@@ -1,0 +1,20 @@
+# Copy to an UNTRACKED terraform.tfvars; replace identifiers and review costs.
+subscription_id   = "REPLACE_WITH_SUBSCRIPTION_ID"
+name_prefix       = "atlas-student-unique"
+location          = "westus2"
+app_service_sku   = "B1" # Cheapest typical plan supporting VNet integration; NOT free
+# Azure SQL uses the free-limit General Purpose serverless offer by default.
+# Terraform fails if your subscription/region is ineligible; no paid fallback.
+enable_demo       = true
+sql_entra_admin_login = "REPLACE_WITH_ENTRA_GROUP_OR_USER_NAME"
+sql_entra_admin_object_id = "00000000-0000-0000-0000-000000000000"
+# After first apply only: enable_sql_bootstrap = true, apply, run the
+# two bootstrap jobs, then disable again and apply to remove admin secrets.
+enable_sql_bootstrap = false
+# Provide TF_VAR_demo_seed_password privately for optional demo seed.
+
+
+# SQL has NO public network endpoint. Private networking and subnet NSG
+# are defined in modules/network; no public SQL firewall exceptions exist.
+
+# Supply sql_admin_password / runtime_connection_strings privately, not here.

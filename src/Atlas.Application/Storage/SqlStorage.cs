@@ -11,11 +11,16 @@ namespace Atlas.Application.Storage;
 public static class SqlStorage
 {
     private static string? _connectionString;
-    public static void Configure(string connectionString)
+    public static void Configure(string connectionString, bool applyMigrations = true)
     {
         _connectionString = connectionString;
-        using var database = Open();
-        database.Database.Migrate();
+        // Cloud seeding must NOT implicitly apply schema migrations. Explicit
+        // admin setup is a separate, protected operation.
+        if (applyMigrations)
+        {
+            using var database = Open();
+            database.Database.Migrate();
+        }
     }
 
     public static AtlasDataContext Open()
@@ -84,7 +89,7 @@ public static class SqlStorage
     };
 
     /// <summary>Create demo accounts through Identity, then seed dependent Atlas records with their generated IDs.</summary>
-    public static async Task SeedDemoDataAsync(IServiceScopeFactory scopes)
+    public static async Task SeedDemoDataAsync(IServiceScopeFactory scopes, string? configuredDemoPassword = null)
     {
         using (var database = Open())
         {
@@ -95,6 +100,17 @@ public static class SqlStorage
                 throw new InvalidOperationException("Demo seed requires an empty Atlas database; SQL data was not changed.");
         }
 
+        // Development keeps the documented local fixture password. A deployment
+        // must inject a unique password so seeded accounts are not publicly known.
+        var demoPassword = configuredDemoPassword ?? Environment.GetEnvironmentVariable("ATLAS_DEMO_PASSWORD");
+        if (string.IsNullOrWhiteSpace(demoPassword))
+        {
+            // The fixed development fixture password must never be used on
+            // a public Azure SQL database, even if someone bypasses the runbook.
+            if (_connectionString?.Contains(".database.windows.net", StringComparison.OrdinalIgnoreCase) == true)
+                throw new InvalidOperationException("Cloud demo seed requires ATLAS_DEMO_PASSWORD.");
+            demoPassword = DemoParticipants.Password;
+        }
         var ids = new List<Guid>(DemoParticipants.Accounts.Length);
         foreach (var demo in DemoParticipants.Accounts)
         {
@@ -102,7 +118,7 @@ public static class SqlStorage
             var accounts = scope.ServiceProvider.GetRequiredService<AtlasAccounts>();
             var registration = await accounts.RegisterAsync(
                 demo.Email,
-                DemoParticipants.Password,
+                demoPassword,
                 demo.DisplayName
             );
             if (!registration.Result.Succeeded || registration.ParticipantId is null)
