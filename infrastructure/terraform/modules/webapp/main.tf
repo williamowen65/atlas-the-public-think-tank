@@ -3,6 +3,7 @@ variable "variant" { type = string }
 variable "location" { type = string }
 variable "resource_group_name" { type = string }
 variable "service_plan_id" { type = string }
+variable "app_subnet_id" { type = string }
 variable "app_service_sku" { type = string }
 variable "insights_connection" { type = string }
 variable "connection_string" {
@@ -17,6 +18,7 @@ resource "azurerm_linux_web_app" "atlas" {
   resource_group_name                      = var.resource_group_name
   location                                 = var.location
   service_plan_id                          = var.service_plan_id
+  virtual_network_subnet_id                = var.app_subnet_id
   https_only                               = true
   ftp_publish_basic_authentication_enabled = false
   tags                                     = var.tags
