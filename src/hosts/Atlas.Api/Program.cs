@@ -98,6 +98,9 @@ app.UseAuthorization();
 // Resolve the participant and enrich the existing HTTP telemetry scope.
 app.UseMiddleware<OperationContextMiddleware>();
 // 3. Expose controller actions and start listening. No view/static-file fallback exists.
+// Deployment liveness probe: confirms that the HTTP process can respond,
+// not that SQL, migrations, Full-Text Search, or downstream systems are ready.
+app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 // Fall back to the static SPA only for known UI pages, never for unknown APIs
 // or missing assets (which must keep an HTTP 404 status).
