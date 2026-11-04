@@ -1,6 +1,6 @@
-# Atlas.Console: terminal host
+# Atlas.Console: local interactive terminal host
 
-Console lives under `src/hosts/Atlas.Console`. It owns keyboard input, menus, navigation, terminal rendering, the interactive Identity session and startup composition.
+Console lives under `src/hosts/Atlas.Console`. This local development/demo application is **not** the Azure administration host. The protected production WebJobs publish the smaller [Atlas.Admin](../Atlas.Admin/README.md) application instead. It owns keyboard input, menus, navigation, terminal rendering, the interactive Identity session and startup composition.
 
 Program selects the SQL implementations in `Atlas.Application.Storage`, configures Identity, creates `Atlas.Application.Observability.LocalDevelopmentTelemetry`, registers event handlers and supplies console diagnostic callbacks. Commands call application/domain services and display their results. View-specific repository reads remain appropriate here; mutation rules and save ordering belong in the backend.
 
