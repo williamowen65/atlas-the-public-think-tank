@@ -18,7 +18,11 @@ variable "enable_demo" {
 }
 variable "app_service_sku" {
   type    = string
-  default = "F1"
+  default = "B1"
+  validation {
+    condition     = !contains(["F1", "D1"], upper(var.app_service_sku))
+    error_message = "SQL Private Link requires App Service VNet integration; Free/Shared App Service plans do not support it."
+  }
 }
 variable "sql_admin_username" {
   type    = string
@@ -34,18 +38,6 @@ variable "runtime_connection_strings" {
   type        = map(string)
   default     = {}
   sensitive   = true
-}
-variable "sql_allowed_ipv4" {
-  description = "Exact allowed SQL client IPs, keyed by short names. Empty means no firewall access."
-  type        = map(string)
-  default     = {}
-  validation {
-    condition = alltrue([
-      for ip in values(var.sql_allowed_ipv4) :
-      can(cidrhost(format("%s/32", ip), 0)) && ip != "0.0.0.0" && !strcontains(ip, ":")
-    ])
-    error_message = "Use individual IPv4 addresses. Never allow all of Azure (0.0.0.0)."
-  }
 }
 variable "tags" {
   type = map(string)
