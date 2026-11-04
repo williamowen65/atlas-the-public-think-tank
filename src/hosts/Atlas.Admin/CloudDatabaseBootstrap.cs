@@ -46,7 +46,9 @@ internal static class CloudDatabaseBootstrap
         };
 
         await using var connection = new SqlConnection(admin.ConnectionString);
+        System.Console.WriteLine("Opening the Azure SQL bootstrap connection.");
         await connection.OpenAsync();
+        System.Console.WriteLine("Connected to Azure SQL. Configuring managed-identity database users.");
 
         // No passwords, SQL statement bodies or account identifiers are printed.
         await EnsureUserAndRoleAsync(connection, "atlas-" + variant + "-runtime", runtimeClientId, "db_datareader");
