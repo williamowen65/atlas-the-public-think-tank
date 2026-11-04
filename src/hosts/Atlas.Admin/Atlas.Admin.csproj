@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cloud-only command host: no interactive console UI, HTTP endpoints, or
+       development menu dependencies. It shares tested application services. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Atlas.Admin</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Atlas.Application/Atlas.Application.csproj" />
+    <ProjectReference Include="../../Atlas.Identity/Atlas.Identity.csproj" />
+    <ProjectReference Include="../../Atlas.Persistence/Atlas.Persistence.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.14" />
+  </ItemGroup>
+
+</Project>
