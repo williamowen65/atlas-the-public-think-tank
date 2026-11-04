@@ -2,8 +2,7 @@
 # Source for the entry point packaged under each App_Data/jobs/triggered/atlas-*/.
 # The GitHub workflow copies this file as run.sh because Azure WebJobs
 # recognizes that exact filename as its explicit entry point.
-# Kudu names the job from its directory, so no dynamic arguments or public
-# HTTP admin endpoint can select an arbitrary operation.
+# The package records the operation because Kudu can run from a temporary path.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -22,7 +21,7 @@ if [[ "$ATLAS_EXPECTED_DATABASE" != *-"$ATLAS_DEPLOYMENT_VARIANT" ]] ||
     exit 1
 fi
 
-job="$(basename "$(dirname "$0")")"
+IFS= read -r job < ./job-name
 case "$job" in
     atlas-bootstrap)
         : "${ATLAS_BOOTSTRAP_SQL_USERNAME:?First-time bootstrap not enabled in Terraform}"
