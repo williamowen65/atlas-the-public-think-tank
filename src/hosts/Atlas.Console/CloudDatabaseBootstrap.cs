@@ -39,7 +39,7 @@ internal static class CloudDatabaseBootstrap
             InitialCatalog = expectedDatabase,
             UserID = Required(configuration, "ATLAS_BOOTSTRAP_SQL_USERNAME"),
             Password = Required(configuration, "ATLAS_BOOTSTRAP_SQL_PASSWORD"),
-            Encrypt = true,
+            Encrypt = SqlConnectionEncryptOption.Mandatory,
             TrustServerCertificate = false,
             ConnectTimeout = 30
         };
@@ -95,5 +95,19 @@ internal static class CloudDatabaseBootstrap
         command.Parameters.AddWithValue("@ClientId", clientId);
         command.Parameters.AddWithValue("@Role", role);
         await command.ExecuteNonQueryAsync();
+
+        // An old DB user with the same name but a different SID must never
+        // silently receive permissions meant for a new Azure managed identity.
+        await using var verify = new SqlCommand("""
+            SELECT CASE WHEN sid = CONVERT(VARBINARY(16), @ClientId) AND type = 'E'
+                THEN 1 ELSE 0 END
+            FROM sys.database_principals
+            WHERE name = @Principal
+            """, connection);
+        verify.Parameters.AddWithValue("@Principal", name);
+        verify.Parameters.AddWithValue("@ClientId", clientId);
+        var mapping = await verify.ExecuteScalarAsync();
+        if (mapping is not int valid || valid != 1)
+            throw new InvalidOperationException("An existing Azure SQL principal does not match the intended managed identity.");
     }
 }
