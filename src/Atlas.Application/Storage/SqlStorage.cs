@@ -11,11 +11,16 @@ namespace Atlas.Application.Storage;
 public static class SqlStorage
 {
     private static string? _connectionString;
-    public static void Configure(string connectionString)
+    public static void Configure(string connectionString, bool applyMigrations = true)
     {
         _connectionString = connectionString;
-        using var database = Open();
-        database.Database.Migrate();
+        // Cloud seeding must NOT implicitly apply schema migrations. Explicit
+        // admin setup is a separate, protected operation.
+        if (applyMigrations)
+        {
+            using var database = Open();
+            database.Database.Migrate();
+        }
     }
 
     public static AtlasDataContext Open()
