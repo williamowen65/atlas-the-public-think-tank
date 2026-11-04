@@ -74,6 +74,23 @@ terraform plan -destroy
 
 Review every `plan` before applying. A `-target` apply is **not** the default workflow. The SQL databases use `prevent_destroy` to avoid accidental data removal. Do not run `terraform destroy` against student deployment evidence or live data without a recovery plan.
 
+### Optional: Azure-connected preview from GitHub Actions (no apply)
+
+Once the **private Azure Blob Terraform state** and the Azure OIDC identity have been bootstrapped, run [Atlas Azure Terraform plan (manual, no apply)](../.github/workflows/AtlasAzurePlan.yml) from the **Actions** tab. This workflow is distinct from the offline `AtlasInfrastructure.yml` checks. It uses the real subscription and remote state to preview the proposed resource changes, but has **no `terraform apply` step** and does not save/upload plan artifacts. Its Azure identity needs read access to the planned resources plus **Storage Blob Data Contributor** for Terraform state locking; it does not need a blanket Owner grant.
+
+Create a protected GitHub Environment named `atlas-infra-review` with a matching Azure federated credential subject `repo:williamowen65/atlas-the-public-think-tank:environment:atlas-infra-review`. Configure the following environment values:
+
+| Kind | Name | Meaning |
+| --- | --- | --- |
+| Secret | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | Azure OIDC identity and target subscription (GUIDs, not passwords) |
+| Secret | `TF_SQL_ADMIN_PASSWORD` | Required existing SQL server administrator password, passed to Terraform as a sensitive variable; keep the same value across repeated plans |
+| Secret (demo only) | `ATLAS_DEMO_PASSWORD` | Optional unique password used by the demo-only seed job; never print |
+| Variable | `ATLAS_NAME_PREFIX`, `AZURE_LOCATION` | Atlas resource prefix and Azure region |
+| Variable | `AZURE_SQL_ENTRA_ADMIN_LOGIN`, `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | Intended Azure SQL Entra group/user for SQL server administration |
+| Variable | `AZURE_TFSTATE_RESOURCE_GROUP`, `AZURE_TFSTATE_STORAGE_ACCOUNT`, `AZURE_TFSTATE_CONTAINER`, `AZURE_TFSTATE_KEY` | Existing private state backend parameters created during bootstrap |
+
+This workflow deliberately assumes **B1**, both `live` and `demo`, and `enable_sql_bootstrap=false` (the normal safe setting). If you change those choices in your actual infrastructure, synchronize the workflow before relying on the plan. The workflow must exist on the repository's default branch before GitHub displays it as a normal manually runnable workflow. For the *first* deployment, you can execute `terraform plan` locally as documented above. An Azure-connected plan reads Azure metadata and state, but it does not guarantee quota availability, a successful apply, private DNS function, SQL connectivity or running WebJobs. These still need deployment verification.
+
 ## 5. SQL reachability, credentials and migrations
 
 The initial Terraform apply now configures **no public SQL endpoint**: `public_network_access_enabled = false`. The [network module](terraform/modules/network/main.tf) creates the VNet, delegated application subnet, private-endpoint subnet, private DNS zone/link, SQL Private Endpoint and an NSG with a narrowly scoped SQL rule. There are no SQL public firewall exceptions to add. Follow [security design](SECURITY.md) for the network boundaries.
