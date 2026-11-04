@@ -5,6 +5,8 @@ on:
     paths:
       - 'infrastructure/**'
       - 'tests/Atlas.Infrastructure.Tests/**'
+      - 'src/hosts/Atlas.Admin/**'
+      - 'src/Atlas.Application/Storage/SqlStorage.cs'
       - '.github/workflows/AtlasInfrastructure.yml'
 
 permissions:
@@ -28,6 +30,11 @@ jobs:
         run: terraform init -backend=false -input=false
       - name: Validate configuration
         run: terraform validate -no-color
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Compile the dedicated cloud administration host
+        run: dotnet publish ../../src/hosts/Atlas.Admin/Atlas.Admin.csproj --configuration Release --output "$RUNNER_TEMP/atlas-admin-build-check"
       - name: Install HCL parser for Atlas policy tests
         run: python -m pip install --disable-pip-version-check "python-hcl2==8.1.4"
       - name: Enforce Atlas security and free-tier invariants
