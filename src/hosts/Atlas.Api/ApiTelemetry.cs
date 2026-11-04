@@ -11,6 +11,7 @@ public sealed class ApiTelemetry : IDisposable
     public string? DirectoryPath { get; }
     public ApiTelemetry(IConfiguration configuration, IWebHostEnvironment environment, ILogger<CloudTelemetry> cloudLogger)
     {
+        if (configuration.GetValue<bool?>("Atlas:Telemetry:Enabled") == false) return;
         if (!environment.IsDevelopment())
         {
             if (string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
@@ -18,7 +19,6 @@ public sealed class ApiTelemetry : IDisposable
             Observer = new CloudTelemetry(cloudLogger, configuration["ATLAS_DEPLOYMENT_VARIANT"]);
             return;
         }
-        if (configuration.GetValue<bool?>("Atlas:Telemetry:Enabled") == false) return;
         DirectoryPath = configuration["ATLAS_TELEMETRY_DIRECTORY"] ?? Path.Combine(AppContext.BaseDirectory, "logs", "observability");
         Observer = new LocalTelemetry(DirectoryPath);
     }
