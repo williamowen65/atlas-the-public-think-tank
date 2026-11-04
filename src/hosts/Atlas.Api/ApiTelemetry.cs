@@ -7,15 +7,22 @@ namespace Atlas.Api;
 /// <summary>Local inspection output for development. Production exporters remain PTT-136.</summary>
 public sealed class ApiTelemetry : IDisposable
 {
-    public LocalTelemetry? Observer { get; }
+    public ITelemetryObserver? Observer { get; }
     public string? DirectoryPath { get; }
-    public ApiTelemetry(IConfiguration configuration, IWebHostEnvironment environment)
+    public ApiTelemetry(IConfiguration configuration, IWebHostEnvironment environment, ILogger<CloudTelemetry> cloudLogger)
     {
-        if (!environment.IsDevelopment() || configuration.GetValue<bool?>("Atlas:Telemetry:Enabled") == false) return;
+        if (!environment.IsDevelopment())
+        {
+            if (string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+                throw new InvalidOperationException("Production Atlas telemetry requires APPLICATIONINSIGHTS_CONNECTION_STRING.");
+            Observer = new CloudTelemetry(cloudLogger, configuration["ATLAS_DEPLOYMENT_VARIANT"]);
+            return;
+        }
+        if (configuration.GetValue<bool?>("Atlas:Telemetry:Enabled") == false) return;
         DirectoryPath = configuration["ATLAS_TELEMETRY_DIRECTORY"] ?? Path.Combine(AppContext.BaseDirectory, "logs", "observability");
         Observer = new LocalTelemetry(DirectoryPath);
     }
-    public void Dispose() => Observer?.Dispose();
+    public void Dispose() => (Observer as IDisposable)?.Dispose();
 }
 
 /// <summary>One asynchronous delivery loop per API process; leases coordinate overlapping processes.</summary>
