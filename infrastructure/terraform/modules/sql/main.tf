@@ -66,5 +66,5 @@ output "server_fqdn" {
   value = azurerm_mssql_server.atlas.fully_qualified_domain_name
 }
 output "database_names" {
-  value = { for variant, db in azurerm_mssql_database.variant : variant => format("%s-%s", var.name_prefix, variant) }
+  value = { for variant, db in azapi_resource.variant : variant => format("%s-%s", var.name_prefix, variant) }
 }
