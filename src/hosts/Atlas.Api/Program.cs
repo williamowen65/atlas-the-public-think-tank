@@ -1,4 +1,7 @@
 using Atlas.Api;
+using Microsoft.OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -12,6 +15,25 @@ var builder = WebApplication.CreateBuilder(args);
 // Avoid routine framework logs containing raw URLs/search strings or SQL commands.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+// Terraform supplies the Azure Monitor connection string. The .NET host wires
+// production exporters and keeps local development isolated from cloud costs.
+if (!builder.Environment.IsDevelopment())
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+        throw new InvalidOperationException("Production requires APPLICATIONINSIGHTS_CONNECTION_STRING.");
+
+    builder.UseMicrosoftOpenTelemetry(options =>
+    {
+        options.Exporters = ExportTarget.AzureMonitor;
+        // Cap trace ingestion for the student deployment's small telemetry budget.
+        options.AzureMonitor.TracesPerSecond = 2;
+        options.AzureMonitor.EnableLiveMetrics = false;
+    });
+    builder.Services.ConfigureOpenTelemetryTracerProvider(
+        (_, tracer) => tracer.AddSource("Atlas.Contracts"));
+    builder.Services.ConfigureOpenTelemetryMeterProvider(
+        (_, meter) => meter.AddMeter("Atlas.Observability"));
+}
 builder.Services.AddAtlasApi(builder.Configuration);
 // The built-in antiforgery filter protects every unsafe controller request, even
 // on future controllers. AddControllersWithViews registers its MVC filter services; MapControllers
