@@ -12,6 +12,11 @@ variable "admin_identity_client_id" { type = string }
 variable "tags" { type = map(string) }
 variable "enable_bootstrap" { type = bool }
 variable "bootstrap_username" { type = string }
+variable "demo_seed_password" {
+  type      = string
+  default   = null
+  sensitive = true
+}
 variable "bootstrap_password" {
   type      = string
   sensitive = true
@@ -55,6 +60,7 @@ resource "azurerm_linux_web_app" "admin" {
     ATLAS_DEPLOYMENT_VARIANT      = var.variant
     ATLAS_EXPECTED_DATABASE      = var.expected_database
     ATLAS_SQL_CONNECTION_STRING   = var.sql_connection
+    DOTNET_ENVIRONMENT            = "Production"
     ATLAS_RUNTIME_MI_CLIENT_ID    = var.runtime_identity_client_id
     ATLAS_ADMIN_MI_CLIENT_ID      = var.admin_identity_client_id
     }, var.enable_bootstrap ? {
@@ -62,6 +68,8 @@ resource "azurerm_linux_web_app" "admin" {
     # Toggle back to false and apply Terraform after successful grant.
     ATLAS_BOOTSTRAP_SQL_USERNAME = var.bootstrap_username
     ATLAS_BOOTSTRAP_SQL_PASSWORD = var.bootstrap_password
+  } : {}, var.variant == "demo" && var.demo_seed_password != null ? {
+    ATLAS_DEMO_PASSWORD = var.demo_seed_password
   } : {})
 }
 
