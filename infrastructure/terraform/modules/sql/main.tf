@@ -29,7 +29,7 @@ resource "azurerm_mssql_server" "atlas" {
     azuread_authentication_only = false
   }
 
-  tags                          = var.tags
+  tags = var.tags
 }
 
 # AzureRM does not currently expose the useFreeLimit database creation flag.
