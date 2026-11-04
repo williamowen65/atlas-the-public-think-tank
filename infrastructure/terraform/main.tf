@@ -25,7 +25,15 @@ module "sql" {
   admin_username      = var.sql_admin_username
   admin_password      = var.sql_admin_password
   variants            = local.variants
-  allowed_ipv4        = var.sql_allowed_ipv4
+  tags                = local.tags
+}
+
+module "network" {
+  source              = "./modules/network"
+  name_prefix         = var.name_prefix
+  location            = azurerm_resource_group.atlas.location
+  resource_group_name = azurerm_resource_group.atlas.name
+  sql_server_id       = module.sql.server_id
   tags                = local.tags
 }
 
@@ -47,6 +55,7 @@ module "sites" {
   location            = azurerm_resource_group.atlas.location
   resource_group_name = azurerm_resource_group.atlas.name
   service_plan_id     = azurerm_service_plan.atlas.id
+  app_subnet_id       = module.network.app_subnet_id
   app_service_sku     = var.app_service_sku
   insights_connection = module.observability.insights_connection
   connection_string   = lookup(var.runtime_connection_strings, each.key, null)
