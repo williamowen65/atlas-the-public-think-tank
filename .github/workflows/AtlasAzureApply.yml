@@ -67,6 +67,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
+          terraform_wrapper: false
       - name: Require the configured subscription and private remote state
         run: |
           set -euo pipefail
