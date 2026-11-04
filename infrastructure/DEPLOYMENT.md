@@ -12,7 +12,7 @@ The goals are **production parity** with the tested local product behavior, mini
 - Application Insights and a Log Analytics workspace provide cloud observability. The Azure agent wiring is a starting point: verify real request/log ingestion before reporting success.
 - An optional demo variant provisions another web app on the **same App Service plan** and a distinct SQL database. Demo can contain the known seed data; live must be separately initialized and protected. This is **two deployment configurations**, not a randomized statistically measured A/B experiment yet. See PTT-171.
 
-The original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
+The default is now **F1 Linux App Service plus the explicitly enabled Azure SQL free offer** (through the AzAPI provider). Microsoft describes F1 as a limited learning tier, not a production SLA. Free SQL offers can pause when the monthly allowance is exhausted; those pauses can make Atlas unavailable. These defaults are for a student proof-of-concept, not a high-availability public service.\n\nThe original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
 
 ## 2. Local prerequisites and Azure selection
 
@@ -80,7 +80,27 @@ App Service egress IPs can be shared: IP allowlisting is only one control, **not
 
 Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege SQL users** for demo/live, not the Terraform provisioning administrator. This initial Terraform accepts sensitive per-variant connection strings through `TF_VAR_runtime_connection_strings` or a local ignored file; Terraform state still contains the values. A managed-identity/Key Vault path can reduce this risk in a follow-on. Protect credentials, SQL backups, and operator access.
 
-Migrations, SQL Full-Text indexes, account provisioning and seed setup are **not performed automatically** at web app startup. Follow [SQL instructions](../docs/PTT-87-SQL-Server.md) and [seed guide](../docs/workflows/local-demo-seed.md), verifying commands against the target database. Never seed the live database using demo-only credentials.
+Migrations, Identity schema creation, SQL Full-Text indexes and seed setup run through our version-controlled [database initializer](scripts/Initialize-AtlasDatabase.ps1), rather than Terraform resource side effects or application startup. They are automated **on operator invocation** using existing Console commands. Live must not be seeded; demo requires a unique `ATLAS_DEMO_PASSWORD` from a secure environment variable. A separate SQL principal/managed-identity bootstrap is still needed to replace admin access with least privilege. Follow [SQL instructions](../docs/PTT-87-SQL-Server.md) and [seed guide](../docs/workflows/local-demo-seed.md), verifying commands against the target database. Never seed the live database using demo-only credentials.
+
+### Database initialization from versioned code
+
+After SQL access and a least-privilege maintenance connection have been established, run the following from the repository root, with `ATLAS_SQL_CONNECTION_STRING` set privately for the **intended** database:
+
+```powershell
+./infrastructure/scripts/Initialize-AtlasDatabase.ps1 -Variant live -ExpectedDatabase "<prefix>-live"
+```
+
+For the demo database, set a **unique secret** `ATLAS_DEMO_PASSWORD` (do not use the known local password) and run the separate one-time seed:
+
+```powershell
+./infrastructure/scripts/Initialize-AtlasDatabase.ps1 -Variant demo -ExpectedDatabase "<prefix>-demo" -SeedDemo
+```
+
+The initializer checks the connection-string database against the explicit name and variant, applies checked-in migrations and Full-Text indexes, and refuses demo seeding against `live`. It refuses repeated seeding against an existing populated database. No console or SQL passwords should appear in committed config or CI logs. These are automated deployment operations, not Terraform-managed Azure resources.
+
+Check Full-Text population readiness and Azure SQL free-tier serverless cold-resume/retry behavior before declaring the site healthy. The database initializer currently runs from an authorized operator environment with controlled SQL connectivity, not automatically from a generic GitHub runner (whose public egress IP is variable). An integrated cloud migration job is a follow-up once runner networking and credential handling are secure.
+
+See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable cloud-audit follow-up.
 
 ## 6. GitHub Actions cloud deployment
 
@@ -112,6 +132,6 @@ A demo environment must be clearly labeled and should restrict writes to seeded 
 
 ## 8. Budget and school evidence
 
-The sample values `B1` App Service and `Basic` Azure SQL are **not free**. A second SQL database, Log Analytics ingestion and Application Insights can incur additional cost. Compare the current Azure pricing calculator, free SQL offers and student Azure credits. Do not assume the Azure SQL free offer is enabled by using `Basic`. Set an Azure cost budget alert before first apply, and verify monthly spending afterward.
+The sample now defaults to **F1** App Service and **Azure SQL General Purpose serverless with `useFreeLimit=true` and `AutoPause`**. Azure SQL free databases have monthly compute/storage limits; eligibility depends on subscription and region. The infrastructure does not silently replace an ineligible free database with a paid SKU. F1 has tight CPU/storage limits and no production SLA. Log Analytics usage above the included free allowance, Terraform state storage and other Azure services can still incur charges. Compare subscription eligibility, student credits and region restrictions before applying. Set a budget alert using a documented IaC-managed approach before enabling a paid upgrade.
 
 For the WGU deployment report (PTT-170), capture the chosen architecture, Terraform `plan` summary (redacted), workflow runs/commit SHA, HTTPS URL, two variants if enabled, SQL persistence/FTS evidence, auth and security checks, and Application Insights screenshots with no sensitive identifiers. Target the first deployment evidence by **November 16**, first report submission by **November 19**, and confirmed pass before November 30.
