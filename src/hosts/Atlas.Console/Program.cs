@@ -39,19 +39,6 @@ var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
 
-// First-time cloud authorization runs before ordinary Identity/EF startup and
-// requires a privately reachable Azure SQL database and explicit bootstrap credentials.
-if (args.Contains("--bootstrap-cloud-identities", StringComparer.OrdinalIgnoreCase))
-{
-    try { await CloudDatabaseBootstrap.RunAsync(configuration); }
-    catch (Exception)
-    {
-        System.Console.Error.WriteLine("Azure SQL bootstrap failed. Verify private SQL connectivity, account permissions and configured identities.");
-        Environment.ExitCode = 1;
-    }
-    return;
-}
-
 // Explicit maintenance command: finish before Identity, telemetry or interactive startup.
 if (args.Contains("--setup-database", StringComparer.OrdinalIgnoreCase))
 {
