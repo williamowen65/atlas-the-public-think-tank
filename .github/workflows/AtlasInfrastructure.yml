@@ -27,3 +27,28 @@ jobs:
         run: terraform init -backend=false -input=false
       - name: Validate configuration
         run: terraform validate -no-color
+      - name: Install HCL parser for Atlas policy tests
+        run: python -m pip install --disable-pip-version-check "python-hcl2==8.1.4"
+      - name: Enforce Atlas security and free-tier invariants
+        run: python -m unittest discover -s ../tests -p 'test_*.py' -v
+      # New security findings are visible here before we decide which controls
+      # should be enforced globally. This step must not conceal baseline failures.
+      - name: Review infrastructure security findings (advisory)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: infrastructure/terraform
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          format: table
+          hide-progress: 'true'
+      - name: Reject committed infrastructure secrets
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: infrastructure/terraform
+          scanners: secret
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+          hide-progress: 'true'
