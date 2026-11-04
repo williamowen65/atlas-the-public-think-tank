@@ -40,7 +40,7 @@ try
         || !sql.DataSource.EndsWith(".database.windows.net,1433", StringComparison.OrdinalIgnoreCase)
         || !string.Equals(sql.UserID, adminClientId.ToString(), StringComparison.OrdinalIgnoreCase)
         || !connectionString.Contains("Authentication=Active Directory Managed Identity", StringComparison.OrdinalIgnoreCase)
-        || sql.TrustServerCertificate || !sql.Encrypt)
+        || sql.TrustServerCertificate || sql.Encrypt != SqlConnectionEncryptOption.Mandatory)
         throw new InvalidOperationException("Cloud administration requires the expected Azure SQL database and managed identity.");
 
     switch (args[0])
