@@ -7,7 +7,6 @@ variable "admin_password" {
   sensitive = true
 }
 variable "variants" { type = set(string) }
-variable "allowed_ipv4" { type = map(string) }
 variable "tags" { type = map(string) }
 
 resource "azurerm_mssql_server" "atlas" {
@@ -18,7 +17,7 @@ resource "azurerm_mssql_server" "atlas" {
   administrator_login           = var.admin_username
   administrator_login_password  = var.admin_password
   minimum_tls_version           = "1.2"
-  public_network_access_enabled = true
+  public_network_access_enabled = false
   tags                          = var.tags
 }
 
@@ -54,17 +53,13 @@ resource "azapi_resource" "variant" {
   }
 }
 
-resource "azurerm_mssql_firewall_rule" "approved" {
-  for_each         = var.allowed_ipv4
-  name             = format("Atlas-%s", each.key)
-  server_id        = azurerm_mssql_server.atlas.id
-  start_ip_address = each.value
-  end_ip_address   = each.value
+output "server_id" {
+  value = azurerm_mssql_server.atlas.id
 }
 
 output "server_fqdn" {
   value = azurerm_mssql_server.atlas.fully_qualified_domain_name
 }
 output "database_names" {
-  value = { for variant, db in azapi_resource.variant : variant => format("%s-%s", var.name_prefix, variant) }
+  value = { for variant, db in azapi_resource.variant : variant => db.name }
 }
