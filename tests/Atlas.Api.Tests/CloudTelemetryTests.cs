@@ -53,7 +53,7 @@ public sealed class CloudTelemetryTests
             Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid(), EventKind.NodeView,
             ActorKind.Participant, Guid.NewGuid(), Guid.NewGuid(),
             EventOutcome.Succeeded, EventReason.None, Host: TelemetryHost.Api);
-        Assert.ThrowsException<ArgumentException>(() => observer.Record(invalid));
+        Assert.ThrowsExactly<ArgumentException>(() => observer.Record(invalid));
         Assert.AreEqual(0, logger.Messages.Count);
     }
 }
