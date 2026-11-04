@@ -46,7 +46,7 @@ jobs:
             dir="$root/App_Data/jobs/triggered/$job"
             mkdir -p "$dir"
             cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$dir/"
-            cp infrastructure/webjobs/run.sh "$dir/run.sh"
+            cp infrastructure/webjobs/run-webjob.sh "$dir/run.sh"
             chmod +x "$dir/run.sh"
           done
           cd "$root"
