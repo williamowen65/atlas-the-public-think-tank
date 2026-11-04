@@ -39,9 +39,6 @@ resource "azurerm_linux_web_app" "atlas" {
   app_settings = merge({
     ASPNETCORE_ENVIRONMENT                      = "Production"
     APPLICATIONINSIGHTS_CONNECTION_STRING       = var.insights_connection
-    ApplicationInsightsAgent_EXTENSION_VERSION  = "~3"
-    XDT_MicrosoftApplicationInsights_Mode       = "recommended"
-    XDT_MicrosoftApplicationInsights_PreemptSdk = "1"
     ATLAS_DEPLOYMENT_VARIANT                    = var.variant
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
