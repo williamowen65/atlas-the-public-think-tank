@@ -1,6 +1,6 @@
 # Atlas.Admin — private, non-interactive administration host
 
-`Atlas.Admin` is a deliberately small .NET 10 executable for **protected Azure operations**. It is not the interactive `Atlas.Console`, not a public website and not a replica of the Atlas frontend.
+`Atlas.Admin` is a deliberately small .NET 10 command-line host for **local development database setup** and **protected Azure operations**. It is not the interactive `Atlas.Console`, a public website, or a replica of the Atlas frontend.
 
 The Azure `AtlasAdmin.yml` manual GitHub Actions workflow publishes this project, packages it into Linux triggered WebJobs and invokes exactly one selected operation:
 
@@ -18,8 +18,30 @@ The local `Atlas.Console` already supports trusted, interactive GlobalModerator 
 
 An administrative **portal** (a private UI) would be a separate design choice; WebJobs are non-interactive jobs, not an interactive terminal or website.
 
-## Local development
+## Local development — C# only
 
-The interactive `src/hosts/Atlas.Console` remains a local development/demo host. The legacy `infrastructure/scripts/Initialize-AtlasDatabase.ps1` invokes that local Console against a SQL endpoint that your machine can already reach; it **cannot** connect to Azure SQL Private Link from an ordinary home machine. For Azure, use the manually triggered cloud workflow.
+`Atlas.Admin` uses the **same .NET User Secrets ID** as `Atlas.Api` and `Atlas.Console`. The existing local `ATLAS_SQL_CONNECTION_STRING` is read automatically (environment variables can override it). No PowerShell script or separately copied secrets are needed.
 
-See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Azure wiring and end-to-end execution still require cloud verification.
+From the repository root:
+
+```shell
+dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database
+```
+
+For a **fresh, disposable local database** where you also want the existing demo fixture data:
+
+```shell
+dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database --seed-demo
+```
+
+The first command applies EF migrations and SQL Full-Text setup. The optional seed operation runs only after successful schema initialization and refuses to overwrite existing users or content. The seed can use `ATLAS_DEMO_PASSWORD` from User Secrets; without it, the established local-only fixture password is used. The local command **refuses Azure SQL** and Production environments. It does **not** drop the database or erase data.
+
+`Atlas.Console` is still a separate, local interactive demo application; it is not the database-initialization tool or deployed Azure administration executable.
+
+## Azure administration — GitHub Actions
+
+The protected `AtlasAdmin.yml` workflow publishes this same C# project and invokes one cloud command at a time, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require authorized GitHub Environments and Azure OIDC access.
+
+After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, run `schema` for both, and `seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
+
+See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Azure execution still requires end-to-end verification.
