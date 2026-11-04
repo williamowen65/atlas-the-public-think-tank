@@ -37,7 +37,7 @@ public sealed class CloudTelemetryTests
             DurationMs: 25, Host: TelemetryHost.Api));
         observer.CacheLookup(detail: true, hit: false);
 
-        Assert.HasCount(1, logger.Messages);
+        Assert.AreEqual(1, logger.Messages.Count);
         StringAssert.Contains(logger.Messages.Single(), "moderation.changed");
         StringAssert.Contains(logger.Messages.Single(), "demo");
         Assert.IsFalse(logger.Messages.Single().Contains(actorId.ToString(), StringComparison.OrdinalIgnoreCase));
