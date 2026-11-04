@@ -15,7 +15,7 @@ Status: **configuration committed, not deployed**. The authoritative definitions
 | `module.observability.azurerm_log_analytics_workspace.atlas` | Log Analytics workspace | 1 | Stores and queries selected operational telemetry; configured at 30 days retention |
 | `module.observability.azurerm_application_insights.atlas` | Application Insights | 1 shared | Azure Monitor OpenTelemetry is configured in Atlas.Api, while real cloud ingestion must still be verified |
 
-**Default:** `enable_demo = false`, so there is one app and one SQL database. Setting `enable_demo = true` creates a second web app and database on the same App Service plan. There is *no automatic A/B traffic assignment*, and demo must be seeded and secured independently. The free SQL offer has monthly limits; it is not an unrestricted no-charge production SLA.
+**Default:** `enable_demo = true`, creating separate demo and live apps and Azure SQL free-offer databases on the same F1 App Service plan. Set it to `false` for a live-only deployment. There is *no automatic A/B traffic assignment*, and demo must be seeded and secured independently. The free SQL offer has monthly limits; it is not an unrestricted no-charge production SLA.
 
 Each Web App also receives an Azure **system-assigned managed identity**. Terraform currently does **not** grant it access to SQL, Key Vault, or other resources: assigning an identity is not the same as using it for authentication.
 
