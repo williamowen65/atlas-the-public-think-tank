@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 locals {
   variants = var.enable_demo ? toset(["live", "demo"]) : toset(["live"])
   tags     = merge(var.tags, { managed_by = "terraform" })
@@ -24,6 +26,9 @@ module "sql" {
   resource_group_name = azurerm_resource_group.atlas.name
   admin_username      = var.sql_admin_username
   admin_password      = var.sql_admin_password
+  entra_admin_login    = var.sql_entra_admin_login
+  entra_admin_object_id = var.sql_entra_admin_object_id
+  entra_admin_tenant_id = data.azurerm_client_config.current.tenant_id
   variants            = local.variants
   tags                = local.tags
 }
