@@ -89,7 +89,7 @@ public static class SqlStorage
     };
 
     /// <summary>Create demo accounts through Identity, then seed dependent Atlas records with their generated IDs.</summary>
-    public static async Task SeedDemoDataAsync(IServiceScopeFactory scopes)
+    public static async Task SeedDemoDataAsync(IServiceScopeFactory scopes, string? configuredDemoPassword = null)
     {
         using (var database = Open())
         {
@@ -102,7 +102,7 @@ public static class SqlStorage
 
         // Development keeps the documented local fixture password. A deployment
         // must inject a unique password so seeded accounts are not publicly known.
-        var demoPassword = Environment.GetEnvironmentVariable("ATLAS_DEMO_PASSWORD");
+        var demoPassword = configuredDemoPassword ?? Environment.GetEnvironmentVariable("ATLAS_DEMO_PASSWORD");
         if (string.IsNullOrWhiteSpace(demoPassword))
         {
             // The fixed development fixture password must never be used on
