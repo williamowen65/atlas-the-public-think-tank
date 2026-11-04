@@ -24,7 +24,7 @@ Each Web App also receives an Azure **system-assigned managed identity**. Terraf
 1. The user's browser connects to the Azure Web App over HTTPS.
 2. The deployed ASP.NET Core host serves the SvelteKit static output from `wwwroot` and API requests from the same origin. Production rewrites the frontend's `/atlas-public-api/*` and `/atlas-session-api/*` prefixes to existing `/api/*` endpoints, mirroring local Vite proxy behavior.
 3. Atlas.Api uses the environment-specific `ATLAS_SQL_CONNECTION_STRING` to access its own Azure SQL database.
-4. App Service is configured with an Application Insights connection string and agent settings. Log Analytics is associated with Application Insights. **Real request, metric, trace and audit ingestion still needs deployment verification.**
+4. App Service receives an Application Insights connection string; Atlas.Api configures the cloud OpenTelemetry SDK at startup. Log Analytics is associated with Application Insights. **Real request, metric, trace and audit ingestion still needs deployment verification.**
 
 The SQL server has `public_network_access_enabled = true` but starts with **zero firewall exceptions**. This means public Internet SQL connections are not automatically allowed. The operator explicitly adds approved client IPs after checking App Service outbound IP addresses. These IPs may be shared by other Azure tenants; they are **not** an identity or a complete security boundary. For stronger network isolation, evaluate private endpoints/VNet integration and their cost.
 
