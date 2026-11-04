@@ -103,5 +103,10 @@ catch (Exception error)
     // from a privileged hosted command to the public Actions log.
     Console.Error.WriteLine("Atlas.Admin operation failed. Check Azure WebJob diagnostic logs and database configuration.");
     Console.Error.WriteLine(error.GetType().Name);
+    if (error is SqlException sqlError)
+    {
+        foreach (SqlError detail in sqlError.Errors)
+            Console.Error.WriteLine($"SQL error number={detail.Number}, state={detail.State}, class={detail.Class}.");
+    }
     return 1;
 }
