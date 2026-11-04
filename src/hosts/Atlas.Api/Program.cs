@@ -53,6 +53,30 @@ app.UseMiddleware<HttpTelemetryMiddleware>();
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseHttpsRedirection();
+
+// Production forwards the browser's two API prefixes to the existing /api routes.
+// Vite already performs this mapping in development, but does not run in Azure.
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/atlas-public-api", out var publicPath))
+    {
+        if (!HttpMethods.IsGet(context.Request.Method))
+        {
+            context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+            context.Response.Headers.Allow = "GET";
+            return;
+        }
+        context.Request.Headers.Remove("Cookie");
+        context.Request.Headers.Remove("Authorization");
+        context.Request.Path = new PathString("/api").Add(publicPath);
+    }
+    else if (context.Request.Path.StartsWithSegments("/atlas-session-api", out var sessionPath))
+    {
+        context.Request.Path = new PathString("/api").Add(sessionPath);
+    }
+    await next();
+});
+
 app.Use(async (context, next) =>
 {
     // Match antiforgery cache policy so token responses need no header override.
@@ -62,6 +86,9 @@ app.Use(async (context, next) =>
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     await next();
 });
+// The release pipeline places the SvelteKit static build under API wwwroot.
+app.UseDefaultFiles();
+app.UseStaticFiles();
 // Match a route before applying endpoint-specific rate limits and policies.
 app.UseRouting();
 app.UseRateLimiter();
@@ -72,6 +99,24 @@ app.UseAuthorization();
 app.UseMiddleware<OperationContextMiddleware>();
 // 3. Expose controller actions and start listening. No view/static-file fallback exists.
 app.MapControllers();
+// Fall back to the static SPA only for known UI pages, never for unknown APIs
+// or missing assets (which must keep an HTTP 404 status).
+app.MapFallback(async context =>
+{
+    var path = context.Request.Path.Value ?? "/";
+    var clientRoute = path is "/" or "/about" or "/communities" or "/components"
+        or "/login" or "/me" or "/moderation" or "/my-drafts" or "/my-settings"
+        or "/new" or "/nodes" or "/profiles" or "/profiles/me" or "/register"
+        || path.StartsWith("/communities/", StringComparison.OrdinalIgnoreCase);
+    var indexFile = Path.Combine(app.Environment.WebRootPath ?? "", "index.html");
+    if (!clientRoute || !File.Exists(indexFile))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    context.Response.ContentType = "text/html; charset=utf-8";
+    await context.Response.SendFileAsync(indexFile);
+});
 app.Run();
 // Top-level statements generate a Program type containing Main. This declaration
 // merges with that generated type (partial) and makes it public so the separate
