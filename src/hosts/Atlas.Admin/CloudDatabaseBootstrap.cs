@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Text.RegularExpressions;
@@ -17,7 +18,7 @@ namespace Atlas.Admin;
 /// </summary>
 internal static class CloudDatabaseBootstrap
 {
-    public static async Task RunAsync(IConfiguration configuration)
+    public static async Task RunAsync(IConfiguration configuration, bool connectionOnly = false)
     {
         var variant = configuration["ATLAS_DEPLOYMENT_VARIANT"];
         if (variant is not ("live" or "demo"))
@@ -58,6 +59,15 @@ internal static class CloudDatabaseBootstrap
         var hostname = server.Success ? server.Groups[1].Value : "(unrecognized)";
         System.Console.WriteLine($"Opening the Azure SQL bootstrap connection. Host: {hostname}, database: {database}.");
 
+        if (connectionOnly && server.Success)
+        {
+            // Run inside the actual WebJob process, rather than a separate Kudu console.
+            var addresses = await Dns.GetHostAddressesAsync(hostname)
+                .WaitAsync(TimeSpan.FromSeconds(10));
+            foreach (var address in addresses)
+                System.Console.WriteLine($"SQL DNS address: {address}.");
+        }
+
         var timer = Stopwatch.StartNew();
         try
         {
@@ -65,6 +75,15 @@ internal static class CloudDatabaseBootstrap
         }
         catch (SqlException error)
         {
+            // Classify provider text without printing account names or connection strings.
+            var message = error.Message;
+            var phase = message.Contains("pre-login", StringComparison.OrdinalIgnoreCase)
+                ? "pre-login handshake"
+                : message.Contains("login failed", StringComparison.OrdinalIgnoreCase)
+                    ? "login rejected" : "undetermined";
+            System.Console.Error.WriteLine($"SQL connection phase: {phase}; client connection ID: {error.ClientConnectionId}.");
+            foreach (SqlError detail in error.Errors)
+                System.Console.Error.WriteLine($"SQL connection code: number={detail.Number}, state={detail.State}, class={detail.Class}.");
             // Provider messages can include login details. Emit structured codes only.
             for (var cause = error.InnerException; cause is not null; cause = cause.InnerException)
             {
@@ -82,6 +101,14 @@ internal static class CloudDatabaseBootstrap
         finally
         {
             System.Console.WriteLine($"Azure SQL connection attempt took {timer.ElapsedMilliseconds} ms.");
+        }
+        if (connectionOnly)
+        {
+            // No user creation, grants, schema changes or seed data in this operation.
+            await using var probe = new SqlCommand("SELECT 1", connection) { CommandTimeout = 10 };
+            await probe.ExecuteScalarAsync();
+            System.Console.WriteLine("SQL connection diagnostic succeeded (SELECT 1); no database changes performed.");
+            return;
         }
         System.Console.WriteLine("Connected to Azure SQL. Configuring managed-identity database users.");
 

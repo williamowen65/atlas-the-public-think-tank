@@ -15,6 +15,7 @@ on:
         type: choice
         required: true
         options:
+          - diagnose
           - bootstrap
           - schema
           - seed-demo
@@ -42,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/admin-package"
-          for job in atlas-bootstrap atlas-schema atlas-seed-demo; do
+          for job in atlas-diagnose atlas-bootstrap atlas-schema atlas-seed-demo; do
             dir="$root/App_Data/jobs/triggered/$job"
             mkdir -p "$dir"
             cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$dir/"
@@ -106,6 +107,7 @@ jobs:
           : "${ADMIN_APP:?Set AZURE_ADMIN_WEBAPP_NAME in the protected GitHub Environment}"
           : "${RESOURCE_GROUP:?Set AZURE_RESOURCE_GROUP in the protected GitHub Environment}"
           case "$OPERATION" in
+            diagnose) job="atlas-diagnose" ;;
             bootstrap) job="atlas-bootstrap" ;;
             schema) job="atlas-schema" ;;
             seed-demo) job="atlas-seed-demo" ;;

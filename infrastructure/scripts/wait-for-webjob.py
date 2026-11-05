@@ -36,16 +36,28 @@ def main() -> int:
     for attempt in range(36):
         result = subprocess.run(
             ["az", "rest", "--method", "get", "--url", url, "--output", "json"],
-            check=True, capture_output=True, text=True,
+            check=False, capture_output=True, text=True, timeout=60,
         )
+        if result.returncode:
+            # This management-plane request does not fetch app settings or SQL credentials.
+            # Escape line starts so external output cannot inject Actions commands.
+            print(f"Azure history request failed (exit {result.returncode}):", file=sys.stderr)
+            for line in result.stderr.replace(subscription, "[subscription]").splitlines():
+                print(f"Azure CLI: {line}", file=sys.stderr)
+            return 1
         data = json.loads(result.stdout)
         runs = [
             run
             for item in data.get("value", [])
-            for run in item.get("properties", {}).get("runs", [])
-            if run.get("start_time")
+            for raw in item.get("properties", {}).get("runs", [item.get("properties", item)])
+            for run in [{
+                "start_time": raw.get("start_time") or raw.get("startTime"),
+                "status": raw.get("status"),
+                "web_job_name": raw.get("web_job_name") or raw.get("webJobName") or job,
+            }]
+            if run["start_time"]
             and instant(run["start_time"]) >= started
-            and run.get("web_job_name", job) == job
+            and run["web_job_name"] == job
         ]
         if runs:
             latest = max(runs, key=lambda row: row["start_time"])

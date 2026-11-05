@@ -29,10 +29,10 @@ if (args is ["--initialize-local-database"] or ["--initialize-local-database", "
 }
 
 if (args.Length != 1 ||
-    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo"))
+    args[0] is not ("--bootstrap-cloud-identities" or "--diagnose-cloud-connection" or "--setup-database" or "--seed-demo"))
 {
     Console.Error.WriteLine("Usage: Atlas.Admin --initialize-local-database [--seed-demo] (local only)");
-    Console.Error.WriteLine("Azure WebJobs: --bootstrap-cloud-identities | --setup-database | --seed-demo");
+    Console.Error.WriteLine("Azure WebJobs: --diagnose-cloud-connection | --bootstrap-cloud-identities | --setup-database | --seed-demo");
     return 2;
 }
 
@@ -65,6 +65,10 @@ try
 
     switch (args[0])
     {
+        case "--diagnose-cloud-connection":
+            await CloudDatabaseBootstrap.RunAsync(configuration, connectionOnly: true);
+            break;
+
         case "--bootstrap-cloud-identities":
             await CloudDatabaseBootstrap.RunAsync(configuration);
             break;

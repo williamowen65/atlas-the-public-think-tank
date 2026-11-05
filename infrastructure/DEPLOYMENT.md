@@ -174,3 +174,25 @@ A demo environment must be clearly labeled and should restrict writes to seeded 
 The sample now defaults to a **paid B1 App Service plan** for private VNet integration and Azure SQL **General Purpose serverless free offer** with `useFreeLimit=true` and `AutoPause`. Azure SQL free databases have monthly compute/storage limits; eligibility depends on subscription and region. The infrastructure does not silently replace an ineligible free database with a paid SKU. F1 cannot provide App Service VNet integration. B1 is billable even when SQL is within its free allowance. The SQL Private Endpoint has a recurring charge, and the private DNS zone may have usage charges. Log Analytics above its included allowance, Terraform state storage and other Azure services can also incur charges. Compare subscription eligibility, student credits and region restrictions before applying. Set a budget alert using a documented IaC-managed approach before enabling a paid upgrade.
 
 For the WGU deployment report (PTT-170), capture the chosen architecture, Terraform `plan` summary (redacted), workflow runs/commit SHA, HTTPS URL, two variants if enabled, SQL persistence/FTS evidence, auth and security checks, and Application Insights screenshots with no sensitive identifiers. Target the first deployment evidence by **November 16**, first report submission by **November 19**, and confirmed pass before November 30.
+
+
+## Deployment preference and SQL connection diagnostics
+
+Use GitHub Actions as the deployment path for the API and bundled Svelte frontend,
+as well as the separate Atlas.Admin host. Website publishing from Visual Studio
+is optional; it is not a prerequisite for SQL identity bootstrap.
+
+For bootstrap connection failures, run **Atlas manual private SQL administration**
+from **main**, choose the affected variant, and select **diagnose**. This deploys
+and triggers `atlas-diagnose` on the protected Ops host. Temporary bootstrap SQL
+credentials must still be enabled. It uses the same validated target and SQL
+authentication as bootstrap, logs DNS from the WebJob process, attempts an
+encrypted connection, and runs only `SELECT 1`. It does not create users, grant
+permissions, apply schema, or seed data.
+
+Inspect the `atlas-diagnose` WebJob output for connection timing, phase
+classification, SQL codes, and client connection ID. Raw exception messages and
+credentials are not printed. A successful TCP test alone does not verify SQL
+login or database availability. A paused serverless database may need time to
+resume after a SQL connection attempt; a reset alone does not prove this cause.
+Do not run bootstrap or schema solely to test connectivity.
