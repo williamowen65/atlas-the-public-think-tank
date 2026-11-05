@@ -206,3 +206,15 @@ continue to log structured codes only. A successful TCP test alone does not veri
 login or database availability. A paused serverless database may need time to
 resume after a SQL connection attempt; a reset alone does not prove this cause.
 Do not run bootstrap or schema solely to test connectivity.
+
+### Bootstrap connection retry workaround
+
+Bootstrap attempts to open its SQL connection at most three times, waiting ten
+seconds between retryable failures. Retries cover the observed socket connection
+reset and SQL timeout, database-unavailable, service-transient, and throttling
+error codes. Other failures, including explicit login rejection, fail immediately.
+Retries stop once the connection opens; user creation and grants are never replayed
+by this policy. This is a workaround for the observed first-login reset, whose
+root cause remains unresolved. It does not establish that serverless resume caused
+the failure. Diagnostic runs continue to report individual failures without this
+bootstrap retry policy.

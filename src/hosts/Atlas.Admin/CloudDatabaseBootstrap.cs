@@ -101,7 +101,10 @@ internal static class CloudDatabaseBootstrap
         var timer = Stopwatch.StartNew();
         try
         {
-            await connection.OpenAsync();
+            if (connectionOnly)
+                await connection.OpenAsync();
+            else
+                await OpenBootstrapWithRetryAsync(() => connection.OpenAsync());
         }
         catch (SqlException error)
         {
@@ -165,6 +168,43 @@ internal static class CloudDatabaseBootstrap
     private static string Required(IConfiguration configuration, string key)
         => !string.IsNullOrWhiteSpace(configuration[key]) ? configuration[key]!
             : throw new InvalidOperationException("Missing required bootstrap setting: " + key);
+
+    internal static async Task OpenBootstrapWithRetryAsync(
+        Func<Task> open, Func<TimeSpan, Task>? delay = null)
+    {
+        // WORKAROUND (2026-11-05): Azure WebJob diagnostics showed a first-login
+        // connection reset followed by a successful login with identical settings.
+        // The root cause is unresolved; do not describe this as a confirmed fix
+        // for serverless resume. Retry connection opening ONLY, before any SQL
+        // user creation or grants. Never replay the administrative operation.
+        const int maxAttempts = 3;
+        delay ??= duration => Task.Delay(duration);
+        for (var attempt = 1; ; attempt++)
+        {
+            System.Console.WriteLine($"Bootstrap SQL connection attempt {attempt}/{maxAttempts}.");
+            try
+            {
+                await open();
+                return;
+            }
+            catch (Exception error) when (attempt < maxAttempts && IsRetryableConnectionFailure(error))
+            {
+                System.Console.Error.WriteLine($"Bootstrap SQL connection attempt {attempt} failed ({error.GetType().Name}); retrying in 10 seconds. No grants have run.");
+                await delay(TimeSpan.FromSeconds(10));
+            }
+        }
+    }
+
+    internal static bool IsRetryableConnectionFailure(Exception error)
+    {
+        if (error is SqlException sql && sql.Number != 0)
+            return sql.Number is -2 or 40613 or 40197 or 40501;
+
+        for (Exception? cause = error; cause is not null; cause = cause.InnerException)
+            if (cause is SocketException { SocketErrorCode: SocketError.ConnectionReset })
+                return true;
+        return false;
+    }
 
     internal static string RedactDiagnosticMessage(string message, SqlConnectionStringBuilder connection)
     {
