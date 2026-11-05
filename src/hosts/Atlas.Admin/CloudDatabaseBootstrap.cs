@@ -18,7 +18,36 @@ namespace Atlas.Admin;
 /// </summary>
 internal static class CloudDatabaseBootstrap
 {
-    public static async Task RunAsync(IConfiguration configuration, bool connectionOnly = false)
+    public static async Task RunDiagnosticAsync(IConfiguration configuration)
+    {
+        const int attempts = 5;
+        var succeeded = 0;
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            System.Console.WriteLine($"SQL diagnostic attempt {attempt}/{attempts} at {DateTimeOffset.UtcNow:O}; fresh connection, pooling disabled.");
+            try
+            {
+                // Master is a one-time control; each attempt independently opens
+                // and disposes a target connection and runs only SELECT 1.
+                await RunAsync(configuration, connectionOnly: true, probeMaster: attempt == 1);
+                succeeded++;
+                System.Console.WriteLine($"SQL diagnostic attempt {attempt}/{attempts}: succeeded.");
+            }
+            catch (SqlException)
+            {
+                // RunAsync already emits redacted details. Continue collecting
+                // evidence rather than mistaking one later success for stability.
+                System.Console.Error.WriteLine($"SQL diagnostic attempt {attempt}/{attempts}: failed.");
+            }
+            if (attempt < attempts)
+                await Task.Delay(TimeSpan.FromSeconds(10));
+        }
+        System.Console.WriteLine($"SQL diagnostic summary: {succeeded}/{attempts} target connections succeeded; {attempts - succeeded} failed. No database changes performed.");
+        if (succeeded != attempts)
+            throw new InvalidOperationException("SQL diagnostic detected connection failures; inspect the per-attempt results.");
+    }
+
+    public static async Task RunAsync(IConfiguration configuration, bool connectionOnly = false, bool probeMaster = true)
     {
         var variant = configuration["ATLAS_DEPLOYMENT_VARIANT"];
         if (variant is not ("live" or "demo"))
@@ -50,6 +79,8 @@ internal static class CloudDatabaseBootstrap
             TrustServerCertificate = false,
             ConnectTimeout = 30
         };
+        if (connectionOnly)
+            admin.Pooling = false;
 
         await using var connection = new SqlConnection(admin.ConnectionString);
         // Limit target diagnostics to the expected Azure hostname and database name formats.
@@ -68,7 +99,7 @@ internal static class CloudDatabaseBootstrap
                 System.Console.WriteLine($"SQL DNS address: {address}.");
         }
 
-        if (connectionOnly)
+        if (connectionOnly && probeMaster)
             await ProbeMasterAsync(admin);
 
         System.Console.WriteLine($"Opening target database connection: {database}.");

@@ -189,8 +189,13 @@ credentials must still be enabled. It uses the same validated target and SQL
 authentication as bootstrap and logs DNS from the WebJob process. It first tests
 an encrypted connection to `master` as a login control, then independently tests
 the configured target database. Both probes run only `SELECT 1`. A failed master
-control is logged without skipping the target test; final success requires the
-target probe to succeed. It does not create users, grant
+control is logged without skipping the target test. It makes five target
+connection attempts, ten seconds apart, with pooling disabled so each opens a
+fresh connection. The master control runs only before the first attempt. Logs
+include attempt timestamps, individual results, and a final success/failure count.
+The diagnostic exits unsuccessfully if any target attempt fails, even if later
+attempts succeed. Bootstrap, schema and seed operations are not repeated by this
+diagnostic. It does not create users, grant
 permissions, apply schema, or seed data.
 
 Inspect the `atlas-diagnose` WebJob output for connection timing, phase

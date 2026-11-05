@@ -66,7 +66,7 @@ try
     switch (args[0])
     {
         case "--diagnose-cloud-connection":
-            await CloudDatabaseBootstrap.RunAsync(configuration, connectionOnly: true);
+            await CloudDatabaseBootstrap.RunDiagnosticAsync(configuration);
             break;
 
         case "--bootstrap-cloud-identities":
