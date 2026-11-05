@@ -186,17 +186,16 @@ For bootstrap connection failures, run **Atlas manual private SQL administration
 from **main**, choose the affected variant, and select **diagnose**. This deploys
 and triggers `atlas-diagnose` on the protected Ops host. Temporary bootstrap SQL
 credentials must still be enabled. It uses the same validated target and SQL
-authentication as bootstrap and logs DNS from the WebJob process. It first tests
-an encrypted connection to `master` as a login control, then independently tests
-the configured target database. Both probes run only `SELECT 1`. A failed master
-control is logged without skipping the target test. It makes five target
-connection attempts, ten seconds apart, with pooling disabled so each opens a
-fresh connection. The master control runs only before the first attempt. Logs
-include attempt timestamps, individual results, and a final success/failure count.
-The diagnostic exits unsuccessfully if any target attempt fails, even if later
-attempts succeed. Bootstrap, schema and seed operations are not repeated by this
-diagnostic. It does not create users, grant
-permissions, apply schema, or seed data.
+authentication and connection-string settings as bootstrap, including default
+connection pooling. It logs DNS from the WebJob process and attempts the target
+database first, with no preceding master control. Each successful attempt runs
+only `SELECT 1`; no users, grants, schema or seed data are changed.
+
+It makes five target connection attempts, ten seconds apart. The first starts
+with an empty pool in the new process; later attempts may reuse pooled connections.
+Successful connection IDs help identify reuse. Logs include attempt timestamps,
+individual results, and a final success/failure count. The diagnostic exits
+unsuccessfully if any attempt fails, even if later attempts succeed.
 
 Inspect the `atlas-diagnose` WebJob output for connection timing, phase
 classification, SQL codes, and client connection ID. The explicit diagnose
