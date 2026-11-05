@@ -24,8 +24,6 @@ fi
 IFS= read -r job < ./job-name
 case "$job" in
     atlas-diagnose)
-        : "${ATLAS_BOOTSTRAP_SQL_USERNAME:?Diagnostic requires temporary bootstrap credentials}"
-        : "${ATLAS_BOOTSTRAP_SQL_PASSWORD:?Diagnostic requires temporary bootstrap credentials}"
         exec dotnet ./Atlas.Admin.dll --diagnose-cloud-connection
         ;;
     atlas-bootstrap)

@@ -67,8 +67,8 @@ try
     switch (args[0])
     {
         case "--diagnose-cloud-connection":
-            phase = "bootstrap connection diagnostic";
-            await CloudDatabaseBootstrap.RunDiagnosticAsync(configuration);
+            phase = "managed-identity token diagnostic";
+            await ManagedIdentityDiagnostic.RunAsync(configuration);
             break;
 
         case "--bootstrap-cloud-identities":

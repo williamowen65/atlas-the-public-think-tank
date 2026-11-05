@@ -182,30 +182,37 @@ Use GitHub Actions as the deployment path for the API and bundled Svelte fronten
 as well as the separate Atlas.Admin host. Website publishing from Visual Studio
 is optional; it is not a prerequisite for SQL identity bootstrap.
 
-For bootstrap connection failures, run **Atlas manual private SQL administration**
-from **main**, choose the affected variant, and select **diagnose**. This deploys
-and triggers `atlas-diagnose` on the protected Ops host. Temporary bootstrap SQL
-credentials must still be enabled. It uses the same validated target and SQL
-authentication and connection-string settings as bootstrap, including default
-connection pooling. It logs DNS from the WebJob process and attempts the target
-database first, with no preceding master control. Each successful attempt runs
-only `SELECT 1`; no users, grants, schema or seed data are changed.
+### Managed-identity token diagnostic (current `diagnose` operation)
 
-It makes five target connection attempts, ten seconds apart. The first starts
-with an empty pool in the new process; later attempts may reuse pooled connections.
-Successful connection IDs help identify reuse. Logs include attempt timestamps,
-individual results, and a final success/failure count. The diagnostic exits
-unsuccessfully if any attempt fails, even if later attempts succeed.
+Run **Atlas manual private SQL administration** from **main**, with variant
+**live** (or **demo**), operation **diagnose**, and confirmation blank. Open the
+`atlas-diagnose` WebJob output after package deployment. Bootstrap credentials
+are not required; leave `enable_sql_bootstrap=false`.
 
-Inspect the `atlas-diagnose` WebJob output for connection timing, phase
-classification, SQL codes, and client connection ID. The explicit diagnose
-operation also prints redacted outer and inner exception messages, bounded to
-4,096 characters each. Configured SQL credentials and common
-connection-string credential fields are removed before output. Other operations
-continue to log structured codes only. A successful TCP test alone does not verify SQL
-login or database availability. A paused serverless database may need time to
-resume after a SQL connection attempt; a reset alone does not prove this cause.
-Do not run bootstrap or schema solely to test connectivity.
+The diagnostic runs inside the WebJob process and reports only whether
+`IDENTITY_ENDPOINT` and `IDENTITY_HEADER` are present. It requests an Azure SQL
+token from the platform endpoint for `ATLAS_ADMIN_MI_CLIENT_ID`, using the
+[App Service REST contract](https://learn.microsoft.com/azure/app-service/overview-managed-identity#rest-endpoint-reference).
+One request has a 30-second timeout. Logs show HTTP status, timing, and token
+presence validation. Endpoint URLs, identity headers, tokens, and response bodies
+are never logged. Redirects and proxy forwarding are disabled for this request.
+
+- Missing endpoint settings: the WebJob did not receive the platform identity environment.
+- Non-success HTTP status: the endpoint responded but rejected the request; the response body is deliberately withheld.
+- Timeout or transport failure: token service access failed within the job; this alone does not identify the underlying cause.
+- Success: the platform issued a nonempty token. This does not verify SQL network connectivity, SQL permissions, or SqlClient's own token acquisition path.
+
+No SQL connection is opened and no SQL commands, schema changes, grants or seed
+operations run. Share the complete diagnostic output before retrying schema.
+This replaces the earlier five-attempt SQL-password diagnostic, which required
+temporary bootstrap credentials and ran `SELECT 1`.
+
+This check investigates the 2026-11-05 schema failure during managed-identity
+token acquisition (operation canceled), after the attached identity and configured
+Client ID were checked and matched. It is a diagnostic, not another workaround.
+The original first-login SQL reset and earlier Kudu deployment 502s remain
+separate unresolved issues. Bootstrap and schema retain their documented bounded
+connection retry workaround; this token probe does not silently fix either issue.
 
 ### Bootstrap connection retry workaround
 
@@ -216,8 +223,7 @@ error codes. Other failures, including explicit login rejection, fail immediatel
 Retries stop once the connection opens; user creation and grants are never replayed
 by this policy. This is a workaround for the observed first-login reset, whose
 root cause remains unresolved. It does not establish that serverless resume caused
-the failure. Diagnostic runs continue to report individual failures without this
-bootstrap retry policy.
+the failure. The current token diagnostic does not use this retry policy.
 
 
 ### Schema connection retry workaround (2026-11-05)

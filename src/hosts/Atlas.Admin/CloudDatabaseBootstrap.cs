@@ -18,35 +18,6 @@ namespace Atlas.Admin;
 /// </summary>
 internal static class CloudDatabaseBootstrap
 {
-    public static async Task RunDiagnosticAsync(IConfiguration configuration)
-    {
-        const int attempts = 5;
-        var succeeded = 0;
-        for (var attempt = 1; attempt <= attempts; attempt++)
-        {
-            System.Console.WriteLine($"SQL diagnostic attempt {attempt}/{attempts} at {DateTimeOffset.UtcNow:O}; bootstrap connection settings; default pooling enabled; no master probe.");
-            try
-            {
-                // First login targets the same database as bootstrap, without a
-                // preceding control connection. Later opens may reuse its pool.
-                await RunAsync(configuration, connectionOnly: true);
-                succeeded++;
-                System.Console.WriteLine($"SQL diagnostic attempt {attempt}/{attempts}: succeeded.");
-            }
-            catch (SqlException)
-            {
-                // RunAsync already emits redacted details. Continue collecting
-                // evidence rather than mistaking one later success for stability.
-                System.Console.Error.WriteLine($"SQL diagnostic attempt {attempt}/{attempts}: failed.");
-            }
-            if (attempt < attempts)
-                await Task.Delay(TimeSpan.FromSeconds(10));
-        }
-        System.Console.WriteLine($"SQL diagnostic summary: {succeeded}/{attempts} target connections succeeded; {attempts - succeeded} failed. No database changes performed.");
-        if (succeeded != attempts)
-            throw new InvalidOperationException("SQL diagnostic detected connection failures; inspect the per-attempt results.");
-    }
-
     public static async Task RunAsync(IConfiguration configuration, bool connectionOnly = false)
     {
         var variant = configuration["ATLAS_DEPLOYMENT_VARIANT"];
