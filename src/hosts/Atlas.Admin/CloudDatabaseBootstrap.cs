@@ -75,6 +75,13 @@ internal static class CloudDatabaseBootstrap
         }
         catch (SqlException error)
         {
+            if (connectionOnly)
+            {
+                // Only the explicit diagnostic prints provider text. Redact before
+                // flattening or truncating, including every nested exception message.
+                for (Exception? detail = error; detail is not null; detail = detail.InnerException)
+                    System.Console.Error.WriteLine($"SQL diagnostic {detail.GetType().Name}: {RedactDiagnosticMessage(detail.Message, admin)}");
+            }
             // Classify provider text without printing account names or connection strings.
             var message = error.Message;
             var phase = message.Contains("pre-login", StringComparison.OrdinalIgnoreCase)
@@ -127,6 +134,22 @@ internal static class CloudDatabaseBootstrap
     private static string Required(IConfiguration configuration, string key)
         => !string.IsNullOrWhiteSpace(configuration[key]) ? configuration[key]!
             : throw new InvalidOperationException("Missing required bootstrap setting: " + key);
+
+    internal static string RedactDiagnosticMessage(string message, SqlConnectionStringBuilder connection)
+    {
+        // Replace exact configured values first: passwords can contain delimiters,
+        // quotes and line breaks that a connection-string pattern cannot safely parse.
+        foreach (var secret in new[] { connection.ConnectionString, connection.Password, connection.UserID }
+            .Where(value => !string.IsNullOrEmpty(value)).OrderByDescending(value => value.Length))
+            message = message.Replace(secret, "[redacted]", StringComparison.OrdinalIgnoreCase);
+
+        // Also cover quoted/escaped credentials if the provider formatted them.
+        message = Regex.Replace(message,
+            "(?i)\\b(password|pwd|user\\s*id|uid|access\\s*token)\\s*=\\s*(?:\"(?:\"\"|[^\"])*\"|'(?:''|[^'])*'|[^;\\r\\n]*)",
+            "$1=[redacted]", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        message = message.Replace('\r', ' ').Replace('\n', ' ');
+        return message.Length <= 4096 ? message : message[..4096] + " [truncated]";
+    }
 
     private static async Task EnsureUserAndRoleAsync(
         SqlConnection connection, string name, Guid clientId, string role)

@@ -191,8 +191,11 @@ encrypted connection, and runs only `SELECT 1`. It does not create users, grant
 permissions, apply schema, or seed data.
 
 Inspect the `atlas-diagnose` WebJob output for connection timing, phase
-classification, SQL codes, and client connection ID. Raw exception messages and
-credentials are not printed. A successful TCP test alone does not verify SQL
+classification, SQL codes, and client connection ID. The explicit diagnose
+operation also prints redacted outer and inner exception messages, bounded to
+4,096 characters each. Configured SQL credentials and common
+connection-string credential fields are removed before output. Other operations
+continue to log structured codes only. A successful TCP test alone does not verify SQL
 login or database availability. A paused serverless database may need time to
 resume after a SQL connection attempt; a reset alone does not prove this cause.
 Do not run bootstrap or schema solely to test connectivity.
