@@ -193,13 +193,20 @@ The diagnostic runs inside the WebJob process and reports only whether
 `IDENTITY_ENDPOINT` and `IDENTITY_HEADER` are present. It requests an Azure SQL
 token from the platform endpoint for `ATLAS_ADMIN_MI_CLIENT_ID`, using the
 [App Service REST contract](https://learn.microsoft.com/azure/app-service/overview-managed-identity#rest-endpoint-reference).
-One request has a 30-second timeout. Logs show HTTP status, timing, and token
-presence validation. Endpoint URLs, identity headers, tokens, and response bodies
+A raw TCP probe first attempts the endpoint host/port with a five-second timeout,
+without sending credentials. Its result includes elapsed time and structured
+socket codes only. The diagnostic then attempts HTTP even if that probe fails.
+HTTP response headers have a separate 30-second budget; a successful response
+body has a ten-second budget. Logs distinguish TCP failure, waiting for HTTP
+headers, and reading the token body, with HTTP status and token presence validation. Endpoint URLs, identity headers, tokens, and response bodies
 are never logged. Redirects and proxy forwarding are disabled for this request.
 
 - Missing endpoint settings: the WebJob did not receive the platform identity environment.
 - Non-success HTTP status: the endpoint responded but rejected the request; the response body is deliberately withheld.
-- Timeout or transport failure: token service access failed within the job; this alone does not identify the underlying cause.
+- TCP failure: raw endpoint connectivity failed at that moment; compare with the subsequent HTTP result.
+- TCP success followed by an HTTP headers timeout: the TCP probe connected, but the separate token request received no headers within budget; this does not prove which service or network component stalled.
+- Body timeout: HTTP headers arrived, but the token body could not be read within budget.
+- Transport failure: token service access failed within the job; this alone does not identify the underlying cause.
 - Success: the platform issued a nonempty token. This does not verify SQL network connectivity, SQL permissions, or SqlClient's own token acquisition path.
 
 No SQL connection is opened and no SQL commands, schema changes, grants or seed
