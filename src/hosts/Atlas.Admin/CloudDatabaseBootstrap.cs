@@ -57,7 +57,7 @@ internal static class CloudDatabaseBootstrap
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var database = Regex.IsMatch(expectedDatabase, @"\A[a-z0-9-]+\z") ? expectedDatabase : "(unrecognized)";
         var hostname = server.Success ? server.Groups[1].Value : "(unrecognized)";
-        System.Console.WriteLine($"Opening the Azure SQL bootstrap connection. Host: {hostname}, database: {database}.");
+        System.Console.WriteLine($"Azure SQL connection target. Host: {hostname}, database: {database}.");
 
         if (connectionOnly && server.Success)
         {
@@ -68,6 +68,10 @@ internal static class CloudDatabaseBootstrap
                 System.Console.WriteLine($"SQL DNS address: {address}.");
         }
 
+        if (connectionOnly)
+            await ProbeMasterAsync(admin);
+
+        System.Console.WriteLine($"Opening target database connection: {database}.");
         var timer = Stopwatch.StartNew();
         try
         {
@@ -134,6 +138,40 @@ internal static class CloudDatabaseBootstrap
     private static string Required(IConfiguration configuration, string key)
         => !string.IsNullOrWhiteSpace(configuration[key]) ? configuration[key]!
             : throw new InvalidOperationException("Missing required bootstrap setting: " + key);
+
+    private static async Task ProbeMasterAsync(SqlConnectionStringBuilder target)
+    {
+        // A control connection on the same logical server tests the provisioner's
+        // login independently of the paused user database. Never run grants here.
+        var master = new SqlConnectionStringBuilder(target.ConnectionString)
+        {
+            InitialCatalog = "master",
+            Pooling = false
+        };
+        var timer = Stopwatch.StartNew();
+        System.Console.WriteLine("Opening master control connection (SELECT 1 only).");
+        try
+        {
+            await using var connection = new SqlConnection(master.ConnectionString);
+            await connection.OpenAsync();
+            await using var probe = new SqlCommand("SELECT 1", connection) { CommandTimeout = 10 };
+            await probe.ExecuteScalarAsync();
+            System.Console.WriteLine("Master control connection succeeded; testing target database next.");
+        }
+        catch (SqlException error)
+        {
+            // A failed control must not suppress the independent target result.
+            System.Console.Error.WriteLine($"Master control connection failed; client connection ID: {error.ClientConnectionId}.");
+            for (Exception? detail = error; detail is not null; detail = detail.InnerException)
+                System.Console.Error.WriteLine($"Master diagnostic {detail.GetType().Name}: {RedactDiagnosticMessage(detail.Message, master)}");
+            foreach (SqlError detail in error.Errors)
+                System.Console.Error.WriteLine($"Master SQL code: number={detail.Number}, state={detail.State}, class={detail.Class}.");
+        }
+        finally
+        {
+            System.Console.WriteLine($"Master control attempt took {timer.ElapsedMilliseconds} ms.");
+        }
+    }
 
     internal static string RedactDiagnosticMessage(string message, SqlConnectionStringBuilder connection)
     {
