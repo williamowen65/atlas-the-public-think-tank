@@ -104,7 +104,7 @@ internal static class CloudDatabaseBootstrap
             if (connectionOnly)
                 await connection.OpenAsync();
             else
-                await OpenBootstrapWithRetryAsync(() => connection.OpenAsync());
+                await OpenConnectionWithRetryAsync(() => connection.OpenAsync());
         }
         catch (SqlException error)
         {
@@ -169,19 +169,20 @@ internal static class CloudDatabaseBootstrap
         => !string.IsNullOrWhiteSpace(configuration[key]) ? configuration[key]!
             : throw new InvalidOperationException("Missing required bootstrap setting: " + key);
 
-    internal static async Task OpenBootstrapWithRetryAsync(
-        Func<Task> open, Func<TimeSpan, Task>? delay = null)
+    internal static async Task OpenConnectionWithRetryAsync(
+        Func<Task> open, Func<TimeSpan, Task>? delay = null, string operation = "Bootstrap")
     {
         // WORKAROUND (2026-11-05): Azure WebJob diagnostics showed a first-login
         // connection reset followed by a successful login with identical settings.
         // The root cause is unresolved; do not describe this as a confirmed fix
         // for serverless resume. Retry connection opening ONLY, before any SQL
-        // user creation or grants. Never replay the administrative operation.
+        // user creation, grants or schema work. Never replay the administrative
+        // operation. See infrastructure/DEPLOYMENT.md for evidence and scope.
         const int maxAttempts = 3;
         delay ??= duration => Task.Delay(duration);
         for (var attempt = 1; ; attempt++)
         {
-            System.Console.WriteLine($"Bootstrap SQL connection attempt {attempt}/{maxAttempts}.");
+            System.Console.WriteLine($"{operation} SQL connection attempt {attempt}/{maxAttempts}.");
             try
             {
                 await open();
@@ -189,7 +190,7 @@ internal static class CloudDatabaseBootstrap
             }
             catch (Exception error) when (attempt < maxAttempts && IsRetryableConnectionFailure(error))
             {
-                System.Console.Error.WriteLine($"Bootstrap SQL connection attempt {attempt} failed ({error.GetType().Name}); retrying in 10 seconds. No grants have run.");
+                System.Console.Error.WriteLine($"{operation} SQL connection attempt {attempt} failed ({error.GetType().Name}); retrying in 10 seconds. No database changes have run.");
                 await delay(TimeSpan.FromSeconds(10));
             }
         }

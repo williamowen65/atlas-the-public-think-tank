@@ -218,3 +218,35 @@ by this policy. This is a workaround for the observed first-login reset, whose
 root cause remains unresolved. It does not establish that serverless resume caused
 the failure. Diagnostic runs continue to report individual failures without this
 bootstrap retry policy.
+
+
+### Schema connection retry workaround (2026-11-05)
+
+Bootstrap diagnostics observed a first SQL login failing with a connection reset,
+followed by a successful login with identical settings. Bootstrap subsequently
+succeeded on its second attempt. The root cause remains unresolved; serverless
+resume has not been established as the cause.
+
+The live schema WebJob later started but failed with SQL number 0, state 0,
+class 20. Its original log omitted the provider message, so that failure is **not
+confirmed to have the same cause**. Schema now uses the same bounded connection
+retry workaround as bootstrap: at most three attempts, ten seconds apart, for
+recognized transient SQL errors or a nested socket connection reset. Login
+rejection and other unrecognized errors are not retried.
+
+The schema command explicitly opens and retains its EF context connection before
+calling migrations and supplemental SQL initialization. Only connection opening
+is retried. Migrations, Full-Text setup and other SQL changes are never replayed
+by this policy. A later failure may leave completed migrations in place; inspect
+the migration history and the failure phase before deciding to rerun.
+
+Failure logs now identify the phase and include redacted exception messages,
+inner exceptions, SQL codes, client connection IDs and socket error codes. Use
+these details to distinguish managed-identity authentication, transport and
+migration failures. This is resilience plus diagnostic visibility, not a verified
+root-cause fix. Azure execution remains to be validated. Demo seeding has not
+been given this connection retry policy.
+
+The earlier Kudu HTTP 502 failures occurred during package deployment, before
+schema started. High host CPU overlapped those failures, but causation was not
+proved. SQL connection retries do not address that separate deployment issue.

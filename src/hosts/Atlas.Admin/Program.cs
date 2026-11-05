@@ -39,6 +39,7 @@ if (args.Length != 1 ||
 // Cloud operations intentionally do NOT load development User Secrets.
 var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
+var phase = "configuration validation";
 try
 {
     string Required(string key) =>
@@ -66,10 +67,12 @@ try
     switch (args[0])
     {
         case "--diagnose-cloud-connection":
+            phase = "bootstrap connection diagnostic";
             await CloudDatabaseBootstrap.RunDiagnosticAsync(configuration);
             break;
 
         case "--bootstrap-cloud-identities":
+            phase = "identity bootstrap";
             await CloudDatabaseBootstrap.RunAsync(configuration);
             break;
 
@@ -78,12 +81,32 @@ try
                 new DbContextOptionsBuilder<AtlasDataContext>()
                     .UseSqlServer(connectionString).Options))
             {
-                AtlasDatabaseSetup.Apply(database);
+                phase = "schema connection opening (managed identity)";
+                // WORKAROUND (2026-11-05, see infrastructure/DEPLOYMENT.md):
+                // Bootstrap showed first-login resets with a later
+                // successful connection. Cause remains unresolved. Retry ONLY
+                // opening this context's connection, never the migration work.
+                Console.WriteLine("Schema: opening managed-identity SQL connection before database changes (bounded retry workaround; reset cause unresolved).");
+                await CloudDatabaseBootstrap.OpenConnectionWithRetryAsync(
+                    () => database.Database.OpenConnectionAsync(), operation: "Schema");
+                try
+                {
+                    // Keep this connection open: a separate readiness probe would
+                    // not protect the connection actually used by migrations.
+                    phase = "schema migrations and supplemental SQL initialization";
+                    Console.WriteLine("Schema: connection opened; applying migrations and supplemental SQL objects.");
+                    AtlasDatabaseSetup.Apply(database);
+                }
+                finally
+                {
+                    await database.Database.CloseConnectionAsync();
+                }
             }
             Console.WriteLine("Schema and SQL Full-Text initialization completed; background index population may continue.");
             break;
 
         case "--seed-demo":
+            phase = "demo seeding";
             if (variant != "demo")
                 throw new InvalidOperationException("Demo seeding is forbidden in live.");
             _ = Required("ATLAS_DEMO_PASSWORD");
@@ -103,14 +126,33 @@ try
 }
 catch (Exception error)
 {
-    // Error details may contain SQL metadata; don't output exception messages
-    // from a privileged hosted command to the public Actions log.
-    Console.Error.WriteLine("Atlas.Admin operation failed. Check Azure WebJob diagnostic logs and database configuration.");
-    Console.Error.WriteLine(error.GetType().Name);
-    if (error is SqlException sqlError)
+    Console.Error.WriteLine($"Atlas.Admin operation failed during {phase}.");
+    // Provider messages are useful for distinguishing transport, identity and SQL
+    // failures. Redact configured credentials before writing protected job logs.
+    var redaction = new SqlConnectionStringBuilder();
+    try
     {
-        foreach (SqlError detail in sqlError.Errors)
-            Console.Error.WriteLine($"SQL error number={detail.Number}, state={detail.State}, class={detail.Class}.");
+        redaction = new SqlConnectionStringBuilder(configuration["ATLAS_SQL_CONNECTION_STRING"]);
+    }
+    catch (ArgumentException) { /* Configuration validation may itself have failed. */ }
+    for (Exception? cause = error; cause is not null; cause = cause.InnerException)
+    {
+        var message = cause.Message;
+        foreach (var key in new[] { "ATLAS_BOOTSTRAP_SQL_PASSWORD", "ATLAS_BOOTSTRAP_SQL_USERNAME", "ATLAS_DEMO_PASSWORD" })
+        {
+            var secret = configuration[key];
+            if (!string.IsNullOrEmpty(secret))
+                message = message.Replace(secret, "[redacted]", StringComparison.OrdinalIgnoreCase);
+        }
+        Console.Error.WriteLine($"{cause.GetType().Name}: {CloudDatabaseBootstrap.RedactDiagnosticMessage(message, redaction)}");
+        if (cause is SqlException sqlError)
+        {
+            Console.Error.WriteLine($"SQL client connection ID: {sqlError.ClientConnectionId}.");
+            foreach (SqlError detail in sqlError.Errors)
+                Console.Error.WriteLine($"SQL error number={detail.Number}, state={detail.State}, class={detail.Class}.");
+        }
+        if (cause is System.Net.Sockets.SocketException socket)
+            Console.Error.WriteLine($"SQL transport socket error={socket.SocketErrorCode}, native error={socket.NativeErrorCode}.");
     }
     return 1;
 }
