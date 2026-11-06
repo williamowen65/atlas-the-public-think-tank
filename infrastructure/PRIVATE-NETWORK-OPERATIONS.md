@@ -1,66 +1,69 @@
-# Admin operations with a private Azure SQL database
+# Why database administration uses App Service SSH
 
-**Decision:** Atlas's web applications stay publicly reachable over HTTPS, while Azure SQL has **no public network endpoint**. Database migrations, SQL Full-Text initialization, operator role changes and demo seeding must run from an explicitly authorized workload that can reach SQL over the Azure virtual network.
+Atlas websites are public over HTTPS. Azure SQL has public networking disabled,
+so database commands need a private network path.
 
-## Why our normal developer workflow changes
+For the commands and deployment order, use [First deployment](FIRST-DEPLOYMENT.md).
+This page explains the network and identity boundaries.
 
-A VNet is similar to a private LAN. Terraform builds a VNet (`<prefix>-vnet`) with an application subnet (`snet-app`) and a SQL private-endpoint subnet (`snet-private-endpoints`). The app subnet uses App Service outbound VNet integration; the SQL logical server has a private endpoint with a private IP and private DNS under `privatelink.database.windows.net`.
+## Where connections run
 
-- Browsers can reach **Atlas Live** and **Atlas Demo** through their normal public HTTPS addresses.
-- These web apps can reach the **SQL private endpoint** by resolving the server's normal `*.database.windows.net` name inside the VNet.
-- A standard GitHub-hosted runner or your home Windows machine **is not inside that VNet**. It cannot run SQL commands directly. We must not temporarily open SQL publicly just to run migrations.
-- Terraform controls the network/subnets/NSG/DNS and Azure resources. An authorized administrative job executes application-maintained database schema and seed code **within the VNet**, not from a public CI machine.
+```mermaid
+flowchart TD
+    Browser["Browser"] -->|HTTPS| Web["Public App Service"]
+    Runner["GitHub runner"] -->|Publish packages| Web
+    Runner -->|Publish tools| Ops["Operations App Service"]
+    Operator["Operator using App Service SSH"] --> Ops
+    Web -->|Runtime SQL identity| PE["SQL private endpoint"]
+    Ops -->|Operations SQL identity| PE
+    PE --> DB["Selected SQL database"]
+```
 
-## Administrative host and execution paths
+The two apps use outbound VNet integration to reach the private endpoint.
+GitHub publishes packages through Azure’s management/deployment services; it does
+not connect directly to private SQL.
 
-Use the dedicated management-only App Service on the existing B1 plan. GitHub Actions publishes Atlas.Admin SSH tools plus a single identity-bootstrap WebJob; the November 6 bootstrap trigger returned HTTP 404 after successful publication. **App Service SSH is the observed working path for identity bootstrap, schema and Full-Text setup**; use it for the documented schema and demo-seed sequence. See [first deployment](FIRST-DEPLOYMENT.md).
+A normal laptop or GitHub-hosted runner has no direct route to this database.
+Do not open SQL publicly to run migrations.
 
-The Action offers only `publish` (upload tools without running SQL) and `bootstrap` (publish and run confirmed identity setup). Schema and demo-seed WebJob shortcuts and the troubleshooting diagnostic have been removed. Use SSH for the two C# maintenance commands. The next successful clean admin publication removes the obsolete job directories.
+## Two hosts, two responsibilities
 
-The management app should **not** expose a public website or unauthenticated API route for executing SQL operations. Allow only a trusted deployment identity to trigger administrative operations. It shares the **existing paid App Service plan** to avoid an additional always-on compute plan, although it shares memory/CPU capacity and may need scheduling during low traffic.
+| Host | Runs | SQL access after bootstrap |
+| --- | --- | --- |
+| Public app | Static frontend and API | Runtime reads/writes and required execution permissions |
+| Operations app | Explicit Atlas.Admin commands | Schema administration in its matching database |
 
-The supported maintenance operations are:
+Each selected variant has its own pair of hosts and user-assigned identities.
+The hosts share the installation’s B1 plan and network.
 
-| Job | Database permissions | Invocation | Safety |
-| --- | --- | --- | --- |
-| Apply schema and Full-Text indexes | DDL/migration privileges in one selected database | Explicit SSH command before app release | Idempotent migrations and database-ready verification |
-| Initialize demo | Demo-only account/content initialization | Explicit SSH command once on empty demo database | Refuses live DB; unique secret password required; no wipe-on-deploy |
+The operations host is not a public administration website. Use authorized SSH
+access; do not add an anonymous endpoint for running database commands.
 
-Local database setup now uses the dedicated [C# `Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) command with the **same .NET User Secrets store** as the API. Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` locally (append `--seed-demo` only for a fresh disposable local database).
+## Private name resolution
 
-No PowerShell helper remains. The local command refuses Azure SQL, and it does not provide Private Link connectivity from a home PC. Azure invokes the same admin executable through SSH for schema/Full-Text setup and demo seeding, or through the single bootstrap WebJob for initial SQL identity grants.
+Use the server’s normal `*.database.windows.net` hostname in connection strings.
 
-GitHub publishes both in one admin-tools package. The repository's [`run-webjob.sh`](webjobs/run-webjob.sh) is packaged as `run.sh` (Azure's WebJob entry-point filename) and launches identity bootstrap only when Azure triggers that WebJob, **not** when the public Atlas app starts.
+- Private DNS resolves it to the SQL private endpoint inside the VNet.
+- The app integration subnet supplies the outbound network path.
+- The endpoint subnet’s NSG permits SQL port 1433 from the app subnet.
 
-## Secure execution sequence
+Private networking supplies reachability. The matching managed identity and SQL
+grants supply permission. Both are required.
 
-1. Apply reviewed Terraform manually. This creates web apps, VNet integration, private DNS, the Azure SQL Private Endpoint, and SQL databases with public networking disabled.
-2. Publish the tools with admin operation `publish`, then use the matching operations
-   App Service SSH terminal to run `--bootstrap-cloud-identities`. This establishes **per-variant SQL runtime and management identities**. Prefer Microsoft Entra/managed identity where feasible; do not grant the public application account schema-admin permissions.
-3. Confirm bootstrap success, then apply Terraform with bootstrap disabled to
-   remove temporary credentials. See the walkthrough for commands and expected output.
-4. Choose `live` or `demo` and manually run the schema/Full-Text initializer through the matching admin App Service's SSH terminal, using the published Atlas.Admin executable. Confirm the correct target and output.
-5. For **demo only**, explicitly run one-time seed setup after schema initialization; never seed `live`, never reseed a populated database or expose a known default account password.
-6. Validate SQL connectivity, private DNS, EF schema, Full-Text Search readiness, runtime SQL privileges, monitoring and response behavior.
-7. Manually deploy application bits after successful database setup. Never assume a successful infrastructure plan proves the application is ready.
+## SSH, Cloud Shell and WebJobs
 
-## Network topology and costs
+- **App Service SSH:** runs commands in the selected operations app. This is the
+  documented database-administration route.
+- **Azure Cloud Shell:** useful for Azure account and resource management; it is
+  not the operations app’s private-network terminal.
+- **Kudu/WebJobs:** deployment and job execution services. The optional bootstrap
+  WebJob is separate from the SSH session.
 
-The VNet and ordinary subnets themselves are free, and App Service outbound VNet integration has no additional fee. **B1 hosting is billable** and required instead of F1 for VNet integration. Azure SQL Private Endpoint / Private Link is a billed service and a private DNS zone can add charges. See pricing on your subscription/region; do not assume the full architecture is free.
+The published package includes SSH tools and one bootstrap WebJob. Schema setup
+and demo seeding are explicit SSH commands, not app-startup tasks.
 
-The endpoint subnet's **Network Security Group (NSG)** provides a subnet-level, stateful firewall: the current rule allows port 1433 from the App Service integration subnet, denying other VNet sources. This is defense in depth; identity and least-privilege database roles remain essential. The current single VNet and shared SQL logical server do not by themselves ensure demo/live per-database permissions; verify these separately.
+## Related guides
 
-## Verification and remaining work
-
-- Live-only rehearsal provisioning, publication, SSH bootstrap/schema and cleanup
-  succeeded. Earlier live/demo SSH schema setup also succeeded.
-- Investigate the unresolved bootstrap WebJob trigger HTTP 404 separately from SQL
-  connection retries. Record demo seed and application acceptance results explicitly.
-- Verify deployed SQL privileges and cross-database rejection. Successful bootstrap
-  is not a complete security audit.
-- Protect GitHub Environments/OIDC subjects, trigger privileges and job outputs; never log secrets, connection strings or user content.
-- Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.
-- Design explicit GlobalModerator grant/revoke commands with operator approval, auditing, and session invalidation. The current interactive local Console workflow is **not** packaged into Azure. A private interactive administration portal would be a distinct feature, not a WebJob.
-- Check Azure SQL free-offer eligibility and private endpoint billing; record deployment verification.
-
-Microsoft documentation: [App Service VNet integration](https://learn.microsoft.com/azure/app-service/overview-vnet-integration), [WebJobs overview](https://learn.microsoft.com/azure/app-service/overview-webjobs), [run a triggered WebJob](https://learn.microsoft.com/cli/azure/webapp/webjob/triggered), [SQL Private Link](https://learn.microsoft.com/azure/azure-sql/database/private-endpoint-overview).
+- [Security](SECURITY.md): approvals, privileges and deletion guards.
+- [Resource inventory](PROVISIONED-RESOURCES.md): counts, shared resources and costs.
+- [Atlas.Admin](../src/hosts/Atlas.Admin/README.md): executable and local development.

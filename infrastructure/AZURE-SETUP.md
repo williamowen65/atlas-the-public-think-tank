@@ -5,26 +5,13 @@ account settings. Public deployment profiles are committed in
 [`config/deployment-targets.json`](config/deployment-targets.json). Choose the
 installation in the Action dropdown instead of changing Environment variables.
 
-The shared Environment retains the existing name **`atlas-infra-apply`** so the
-current repository does not need another Environment or OIDC trust. Its historical
-name does not limit it to Terraform: plan, apply, admin and website deployment all
-use it. Live/demo are application variants, not GitHub Environments in this model.
+The shared Environment is **`atlas-infra-apply`**. It holds common credentials and
+account settings, not a separate configuration for each live/demo variant.
 
-| Setting | Where it lives | How it changes |
-| --- | --- | --- |
-| Azure credentials, subscription, region, SQL administrator and state storage account | Shared Environment | Configure once per Azure account/subscription |
-| Main prefix/key and fallback rehearsal name | Tracked JSON profile | Reviewed configuration |
-| Custom rehearsal name | Action text field | Enter the same name in plan, apply, admin and deployment |
-| App and resource-group names | Derived from the selected profile, matching Terraform | No manual copying of output names into GitHub variables |
-| Installation and applications to provision | Action dropdowns | Default: main both; rehearsal live only |
-| Admin/deployment variant | Action dropdown | Select a variant that was provisioned |
-| Website operation | Action dropdown | `deploy` publishes; `verify` only checks public HTTP readiness |
-| Source branch | Run workflow branch selector / CLI `--ref` | Select the code to test |
+For Action controls and defaults, use [Deployment overview](DEPLOYMENT.md#choose-the-target).
 
 Instructions and identifiers may be public. Passwords, tokens, Terraform state and
-plaintext plans must remain private. A clone/fork does not include GitHub secrets.
-An independent contributor sets up their own shared Environment, Azure subscription
-and OIDC trust and edits the public profiles to name their own installation.
+plaintext plans must remain private. Cloning a repository does not copy its secrets.
 
 ## 1. Find your Azure account values
 
@@ -83,8 +70,8 @@ the GitHub Actions scenario. Enter your repository owner/name, entity type
 
 Use your own owner/repository in a fork. The current repository can retain its
 existing apply identity/trust; verify it has the permissions for all credential-bearing cloud Actions.
-This is a CI deployment identity, separate from the four runtime/operations
-managed identities Terraform creates for SQL access.
+This is the CI deployment identity, separate from the runtime and operations
+managed identities Terraform creates for each selected variant.
 
 ### Azure permissions
 
@@ -126,10 +113,8 @@ provisioning username defaults to `atlasprovisioner`.
 
 ## 5. Configure the shared GitHub Environment
 
-Open **your repository → Settings → Environments → atlas-infra-apply**. For a fork,
-create that one Environment. For the existing repository, consolidate common values
-from the older Environments here. Do not remove old configuration until the revised
-workflow has been verified; repository changes do not automatically change GitHub Environment settings.
+Open **your repository → Settings → Environments** and create or select
+**`atlas-infra-apply`**.
 
 ### Environment secrets
 
@@ -164,9 +149,15 @@ Secrets and Variables are different sections: workflows use `secrets.NAME` and
 `AZURE_WEBAPP_NAME`, `AZURE_ADMIN_WEBAPP_NAME` or `AZURE_RESOURCE_GROUP` from GitHub
 Environment variables. Target names now come from the selected tracked profile.
 
-Retain required reviewers and disable bypass on the shared Environment. The apply workflow requires a recorded approval. Because the Environment is shared, approval protection also applies to plan/admin/deployment jobs using it; some runs may pause at more than one job.
+### Reviewers and trusted branches
 
-Permit the trusted test branch in the Environment's branch rules before running the PR version. If reviewers are unavailable on your GitHub plan, use the local Terraform procedure instead of assuming apply will bypass approval.
+- Require reviewers and disable approval bypass. Apply requires a recorded approval.
+- Allow only trusted deployment branches, including a reviewed test branch when needed.
+- Check that your GitHub plan supports the required Environment protection.
+
+Environment approval can pause preview, apply, admin and deployment jobs.
+If the required protection is unavailable, resolve that before using apply; it
+does not bypass the approval check.
 
 ## 6. Review the public target profiles
 
@@ -191,27 +182,24 @@ The resolved prefix becomes `atlas-rehearsal-trial02` and the state key becomes 
 
 Leave the field blank only when intentionally using the tracked fallback. Main does not accept a rehearsal-name override.
 
-Use that same name in the provisioning, admin and website Actions. A new name means separate resources
-and state; the same name updates the same installation. The applications dropdown
-(`deployment_shape`) offers `default`, `live`, `demo`, and `both`. Default resolves
-to both for main and live only for rehearsal. It is independent of the branch.
-Choose demo explicitly for demo-only fixtures, or both for a full rehearsal.
+Keep the same name across provisioning, admin tools and website deployment.
+The [deployment overview](DEPLOYMENT.md#choose-the-target) defines application
+choices and defaults; [Security](SECURITY.md#plan-and-apply-protections) explains
+why reducing an existing installation’s resource set stops.
 
-The state key deliberately does not depend on the application selection. Reducing
-an existing installation's variants stops before planning with a clear reason.
-Plans with any resource deletion or replacement also stop before apply. Use a new
-name for a fresh single-variant test rather than treating an old installation as
-empty. No delete Action or destructive override is included.
+### Deploying your own fork
 
-For an independent fork, change the main profile's prefix and set an explicit
-new main state key before deploying. It must not refer to the upstream resources.
-Profiles contain no credentials and are appropriate for public version control.
-The dropdown options are intentionally fixed; adding more named profiles requires
-updating the workflow choices and validation together.
+1. Create your own shared Environment, Azure identity and OIDC trust.
+2. Change the main profile’s prefix and give it a new explicit state key.
+3. Confirm neither target points to upstream resources or state.
 
-No app-name variable setup is needed after Terraform provisioning. Review Terraform
-outputs to confirm the derived names, then use the same installation dropdown for
-admin tools and website deployment. Follow [first deployment](FIRST-DEPLOYMENT.md).
+Profiles contain no credentials and can be public. The workflow dropdown choices
+are fixed; adding a new profile also requires updating workflow choices and validation.
+
+### Continue to deployment
+
+Use [First deployment](FIRST-DEPLOYMENT.md). Terraform outputs confirm the app names;
+no post-provisioning GitHub app-name variables are needed.
 
 ## Official references
 
