@@ -1,20 +1,46 @@
 name: Atlas Azure Terraform plan (manual, no apply)
+run-name: "Terraform plan · ${{ inputs.installation }} · ${{ github.ref_name }}"
 
 # A live preview against the intended Azure subscription and the PRIVATE
 # remote state. This workflow NEVER applies infrastructure or uploads a plan
 # file. Do not run on PRs: Azure credentials/state access stay environment-gated.
 on:
   workflow_dispatch:
+    inputs:
+      installation:
+        description: "Azure installation (independent of the code branch)"
+        type: choice
+        required: true
+        default: rehearsal
+        options:
+          - rehearsal
+          - main
 
 permissions:
   contents: read
 
 jobs:
+  validate-target:
+    name: Check installation and code branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate installation selection
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+        run: python infrastructure/scripts/check-deployment-target.py selection
+
   azure-plan:
+    needs: validate-target
     name: Read-only Azure infrastructure preview
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: atlas-infra-review
+    environment: ${{ inputs.installation == 'rehearsal' && 'atlas-rehearsal-infra-review' || 'atlas-infra-review' }}
     permissions:
       contents: read
       id-token: write
@@ -45,8 +71,14 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_NAME_PREFIX: ${{ vars.ATLAS_NAME_PREFIX }}
+      AZURE_TFSTATE_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Verify installation namespace and state key
+        working-directory: .
+        run: python infrastructure/scripts/check-deployment-target.py infrastructure
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'

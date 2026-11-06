@@ -30,6 +30,10 @@ Detailed diagnostics remain in [DEPLOYMENT.md](DEPLOYMENT.md#deployment-preferen
 Before starting, use [Azure and GitHub setup](AZURE-SETUP.md) to locate every
 Azure value and configure your own repository's Environments, OIDC and secrets.
 
+For the existing installation, select **installation: main** in every cloud
+Action and run from branch `main`. For a rehearsal, follow section 6 with
+**installation: rehearsal** and the code branch under test.
+
 ## 1. Provision and record targets
 
 Follow [the deployment runbook](DEPLOYMENT.md) for state storage, OIDC, GitHub
@@ -128,38 +132,83 @@ Database wake-up messaging is tracked separately in PTT-172.
 
 ## 6. Rehearse alongside the existing installation
 
-A new `name_prefix` creates different names, but **a new prefix alone is not an
-isolated installation**. A separate state key is essential. Changing the prefix
-against the original state would plan replacements of the original installation.
+Each cloud Action now asks for **installation: rehearsal or main**. This is
+independent of **variant: live or demo** and the code branch chosen for the run.
+The default installation is rehearsal. Main still uses the original Environment
+names and resource URLs; the label does not rename existing Azure resources.
 
-The existing GitHub workflows hard-code their Environment names and have no
-installation selector. Do not change their existing variables to rehearsal targets
-while normal deployments can run. For the rehearsal, use a separate local Terraform
-working directory and deploy the build artifacts explicitly to the new app names.
-Before choosing an Actions-driven rehearsal, add distinct rehearsal Environments
-and explicit target selection to the workflows; that change is not implemented by
-this documentation update.
+| Choice | Code branch | Target configuration |
+| --- | --- | --- |
+| `main` | Must be `main` | Existing `atlas-*` Environments and existing state/resources |
+| `rehearsal` | May be a feature branch or `main` | Separate `atlas-rehearsal-*` Environments, state and resources |
 
-1. Create a fresh checkout at the commit being tested. Copy the example tfvars to
-   an untracked file there and choose a fresh globally unique prefix, for example
-   `atlas-rehearsal-<unique-suffix>`. Review name-length validation and Azure quotas.
-2. Initialize from that checkout with the same protected state account/container
-   if desired, but a **different blob key**, such as `atlas-rehearsal.tfstate`.
-   Use the runbook's `terraform init` command with that new key. Do not copy the
-   original `.terraform` directory or use `terraform init -migrate-state`.
-3. Supply the rehearsal provisioning and demo passwords privately. Review the
-   plan: it must create rehearsal resources and contain no updates, replacements,
-   or deletes of the existing installation. Stop if the original names appear as
-   change targets. Record the new state key and all output targets.
-4. Apply, then follow steps 2–5 with explicitly isolated publishing targets.
-   If using local Azure CLI artifact deployment, preserve the same SSH tools/bootstrap package layout
-   and trigger bootstrap only on the new admin hosts. Existing Actions currently
-   target the original Environments; they cannot select this second installation.
-5. Record each command, commit, run/artifact, target, completion result, and any
-   retry. Mark unexecuted steps as unverified. A clean rehearsal means following
-   the written sequence without undocumented fixes.
+### One-time rehearsal configuration
 
-A second installation creates another B1 plan and private endpoint, with their
-associated costs and SQL free-offer eligibility/quotas to check. Keep the original
-installation running. Cleanup of the rehearsal is a separate deliberate operation;
-SQL `prevent_destroy` intentionally blocks a casual full destroy.
+Create the six rehearsal Environments using the mapping in
+[Azure setup](AZURE-SETUP.md#rehearsal-environments). Configure new OIDC identities
+and subjects for those exact Environment names. Keep the main Environments
+restricted to branch `main`; permit your trusted test branch in the rehearsal
+Environments. Both apply Environments require recorded reviewer approval.
+
+Choose a prefix such as `atlas-rehearsal-a1b2c3`. In both rehearsal infra
+Environments, configure `ATLAS_NAME_PREFIX` with that value and
+`AZURE_TFSTATE_KEY` as `rehearsal/atlas-rehearsal-a1b2c3.tfstate`.
+Use a fresh key, never migrate the existing installation's state. The state
+account/container may be shared, but access should be limited appropriately.
+The validator rejects a rehearsal prefix or state key in a main-target run and
+rejects existing main app names in a rehearsal run.
+
+### Walk through a rehearsal from this PR branch
+
+1. Run **Atlas Azure Terraform plan**, choose installation `rehearsal`, and select
+   branch `docs/deployment-ssh-walkthrough`. Review the proposed resources.
+2. Run **Atlas Azure Terraform apply** from that same branch with installation
+   `rehearsal` and `enable_sql_bootstrap=true`. Review the plan and approve the
+   rehearsal apply Environment. Expect new rehearsal resources, with no main
+   resources selected for changes.
+3. Use the new Terraform outputs to configure app targets in the rehearsal ops
+   and website Environments. Complete their Azure role grants. This happens once
+   after provisioning; do not edit the main Environment variables.
+4. Run **Atlas admin tools** with installation `rehearsal`, separately for live
+   and demo, operation `bootstrap`, with the matching confirmation. Then apply
+   Terraform again against `rehearsal` with bootstrap disabled.
+5. Use the new admin apps' SSH terminals for schema and demo seeding as above.
+   Run **Atlas manual Azure deployment** with installation `rehearsal` and each
+   variant, selecting the branch you want to test.
+6. Verify the new URLs and record the code commit, selected installation, state
+   key, operation results and any retries. Do not treat an unexecuted rehearsal
+   as evidence that the new workflow has succeeded in Azure.
+
+The workflow files already exist on the repository's default branch. You can
+therefore dispatch their branch versions before merging this PR. In Actions,
+use the **Run workflow → Branch** selector. If the UI still shows the older
+input form, use GitHub CLI with an explicit ref and inputs:
+
+```bash
+gh workflow run AtlasAzurePlan.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal
+gh workflow run AtlasAzureApply.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f enable_sql_bootstrap=true
+gh workflow run AtlasAdmin.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f variant=demo -f operation=bootstrap -f confirmation=bootstrap-demo
+gh workflow run AtlasDeploy.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f variant=demo
+```
+
+These are separate commands for their respective steps; complete each prerequisite
+before running the next. A newly added workflow filename must first exist on the
+default branch for ordinary manual dispatch. That does not require merging every
+subsequent code or workflow change before testing it on a branch.
+
+After configuration, repeat runs by selecting `rehearsal`; no target-variable
+swapping is needed. Reusing the prefix/state updates that same rehearsal
+installation. To create another independent installation, configure a fresh
+rehearsal prefix/state and its resulting app targets, retaining the old state
+for deliberate cleanup. Only one rehearsal configuration is selectable at a time;
+there is no free-form list of arbitrary installation names.
+
+A rehearsal creates another B1 plan and private endpoint, with associated costs
+and SQL eligibility/quotas to check. Cleanup is separate; SQL `prevent_destroy`
+blocks a casual full destroy. Environment routing and naming checks reduce
+mistakes but do not replace Azure RBAC. A separate Azure subscription provides a
+stronger boundary when rehearsing Terraform changes that need broad initial
+provisioning permissions.
+
+GitHub references: [manual workflow dispatch](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+and [deployment Environment protection](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).

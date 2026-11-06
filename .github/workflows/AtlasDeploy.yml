@@ -1,8 +1,17 @@
 name: Atlas manual Azure deployment
+run-name: "Deploy · ${{ inputs.installation }} · ${{ inputs.variant }} · ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
     inputs:
+      installation:
+        description: "Azure installation (independent of the code branch)"
+        type: choice
+        required: true
+        default: rehearsal
+        options:
+          - rehearsal
+          - main
       variant:
         description: Isolated Azure environment
         required: true
@@ -14,8 +23,28 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: atlas-deploy-${{ inputs.installation }}-${{ inputs.variant }}
+  cancel-in-progress: false
+
 jobs:
+  validate-target:
+    name: Check installation and code branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate installation selection
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+        run: python infrastructure/scripts/check-deployment-target.py selection
+
   build:
+    needs: validate-target
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -52,11 +81,20 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: atlas-${{ inputs.variant }}
+    environment: ${{ inputs.installation == 'rehearsal' && format('atlas-rehearsal-{0}', inputs.variant) || format('atlas-{0}', inputs.variant) }}
     permissions:
       contents: read
       id-token: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify installation app target
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_VARIANT: ${{ inputs.variant }}
+          ATLAS_TARGET_APP: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: python infrastructure/scripts/check-deployment-target.py website
       - uses: actions/download-artifact@v4
         with:
           name: atlas-api-with-web

@@ -13,6 +13,8 @@ python -m unittest discover -s tests/Atlas.Infrastructure.Tests -p "test_*.py" -
 
 The admin workflow tests exercise packaging, publication target checks, bootstrap confirmation, and the bootstrap entrypoint using stand-in CLI commands without contacting Azure or SQL.
 
+Deployment-target tests also verify branch restrictions, disjoint rehearsal naming/state, app-role checks and workflow Environment selection.
+
 The policy tests inspect Terraform HCL declarations for Atlas-specific rules (private SQL endpoint, TLS, VNet integration, managed identities, free-offer settings). They are **Python unittest tests**, not a .NET/MSTest `.csproj`; they run in GitHub Actions through [AtlasInfrastructure.yml](../../.github/workflows/AtlasInfrastructure.yml), not through `dotnet test` or Visual Studio Test Explorer.
 
 The CI workflow also runs `terraform fmt -check`, `terraform init -backend=false`, `terraform validate`, and Trivy checks. Those are separate from the Python assertions. None of these offline checks applies infrastructure or verifies Azure runtime behavior. For an authenticated preview, see the [deployment runbook](../../infrastructure/DEPLOYMENT.md).

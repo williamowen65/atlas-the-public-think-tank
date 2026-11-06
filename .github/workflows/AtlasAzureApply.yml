@@ -1,8 +1,17 @@
 name: Atlas Azure Terraform apply (manual)
+run-name: "Terraform apply · ${{ inputs.installation }} · ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
     inputs:
+      installation:
+        description: "Azure installation (independent of the code branch)"
+        type: choice
+        required: true
+        default: rehearsal
+        options:
+          - rehearsal
+          - main
       enable_sql_bootstrap:
         description: Temporarily enable SQL bootstrap credentials for both admin WebJobs
         type: boolean
@@ -12,15 +21,31 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-azure-terraform-apply
+  group: atlas-azure-terraform-${{ inputs.installation }}
   cancel-in-progress: false
 
 jobs:
+  validate-target:
+    name: Check installation and code branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate installation selection
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+        run: python infrastructure/scripts/check-deployment-target.py selection
+
   azure-plan:
+    needs: validate-target
     name: Create the infrastructure plan for review
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: atlas-infra-review
+    environment: ${{ inputs.installation == 'rehearsal' && 'atlas-rehearsal-infra-review' || 'atlas-infra-review' }}
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
       encrypted_plan_sha256: ${{ steps.encrypt.outputs.sha256 }}
@@ -53,17 +78,17 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_NAME_PREFIX: ${{ vars.ATLAS_NAME_PREFIX }}
+      AZURE_TFSTATE_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_REQUIRE_FRESH_RUN: "true"
     steps:
-      - name: Require a fresh run from main
-        working-directory: .
-        run: |
-          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_RUN_ATTEMPT" == 1 ]] || {
-            echo "::error::Start a new manual run from main."
-            exit 1
-          }
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify installation namespace and state key
+        working-directory: .
+        run: python infrastructure/scripts/check-deployment-target.py infrastructure
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
@@ -134,7 +159,7 @@ jobs:
     if: needs.azure-plan.outputs.has_changes == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    environment: atlas-infra-apply
+    environment: ${{ inputs.installation == 'rehearsal' && 'atlas-rehearsal-infra-apply' || 'atlas-infra-apply' }}
     permissions:
       actions: read
       contents: read
@@ -155,20 +180,27 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_NAME_PREFIX: ${{ vars.ATLAS_NAME_PREFIX }}
+      AZURE_TFSTATE_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_REQUIRE_FRESH_RUN: "true"
     steps:
       - name: Require a recorded environment approval
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
+          APPLY_ENVIRONMENT: ${{ inputs.installation == 'rehearsal' && 'atlas-rehearsal-infra-apply' || 'atlas-infra-apply' }}
         run: |
           set -euo pipefail
-          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_RUN_ATTEMPT" == 1 ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
-            jq -e 'any(.[]; .state == "approved" and any(.environments[]; .name == "atlas-infra-apply"))' >/dev/null ||
-            { echo "::error::Configure required reviewers on atlas-infra-apply and approve this run."; exit 1; }
+            jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
+            { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify installation namespace and state key
+        working-directory: .
+        run: python infrastructure/scripts/check-deployment-target.py infrastructure
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'

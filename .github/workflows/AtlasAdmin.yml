@@ -1,9 +1,17 @@
 name: Atlas admin tools (publish or bootstrap)
-run-name: "Admin tools · ${{ inputs.variant }} · ${{ inputs.operation }}"
+run-name: "Admin tools · ${{ inputs.installation }} · ${{ inputs.variant }} · ${{ inputs.operation }}"
 
 on:
   workflow_dispatch:
     inputs:
+      installation:
+        description: "Azure installation (independent of the code branch)"
+        type: choice
+        required: true
+        default: rehearsal
+        options:
+          - rehearsal
+          - main
       variant:
         description: "Target database: live or demo"
         type: choice
@@ -27,11 +35,27 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-admin-${{ inputs.variant }}
+  group: atlas-admin-${{ inputs.installation }}-${{ inputs.variant }}
   cancel-in-progress: false
 
 jobs:
+  validate-target:
+    name: Check installation and code branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate installation selection
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+        run: python infrastructure/scripts/check-deployment-target.py selection
+
   package:
+    needs: validate-target
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -68,12 +92,19 @@ jobs:
     needs: package
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: atlas-ops-${{ inputs.variant }}
+    environment: ${{ inputs.installation == 'rehearsal' && format('atlas-rehearsal-ops-{0}', inputs.variant) || format('atlas-ops-{0}', inputs.variant) }}
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - name: Verify installation app target
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_VARIANT: ${{ inputs.variant }}
+          ATLAS_TARGET_APP: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: python infrastructure/scripts/check-deployment-target.py admin
       - name: Verify explicit operation and target
         shell: bash
         env:

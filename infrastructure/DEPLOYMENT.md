@@ -50,7 +50,7 @@ Use Entra authentication and the Storage Blob Data Contributor role only where r
 
 ### Provision or update Azure from GitHub Actions
 
-Bootstrap the private Terraform state and Azure OIDC access first. Once this workflow is on `main`, open **Actions → Atlas Azure Terraform apply (manual)** and dispatch from `main`. Review **Plan Azure changes** in the run log, then approve the `atlas-infra-apply` job in that same run. It applies the exact plan reviewed above. If the plan reports no changes, the apply job is skipped.
+Bootstrap the private Terraform state and Azure OIDC access first. Once this workflow is on `main`, open **Actions → Atlas Azure Terraform apply (manual)** and choose installation `main` and dispatch from branch `main`. For rehearsal, choose installation `rehearsal` and the branch under test; see [the rehearsal guide](FIRST-DEPLOYMENT.md#6-rehearse-alongside-the-existing-installation). Review **Plan Azure changes** in the run log, then approve the selected installation's apply Environment in that same run. It applies the exact plan reviewed above. If the plan reports no changes, the apply job is skipped.
 
 - Configure `atlas-infra-review` with the values in the table below.
 - Create `atlas-infra-apply`, restrict deployments to `main`, and configure **Required reviewers**. Disable administrator bypass. If you will start and approve your own runs, leave **Prevent self-review** off. The apply job requires a recorded approval and exits if none exists. If your GitHub plan does not offer required reviewers for this repository, use the local procedure below.
@@ -147,6 +147,13 @@ See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable 
 
 ## 6. GitHub Actions cloud deployment
 
+All four manual cloud Actions ask for `installation` (`rehearsal` or `main`).
+The main choice retains the existing Environment names and Azure URLs; rehearsal
+uses separate `atlas-rehearsal-*` Environments. Branch selection controls the code,
+not the installation. Main targets require branch `main`; rehearsal supports
+trusted feature branches. Set up the [rehearsal Environments](AZURE-SETUP.md#rehearsal-environments)
+once, then select the target without swapping main variables.
+
 The primary workflows are:
 
 - [AtlasInfrastructure.yml](../.github/workflows/AtlasInfrastructure.yml): on pushes touching IaC, verify Terraform formatting, initialization and structural validity. No cloud credentials or resource creation.
@@ -155,7 +162,7 @@ The primary workflows are:
 
 Create GitHub Environments named `atlas-live` and, when provisioned, `atlas-demo`. Each needs environment variable `AZURE_WEBAPP_NAME` from Terraform outputs and secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. Configure an Entra deployment identity with a federated OIDC subject matching `repo:williamowen65/atlas-the-public-think-tank:environment:atlas-live` (and an equivalent subject for demo). Grant only the role needed to deploy to the target App Service. Configure GitHub environment approval rules for live when available.
 
-Run **Actions → Atlas manual Azure deployment → Run workflow**, select the variant, then inspect the build and deploy results. The pipeline does **not** apply Terraform; infrastructure changes remain a separate reviewed action. The operator confirmed both sites deployed. A smoke-step failure can occur after the deployment step succeeds; inspect those results separately before redeploying.
+Run **Actions → Atlas manual Azure deployment → Run workflow**, select the installation and variant, then inspect the build and deploy results. The pipeline does **not** apply Terraform; infrastructure changes remain a separate reviewed action. The operator confirmed both sites deployed. A smoke-step failure can occur after the deployment step succeeds; inspect those results separately before redeploying.
 
 **Visual Studio alternative:** right-click `Atlas.Api` → Publish → Azure → Azure App Service. Choose the existing provisioned app. Publishing only `Atlas.Api` will not include the SvelteKit build automatically; package the frontend first or use the GitHub pipeline as the reproducible release mechanism. Verify credentials and environment settings rather than relying on local `appsettings.Development.json`.
 

@@ -13,7 +13,9 @@ sign-in IDs from GitHub Secrets, so configure them there as shown.
 Fork Atlas or push a clone into a repository you control. A local clone alone
 cannot hold GitHub Environments or run Actions in your own account. Enable Actions
 in that repository, and ensure the workflow files exist on its default branch.
-The apply workflow currently requires that branch to be named `main`.
+The main installation can only be targeted from branch `main`. Rehearsal may
+run from another trusted branch. Every cloud Action has an installation selector,
+which defaults to rehearsal; choose `main` deliberately for the existing deployment.
 
 Use your own Azure subscription, naming prefix, state backend, passwords and OIDC
 identities. Replace `<owner>/<repo>` below with your repository, including its exact
@@ -172,7 +174,7 @@ through Terraform.
 
 | Variable | Environments | Source |
 | --- | --- | --- |
-| `ATLAS_NAME_PREFIX` | `atlas-infra-review` | Choose a globally unique prefix, 6–27 lowercase letters/digits/hyphens, starting with a letter and ending with a letter/digit; check derived Azure name limits |
+| `ATLAS_NAME_PREFIX` | Both infra Environments | Choose a globally unique prefix, 6–27 lowercase letters/digits/hyphens, starting with a letter and ending with a letter/digit; check derived Azure name limits |
 | `AZURE_LOCATION` | `atlas-infra-review` | Location machine name from step 1 |
 | `AZURE_SQL_ENTRA_ADMIN_LOGIN` | `atlas-infra-review` | SQL administrator login or group display name from step 4 |
 | `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | `atlas-infra-review` | The same SQL administrator's Object ID |
@@ -181,8 +183,9 @@ through Terraform.
 | `AZURE_TFSTATE_CONTAINER` | Both infra Environments | State container name |
 | `AZURE_TFSTATE_KEY` | Both infra Environments | Chosen state key for this installation |
 
-The apply job uses the reviewed saved plan; it does not reread prefix/location/SQL
-administrator variables. Keep both backend configurations identical.
+The apply job uses the reviewed saved plan for changes. It also reads
+`ATLAS_NAME_PREFIX` to validate the installation namespace; set it in both infra
+Environments. Keep both backend configurations identical.
 
 Configure `atlas-infra-apply` with required reviewers, restrict deployment to `main`,
 and disable administrator bypass. If you approve your own runs, leave Prevent
@@ -239,6 +242,43 @@ credential removal, SSH schema setup, demo seeding and site deployment.
 | Apply rejected for missing approval | Required reviewer protection and a fresh run from `main` |
 | Admin target mismatch | Live/demo admin output mapped to its corresponding ops Environment |
 | App loads but nodes fail | Database bootstrap/schema/availability; static page success alone does not verify SQL |
+
+## Rehearsal Environments
+
+Configure a second set once, rather than changing the main deployment variables
+for each test. Each cloud Action selects these when `installation=rehearsal`:
+
+| Main Environment | Rehearsal Environment | Configuration to supply |
+| --- | --- | --- |
+| `atlas-infra-review` | `atlas-rehearsal-infra-review` | Same variable/secret names from the setup tables, with rehearsal prefix, state key and identity |
+| `atlas-infra-apply` | `atlas-rehearsal-infra-apply` | Rehearsal apply identity, matching backend, prefix and plan passphrase; required reviewers |
+| `atlas-ops-live` | `atlas-rehearsal-ops-live` | New live admin app/resource group and its deployment identity |
+| `atlas-ops-demo` | `atlas-rehearsal-ops-demo` | New demo admin app/resource group and its deployment identity |
+| `atlas-live` | `atlas-rehearsal-live` | New live public app and its deployment identity |
+| `atlas-demo` | `atlas-rehearsal-demo` | New demo public app and its deployment identity |
+
+For every new OIDC trust, use
+`repo:<owner>/<repo>:environment:<exact-rehearsal-Environment-name>`. Grant only
+the rehearsal permissions to those identities. Do not copy main deployment
+credentials as a substitute for creating that boundary. Use your own subscription
+when deploying a fork. For strong isolation of infrastructure provisioning,
+prefer a separate rehearsal subscription; creating a resource group initially
+requires permissions above that group's scope.
+
+Reserve prefixes starting `atlas-rehearsal-` for rehearsals, such as
+`atlas-rehearsal-a1b2c3`. The state key must be exactly
+`rehearsal/<ATLAS_NAME_PREFIX>.tfstate`. Set the same prefix and backend in both
+rehearsal infra Environments. Main retains its existing prefix/key outside this
+reserved namespace; no live URL rename or state migration is necessary.
+
+Restrict all main Environments to `main`. Allow the trusted test branch (for this
+PR, `docs/deployment-ssh-walkthrough`) in the rehearsal Environments. Configure
+required reviewers and disable bypass on rehearsal apply just as for main apply.
+The recorded approval check follows the selected installation. Branch restrictions
+and Azure RBAC remain necessary even though workflow validation also checks names.
+
+Follow [the rehearsal sequence](FIRST-DEPLOYMENT.md#6-rehearse-alongside-the-existing-installation)
+for branch dispatch before merging and the order of provisioning/bootstrap/schema/deployment.
 
 ## Official references
 

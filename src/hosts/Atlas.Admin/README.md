@@ -3,7 +3,7 @@
 `Atlas.Admin` is a deliberately small .NET 10 command-line host for **local development database setup** and **protected Azure SSH and identity-bootstrap operations**. It is not the interactive `Atlas.Console`, a public website, or a replica of the Atlas frontend.
 
 The **Atlas admin tools (publish or bootstrap)** Action (`AtlasAdmin.yml`) has two
-operations: `publish` uploads the tools without running SQL; `bootstrap` publishes
+operations (for the selected `main` or `rehearsal` installation): `publish` uploads the tools without running SQL; `bootstrap` publishes
 the same package and runs confirmed one-time SQL identity setup. Schema and demo
 seeding are explicit SSH commands, absent from the Action dropdown.
 
