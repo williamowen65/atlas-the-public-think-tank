@@ -21,7 +21,15 @@ permissions:
 
 jobs:
   validate-target:
-    name: Check installation and code branch
+    name: Resolve tracked deployment target
+    outputs:
+      name_prefix: ${{ steps.target.outputs.name_prefix }}
+      state_key: ${{ steps.target.outputs.state_key }}
+      resource_group: ${{ steps.target.outputs.resource_group }}
+      live_app: ${{ steps.target.outputs.live_app }}
+      demo_app: ${{ steps.target.outputs.demo_app }}
+      live_admin: ${{ steps.target.outputs.live_admin }}
+      demo_admin: ${{ steps.target.outputs.demo_admin }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -30,7 +38,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Validate installation selection
+      - name: Resolve installation selection
+        id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
         run: python infrastructure/scripts/check-deployment-target.py selection
@@ -40,7 +49,7 @@ jobs:
     name: Read-only Azure infrastructure preview
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: ${{ inputs.installation == 'rehearsal' && 'atlas-rehearsal-infra-review' || 'atlas-infra-review' }}
+    environment: atlas-infra-apply
     permissions:
       contents: read
       id-token: write
@@ -57,7 +66,7 @@ jobs:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      TF_VAR_name_prefix: ${{ vars.ATLAS_NAME_PREFIX }}
+      TF_VAR_name_prefix: ${{ needs.validate-target.outputs.name_prefix }}
       TF_VAR_location: ${{ vars.AZURE_LOCATION }}
       TF_VAR_sql_entra_admin_login: ${{ vars.AZURE_SQL_ENTRA_ADMIN_LOGIN }}
       TF_VAR_sql_entra_admin_object_id: ${{ vars.AZURE_SQL_ENTRA_ADMIN_OBJECT_ID }}
@@ -70,10 +79,10 @@ jobs:
       TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
-      TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
       ATLAS_INSTALLATION: ${{ inputs.installation }}
-      ATLAS_NAME_PREFIX: ${{ vars.ATLAS_NAME_PREFIX }}
-      AZURE_TFSTATE_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
+      AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify installation namespace and state key

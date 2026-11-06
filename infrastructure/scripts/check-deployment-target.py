@@ -1,15 +1,19 @@
-"""Validate an explicit installation and its protected deployment configuration.
+"""Resolve public deployment profiles while keeping Azure credentials shared.
 
-No Azure calls or credentials are printed. Rehearsal has a reserved resource/state
-namespace so a copied main target fails before Terraform or deployment starts.
-Azure RBAC and GitHub Environment protection must also enforce the boundary.
+The single GitHub Environment supplies credentials/account settings; this file
+validates tracked target profiles and emits only non-secret names as job outputs.
+These checks prevent mistakes; they are not an Azure authorization boundary.
 """
+import json
 import os
+from pathlib import Path
 import re
 import sys
 
+CONFIG = Path(__file__).resolve().parents[1] / 'config/deployment-targets.json'
 
-def validate(mode: str, settings: dict[str, str]) -> None:
+
+def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) -> dict[str, str]:
     def required(name: str) -> str:
         value = settings.get(name, '')
         if not value:
@@ -26,45 +30,70 @@ def validate(mode: str, settings: dict[str, str]) -> None:
         raise ValueError('The main installation can only be targeted from the main branch.')
     if settings.get('ATLAS_REQUIRE_FRESH_RUN') == 'true' and settings.get('GITHUB_RUN_ATTEMPT') != '1':
         raise ValueError('Start a fresh Terraform apply workflow instead of rerunning an old plan.')
-    if mode == 'selection':
-        return
 
-    def prefix_namespace(prefix: str) -> None:
-        if not re.fullmatch(r'[a-z][a-z0-9-]{4,25}[a-z0-9]', prefix):
+    profiles = json.loads(CONFIG.read_text()) if profiles is None else profiles
+    if set(profiles) != {'main', 'rehearsal'}:
+        raise ValueError('Tracked profiles must match the main/rehearsal Action choices.')
+    for name, profile in profiles.items():
+        if not isinstance(profile, dict):
+            raise ValueError('Each deployment profile must be an object.')
+        prefix = profile.get('name_prefix', '')
+        if not isinstance(prefix, str) or not re.fullmatch(r'[a-z][a-z0-9-]{4,25}[a-z0-9]', prefix):
             raise ValueError('Use a valid 6–27 character Atlas naming prefix.')
-        rehearsal = prefix.startswith('atlas-rehearsal-')
-        if rehearsal != (installation == 'rehearsal'):
-            raise ValueError('Rehearsal requires an atlas-rehearsal- prefix; main must use another prefix.')
+        if prefix.startswith('atlas-rehearsal-') != (name == 'rehearsal'):
+            raise ValueError('Only rehearsal uses the reserved atlas-rehearsal- resource prefix.')
+        key = profile.get('state_key')
+        # Null only preserves the existing main key from the shared Environment;
+        # the operator can copy that exact non-secret value into JSON later.
+        if name == 'main' and key is None:
+            continue
+        if not isinstance(key, str) or not re.fullmatch(r'[A-Za-z0-9_./-]+\.tfstate', key):
+            raise ValueError('Configure a valid state blob key ending in .tfstate.')
+        if name == 'rehearsal' and key != f'rehearsal/{prefix}.tfstate':
+            raise ValueError('Rehearsal state key must be rehearsal/<name_prefix>.tfstate.')
+        if name == 'main' and key.startswith('rehearsal/'):
+            raise ValueError('Main cannot use a rehearsal state key.')
 
+    profile = profiles[installation]
+    prefix = profile['name_prefix']
+    result = dict(name_prefix=prefix, state_key=profile.get('state_key') or '',
+                  resource_group=f'{prefix}-rg', live_app=f'{prefix}-live',
+                  demo_app=f'{prefix}-demo', live_admin=f'{prefix}-live-ops',
+                  demo_admin=f'{prefix}-demo-ops')
+    if mode == 'selection':
+        return result
     if mode == 'infrastructure':
-        prefix = required('ATLAS_NAME_PREFIX')
-        prefix_namespace(prefix)
+        if required('ATLAS_NAME_PREFIX') != prefix:
+            raise ValueError('Terraform prefix does not match the selected tracked profile.')
         key = required('AZURE_TFSTATE_KEY')
-        if installation == 'rehearsal':
-            if key != f'rehearsal/{prefix}.tfstate':
-                raise ValueError('Rehearsal state key must be rehearsal/<ATLAS_NAME_PREFIX>.tfstate.')
-        elif key.startswith('rehearsal/'):
-            raise ValueError('The main installation cannot use a rehearsal state key.')
+        if result['state_key']:
+            if key != result['state_key']:
+                raise ValueError('Terraform state key does not match the selected tracked profile.')
+        elif key.startswith('rehearsal/') or not re.fullmatch(r'[A-Za-z0-9_./-]+\.tfstate', key):
+            raise ValueError('The existing main state key must be valid and outside rehearsal/.')
     elif mode in ('admin', 'website'):
         variant = required('ATLAS_VARIANT')
         if variant not in ('live', 'demo'):
             raise ValueError('Choose live or demo.')
-        app = required('ATLAS_TARGET_APP')
-        suffix = f'-{variant}-ops' if mode == 'admin' else f'-{variant}'
-        if not app.endswith(suffix):
-            raise ValueError('App name must match the selected variant and host role.')
-        prefix = app[:-len(suffix)]
-        prefix_namespace(prefix)
-        if mode == 'admin' and required('AZURE_RESOURCE_GROUP') != f'{prefix}-rg':
-            raise ValueError('Admin app and resource group must belong to the same installation.')
+        expected = result[f'{variant}_admin' if mode == 'admin' else f'{variant}_app']
+        if required('ATLAS_TARGET_APP') != expected:
+            raise ValueError('App name does not match the selected tracked installation and variant.')
+        if mode == 'admin' and required('AZURE_RESOURCE_GROUP') != result['resource_group']:
+            raise ValueError('Admin resource group does not match the selected tracked profile.')
     else:
         raise ValueError('Unknown deployment target validation mode.')
+    return result
 
 
 if __name__ == '__main__':
     try:
-        validate(sys.argv[1] if len(sys.argv) == 2 else '', dict(os.environ))
-    except ValueError as error:
+        mode = sys.argv[1] if len(sys.argv) == 2 else ''
+        result = validate(mode, dict(os.environ))
+        if mode == 'selection' and os.environ.get('GITHUB_OUTPUT'):
+            with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+                for name, value in result.items():
+                    output.write(f'{name}={value}\n')
+    except (ValueError, OSError) as error:
         print(f'Deployment target rejected: {error}', file=sys.stderr)
         raise SystemExit(1)
-    print('Deployment selection and target configuration verified.')
+    print(f'Deployment profile verified: {os.environ["ATLAS_INSTALLATION"]}; resource prefix {result["name_prefix"]}.')

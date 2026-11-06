@@ -29,7 +29,15 @@ concurrency:
 
 jobs:
   validate-target:
-    name: Check installation and code branch
+    name: Resolve tracked deployment target
+    outputs:
+      name_prefix: ${{ steps.target.outputs.name_prefix }}
+      state_key: ${{ steps.target.outputs.state_key }}
+      resource_group: ${{ steps.target.outputs.resource_group }}
+      live_app: ${{ steps.target.outputs.live_app }}
+      demo_app: ${{ steps.target.outputs.demo_app }}
+      live_admin: ${{ steps.target.outputs.live_admin }}
+      demo_admin: ${{ steps.target.outputs.demo_admin }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -38,7 +46,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Validate installation selection
+      - name: Resolve installation selection
+        id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
         run: python infrastructure/scripts/check-deployment-target.py selection
@@ -78,10 +87,10 @@ jobs:
           retention-days: 7
 
   deploy:
-    needs: build
+    needs: [build, validate-target]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: ${{ inputs.installation == 'rehearsal' && format('atlas-rehearsal-{0}', inputs.variant) || format('atlas-{0}', inputs.variant) }}
+    environment: atlas-infra-apply
     permissions:
       contents: read
       id-token: write
@@ -93,7 +102,7 @@ jobs:
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_VARIANT: ${{ inputs.variant }}
-          ATLAS_TARGET_APP: ${{ vars.AZURE_WEBAPP_NAME }}
+          ATLAS_TARGET_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
         run: python infrastructure/scripts/check-deployment-target.py website
       - uses: actions/download-artifact@v4
         with:
@@ -101,9 +110,9 @@ jobs:
           path: ./atlas-publish
       - name: Require a configured Azure App Service target
         env:
-          APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+          APP_NAME: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
         run: |
-          test -n "$APP_NAME" || { echo "Set AZURE_WEBAPP_NAME for the GitHub Environment."; exit 1; }
+          test -n "$APP_NAME" || { echo "Selected profile did not resolve a public app."; exit 1; }
       - name: Sign in to Azure using GitHub OIDC
         uses: azure/login@v2
         with:
@@ -113,11 +122,11 @@ jobs:
       - name: Deploy Atlas
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          app-name: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
           package: ./atlas-publish
       - name: Smoke test public HTTPS liveness and home page
         env:
-          APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+          APP_NAME: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
         run: |
           url="https://$APP_NAME.azurewebsites.net"
           for attempt in 1 2 3 4 5 6; do

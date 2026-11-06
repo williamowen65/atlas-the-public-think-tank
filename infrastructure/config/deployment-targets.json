@@ -1,0 +1,10 @@
+{
+  "main": {
+    "name_prefix": "atlas-7k4m9q2x",
+    "state_key": null
+  },
+  "rehearsal": {
+    "name_prefix": "atlas-rehearsal-a1b2c3",
+    "state_key": "rehearsal/atlas-rehearsal-a1b2c3.tfstate"
+  }
+}

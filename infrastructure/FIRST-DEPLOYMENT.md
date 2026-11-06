@@ -48,13 +48,14 @@ of reconstructing names. The original prefix was `atlas-7k4m9q2x`.
 
 Run **Atlas admin tools (publish or bootstrap)** (`AtlasAdmin.yml`) from `main`:
 
-| Variant | Operation | Confirmation | GitHub Environment |
-| --- | --- | --- | --- |
-| live | bootstrap | `bootstrap-live` | `atlas-ops-live` |
-| demo | bootstrap | `bootstrap-demo` | `atlas-ops-demo` |
+| Variant | Operation | Confirmation |
+| --- | --- | --- |
+| live | bootstrap | `bootstrap-live` |
+| demo | bootstrap | `bootstrap-demo` |
 
-Each environment needs `AZURE_ADMIN_WEBAPP_NAME` and `AZURE_RESOURCE_GROUP` from
-the recorded outputs and the Azure OIDC secrets documented in the runbook.
+The shared credential Environment is `atlas-infra-apply` for every cloud Action.
+App/resource-group targets are derived from the selected tracked profile and
+checked before deployment; no per-target GitHub variables are required.
 The Action has two operations:
 
 | Operation | Result |
@@ -116,8 +117,8 @@ populated database to make a seed command pass.
 
 Run **Atlas manual Azure deployment** (`AtlasDeploy.yml`) for live, then demo.
 It builds the Svelte static frontend and ASP.NET API into one deployed package.
-The corresponding `atlas-live` / `atlas-demo` environment supplies
-`AZURE_WEBAPP_NAME` and Azure OIDC secrets.
+The shared `atlas-infra-apply` Environment supplies Azure OIDC secrets; the
+selected tracked profile supplies the target app name.
 
 Record the deployment result separately from the smoke result. The current smoke
 step checks `/health/live` and `/`, up to six attempts with ten-second pauses;
@@ -139,24 +140,24 @@ names and resource URLs; the label does not rename existing Azure resources.
 
 | Choice | Code branch | Target configuration |
 | --- | --- | --- |
-| `main` | Must be `main` | Existing `atlas-*` Environments and existing state/resources |
-| `rehearsal` | May be a feature branch or `main` | Separate `atlas-rehearsal-*` Environments, state and resources |
+| `main` | Must be `main` | Existing main profile and state/resources; shared credentials |
+| `rehearsal` | May be a feature branch or `main` | Separate rehearsal profile, state and resources; shared credentials |
 
-### One-time rehearsal configuration
+### One-time shared setup
 
-Create the six rehearsal Environments using the mapping in
-[Azure setup](AZURE-SETUP.md#rehearsal-environments). Configure new OIDC identities
-and subjects for those exact Environment names. Keep the main Environments
-restricted to branch `main`; permit your trusted test branch in the rehearsal
-Environments. Both apply Environments require recorded reviewer approval.
+Consolidate Azure credentials/account settings in the existing `atlas-infra-apply`
+Environment using [Azure setup](AZURE-SETUP.md). No new rehearsal Environments or
+OIDC subjects are needed. Keep its reviewer protection and allow only trusted
+branches, including this PR branch while testing. Both installations deliberately
+use that identity's permissions.
 
-Choose a prefix such as `atlas-rehearsal-a1b2c3`. In both rehearsal infra
-Environments, configure `ATLAS_NAME_PREFIX` with that value and
-`AZURE_TFSTATE_KEY` as `rehearsal/atlas-rehearsal-a1b2c3.tfstate`.
-Use a fresh key, never migrate the existing installation's state. The state
-account/container may be shared, but access should be limited appropriately.
-The validator rejects a rehearsal prefix or state key in a main-target run and
-rejects existing main app names in a rehearsal run.
+Review the tracked `rehearsal` profile in
+[`config/deployment-targets.json`](config/deployment-targets.json). Choose a globally
+unique prefix such as `atlas-rehearsal-a1b2c3`; its state key must be
+`rehearsal/atlas-rehearsal-a1b2c3.tfstate`. Keep the main prefix/state unchanged.
+The main state key currently falls back to the existing shared Environment variable
+because the exact original key was not available to the editor. Copy the exact
+value to main's JSON `state_key` if you want it tracked publicly too; do not guess.
 
 ### Walk through a rehearsal from this PR branch
 
@@ -164,11 +165,11 @@ rejects existing main app names in a rehearsal run.
    branch `docs/deployment-ssh-walkthrough`. Review the proposed resources.
 2. Run **Atlas Azure Terraform apply** from that same branch with installation
    `rehearsal` and `enable_sql_bootstrap=true`. Review the plan and approve the
-   rehearsal apply Environment. Expect new rehearsal resources, with no main
+   shared Environment job. Expect new rehearsal resources, with no main
    resources selected for changes.
-3. Use the new Terraform outputs to configure app targets in the rehearsal ops
-   and website Environments. Complete their Azure role grants. This happens once
-   after provisioning; do not edit the main Environment variables.
+3. Verify the new Terraform outputs match the selected prefix. Target app names
+   are derived automatically; there is no post-provisioning GitHub variable copy.
+   Ensure the shared deployment identity has the required Azure role scope.
 4. Run **Atlas admin tools** with installation `rehearsal`, separately for live
    and demo, operation `bootstrap`, with the matching confirmation. Then apply
    Terraform again against `rehearsal` with bootstrap disabled.
@@ -196,19 +197,17 @@ before running the next. A newly added workflow filename must first exist on the
 default branch for ordinary manual dispatch. That does not require merging every
 subsequent code or workflow change before testing it on a branch.
 
-After configuration, repeat runs by selecting `rehearsal`; no target-variable
+After shared setup, repeat runs by selecting `rehearsal`; no Environment-variable
 swapping is needed. Reusing the prefix/state updates that same rehearsal
 installation. To create another independent installation, configure a fresh
-rehearsal prefix/state and its resulting app targets, retaining the old state
+tracked rehearsal prefix/state pair, retaining the old state
 for deliberate cleanup. Only one rehearsal configuration is selectable at a time;
 there is no free-form list of arbitrary installation names.
 
 A rehearsal creates another B1 plan and private endpoint, with associated costs
 and SQL eligibility/quotas to check. Cleanup is separate; SQL `prevent_destroy`
-blocks a casual full destroy. Environment routing and naming checks reduce
-mistakes but do not replace Azure RBAC. A separate Azure subscription provides a
-stronger boundary when rehearsing Terraform changes that need broad initial
-provisioning permissions.
+blocks a casual full destroy. Profile and naming checks reduce mistakes but do not isolate Azure permissions.
+Only run reviewed, trusted branch code with the shared deployment credentials.
 
 GitHub references: [manual workflow dispatch](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
 and [deployment Environment protection](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).

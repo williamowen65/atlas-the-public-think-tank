@@ -1,38 +1,33 @@
-# Azure and GitHub setup: where every value comes from
+# Azure account setup and selectable deployment targets
 
-Use this reference before the [first-deployment walkthrough](FIRST-DEPLOYMENT.md).
-It maps the current workflow inputs to their Azure source and GitHub destination.
-The setup instructions, variable names, placeholder examples, and architecture
-belong in this public repository. Actual passwords, state files, decrypted plans,
-and access tokens do not. Subscription, tenant, client and resource IDs are
-identifiers rather than passwords; the workflows still read the three Azure
-sign-in IDs from GitHub Secrets, so configure them there as shown.
+The cloud Actions use **one shared GitHub Environment** for Azure credentials and
+account settings. Public deployment profiles are committed in
+[`config/deployment-targets.json`](config/deployment-targets.json). Choose the
+installation in the Action dropdown instead of changing Environment variables.
 
-## Start with your own repository and Azure subscription
+The shared Environment retains the existing name **`atlas-infra-apply`** so the
+current repository does not need another Environment or OIDC trust. Its historical
+name does not limit it to Terraform: plan, apply, admin and website deployment all
+use it. Live/demo are application variants, not GitHub Environments in this model.
 
-Fork Atlas or push a clone into a repository you control. A local clone alone
-cannot hold GitHub Environments or run Actions in your own account. Enable Actions
-in that repository, and ensure the workflow files exist on its default branch.
-The main installation can only be targeted from branch `main`. Rehearsal may
-run from another trusted branch. Every cloud Action has an installation selector,
-which defaults to rehearsal; choose `main` deliberately for the existing deployment.
+| Setting | Where it lives | How it changes |
+| --- | --- | --- |
+| Azure credentials, subscription, region, SQL administrator and state storage account | Shared Environment | Configure once per Azure account/subscription |
+| Installation prefix and state key | Tracked JSON profile | Review a code change when creating/changing a target |
+| App and resource-group names | Derived from the selected profile, matching Terraform | No manual copying of output names into GitHub variables |
+| Installation and live/demo variant | Action dropdowns | Select for each run |
+| Source branch | Run workflow branch selector / CLI `--ref` | Select the code to test |
 
-Use your own Azure subscription, naming prefix, state backend, passwords and OIDC
-identities. Replace `<owner>/<repo>` below with your repository, including its exact
-capitalization. Do not use the upstream author's federated subjects or resource names.
+Instructions and identifiers may be public. Passwords, tokens, Terraform state and
+plaintext plans must remain private. A clone/fork does not include GitHub secrets.
+An independent contributor sets up their own shared Environment, Azure subscription
+and OIDC trust and edits the public profiles to name their own installation.
 
-Required tools are Azure CLI, Terraform, .NET 10 and Node 24; workflow-pinned
-versions are in `.github/workflows/`. Your operator account needs permission to
-create resources, set up Entra app registrations/service principals, and grant Azure
-roles. Tenant policy may require an administrator to perform the identity steps.
-B1 App Service, private endpoints, storage and telemetry can incur charges; review
-[the budget notes](DEPLOYMENT.md#8-budget-and-deployment-verification) first.
+## 1. Find your Azure account values
 
-## 1. Find subscription, tenant and region
-
-In Azure Portal, open **Subscriptions → your subscription → Overview** for the
-Subscription ID. Open **Microsoft Entra ID → Overview** for the Tenant ID.
-Alternatively, in a signed-in local Azure CLI or Azure Cloud Shell Bash session:
+Azure Portal → **Subscriptions → your subscription → Overview** gives the
+Subscription ID. **Microsoft Entra ID → Overview** gives the Directory (tenant) ID.
+In a local Azure CLI or Azure Cloud Shell Bash session:
 
 ```bash
 az login
@@ -42,246 +37,173 @@ az account show --query '{subscription:id,tenant:tenantId,name:name}' -o json
 az account list-locations --query '[].{name:name,displayName:displayName}' -o table
 ```
 
-Use the location's machine `name`, such as `westus2`, for `AZURE_LOCATION`.
-Confirm the region supports this deployment's SKUs and SQL free offer. Subscription
-selection is separate from SQL administration and from the GitHub deployment identity.
+Use a location's machine name, such as `westus2`, for `AZURE_LOCATION`. Check region,
+SKU and SQL free-offer eligibility. B1 and private networking have recurring costs;
+see [deployment costs](DEPLOYMENT.md#costs-and-verification).
 
-## 2. Create state storage and record its four values
+## 2. Bootstrap private Terraform state storage
 
-Follow [state bootstrap](DEPLOYMENT.md#3-terraform-state-bootstrap-one-time) to
-create the private storage account and blob container before provisioning Atlas.
-In Azure Portal, find **Storage accounts → your state account → Overview** for its
-name and resource group, then **Data storage → Containers** for the container name.
-The state key is a blob filename you choose, not an Azure-generated credential.
-
-| GitHub Environment variable | Source | Example placeholder |
-| --- | --- | --- |
-| `AZURE_TFSTATE_RESOURCE_GROUP` | Resource group containing the state storage account | `atlas-tfstate-rg` |
-| `AZURE_TFSTATE_STORAGE_ACCOUNT` | Your globally unique storage account name | `<your-state-account>` |
-| `AZURE_TFSTATE_CONTAINER` | Private blob container created during bootstrap | `tfstate` |
-| `AZURE_TFSTATE_KEY` | Chosen state blob filename for this installation | `atlas.tfstate` |
-
-These values must match in `atlas-infra-review` and `atlas-infra-apply`. A second
-installation needs another key and prefix; an existing installation must retain
-its existing key. Do not rename its key just to match this example.
-
-## 3. Create the GitHub-to-Azure OIDC identities
-
-These are deployment identities, separate from the runtime and database-operations
-managed identities that Terraform later attaches to the apps.
-
-For each deployment identity, open **Microsoft Entra ID → App registrations → New
-registration**, choose a recognizable name, and register it in your tenant. On the
-registration's **Overview**, copy **Application (client) ID** and **Directory
-(tenant) ID**. Use the Application ID for `AZURE_CLIENT_ID`, not the registration's
-Object ID. The corresponding service principal appears under **Enterprise
-applications**; Azure IAM role assignments target that service principal.
-No client secret is needed for this OIDC workflow.
-
-Open **Certificates & secrets → Federated credentials → Add credential**, select
-the GitHub Actions scenario, enter your owner and repository, choose entity type
-**Environment**, and enter the exact GitHub Environment name from this table.
-The trust issuer is `https://token.actions.githubusercontent.com` and the audience
-is `api://AzureADTokenExchange`.
-
-| GitHub Environment | Federated subject | Identity purpose |
-| --- | --- | --- |
-| `atlas-infra-review` | `repo:<owner>/<repo>:environment:atlas-infra-review` | Plan and inspect resources |
-| `atlas-infra-apply` | `repo:<owner>/<repo>:environment:atlas-infra-apply` | Apply the reviewed plan; use a separate identity from review |
-| `atlas-ops-live` | `repo:<owner>/<repo>:environment:atlas-ops-live` | Publish tools/bootstrap identities on the live admin app |
-| `atlas-ops-demo` | `repo:<owner>/<repo>:environment:atlas-ops-demo` | Publish tools/bootstrap identities on the demo admin app |
-| `atlas-live` | `repo:<owner>/<repo>:environment:atlas-live` | Deploy the live website |
-| `atlas-demo` | `repo:<owner>/<repo>:environment:atlas-demo` | Deploy the demo website |
-
-Use distinct identities for the different privilege boundaries. Each Environment's
-`AZURE_CLIENT_ID` must match the identity with that Environment's federated trust.
-A repository or Environment rename requires updating the trust subject.
-
-### Grant Azure permissions
-
-In **the intended Azure scope → Access control (IAM) → Add role assignment**,
-select the role and service principal. Authentication through OIDC and permission
-through Azure RBAC are separate: a successful login alone grants no deployment access.
-
-| Identity | Azure permissions and scope |
-| --- | --- |
-| Infra review | Reader over resources it plans, plus Storage Blob Data Contributor on the state container for reading state and acquiring its lock |
-| Infra apply | Contributor over the deployment scope, plus Storage Blob Data Contributor on the state container |
-| Website deployment | Website Contributor scoped to its matching public App Service |
-| Admin deployment | Website Contributor scoped to its matching admin App Service; this identity can deploy privileged maintenance code, so restrict its use |
-| Operator bootstrapping state | Resource-creation permission for state storage and Storage Blob Data Contributor for container/data access; ability to grant the listed role assignments |
-
-The Terraform root creates the application resource group itself. Its first apply
-therefore needs permission at a scope where that group can be created, normally the
-subscription. A narrower resource-group provisioning scheme requires adapting that
-bootstrap; assigning Contributor to a nonexistent group is not sufficient. Register
-required Azure resource providers using an authorized operator if your scoped
-identity cannot register them. Review/apply identities need visibility into the
-backend resource group as required by the configured backend. Avoid granting
-subscription Owner merely to bypass a permission error.
-
-After provisioning, use the app's **Overview → JSON View** or Azure CLI to get its
-resource ID for a narrowly scoped deployment role:
+Create the state account outside the application Terraform root. In a local
+Azure CLI/Cloud Shell session, substitute your own unique account name:
 
 ```bash
-az webapp show --resource-group '<new-resource-group>' --name '<target-app-name>' --query id -o tsv
+az group create --name atlas-tfstate-rg --location westus2
+az storage account create --name <unique-state-account> --resource-group atlas-tfstate-rg --location westus2 --sku Standard_LRS --kind StorageV2 --allow-blob-public-access false --min-tls-version TLS1_2
+az storage container create --name tfstate --account-name <unique-state-account> --auth-mode login
 ```
 
-## 4. Find the SQL Entra administrator
+The operator needs the appropriate Azure resource permissions and Storage Blob
+Data Contributor data access. Configure storage retention/recovery and restrict
+access: state contains provisioning secrets.
 
-Open **Microsoft Entra ID → Users → your chosen operator**, and copy the **User
-principal name** and **Object ID**. For a security group, use its display name and
-Object ID from **Groups → your group**. Prefer a group for shared operations.
-For the currently signed-in user:
+Find the account name and resource group in **Storage accounts → your state
+account → Overview**; find the container under **Data storage → Containers**.
+Use the same account/container for multiple installations if desired, but a
+separate state blob key for each installation. Never migrate an existing state
+to a rehearsal merely to change target names.
+
+## 3. Configure one GitHub-to-Azure OIDC identity
+
+For a new repository, create an Entra application under **Microsoft Entra ID → App
+registrations → New registration**. Copy **Application (client) ID** and **Directory
+(tenant) ID** from its Overview. The application Object ID is not the client ID.
+Azure role assignments target its service principal under **Enterprise applications**.
+No client secret is required for OIDC.
+
+Under **Certificates & secrets → Federated credentials → Add credential**, choose
+the GitHub Actions scenario. Enter your repository owner/name, entity type
+**Environment**, and Environment name **`atlas-infra-apply`**. The resulting trust is:
+
+- Issuer: `https://token.actions.githubusercontent.com`
+- Audience: `api://AzureADTokenExchange`
+- Subject: `repo:<owner>/<repo>:environment:atlas-infra-apply`
+
+Use your own owner/repository in a fork. The current repository can retain its
+existing apply identity/trust; verify it has the permissions for all four Actions.
+This is a CI deployment identity, separate from the four runtime/operations
+managed identities Terraform creates for SQL access.
+
+### Azure permissions
+
+Use **the Azure scope → Access control (IAM) → Add role assignment**. OIDC sign-in
+and Azure permissions are separate. The shared identity needs:
+
+| Capability | Role/scope to consider |
+| --- | --- |
+| Provision the declared application resources | Contributor over the intended deployment scope |
+| Read/write/lock Terraform state | Storage Blob Data Contributor on the state container |
+| Publish websites/admin tools and trigger bootstrap | Website Contributor on each target App Service, unless already covered by Contributor at a containing scope |
+
+The Terraform root creates resource groups itself, so initial provisioning normally
+requires subscription-level resource-creation permission. A narrower resource-group
+scope requires a different bootstrap/import arrangement. Register required resource
+providers with an authorized operator if the scoped CI identity cannot do so.
+Do not grant Owner just to bypass an error.
+
+Both installations now deliberately share that identity's permissions. Profile
+validation prevents targeting mistakes; it does not isolate an untrusted workflow
+from the Azure account. Allow and approve only reviewed, trusted branches for this
+credential-bearing Environment. Main-target runs additionally require branch
+`main` in the workflow. A separate subscription/identity remains an option if a
+stronger authorization boundary is needed later.
+
+## 4. Find the SQL administrator
+
+Open **Microsoft Entra ID → Users → chosen operator** for the User principal name
+and Object ID. For a group, use its display name and Object ID under **Groups**.
+For the signed-in user:
 
 ```bash
 az ad signed-in-user show --query '{login:userPrincipalName,objectId:id}' -o json
 ```
 
-Set `AZURE_SQL_ENTRA_ADMIN_LOGIN` to that login/group name and
-`AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` to its Object ID. This is the SQL administrator,
-not a GitHub deployment app's client ID. Terraform's separate SQL provisioning
-username defaults to `atlasprovisioner`; its password is described below.
+These populate the SQL Entra administrator variables below. They identify an
+operator/group, not the GitHub deployment application. Terraform's separate SQL
+provisioning username defaults to `atlasprovisioner`.
 
-## 5. Enter GitHub Environment secrets and variables
+## 5. Configure the shared GitHub Environment
 
-In **your GitHub repository → Settings → Environments**, create the six Environments
-listed above. Open each Environment and add values under **Environment secrets**
-or **Environment variables**, matching the tables. These workflows read
-`secrets.NAME` and `vars.NAME` differently; putting a value in the other category
-will not satisfy the workflow.
+Open **your repository → Settings → Environments → atlas-infra-apply**. For a fork,
+create that one Environment. For the existing repository, consolidate common values
+from the older Environments here. Do not remove old configuration until the revised
+workflow has been verified; no repository settings are changed automatically by this PR.
 
-### Secrets
+### Environment secrets
 
-| Secret | Environments | Where to obtain the value |
-| --- | --- | --- |
-| `AZURE_CLIENT_ID` | All six | Application (client) ID of that Environment's deployment identity, from App registration Overview |
-| `AZURE_TENANT_ID` | All six | Directory (tenant) ID, from Entra Overview or `az account show` |
-| `AZURE_SUBSCRIPTION_ID` | All six | Subscription ID selected in step 1 |
-| `TF_SQL_ADMIN_PASSWORD` | `atlas-infra-review` and `atlas-infra-apply` | Generate a strong unique SQL provisioning password privately; retain the same value for subsequent plans/applies unless intentionally rotating it |
-| `ATLAS_TF_PLAN_PASSPHRASE` | `atlas-infra-review` and `atlas-infra-apply` | Generate a strong random value privately; use exactly the same value in both so apply can decrypt the reviewed plan |
-| `ATLAS_DEMO_PASSWORD` | `atlas-infra-review` and `atlas-infra-apply` when seeding demo | Generate a unique demo account password privately; Terraform passes it to the demo admin app |
-
-Passwords and the plan passphrase are values you create, not IDs to look up in
-Azure. Use a password manager's generator. Do not reuse an Azure account password,
-commit generated values, or echo them into workflow logs. The apply job uses the
-saved encrypted plan, but mirroring its provisioning secrets keeps the setup
-consistent if workflow responsibilities change. The admin workflow does not read
-`ATLAS_DEMO_PASSWORD` from `atlas-ops-demo`; the demo admin App Service receives it
-through Terraform.
-
-### Variables configured before provisioning
-
-| Variable | Environments | Source |
-| --- | --- | --- |
-| `ATLAS_NAME_PREFIX` | Both infra Environments | Choose a globally unique prefix, 6–27 lowercase letters/digits/hyphens, starting with a letter and ending with a letter/digit; check derived Azure name limits |
-| `AZURE_LOCATION` | `atlas-infra-review` | Location machine name from step 1 |
-| `AZURE_SQL_ENTRA_ADMIN_LOGIN` | `atlas-infra-review` | SQL administrator login or group display name from step 4 |
-| `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | `atlas-infra-review` | The same SQL administrator's Object ID |
-| `AZURE_TFSTATE_RESOURCE_GROUP` | Both infra Environments | State account's resource group from step 2 |
-| `AZURE_TFSTATE_STORAGE_ACCOUNT` | Both infra Environments | State storage account name |
-| `AZURE_TFSTATE_CONTAINER` | Both infra Environments | State container name |
-| `AZURE_TFSTATE_KEY` | Both infra Environments | Chosen state key for this installation |
-
-The apply job uses the reviewed saved plan for changes. It also reads
-`ATLAS_NAME_PREFIX` to validate the installation namespace; set it in both infra
-Environments. Keep both backend configurations identical.
-
-Configure `atlas-infra-apply` with required reviewers, restrict deployment to `main`,
-and disable administrator bypass. If you approve your own runs, leave Prevent
-self-review off. The workflow explicitly checks for a recorded approval; without
-this protection it will fail. If your GitHub repository/plan cannot provide required
-reviewers, use the documented local Terraform plan/apply procedure instead.
-
-## 6. Populate targets after Terraform creates the apps
-
-From `infrastructure/terraform`, initialized against **your installation's state**:
-
-```bash
-terraform output resource_group
-terraform output site_names
-terraform output admin_site_names
-terraform output database_names
-terraform output site_urls
-```
-
-| Variable | GitHub Environment | Exact source |
-| --- | --- | --- |
-| `AZURE_RESOURCE_GROUP` | `atlas-ops-live`, `atlas-ops-demo` | `resource_group` output |
-| `AZURE_ADMIN_WEBAPP_NAME` | `atlas-ops-live` | `admin_site_names` output, `live` entry |
-| `AZURE_ADMIN_WEBAPP_NAME` | `atlas-ops-demo` | `admin_site_names` output, `demo` entry |
-| `AZURE_WEBAPP_NAME` | `atlas-live` | `site_names` output, `live` entry |
-| `AZURE_WEBAPP_NAME` | `atlas-demo` | `site_names` output, `demo` entry |
-
-You can also find these apps under **Azure Portal → Resource groups → your new
-resource group → Resources**, then each **App Service → Overview**. Use the
-App Service resource name, not its HTTPS URL, for the GitHub target variable.
-Complete the per-app IAM grants from step 3 now that the app resources exist.
-
-Terraform manages the apps' `ATLAS_SQL_CONNECTION_STRING`, managed identity IDs,
-variant and expected database settings, plus temporary bootstrap credentials when
-explicitly enabled. Do not copy your local SQL connection string or a provisioning
-password into the public website. Azure Portal exposes these under the App
-Service's **Settings → Environment variables**; inspect only what is needed and
-avoid screenshots containing secret values.
-
-## 7. Verify configuration before the walkthrough
-
-Check that each Environment has its own correct client ID, exact OIDC subject,
-and expected target. Confirm review and apply use the same backend/key and plan
-passphrase. Run the manual plan first and inspect the intended prefix/resource
-changes. Then follow [first deployment](FIRST-DEPLOYMENT.md) for apply, bootstrap,
-credential removal, SSH schema setup, demo seeding and site deployment.
-
-| Symptom | Check first |
+| Name | Where the value comes from |
 | --- | --- |
-| No matching federated identity / OIDC login failure | Owner/repository, Environment spelling/case, tenant, client ID, audience and subject |
-| Login succeeds but Azure says authorization failed | Role assignment to the deployment service principal, scope and propagation |
-| State blob access denied | Storage Blob Data Contributor data-plane grant, correct backend values and operator/identity |
-| Missing workflow configuration | Environment secret versus variable placement and exact name |
-| Apply rejected for missing approval | Required reviewer protection and a fresh run from `main` |
-| Admin target mismatch | Live/demo admin output mapped to its corresponding ops Environment |
-| App loads but nodes fail | Database bootstrap/schema/availability; static page success alone does not verify SQL |
+| `AZURE_CLIENT_ID` | Application (client) ID of the shared deployment identity |
+| `AZURE_TENANT_ID` | Directory (tenant) ID from Entra Overview / step 1 |
+| `AZURE_SUBSCRIPTION_ID` | The selected subscription ID from step 1 |
+| `TF_SQL_ADMIN_PASSWORD` | Privately generated strong SQL provisioning password; preserve the existing value for an existing server unless deliberately rotating it |
+| `ATLAS_TF_PLAN_PASSPHRASE` | Privately generated strong random value used to encrypt/decrypt the reviewed Terraform plan |
+| `ATLAS_DEMO_PASSWORD` | Privately generated unique demo-account password, passed by Terraform to demo admin hosts |
 
-## Rehearsal Environments
+The three Azure IDs are identifiers rather than passwords; the workflows read
+them from Secrets to match the existing configuration. Generate passwords with a
+password manager, not an example copied from this document. No values belong in
+workflow logs or version control.
 
-Configure a second set once, rather than changing the main deployment variables
-for each test. Each cloud Action selects these when `installation=rehearsal`:
+### Shared Environment variables
 
-| Main Environment | Rehearsal Environment | Configuration to supply |
-| --- | --- | --- |
-| `atlas-infra-review` | `atlas-rehearsal-infra-review` | Same variable/secret names from the setup tables, with rehearsal prefix, state key and identity |
-| `atlas-infra-apply` | `atlas-rehearsal-infra-apply` | Rehearsal apply identity, matching backend, prefix and plan passphrase; required reviewers |
-| `atlas-ops-live` | `atlas-rehearsal-ops-live` | New live admin app/resource group and its deployment identity |
-| `atlas-ops-demo` | `atlas-rehearsal-ops-demo` | New demo admin app/resource group and its deployment identity |
-| `atlas-live` | `atlas-rehearsal-live` | New live public app and its deployment identity |
-| `atlas-demo` | `atlas-rehearsal-demo` | New demo public app and its deployment identity |
+| Name | Where the value comes from |
+| --- | --- |
+| `AZURE_LOCATION` | Azure location machine name from step 1 |
+| `AZURE_SQL_ENTRA_ADMIN_LOGIN` | Chosen SQL administrator's login or group display name from step 4 |
+| `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | Object ID of that same SQL administrator |
+| `AZURE_TFSTATE_RESOURCE_GROUP` | State storage account's resource group from step 2 |
+| `AZURE_TFSTATE_STORAGE_ACCOUNT` | State storage account name |
+| `AZURE_TFSTATE_CONTAINER` | Private state container name, such as `tfstate` |
+| `AZURE_TFSTATE_KEY` | Existing main installation's state key; used only while main's tracked `state_key` is null |
 
-For every new OIDC trust, use
-`repo:<owner>/<repo>:environment:<exact-rehearsal-Environment-name>`. Grant only
-the rehearsal permissions to those identities. Do not copy main deployment
-credentials as a substitute for creating that boundary. Use your own subscription
-when deploying a fork. For strong isolation of infrastructure provisioning,
-prefer a separate rehearsal subscription; creating a resource group initially
-requires permissions above that group's scope.
+Secrets and Variables are different sections: workflows use `secrets.NAME` and
+`vars.NAME` respectively. The deployment no longer reads `ATLAS_NAME_PREFIX`,
+`AZURE_WEBAPP_NAME`, `AZURE_ADMIN_WEBAPP_NAME` or `AZURE_RESOURCE_GROUP` from GitHub
+Environment variables. Target names now come from the selected tracked profile.
 
-Reserve prefixes starting `atlas-rehearsal-` for rehearsals, such as
-`atlas-rehearsal-a1b2c3`. The state key must be exactly
-`rehearsal/<ATLAS_NAME_PREFIX>.tfstate`. Set the same prefix and backend in both
-rehearsal infra Environments. Main retains its existing prefix/key outside this
-reserved namespace; no live URL rename or state migration is necessary.
+Retain required reviewers and disable bypass on the shared Environment. The apply
+workflow requires a recorded approval. Because the Environment is shared, approval
+protection also applies to plan/admin/deployment jobs using it; some runs may pause
+at more than one job. Permit the trusted test branch in the Environment's branch
+rules before running the PR version. If reviewers are unavailable on your GitHub
+plan, use the local Terraform procedure instead of assuming apply will bypass approval.
 
-Restrict all main Environments to `main`. Allow the trusted test branch (for this
-PR, `docs/deployment-ssh-walkthrough`) in the rehearsal Environments. Configure
-required reviewers and disable bypass on rehearsal apply just as for main apply.
-The recorded approval check follows the selected installation. Branch restrictions
-and Azure RBAC remain necessary even though workflow validation also checks names.
+## 6. Review the public target profiles
 
-Follow [the rehearsal sequence](FIRST-DEPLOYMENT.md#6-rehearse-alongside-the-existing-installation)
-for branch dispatch before merging and the order of provisioning/bootstrap/schema/deployment.
+The installation dropdown is `main` or `rehearsal`. The JSON contains their prefixes
+and state keys. All other target names are derived exactly as Terraform defines them:
+
+| Target | Naming rule |
+| --- | --- |
+| Resource group | `<prefix>-rg` |
+| Public apps / databases | `<prefix>-live`, `<prefix>-demo` |
+| Admin apps | `<prefix>-live-ops`, `<prefix>-demo-ops` |
+| SQL logical server | `<prefix>-sql` |
+
+The committed main prefix is the existing installation's `atlas-7k4m9q2x`.
+Its `state_key` is null to preserve the existing `AZURE_TFSTATE_KEY` value, which
+was not available to the documentation editor. You can copy that exact non-secret
+key into JSON later; do not guess it or choose a different key for existing resources.
+
+The rehearsal example uses `atlas-rehearsal-a1b2c3`. Choose your own globally unique
+suffix and update its state key to `rehearsal/<name_prefix>.tfstate` in the same
+reviewed change. Changing both creates a new installation instead of replacing
+resources tracked by the existing state. Reusing them updates the same rehearsal.
+Main cannot use the rehearsal prefix/state namespace. All prefixes must satisfy
+Terraform's 6–27 character lowercase naming rule.
+
+For an independent fork, change the main profile's prefix and set an explicit
+new main state key before deploying. It must not refer to the upstream resources.
+Profiles contain no credentials and are appropriate for public version control.
+The dropdown options are intentionally fixed; adding more named profiles requires
+updating the workflow choices and validation together.
+
+No app-name variable setup is needed after Terraform provisioning. Review Terraform
+outputs to confirm the derived names, then use the same installation dropdown for
+admin tools and website deployment. Follow [first deployment](FIRST-DEPLOYMENT.md).
 
 ## Official references
 
 - [Azure Login using OIDC](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect)
-- [App Service GitHub Actions deployment](https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions?tabs=openid)
 - [Terraform Azure backend authentication and roles](https://developer.hashicorp.com/terraform/language/backend/azurerm)
+- [GitHub Environment approvals and branch restrictions](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)

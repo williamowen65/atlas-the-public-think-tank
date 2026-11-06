@@ -38,14 +38,14 @@ The baseline tests use `python-hcl2==8.1.4` and do not access Azure. Trivy uses 
 
 ### Azure-connected predeployment preview (operator-invoked)
 
-The separate [`AtlasAzurePlan.yml`](../.github/workflows/AtlasAzurePlan.yml) workflow authenticates to the selected Azure subscription using GitHub OIDC and consults the **real private Terraform state**. It runs `terraform init`, `validate` and `plan`, without `apply`. It **never auto-runs on pull requests** and never uploads a Terraform plan artifact that could contain credentials. The protected `atlas-infra-review` environment must be bootstrapped first (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+The separate [`AtlasAzurePlan.yml`](../.github/workflows/AtlasAzurePlan.yml) workflow authenticates to the selected Azure subscription using GitHub OIDC and consults the **real private Terraform state**. It runs `terraform init`, `validate` and `plan`, without `apply`. It uses the same credential Environment as apply; the Action is read-only by behavior, not by a separate Azure identity. Only trusted, reviewed branches may use those credentials. It **never auto-runs on pull requests** and never uploads a Terraform plan artifact that could contain credentials. The shared `atlas-infra-apply` credential Environment must be configured first (see [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 A real Terraform plan catches changes and some provider/state errors that the offline HCL tests cannot; **it is not identical to Azure ARM/Bicep What-If**, and it does not replace real deployment, quota and runtime verification.
 
 ### Follow-up security gates
 
 1. Review Trivy's first findings. Confirm actual risks and Azure/free-tier constraints, and resolve them; then make the relevant HIGH/CRITICAL checks blocking. Never suppress a finding without a documented reason.
-2. Exercise the **implemented manual Azure-connected `terraform plan` workflow** against the bootstrapped remote state, with a scoped OIDC identity. Review its proposed changes before any separate manual apply.
+2. Exercise the **implemented manual Azure-connected `terraform plan` workflow** against the bootstrapped remote state, with the shared OIDC deployment identity. Review its proposed changes before any separate manual apply.
 3. Verify **deployed configuration and drift** once Azure is running; static CI cannot see Portal-side changes or runtime permissions.
 4. Provision and verify least-privilege per-variant SQL identities and OIDC access, plus a protected in-VNet administration executor. Prefer managed-identity database authentication over storing permanent SQL connection passwords in Terraform state.
 5. Add runtime security checks after deployment: HTTPS redirect, authentication/session/CSRF, API authorization, direct-link routing, audit-outbox delivery, SQL FTS readiness, and zero cross-database access.

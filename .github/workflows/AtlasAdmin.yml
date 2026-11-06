@@ -40,7 +40,15 @@ concurrency:
 
 jobs:
   validate-target:
-    name: Check installation and code branch
+    name: Resolve tracked deployment target
+    outputs:
+      name_prefix: ${{ steps.target.outputs.name_prefix }}
+      state_key: ${{ steps.target.outputs.state_key }}
+      resource_group: ${{ steps.target.outputs.resource_group }}
+      live_app: ${{ steps.target.outputs.live_app }}
+      demo_app: ${{ steps.target.outputs.demo_app }}
+      live_admin: ${{ steps.target.outputs.live_admin }}
+      demo_admin: ${{ steps.target.outputs.demo_admin }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -49,7 +57,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Validate installation selection
+      - name: Resolve installation selection
+        id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
         run: python infrastructure/scripts/check-deployment-target.py selection
@@ -89,10 +98,10 @@ jobs:
           retention-days: 2
 
   execute:
-    needs: package
+    needs: [package, validate-target]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: ${{ inputs.installation == 'rehearsal' && format('atlas-rehearsal-ops-{0}', inputs.variant) || format('atlas-ops-{0}', inputs.variant) }}
+    environment: atlas-infra-apply
     permissions:
       contents: read
       id-token: write
@@ -102,8 +111,8 @@ jobs:
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_VARIANT: ${{ inputs.variant }}
-          ATLAS_TARGET_APP: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ATLAS_TARGET_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_admin || needs.validate-target.outputs.demo_admin }}
+          AZURE_RESOURCE_GROUP: ${{ needs.validate-target.outputs.resource_group }}
         run: python infrastructure/scripts/check-deployment-target.py admin
       - name: Verify explicit operation and target
         shell: bash
@@ -133,13 +142,13 @@ jobs:
       - name: Publish admin tools
         shell: bash
         env:
-          ADMIN_APP: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
-          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ADMIN_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_admin || needs.validate-target.outputs.demo_admin }}
+          RESOURCE_GROUP: ${{ needs.validate-target.outputs.resource_group }}
           VARIANT: ${{ inputs.variant }}
         run: |
           set -euo pipefail
-          : "${ADMIN_APP:?Set AZURE_ADMIN_WEBAPP_NAME in the protected GitHub Environment}"
-          : "${RESOURCE_GROUP:?Set AZURE_RESOURCE_GROUP in the protected GitHub Environment}"
+          : "${ADMIN_APP:?Selected profile did not resolve an admin app}"
+          : "${RESOURCE_GROUP:?Selected profile did not resolve a resource group}"
           # Clean deployment is allowed only on the dedicated admin host naming
           # convention produced by Terraform, never on a public website target.
           [[ "$ADMIN_APP" == *-"$VARIANT"-ops ]] || { echo "Expected a dedicated admin App Service"; exit 1; }
@@ -163,8 +172,8 @@ jobs:
         shell: bash
         env:
           ATLAS_ADMIN_JOB: atlas-bootstrap
-          ATLAS_ADMIN_SITE: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
-          ATLAS_ADMIN_RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ATLAS_ADMIN_SITE: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_admin || needs.validate-target.outputs.demo_admin }}
+          ATLAS_ADMIN_RG: ${{ needs.validate-target.outputs.resource_group }}
           ATLAS_ADMIN_SUB: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail

@@ -56,7 +56,7 @@ The first command applies EF migrations and SQL Full-Text setup. The optional se
 
 ## Azure administration — publishing and SSH
 
-The protected `AtlasAdmin.yml` workflow publishes this same C# project, optionally invoking only identity bootstrap, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require authorized GitHub Environments and Azure OIDC access.
+The protected `AtlasAdmin.yml` workflow publishes this same C# project, optionally invoking only identity bootstrap, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require the shared `atlas-infra-apply` GitHub Environment and Azure OIDC access. Target names come from the selected tracked profile.
 
 After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, use SSH to run `--setup-database` for both, and `--seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
 
