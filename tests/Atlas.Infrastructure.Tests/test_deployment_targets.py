@@ -161,6 +161,34 @@ class DeploymentTargetTests(unittest.TestCase):
                         dependencies = [dependencies]
                     self.assertIn('validate-target', dependencies)
 
+    def test_main_and_rehearsal_shape_defaults_and_explicit_choices(self):
+        self.assertEqual(json.loads(self.validate('selection', self.settings('main'))['variants_json']), ['live', 'demo'])
+        self.assertEqual(json.loads(self.validate('selection', self.settings())['variants_json']), ['live'])
+        for shape, expected in [('both', ['live', 'demo']), ('demo', ['demo']), ('live', ['live'])]:
+            for installation in ('main', 'rehearsal'):
+                result = self.validate('selection', self.settings(installation, ATLAS_DEPLOYMENT_SHAPE=shape))
+                self.assertEqual(json.loads(result['variants_json']), expected)
+        with self.assertRaises(ValueError):
+            self.validate('selection', self.settings(ATLAS_DEPLOYMENT_SHAPE='none'))
+
+    def test_custom_name_derives_consistent_state_and_targets_in_every_stage(self):
+        settings = self.settings(ATLAS_REHEARSAL_NAME='trial02')
+        result = self.validate('selection', settings)
+        self.assertEqual(result['name_prefix'], 'atlas-rehearsal-trial02')
+        self.assertEqual(result['state_key'], 'rehearsal/atlas-rehearsal-trial02.tfstate')
+        # Shape deliberately does not enter the state key: changing shape on an
+        # existing name is an update, handled by the removal check, not new state.
+        other = self.validate('selection', dict(settings, ATLAS_DEPLOYMENT_SHAPE='both'))
+        self.assertEqual(result['state_key'], other['state_key'])
+        self.validate('infrastructure', dict(settings, ATLAS_NAME_PREFIX=result['name_prefix'], AZURE_TFSTATE_KEY=result['state_key']))
+        self.validate('admin', dict(settings, ATLAS_TARGET_APP=result['demo_admin'], AZURE_RESOURCE_GROUP=result['resource_group']))
+        self.validate('website', dict(settings, ATLAS_TARGET_APP=result['demo_app']))
+        for name in ['../../existing', 'HasCaps', 'a' * 40, 'bad\nname']:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.validate('selection', self.settings(ATLAS_REHEARSAL_NAME=name))
+        with self.assertRaises(ValueError):
+            self.validate('selection', self.settings('main', ATLAS_REHEARSAL_NAME='trial02'))
+
 
 if __name__ == '__main__':
     unittest.main()

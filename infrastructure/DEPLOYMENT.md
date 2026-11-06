@@ -7,12 +7,13 @@ secret/variable and its source, then [the walkthrough](FIRST-DEPLOYMENT.md).
 
 ## Architecture
 
-One Linux B1 App Service plan hosts four apps: live, demo and a dedicated operations
-host for each. Each public app serves the compiled Svelte static frontend and
+A full live/demo installation uses one Linux B1 plan for four apps: live, demo
+and their operations hosts. A single-variant installation uses two apps and one
+database, sharing the same plan/network pattern. Each public app serves the compiled Svelte static frontend and
 ASP.NET Core API together from one HTTPS origin. `/atlas-public-api/*` and
 `/atlas-session-api/*` are rewritten by the .NET host to `/api/*`.
 
-Two SQL databases share one logical server, private endpoint, VNet, network security
+The selected SQL databases share one logical server, private endpoint, VNet, network security
 group and private DNS zone. SQL public network access stays disabled. App Service
 VNet integration provides private SQL reachability; neither a normal laptop nor a
 GitHub-hosted runner connects directly to SQL. Keep the normal SQL hostname in
@@ -37,7 +38,9 @@ No extra GitHub Environment is required per target or variant.
 | --- | --- |
 | Branch | Code/workflow version to run |
 | Installation | `main` for the existing installation or `rehearsal` for the test installation |
-| Variant | `live` or `demo` inside that installation |
+| Applications to provision | `default` (main both, rehearsal live), `live`, `demo`, or `both` |
+| Rehearsal name | Optional name/suffix; selects matching resource prefix and state in every Action |
+| Variant | `live` or `demo` already provisioned inside that installation |
 | Admin operation | `publish` tools only or `bootstrap` identities with confirmation |
 
 Rehearsal is the default installation. Main targets require branch `main`. The
@@ -61,6 +64,17 @@ dispatched before merging. See [rehearsal instructions](FIRST-DEPLOYMENT.md#6-re
 The shared Environment requires reviewer approval; apply explicitly checks it.
 A fresh apply run is required rather than rerunning a previously saved plan.
 State and decrypted plans contain secrets and must not be committed or exposed.
+The preview uses a private temporary plan for deletion checks, removes it on exit,
+and uploads no plan artifact. JSON state/plan values are piped directly into checks
+without being printed.
+
+The normal deployment path never deletes or replaces resources. A preflight checks
+tracked variants before planning; a plan inspection rejects every action containing
+`delete`, including replacements, before encryption/apply. The decrypted saved plan
+is checked again immediately before apply. A stopped run explains whether to keep
+the existing application set, choose a new name, or perform deliberate cleanup.
+If a deployment genuinely needs replacement, review it through a separate maintenance
+procedure; this Action has no destructive override.
 
 ## First deployment order
 
@@ -68,7 +82,7 @@ State and decrypted plans contain secrets and must not be committed or exposed.
    [Azure setup](AZURE-SETUP.md). Review the tracked profile before selecting it.
 2. Preview the selected installation. For initial grants, apply with
    `enable_sql_bootstrap=true`.
-3. Run admin `bootstrap` for live and demo with exact `bootstrap-live` /
+3. Run admin `bootstrap` for each selected variant with exact `bootstrap-live` /
    `bootstrap-demo` confirmation. A package upload alone is not successful bootstrap.
 4. Apply again with bootstrap disabled to remove temporary provisioning credentials.
 5. In each admin App Service SSH terminal, open
@@ -76,7 +90,7 @@ State and decrypted plans contain secrets and must not be committed or exposed.
    `dotnet ./Atlas.Admin.dll --setup-database`.
 6. For an empty demo only, run `dotnet ./Atlas.Admin.dll --seed-demo` after schema
    succeeds. It requires `ATLAS_DEMO_PASSWORD` and refuses live or populated data.
-7. Deploy the selected installation's live and demo public apps separately. Verify
+7. Deploy the selected installation's provisioned public apps separately. Verify
    a real database-backed request, authentication and Full-Text search.
 
 Later app releases normally need only the website deployment Action. Run schema

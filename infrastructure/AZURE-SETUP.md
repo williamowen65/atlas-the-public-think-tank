@@ -13,9 +13,11 @@ use it. Live/demo are application variants, not GitHub Environments in this mode
 | Setting | Where it lives | How it changes |
 | --- | --- | --- |
 | Azure credentials, subscription, region, SQL administrator and state storage account | Shared Environment | Configure once per Azure account/subscription |
-| Installation prefix and state key | Tracked JSON profile | Review a code change when creating/changing a target |
+| Main prefix/key and fallback rehearsal name | Tracked JSON profile | Reviewed configuration |
+| Custom rehearsal name | Action text field | Enter the same name in plan, apply, admin and deployment |
 | App and resource-group names | Derived from the selected profile, matching Terraform | No manual copying of output names into GitHub variables |
-| Installation and live/demo variant | Action dropdowns | Select for each run |
+| Installation and applications to provision | Action dropdowns | Default: main both; rehearsal live only |
+| Admin/deployment variant | Action dropdown | Select a variant that was provisioned |
 | Source branch | Run workflow branch selector / CLI `--ref` | Select the code to test |
 
 Instructions and identifiers may be public. Passwords, tokens, Terraform state and
@@ -181,16 +183,30 @@ and state keys. All other target names are derived exactly as Terraform defines 
 | SQL logical server | `<prefix>-sql` |
 
 The committed main prefix is the existing installation's `atlas-7k4m9q2x`.
-Its `state_key` is null to preserve the existing `AZURE_TFSTATE_KEY` value, which
-was not available to the documentation editor. You can copy that exact non-secret
-key into JSON later; do not guess it or choose a different key for existing resources.
+Its state key is `atlas-capstone.tfstate`, confirmed by the operator from the
+existing backend. This preserves the current installation's state; it does not
+create or migrate a state blob.
 
-The rehearsal example uses `atlas-rehearsal-a1b2c3`. Choose your own globally unique
-suffix and update its state key to `rehearsal/<name_prefix>.tfstate` in the same
-reviewed change. Changing both creates a new installation instead of replacing
-resources tracked by the existing state. Reusing them updates the same rehearsal.
-Main cannot use the rehearsal prefix/state namespace. All prefixes must satisfy
-Terraform's 6–27 character lowercase naming rule.
+The tracked rehearsal fallback is `atlas-rehearsal-a1b2c3`, an example chosen in
+this configuration, unrelated to any branch or commit. Instead of editing it, enter
+`rehearsal_name` in the Action, for example `trial02`. The resolved prefix becomes
+`atlas-rehearsal-trial02` and the state key becomes
+`rehearsal/atlas-rehearsal-trial02.tfstate`. Full prefixes starting
+`atlas-rehearsal-` are accepted too. Use lowercase letters/digits/hyphens and a full
+prefix of at most 27 characters. Leave the field blank only when intentionally
+using the tracked fallback. Main does not accept a rehearsal-name override.
+
+Use that same name in all four cloud Actions. A new name means separate resources
+and state; the same name updates the same installation. The applications dropdown
+(`deployment_shape`) offers `default`, `live`, `demo`, and `both`. Default resolves
+to both for main and live only for rehearsal. It is independent of the branch.
+Choose demo explicitly for demo-only fixtures, or both for a full rehearsal.
+
+The state key deliberately does not depend on the application selection. Reducing
+an existing installation's variants stops before planning with a clear reason.
+Plans with any resource deletion or replacement also stop before apply. Use a new
+name for a fresh single-variant test rather than treating an old installation as
+empty. No delete Action or destructive override is included.
 
 For an independent fork, change the main profile's prefix and set an explicit
 new main state key before deploying. It must not refer to the upstream resources.

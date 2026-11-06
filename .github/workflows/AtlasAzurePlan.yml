@@ -1,5 +1,5 @@
 name: Atlas Azure Terraform plan (manual, no apply)
-run-name: "Terraform plan · ${{ inputs.installation }} · ${{ github.ref_name }}"
+run-name: "Terraform plan · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ github.ref_name }}"
 
 # A live preview against the intended Azure subscription and the PRIVATE
 # remote state. This workflow NEVER applies infrastructure or uploads a plan
@@ -7,6 +7,20 @@ run-name: "Terraform plan · ${{ inputs.installation }} · ${{ github.ref_name }
 on:
   workflow_dispatch:
     inputs:
+      deployment_shape:
+        description: "Applications: default = main both, rehearsal live only"
+        type: choice
+        required: true
+        default: default
+        options:
+          - default
+          - live
+          - demo
+          - both
+      rehearsal_name:
+        description: "Rehearsal suffix (e.g. trial01); blank uses the tracked rehearsal profile"
+        type: string
+        required: false
       installation:
         description: "Azure installation (independent of the code branch)"
         type: choice
@@ -25,6 +39,7 @@ jobs:
     outputs:
       name_prefix: ${{ steps.target.outputs.name_prefix }}
       state_key: ${{ steps.target.outputs.state_key }}
+      variants_json: ${{ steps.target.outputs.variants_json }}
       resource_group: ${{ steps.target.outputs.resource_group }}
       live_app: ${{ steps.target.outputs.live_app }}
       demo_app: ${{ steps.target.outputs.demo_app }}
@@ -42,6 +57,8 @@ jobs:
         id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
         run: python infrastructure/scripts/check-deployment-target.py selection
 
   azure-plan:
@@ -73,7 +90,8 @@ jobs:
       TF_VAR_sql_admin_password: ${{ secrets.TF_SQL_ADMIN_PASSWORD }}
       TF_VAR_demo_seed_password: ${{ secrets.ATLAS_DEMO_PASSWORD }}
       TF_VAR_app_service_sku: "B1"
-      TF_VAR_enable_demo: "true"
+      TF_VAR_deployment_variants: ${{ needs.validate-target.outputs.variants_json }}
+      ATLAS_VARIANTS_JSON: ${{ needs.validate-target.outputs.variants_json }}
       # Review only, never activate a temporary privileged SQL bootstrap here.
       TF_VAR_enable_sql_bootstrap: "false"
       TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
@@ -81,6 +99,8 @@ jobs:
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
       ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+      ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
       ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
       AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
     steps:
@@ -114,12 +134,24 @@ jobs:
             -backend-config="use_azuread_auth=true"
       - name: Validate Terraform configuration
         run: terraform validate -no-color
+      - name: Reject removal of an existing application variant
+        run: |
+          set -euo pipefail
+          terraform show -json | python ../scripts/check-terraform-changes.py state
       - name: Review proposed Azure changes — NEVER apply
         run: |
-          set -uo pipefail
-          # No -out option: do not persist a sensitive Terraform plan artifact.
+          set -euo pipefail
+          umask 077
+          preview_plan="$RUNNER_TEMP/atlas-preview.tfplan"
+          trap 'rm -f "$preview_plan"' EXIT
+          # Inspect a private temporary plan; never upload or print its JSON.
           exit_code=0
-          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode || exit_code=$?
+          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$preview_plan" || exit_code=$?
+          if [[ "$exit_code" -ne 0 && "$exit_code" -ne 2 ]]; then
+            echo "::error::Azure-connected Terraform planning failed."
+            exit "$exit_code"
+          fi
+          terraform show -json "$preview_plan" | python ../scripts/check-terraform-changes.py plan
           if [[ "$exit_code" -eq 0 ]]; then
             echo "No infrastructure changes proposed."
             exit 0

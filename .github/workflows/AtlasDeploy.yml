@@ -1,9 +1,13 @@
 name: Atlas manual Azure deployment
-run-name: "Deploy · ${{ inputs.installation }} · ${{ inputs.variant }} · ${{ github.ref_name }}"
+run-name: "Deploy · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ inputs.variant }} · ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
     inputs:
+      rehearsal_name:
+        description: "Rehearsal suffix (e.g. trial01); blank uses the tracked rehearsal profile"
+        type: string
+        required: false
       installation:
         description: "Azure installation (independent of the code branch)"
         type: choice
@@ -50,6 +54,7 @@ jobs:
         id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
         run: python infrastructure/scripts/check-deployment-target.py selection
 
   build:
@@ -101,6 +106,7 @@ jobs:
       - name: Verify installation app target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
           ATLAS_VARIANT: ${{ inputs.variant }}
           ATLAS_TARGET_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
         run: python infrastructure/scripts/check-deployment-target.py website

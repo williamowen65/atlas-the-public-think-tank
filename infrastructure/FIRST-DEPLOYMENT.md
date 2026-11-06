@@ -69,7 +69,7 @@ from the dedicated admin host. It does not deploy the public website. Inspect
 packaging, deployment, invocation, and bootstrap completion separately; an upload
 alone does not prove bootstrap completed.
 
-After both bootstraps succeed, apply Terraform with `enable_sql_bootstrap=false`
+After bootstrap succeeds for every provisioned variant, apply Terraform with `enable_sql_bootstrap=false`
 to remove temporary administrator credentials. Do this before normal schema work.
 Do not print app settings, tokens, passwords, or connection strings into evidence.
 
@@ -87,7 +87,8 @@ dotnet ./Atlas.Admin.dll --setup-database
 ```
 
 Confirm the variant is `live` and the database matches the new live output before
-running the command. Then repeat in the **demo admin app**, checking its demo target.
+running the command. For a full installation, repeat in the **demo admin app**, checking its demo target.
+For a single-variant installation, run only against the selected variant.
 Wait for successful migration and supplemental Full-Text initialization output.
 The C# host validates the variant, expected database, and managed identity itself.
 
@@ -115,7 +116,8 @@ populated database to make a seed command pass.
 
 ## 5. Publish and verify each website
 
-Run **Atlas manual Azure deployment** (`AtlasDeploy.yml`) for live, then demo.
+Run **Atlas manual Azure deployment** (`AtlasDeploy.yml`) for each provisioned
+variant. Use the same installation and rehearsal name used during provisioning.
 It builds the Svelte static frontend and ASP.NET API into one deployed package.
 The shared `atlas-infra-apply` Environment supplies Azure OIDC secrets; the
 selected tracked profile supplies the target app name.
@@ -135,8 +137,8 @@ Database wake-up messaging is tracked separately in PTT-172.
 
 Each cloud Action now asks for **installation: rehearsal or main**. This is
 independent of **variant: live or demo** and the code branch chosen for the run.
-The default installation is rehearsal. Main still uses the original Environment
-names and resource URLs; the label does not rename existing Azure resources.
+The default installation is rehearsal. Main still uses the existing profile
+and resource URLs; the label does not rename existing Azure resources.
 
 | Choice | Code branch | Target configuration |
 | --- | --- | --- |
@@ -151,30 +153,36 @@ OIDC subjects are needed. Keep its reviewer protection and allow only trusted
 branches, including this PR branch while testing. Both installations deliberately
 use that identity's permissions.
 
-Review the tracked `rehearsal` profile in
-[`config/deployment-targets.json`](config/deployment-targets.json). Choose a globally
-unique prefix such as `atlas-rehearsal-a1b2c3`; its state key must be
-`rehearsal/atlas-rehearsal-a1b2c3.tfstate`. Keep the main prefix/state unchanged.
-The main state key currently falls back to the existing shared Environment variable
-because the exact original key was not available to the editor. Copy the exact
-value to main's JSON `state_key` if you want it tracked publicly too; do not guess.
+The Action has a `rehearsal_name` field. Enter a unique suffix such as `trial02`;
+all four Actions then use prefix `atlas-rehearsal-trial02` and state key
+`rehearsal/atlas-rehearsal-trial02.tfstate`. Keep the name identical through the
+sequence. Blank uses the tracked example `atlas-rehearsal-a1b2c3`; it is not a
+branch-derived or automatically unique value. Main retains `atlas-7k4m9q2x` and
+its confirmed `atlas-capstone.tfstate` key.
+
+For plan/apply, choose the applications: `default` means main both and rehearsal
+live only; `live`, `demo`, and `both` explicitly choose the resource set. The steps
+below demonstrate **both** to rehearse the full workflow. A live-only rehearsal
+omits all demo bootstrap/schema/seed/deploy steps; a demo-only rehearsal omits live.
 
 ### Walk through a rehearsal from this PR branch
 
 1. Run **Atlas Azure Terraform plan**, choose installation `rehearsal`, and select
-   branch `docs/deployment-ssh-walkthrough`. Review the proposed resources.
+   branch `docs/deployment-ssh-walkthrough`. Enter rehearsal name `trial02` and
+   applications `both`. Review the proposed resources.
 2. Run **Atlas Azure Terraform apply** from that same branch with installation
-   `rehearsal` and `enable_sql_bootstrap=true`. Review the plan and approve the
+   `rehearsal`, the same name `trial02`, applications `both`, and
+   `enable_sql_bootstrap=true`. Review the plan and approve the
    shared Environment job. Expect new rehearsal resources, with no main
    resources selected for changes.
 3. Verify the new Terraform outputs match the selected prefix. Target app names
    are derived automatically; there is no post-provisioning GitHub variable copy.
    Ensure the shared deployment identity has the required Azure role scope.
-4. Run **Atlas admin tools** with installation `rehearsal`, separately for live
+4. Run **Atlas admin tools** with installation `rehearsal` and name `trial02`, separately for live
    and demo, operation `bootstrap`, with the matching confirmation. Then apply
-   Terraform again against `rehearsal` with bootstrap disabled.
+   Terraform again against `rehearsal`, name `trial02`, applications `both`, with bootstrap disabled.
 5. Use the new admin apps' SSH terminals for schema and demo seeding as above.
-   Run **Atlas manual Azure deployment** with installation `rehearsal` and each
+   Run **Atlas manual Azure deployment** with installation `rehearsal`, name `trial02`, and each
    variant, selecting the branch you want to test.
 6. Verify the new URLs and record the code commit, selected installation, state
    key, operation results and any retries. Do not treat an unexecuted rehearsal
@@ -186,10 +194,10 @@ use the **Run workflow → Branch** selector. If the UI still shows the older
 input form, use GitHub CLI with an explicit ref and inputs:
 
 ```bash
-gh workflow run AtlasAzurePlan.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal
-gh workflow run AtlasAzureApply.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f enable_sql_bootstrap=true
-gh workflow run AtlasAdmin.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f variant=demo -f operation=bootstrap -f confirmation=bootstrap-demo
-gh workflow run AtlasDeploy.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f variant=demo
+gh workflow run AtlasAzurePlan.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both
+gh workflow run AtlasAzureApply.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both -f enable_sql_bootstrap=true
+gh workflow run AtlasAdmin.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo -f operation=bootstrap -f confirmation=bootstrap-demo
+gh workflow run AtlasDeploy.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo
 ```
 
 These are separate commands for their respective steps; complete each prerequisite
@@ -199,10 +207,9 @@ subsequent code or workflow change before testing it on a branch.
 
 After shared setup, repeat runs by selecting `rehearsal`; no Environment-variable
 swapping is needed. Reusing the prefix/state updates that same rehearsal
-installation. To create another independent installation, configure a fresh
-tracked rehearsal prefix/state pair, retaining the old state
-for deliberate cleanup. Only one rehearsal configuration is selectable at a time;
-there is no free-form list of arbitrary installation names.
+installation. To create another independent installation, enter a new rehearsal name, retaining
+the old state for deliberate cleanup. Each run selects one rehearsal name;
+the text field chooses a resource/state name, not a GitHub Environment.
 
 A rehearsal creates another B1 plan and private endpoint, with associated costs
 and SQL eligibility/quotas to check. Cleanup is separate; SQL `prevent_destroy`
@@ -211,3 +218,13 @@ Only run reviewed, trusted branch code with the shared deployment credentials.
 
 GitHub references: [manual workflow dispatch](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
 and [deployment Environment protection](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
+
+## Deliberate cleanup
+
+This PR adds no delete workflow. Reducing an existing application set, deletion or
+replacement stops the normal deployment workflow with an explanation. Deleting a
+disposable rehearsal resource group manually in Azure is a separate option; verify
+the exact rehearsal group first. That does not automatically delete its Terraform
+state blob. Reusing that name/state after refresh may recreate the resources, so
+handle state/archive/cleanup deliberately and never delete the main state as part
+of a rehearsal cleanup. The deployment workflow does not remove SQL `prevent_destroy`.

@@ -1,7 +1,7 @@
 {
   "main": {
     "name_prefix": "atlas-7k4m9q2x",
-    "state_key": null
+    "state_key": "atlas-capstone.tfstate"
   },
   "rehearsal": {
     "name_prefix": "atlas-rehearsal-a1b2c3",

@@ -56,7 +56,23 @@ def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) 
 
     profile = profiles[installation]
     prefix = profile['name_prefix']
-    result = dict(name_prefix=prefix, state_key=profile.get('state_key') or '',
+    state_key = profile.get('state_key') or ''
+    requested_name = settings.get('ATLAS_REHEARSAL_NAME', '').strip()
+    if requested_name:
+        if installation != 'rehearsal':
+            raise ValueError('A custom rehearsal name is only allowed for installation rehearsal.')
+        prefix = requested_name if requested_name.startswith('atlas-rehearsal-') else 'atlas-rehearsal-' + requested_name
+        if not re.fullmatch(r'atlas-rehearsal-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', prefix) or len(prefix) > 27:
+            raise ValueError('Use a rehearsal suffix of lowercase letters/digits/hyphens; the full prefix must be at most 27 characters.')
+        state_key = f'rehearsal/{prefix}.tfstate'
+    shape = settings.get('ATLAS_DEPLOYMENT_SHAPE', 'default')
+    if shape == 'default':
+        shape = 'both' if installation == 'main' else 'live'
+    if shape not in ('both', 'live', 'demo'):
+        raise ValueError('Choose default, both, live or demo for the applications to provision.')
+    variants = ['live', 'demo'] if shape == 'both' else [shape]
+    result = dict(name_prefix=prefix, state_key=state_key,
+                  variants_json=json.dumps(variants, separators=(',', ':')),
                   resource_group=f'{prefix}-rg', live_app=f'{prefix}-live',
                   demo_app=f'{prefix}-demo', live_admin=f'{prefix}-live-ops',
                   demo_admin=f'{prefix}-demo-ops')
