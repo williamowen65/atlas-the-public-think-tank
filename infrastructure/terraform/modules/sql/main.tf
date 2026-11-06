@@ -60,6 +60,8 @@ resource "azapi_resource" "variant" {
     }
   }
 
+  # Normal deployments remain protected. The rehearsal cleanup workflow alone
+  # generates a temporary rehearsal_cleanup_override.tf.json after scope checks.
   lifecycle {
     prevent_destroy = true
   }

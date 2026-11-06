@@ -18,3 +18,5 @@ Deployment-target tests also verify branch restrictions, disjoint rehearsal nami
 The policy tests inspect Terraform HCL declarations for Atlas-specific rules (private SQL endpoint, TLS, VNet integration, managed identities, free-offer settings). They are **Python unittest tests**, not a .NET/MSTest `.csproj`; they run in GitHub Actions through [AtlasInfrastructure.yml](../../.github/workflows/AtlasInfrastructure.yml), not through `dotnet test` or Visual Studio Test Explorer.
 
 The CI workflow also runs `terraform fmt -check`, `terraform init -backend=false`, `terraform validate`, and Trivy checks. Those are separate from the Python assertions. None of these offline checks applies infrastructure or verifies Azure runtime behavior. For an authenticated preview, see the [deployment runbook](../../infrastructure/DEPLOYMENT.md).
+
+Cleanup tests reject main/foreign resource scope, require exact confirmation and main-branch runs, inspect pure destroy plans, and verify temporary overrides preserve the tracked SQL protection. With Terraform on PATH, a built-in-resource fixture exercises lifecycle protection and its cleanup override locally without Azure access.

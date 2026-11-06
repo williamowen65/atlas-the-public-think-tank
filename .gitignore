@@ -408,3 +408,6 @@ http-client.env.json.user
 
 # Machine-local LAN HTTPS settings (certificates stay outside the repository).
 /src/hosts/Atlas.Web/.env.lan.local
+
+# Generated only in the guarded rehearsal cleanup checkout.
+**/rehearsal_cleanup_override.tf.json

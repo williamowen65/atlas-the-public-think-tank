@@ -223,13 +223,11 @@ and [deployment Environment protection](https://docs.github.com/en/actions/refer
 
 ## Deliberate cleanup
 
-This PR adds no delete workflow. Reducing an existing application set, deletion or
-replacement stops the normal deployment workflow with an explanation. Deleting a
-disposable rehearsal resource group manually in Azure is a separate option; verify
-the exact rehearsal group first. That does not automatically delete its Terraform
-state blob. Reusing that name/state after refresh may recreate the resources, so
-handle state/archive/cleanup deliberately and never delete the main state as part
-of a rehearsal cleanup. The deployment workflow does not remove SQL `prevent_destroy`.
+Use the separate [rehearsal cleanup workflow](REHEARSAL-CLEANUP.md) for an explicit
+reviewed destroy plan. It has no main target and updates the rehearsal state while
+preserving shared backend storage. Normal deployment still stops variant removal,
+deletion and replacement. Manual Azure resource-group deletion does not update
+Terraform state immediately and can lead to recreation by the provisioning Action.
 
 ## Rehearsal observations (2026-11-06)
 
