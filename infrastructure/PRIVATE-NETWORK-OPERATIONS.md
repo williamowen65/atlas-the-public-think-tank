@@ -13,7 +13,7 @@ A VNet is similar to a private LAN. Terraform builds a VNet (`<prefix>-vnet`) wi
 
 ## Administrative host and execution paths
 
-Use the dedicated management-only App Service on the existing B1 plan. GitHub Actions publishes Atlas.Admin SSH tools plus a single identity-bootstrap WebJob; bootstrap succeeded after retry. **App Service SSH is the observed working path for schema and Full-Text setup**; use it for the documented schema and demo-seed sequence. See [first deployment](FIRST-DEPLOYMENT.md).
+Use the dedicated management-only App Service on the existing B1 plan. GitHub Actions publishes Atlas.Admin SSH tools plus a single identity-bootstrap WebJob; the November 6 bootstrap trigger returned HTTP 404 after successful publication. **App Service SSH is the observed working path for identity bootstrap, schema and Full-Text setup**; use it for the documented schema and demo-seed sequence. See [first deployment](FIRST-DEPLOYMENT.md).
 
 The Action offers only `publish` (upload tools without running SQL) and `bootstrap` (publish and run confirmed identity setup). Schema and demo-seed WebJob shortcuts and the troubleshooting diagnostic have been removed. Use SSH for the two C# maintenance commands. The next successful clean admin publication removes the obsolete job directories.
 
@@ -26,13 +26,19 @@ The supported maintenance operations are:
 | Apply schema and Full-Text indexes | DDL/migration privileges in one selected database | Explicit SSH command before app release | Idempotent migrations and database-ready verification |
 | Initialize demo | Demo-only account/content initialization | Explicit SSH command once on empty demo database | Refuses live DB; unique secret password required; no wipe-on-deploy |
 
-Local database setup now uses the dedicated [C# `Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) command with the **same .NET User Secrets store** as the API. Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` locally (append `--seed-demo` only for a fresh disposable local database). No PowerShell helper remains. The local command refuses Azure SQL, and it does not provide Private Link connectivity from a home PC. Azure invokes the same admin executable through SSH for schema/Full-Text setup and demo seeding, or through the single bootstrap WebJob for initial SQL identity grants. GitHub publishes both in one admin-tools package. The repository's [`run-webjob.sh`](webjobs/run-webjob.sh) is packaged as `run.sh` (Azure's WebJob entry-point filename) and launches identity bootstrap only when Azure triggers that WebJob, **not** when the public Atlas app starts.
+Local database setup now uses the dedicated [C# `Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) command with the **same .NET User Secrets store** as the API. Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` locally (append `--seed-demo` only for a fresh disposable local database).
+
+No PowerShell helper remains. The local command refuses Azure SQL, and it does not provide Private Link connectivity from a home PC. Azure invokes the same admin executable through SSH for schema/Full-Text setup and demo seeding, or through the single bootstrap WebJob for initial SQL identity grants.
+
+GitHub publishes both in one admin-tools package. The repository's [`run-webjob.sh`](webjobs/run-webjob.sh) is packaged as `run.sh` (Azure's WebJob entry-point filename) and launches identity bootstrap only when Azure triggers that WebJob, **not** when the public Atlas app starts.
 
 ## Secure execution sequence
 
 1. Apply reviewed Terraform manually. This creates web apps, VNet integration, private DNS, the Azure SQL Private Endpoint, and SQL databases with public networking disabled.
-2. Use a secure one-time bootstrap to establish **per-variant SQL runtime and management identities**. Prefer Microsoft Entra/managed identity where feasible; do not grant the public application account schema-admin permissions.
-3. Publish the versioned SSH tools/bootstrap package to the management app. This should be wired into an **explicit GitHub Actions deployment workflow**, not invoked by a Terraform resource creation.
+2. Publish the tools with admin operation `publish`, then use the matching operations
+   App Service SSH terminal to run `--bootstrap-cloud-identities`. This establishes **per-variant SQL runtime and management identities**. Prefer Microsoft Entra/managed identity where feasible; do not grant the public application account schema-admin permissions.
+3. Confirm bootstrap success, then apply Terraform with bootstrap disabled to
+   remove temporary credentials. See the walkthrough for commands and expected output.
 4. Choose `live` or `demo` and manually run the schema/Full-Text initializer through the matching admin App Service's SSH terminal, using the published Atlas.Admin executable. Confirm the correct target and output.
 5. For **demo only**, explicitly run one-time seed setup after schema initialization; never seed `live`, never reseed a populated database or expose a known default account password.
 6. Validate SQL connectivity, private DNS, EF schema, Full-Text Search readiness, runtime SQL privileges, monitoring and response behavior.
@@ -44,11 +50,14 @@ The VNet and ordinary subnets themselves are free, and App Service outbound VNet
 
 The endpoint subnet's **Network Security Group (NSG)** provides a subnet-level, stateful firewall: the current rule allows port 1433 from the App Service integration subnet, denying other VNet sources. This is defense in depth; identity and least-privilege database roles remain essential. The current single VNet and shared SQL logical server do not by themselves ensure demo/live per-database permissions; verify these separately.
 
-## Open work before calling admin automation complete
+## Verification and remaining work
 
-- Verify the management-only App Service host/module and separate managed identities against the provisioned Azure environment.
-- Verify the simplified publication/bootstrap Action and the SSH schema/demo-seed sequence in an isolated rehearsal, including private DNS and VNet routing.
-- Bootstrap the chosen database authentication model, grant least-privilege per-database runtime/ops access, and rotate/revoke provisioning credentials.
+- Live-only rehearsal provisioning, publication, SSH bootstrap/schema and cleanup
+  succeeded. Earlier live/demo SSH schema setup also succeeded.
+- Investigate the unresolved bootstrap WebJob trigger HTTP 404 separately from SQL
+  connection retries. Record demo seed and application acceptance results explicitly.
+- Verify deployed SQL privileges and cross-database rejection. Successful bootstrap
+  is not a complete security audit.
 - Protect GitHub Environments/OIDC subjects, trigger privileges and job outputs; never log secrets, connection strings or user content.
 - Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.
 - Design explicit GlobalModerator grant/revoke commands with operator approval, auditing, and session invalidation. The current interactive local Console workflow is **not** packaged into Azure. A private interactive administration portal would be a distinct feature, not a WebJob.

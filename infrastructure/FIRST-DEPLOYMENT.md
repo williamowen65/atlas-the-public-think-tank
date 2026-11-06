@@ -1,13 +1,11 @@
 # First deployment and isolated rehearsal
 
-This walkthrough follows the successful November 5, 2026 sequence, with the
-admin Action and package layout simplified afterward. Rehearse the updated
-publication path before treating it as verified in Azure.
-Terraform provisions resources; GitHub Actions publishes packages; the dedicated
-admin App Service runs Atlas.Admin against private SQL. Use App Service **SSH**
-for schema and demo seeding. Azure Cloud Shell is useful for Azure CLI management,
-but is not the private-network terminal where the successful schema commands ran.
-Kudu is the deployment/WebJob service; its console is a different execution context.
+Terraform creates Azure resources. GitHub Actions publishes packages. Database
+commands run through the operations App Service’s **SSH terminal**, inside the
+private network.
+
+This is the route verified during the November 6 live-only rehearsal. Azure Cloud
+Shell and the Kudu console are different execution contexts.
 
 ## What was observed
 
@@ -20,12 +18,12 @@ Kudu is the deployment/WebJob service; its console is a different execution cont
 | Demo seed | Use the guarded command below; capture its successful output during the rehearsal rather than assuming populated nodes prove the exact command used |
 | Smoke checks | Deployment checks failed before the operator later observed available sites; timing is a hypothesis, not a confirmed root cause |
 
-The private SQL administration workflow had multiple distinct failures: Kudu
-HTTP 502 during package deployment, SQL login resets during bootstrap, and
-managed-identity token acquisition cancellation during schema WebJob execution.
-The SSH success does not explain or fix every WebJob failure. Keep the
-workflow for publishing and bootstrap; use the successful SSH context for schema.
-Detailed diagnostics remain in [DEPLOYMENT.md](DEPLOYMENT.md#deployment-preference-and-sql-connection-diagnostics).
+Earlier WebJob attempts failed at different phases. During the rehearsal, package
+publication succeeded but the bootstrap trigger returned HTTP 404. SSH bootstrap
+then succeeded on connection attempt 3.
+
+Use the SSH route below. The optional bootstrap Action remains available, but
+a successful package upload does not prove that bootstrap ran.
 
 Before starting, use [Azure and GitHub setup](AZURE-SETUP.md) to locate every
 Azure value and configure your own repository's Environments, OIDC and secrets.
@@ -46,32 +44,49 @@ of reconstructing names. The original prefix was `atlas-7k4m9q2x`.
 
 ## 2. Publish Atlas.Admin and bootstrap each database
 
-Run **Atlas admin tools (publish or bootstrap)** (`AtlasAdmin.yml`) from `main`:
+Run **Atlas admin tools (publish or bootstrap)** (`AtlasAdmin.yml`):
 
-| Variant | Operation | Confirmation |
-| --- | --- | --- |
-| live | bootstrap | `bootstrap-live` |
-| demo | bootstrap | `bootstrap-demo` |
+- Select the same installation and rehearsal name as provisioning.
+- Choose each provisioned variant separately.
+- Choose operation **publish** and leave confirmation blank.
+- Use the trusted code branch under test; targeting main requires branch `main`.
 
-The shared credential Environment is `atlas-infra-apply` for every cloud Action.
-App/resource-group targets are derived from the selected tracked profile and
-checked before deployment; no per-target GitHub variables are required.
-The Action has two operations:
+Publication installs the tools in `/home/site/wwwroot/tools/atlas-admin`.
+It does not run SQL or deploy the public website.
 
-| Operation | Result |
-| --- | --- |
-| `publish` | Upload the SSH tools and bootstrap job; no SQL command runs |
-| `bootstrap` | Upload the same package, run identity bootstrap, and verify job completion; exact confirmation required |
+Open **Azure Portal → App Services → the selected operations app from
+`admin_site_names` → SSH**. Confirm the target and run:
 
-Tools are published under `/home/site/wwwroot/tools/atlas-admin`; the only triggered
-WebJob is `atlas-bootstrap`. Clean publication removes obsolete WebJob directories
-from the dedicated admin host. It does not deploy the public website. Inspect
-packaging, deployment, invocation, and bootstrap completion separately; an upload
-alone does not prove bootstrap completed.
+```bash
+printf 'Variant: %s\nDatabase: %s\n' "$ATLAS_DEPLOYMENT_VARIANT" "$ATLAS_EXPECTED_DATABASE"
+cd /home/site/wwwroot/tools/atlas-admin
+dotnet ./Atlas.Admin.dll --bootstrap-cloud-identities
+```
 
-After bootstrap succeeds for every provisioned variant, apply Terraform with `enable_sql_bootstrap=false`
-to remove temporary administrator credentials. Do this before normal schema work.
-Do not print app settings, tokens, passwords, or connection strings into evidence.
+Expected success for live (demo reports `demo` instead):
+
+```text
+Connected to Azure SQL. Configuring managed-identity database users.
+Azure SQL contained managed-identity users verified for live.
+Remove ATLAS_BOOTSTRAP_SQL_* settings by disabling enable_sql_bootstrap and applying Terraform.
+```
+
+Bootstrap creates database identities and permissions. It does **not** apply the
+application schema or seed data. A retry message alone is not success.
+
+After every selected variant succeeds:
+
+1. Run Terraform apply again with `enable_sql_bootstrap=false`.
+2. Keep the same installation, name and application set.
+3. Review the in-place removal of temporary credential settings.
+
+Terraform can report zero additions/deletions while changing an App Service’s
+settings. The SQL administrator password still exists in protected state/history.
+
+The optional admin `bootstrap` operation publishes and triggers a WebJob, requiring
+exact confirmation `bootstrap-live` or `bootstrap-demo`. Its trigger failed in
+the rehearsal; SSH is the verified route. Publishing also removes retired
+diagnostic/schema/seed WebJob directories from the dedicated operations host.
 
 ## 3. Apply schema from each admin App Service SSH terminal
 
@@ -89,16 +104,19 @@ dotnet ./Atlas.Admin.dll --setup-database
 Confirm the variant is `live` and the database matches the new live output before
 running the command. For a full installation, repeat in the **demo admin app**, checking its demo target.
 For a single-variant installation, run only against the selected variant.
-Wait for successful migration and supplemental Full-Text initialization output.
+Expected success:
+
+```text
+Schema: connection opened; applying migrations and supplemental SQL objects.
+Schema and SQL Full-Text initialization completed; background index population may continue.
+```
+
+Wait for this result before deploying the website.
 The C# host validates the variant, expected database, and managed identity itself.
 
-For later schema maintenance, select operation `publish` with confirmation blank
-to refresh the tools without repeating bootstrap. If the DLL is missing, check
-the admin package deployment; do not run a different
-copy or build in the cloud terminal. If a command fails, inspect the phase and
-redacted error before retrying. Connection opening has bounded retries; a failure
-later in migrations can leave completed work. Do not repeatedly replay commands
-without reviewing their output.
+For later schema maintenance, select operation `publish` with confirmation blank to refresh the tools without repeating bootstrap. If the DLL is missing, check the admin package deployment; do not run a different copy or build in the cloud terminal. If a command fails, inspect the phase and redacted error before retrying.
+
+Connection opening has bounded retries; a failure later in migrations can leave completed work. Do not repeatedly replay commands without reviewing their output.
 
 ## 4. Seed demo only
 
@@ -122,13 +140,9 @@ It builds the Svelte static frontend and ASP.NET API into one deployed package.
 The shared `atlas-infra-apply` Environment supplies Azure OIDC secrets; the
 selected tracked profile supplies the target app name.
 
-Choose operation `deploy` to publish. The separate readiness job makes one short
-request each to Atlas liveness and the root page. If Azure has not finished startup,
-the summary says **package publication succeeded; verification pending**. It does
-not keep the runner waiting for minutes. Later select operation `verify`, with the
-same installation/name/variant, to check the site without rebuilding or redeploying.
-Verify-only fails if the site is still unavailable. Inspect startup logs if it
-persists. These checks do not query SQL or confirm the running commit.
+Choose operation `deploy` to publish. The separate readiness job makes one short request each to Atlas liveness and the root page. If Azure has not finished startup, the summary says **package publication succeeded; verification pending**. It does not keep the runner waiting for minutes.
+
+Later select operation `verify`, with the same installation/name/variant, to check the site without rebuilding or redeploying. Verify-only fails if the site is still unavailable. Inspect startup logs if it persists. These checks do not query SQL or confirm the running commit.
 
 Verify the initial feed, Full-Text search, persistent data, and sign-in/out at the
 correct URL. Live may have no nodes; demo should show the intentionally seeded
@@ -152,7 +166,7 @@ and resource URLs; the label does not rename existing Azure resources.
 Consolidate Azure credentials/account settings in the existing `atlas-infra-apply`
 Environment using [Azure setup](AZURE-SETUP.md). No new rehearsal Environments or
 OIDC subjects are needed. Keep its reviewer protection and allow only trusted
-branches, including this PR branch while testing. Both installations deliberately
+branches, including a trusted test branch while testing. Both installations deliberately
 use that identity's permissions.
 
 The Action has a `rehearsal_name` field. Enter a unique suffix such as `trial02`;
@@ -167,10 +181,10 @@ live only; `live`, `demo`, and `both` explicitly choose the resource set. The st
 below demonstrate **both** to rehearse the full workflow. A live-only rehearsal
 omits all demo bootstrap/schema/seed/deploy steps; a demo-only rehearsal omits live.
 
-### Walk through a rehearsal from this PR branch
+### Walk through a rehearsal from a trusted test branch
 
 1. Run **Atlas Azure Terraform plan**, choose installation `rehearsal`, and select
-   branch `docs/deployment-ssh-walkthrough`. Enter rehearsal name `trial02` and
+   branch `main` or an explicitly permitted trusted test branch. Enter rehearsal name `trial02` and
    applications `both`. Review the proposed resources.
 2. Run **Atlas Azure Terraform apply** from that same branch with installation
    `rehearsal`, the same name `trial02`, applications `both`, and
@@ -181,7 +195,7 @@ omits all demo bootstrap/schema/seed/deploy steps; a demo-only rehearsal omits l
    are derived automatically; there is no post-provisioning GitHub variable copy.
    Ensure the shared deployment identity has the required Azure role scope.
 4. Run **Atlas admin tools** with installation `rehearsal` and name `trial02`, separately for live
-   and demo, operation `bootstrap`, with the matching confirmation. Then apply
+   and demo, operation `publish`; run `--bootstrap-cloud-identities` through each matching operations app’s SSH terminal and confirm success. Then apply
    Terraform again against `rehearsal`, name `trial02`, applications `both`, with bootstrap disabled.
 5. Use the new admin apps' SSH terminals for schema and demo seeding as above.
    Run **Atlas manual Azure deployment** with installation `rehearsal`, name `trial02`, and each
@@ -191,15 +205,15 @@ omits all demo bootstrap/schema/seed/deploy steps; a demo-only rehearsal omits l
    as evidence that the new workflow has succeeded in Azure.
 
 The workflow files already exist on the repository's default branch. You can
-therefore dispatch their branch versions before merging this PR. In Actions,
+therefore dispatch their branch versions before merging their changes. In Actions,
 use the **Run workflow → Branch** selector. If the UI still shows the older
 input form, use GitHub CLI with an explicit ref and inputs:
 
 ```bash
-gh workflow run AtlasAzurePlan.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both
-gh workflow run AtlasAzureApply.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both -f enable_sql_bootstrap=true
-gh workflow run AtlasAdmin.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo -f operation=bootstrap -f confirmation=bootstrap-demo
-gh workflow run AtlasDeploy.yml --repo <owner>/<repo> --ref docs/deployment-ssh-walkthrough -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo
+gh workflow run AtlasAzurePlan.yml --repo <owner>/<repo> --ref <trusted-branch> -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both
+gh workflow run AtlasAzureApply.yml --repo <owner>/<repo> --ref <trusted-branch> -f installation=rehearsal -f rehearsal_name=trial02 -f deployment_shape=both -f enable_sql_bootstrap=true
+gh workflow run AtlasAdmin.yml --repo <owner>/<repo> --ref <trusted-branch> -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo -f operation=publish
+gh workflow run AtlasDeploy.yml --repo <owner>/<repo> --ref <trusted-branch> -f installation=rehearsal -f rehearsal_name=trial02 -f variant=demo
 ```
 
 These are separate commands for their respective steps; complete each prerequisite
@@ -247,3 +261,10 @@ received HTTP 404. The operator later confirmed the Atlas site became available.
 The new deploy/verify interface records that distinction without treating delayed
 readiness as a failed package publication. Account/feed acceptance remains a
 separate verification step.
+
+The operator subsequently confirmed successful plan/delete cleanup of this
+live-only rehearsal. See [rehearsal cleanup](REHEARSAL-CLEANUP.md).
+
+Connection retries helped bootstrap and schema setup. Database wake-up is a
+possible explanation, not an established cause. SQL connection failures, WebJob
+trigger HTTP 404 and website startup readiness are separate observations.

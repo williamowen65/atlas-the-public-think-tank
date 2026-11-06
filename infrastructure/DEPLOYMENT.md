@@ -1,7 +1,7 @@
 # Atlas deployment runbook
 
 The deployment uses Terraform for Azure resources, GitHub Actions for publication
-and identity bootstrap, and the dedicated admin App Service SSH terminal for schema
+and the dedicated admin App Service SSH terminal for identity bootstrap, schema
 and demo initialization. Start with [Azure setup](AZURE-SETUP.md) for every shared
 secret/variable and its source, then [the walkthrough](FIRST-DEPLOYMENT.md).
 
@@ -19,7 +19,8 @@ VNet integration provides private SQL reachability; neither a normal laptop nor 
 GitHub-hosted runner connects directly to SQL. Keep the normal SQL hostname in
 connection strings rather than replacing it with a private IP.
 
-Terraform creates four distinct application managed identities and passwordless SQL
+For both variants, Terraform creates four distinct user-assigned managed identities
+(two per variant) and passwordless SQL
 connection strings. Bootstrap creates contained users and grants each runtime its
 matching database access; each admin host uses its separate privileged identity.
 The shared GitHub deployment identity is a different identity used to manage Azure
@@ -27,12 +28,9 @@ resources, not the runtime identity used for application SQL requests.
 
 ## Shared credentials and target selection
 
-All four manual cloud Actions use the single existing GitHub Environment
-`atlas-infra-apply`. It holds Azure credentials and common subscription, location,
-SQL administrator and state-account configuration. The public
-[deployment profiles](config/deployment-targets.json) supply installation prefixes
-and state keys. Website, admin app and resource-group names are derived from them.
-No extra GitHub Environment is required per target or variant.
+The credential-bearing manual cloud Actions use the single existing GitHub Environment `atlas-infra-apply`. It holds Azure credentials and common subscription, location, SQL administrator and state-account configuration. The public [deployment profiles](config/deployment-targets.json) supply installation prefixes and state keys.
+
+Website, admin app and resource-group names are derived from them. No extra GitHub Environment is required per target or variant.
 
 | Run control | Meaning |
 | --- | --- |
@@ -69,14 +67,11 @@ The preview uses a private temporary plan for deletion checks, removes it on exi
 and uploads no plan artifact. JSON state/plan values are piped directly into checks
 without being printed.
 
-The normal deployment path never deletes or replaces resources. A preflight checks
-tracked variants before planning; a plan inspection rejects every action containing
-`delete`, including replacements, before encryption/apply. The decrypted saved plan
-is checked again immediately before apply. A stopped run explains whether to keep
-the existing application set, choose a new name, or perform deliberate cleanup.
-If a deployment genuinely needs replacement, review it through a separate maintenance
-procedure; this Action has no destructive override. Rehearsal installation deletion
-uses the separate [cleanup workflow](REHEARSAL-CLEANUP.md).
+The normal deployment path never deletes or replaces resources. A preflight checks tracked variants before planning; a plan inspection rejects every action containing `delete`, including replacements, before encryption/apply. The decrypted saved plan is checked again immediately before apply.
+
+A stopped run explains whether to keep the existing application set, choose a new name, or perform deliberate cleanup. If a deployment genuinely needs replacement, review it through a separate maintenance procedure; this Action has no destructive override.
+
+Rehearsal installation deletion uses the separate [cleanup workflow](REHEARSAL-CLEANUP.md).
 
 ## First deployment order
 
@@ -84,8 +79,11 @@ uses the separate [cleanup workflow](REHEARSAL-CLEANUP.md).
    [Azure setup](AZURE-SETUP.md). Review the tracked profile before selecting it.
 2. Preview the selected installation. For initial grants, apply with
    `enable_sql_bootstrap=true`.
-3. Run admin `bootstrap` for each selected variant with exact `bootstrap-live` /
-   `bootstrap-demo` confirmation. A package upload alone is not successful bootstrap.
+3. Run admin `publish` for each selected variant. In its operations App Service
+   SSH terminal, run `dotnet ./Atlas.Admin.dll --bootstrap-cloud-identities` from
+   `/home/site/wwwroot/tools/atlas-admin`. Confirm the contained users were verified.
+   This is the successful rehearsal route. The optional bootstrap Action returned
+   HTTP 404 at invocation; upload alone is not bootstrap success.
 4. Apply again with bootstrap disabled to remove temporary provisioning credentials.
 5. In each admin App Service SSH terminal, open
    `/home/site/wwwroot/tools/atlas-admin` and run
@@ -135,19 +133,13 @@ login resets and managed-identity token acquisition cancellation at different
 phases. Their root causes were not established. Diagnostic/schema/seed WebJob
 shortcuts and temporary probe code are retired; the successful SSH path is kept.
 
-Bootstrap and schema retry recognized transient failures while opening a connection,
-at most three attempts ten seconds apart. They do not replay migrations or grants.
-A later failure can leave completed migrations; inspect its phase before rerunning.
-Logs include redacted provider details and structured SQL/socket codes. Demo seed
-does not have that connection-opening retry policy.
+Bootstrap and schema retry recognized transient failures while opening a connection, at most three attempts ten seconds apart. They do not replay migrations or grants. A later failure can leave completed migrations; inspect its phase before rerunning.
 
-Website publication and readiness checks have distinct results. The deployment
-Action now offers `deploy` and `verify`. Deploy publishes the package and performs
-a short HTTP check in a separate job: one request to `/health/live` expecting
-Atlas's `{"status":"ok"}` response, and one to `/`, each bounded to eight seconds.
-It does not wait/retry for minutes. A successful publication with an unavailable
-site is explicitly **verification pending**, with a warning and summary, rather
-than a failed publication or a claimed readiness pass.
+Database wake-up has not been confirmed as the cause of the observed connection failures. A WebJob trigger HTTP 404 is a separate invocation failure. Logs include redacted provider details and structured SQL/socket codes. Demo seed does not have that connection-opening retry policy.
+
+Website publication and readiness checks have distinct results. The deployment Action now offers `deploy` and `verify`. Deploy publishes the package and performs a short HTTP check in a separate job: one request to `/health/live` expecting Atlas's `{"status":"ok"}` response, and one to `/`, each bounded to eight seconds.
+
+It does not wait/retry for minutes. A successful publication with an unavailable site is explicitly **verification pending**, with a warning and summary, rather than a failed publication or a claimed readiness pass.
 
 Later, run the same Action with operation `verify` and the same target/name/variant.
 That operation skips build, artifacts, Azure login and deployment. It performs only
@@ -160,12 +152,9 @@ monitoring and the separate durable-audit follow-up.
 
 ## Costs and verification
 
-The deployment shares a billable B1 plan and private endpoint while using explicitly
-enabled SQL serverless free allowances. Private DNS, state storage, data transfer
-and monitoring beyond included usage may also incur charges. Verify current
-region/subscription pricing and SQL eligibility; this architecture is not entirely
-free. The SQL setting pauses at the free limit rather than opting into paid overage.
-A second installation provisions another plan/endpoint and has its own costs.
+The deployment shares a billable B1 plan and private endpoint while using explicitly enabled SQL serverless free allowances. Private DNS, state storage, data transfer and monitoring beyond included usage may also incur charges. Verify current region/subscription pricing and SQL eligibility; this architecture is not entirely free.
+
+The SQL setting pauses at the free limit rather than opting into paid overage. A second installation provisions another plan/endpoint and has its own costs.
 
 Record the reviewed plan, selected profile/state key, source commit, workflow results,
 URLs and real persistence, search, auth and monitoring checks. Never include secrets

@@ -82,7 +82,7 @@ the GitHub Actions scenario. Enter your repository owner/name, entity type
 - Subject: `repo:<owner>/<repo>:environment:atlas-infra-apply`
 
 Use your own owner/repository in a fork. The current repository can retain its
-existing apply identity/trust; verify it has the permissions for all four Actions.
+existing apply identity/trust; verify it has the permissions for all credential-bearing cloud Actions.
 This is a CI deployment identity, separate from the four runtime/operations
 managed identities Terraform creates for SQL access.
 
@@ -129,7 +129,7 @@ provisioning username defaults to `atlasprovisioner`.
 Open **your repository → Settings → Environments → atlas-infra-apply**. For a fork,
 create that one Environment. For the existing repository, consolidate common values
 from the older Environments here. Do not remove old configuration until the revised
-workflow has been verified; no repository settings are changed automatically by this PR.
+workflow has been verified; repository changes do not automatically change GitHub Environment settings.
 
 ### Environment secrets
 
@@ -164,12 +164,9 @@ Secrets and Variables are different sections: workflows use `secrets.NAME` and
 `AZURE_WEBAPP_NAME`, `AZURE_ADMIN_WEBAPP_NAME` or `AZURE_RESOURCE_GROUP` from GitHub
 Environment variables. Target names now come from the selected tracked profile.
 
-Retain required reviewers and disable bypass on the shared Environment. The apply
-workflow requires a recorded approval. Because the Environment is shared, approval
-protection also applies to plan/admin/deployment jobs using it; some runs may pause
-at more than one job. Permit the trusted test branch in the Environment's branch
-rules before running the PR version. If reviewers are unavailable on your GitHub
-plan, use the local Terraform procedure instead of assuming apply will bypass approval.
+Retain required reviewers and disable bypass on the shared Environment. The apply workflow requires a recorded approval. Because the Environment is shared, approval protection also applies to plan/admin/deployment jobs using it; some runs may pause at more than one job.
+
+Permit the trusted test branch in the Environment's branch rules before running the PR version. If reviewers are unavailable on your GitHub plan, use the local Terraform procedure instead of assuming apply will bypass approval.
 
 ## 6. Review the public target profiles
 
@@ -188,16 +185,13 @@ Its state key is `atlas-capstone.tfstate`, confirmed by the operator from the
 existing backend. This preserves the current installation's state; it does not
 create or migrate a state blob.
 
-The tracked rehearsal fallback is `atlas-rehearsal-a1b2c3`, an example chosen in
-this configuration, unrelated to any branch or commit. Instead of editing it, enter
-`rehearsal_name` in the Action, for example `trial02`. The resolved prefix becomes
-`atlas-rehearsal-trial02` and the state key becomes
-`rehearsal/atlas-rehearsal-trial02.tfstate`. Full prefixes starting
-`atlas-rehearsal-` are accepted too. Use lowercase letters/digits/hyphens and a full
-prefix of at most 27 characters. Leave the field blank only when intentionally
-using the tracked fallback. Main does not accept a rehearsal-name override.
+The tracked rehearsal fallback is `atlas-rehearsal-a1b2c3`, an example chosen in this configuration, unrelated to any branch or commit. Instead of editing it, enter `rehearsal_name` in the Action, for example `trial02`.
 
-Use that same name in all four cloud Actions. A new name means separate resources
+The resolved prefix becomes `atlas-rehearsal-trial02` and the state key becomes `rehearsal/atlas-rehearsal-trial02.tfstate`. Full prefixes starting `atlas-rehearsal-` are accepted too. Use lowercase letters/digits/hyphens and a full prefix of at most 27 characters.
+
+Leave the field blank only when intentionally using the tracked fallback. Main does not accept a rehearsal-name override.
+
+Use that same name in the provisioning, admin and website Actions. A new name means separate resources
 and state; the same name updates the same installation. The applications dropdown
 (`deployment_shape`) offers `default`, `live`, `demo`, and `both`. Default resolves
 to both for main and live only for rehearsal. It is independent of the branch.

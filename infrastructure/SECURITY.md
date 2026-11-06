@@ -1,6 +1,7 @@
 # Atlas Azure infrastructure security
 
-**Status:** Version-controlled configuration and CI checks, **not a verified production deployment**. Applies to PTT-169. Read [DEPLOYMENT.md](DEPLOYMENT.md) for setup and [PROVISIONED-RESOURCES.md](PROVISIONED-RESOURCES.md) for resource inventory.
+This guide describes checked-in controls and their limits. Successful deployment
+and rehearsal runs do not constitute a production security audit. Read [DEPLOYMENT.md](DEPLOYMENT.md) for setup and [PROVISIONED-RESOURCES.md](PROVISIONED-RESOURCES.md) for resource inventory.
 
 ## Current security baseline
 
@@ -14,12 +15,14 @@
 | Encrypted SQL transport | SQL module | Sets minimum SQL TLS 1.2 | Connection strings must also require encryption and validate server certificates |
 | Data isolation | Terraform `live`/`demo` variants | Separate Azure SQL databases and Web Apps; one shared App Service plan | Runtime logins must have per-database access only; the UI must label and constrain demo behavior |
 | Accidental data loss guard | SQL module | `prevent_destroy = true` protects each DB in ordinary Terraform changes | Does not protect against deletion outside Terraform, privileged SQL writes, or missing backups |
-| Managed identities | Web App module | Each Web App has its own system-assigned identity | The identity currently has no SQL permissions or configured Entra database authentication |
-| SQL admin secret handling | Terraform variables and private backend | SQL admin password and runtime connection strings are marked sensitive | Sensitive Terraform inputs can still be present in state. Protect backend access and prefer managed identity/Key Vault later |
-| Deployment access | `.github/workflows/AtlasDeploy.yml` | Manual workflow, with environment-specific short-lived GitHub OIDC credentials intended for Azure | Federated credentials, narrow Azure role grants and environment approval policy need to be provisioned before use |
+| Managed identities | Web App module | Separate user-assigned runtime and operations identities per variant; passwordless SQL connection strings | Bootstrap must establish contained users/grants; verify least privilege and cross-database rejection |
+| SQL admin secret handling | Terraform variables and private backend | SQL administrator and demo seed passwords are sensitive; bootstrap settings are removed after use | Passwords can remain in protected state/history; runtime SQL sign-in uses managed identity |
+| Deployment access | `.github/workflows/AtlasDeploy.yml` | Manual workflow, with shared-Environment short-lived GitHub OIDC credentials intended for Azure | Federated credentials, narrow Azure role grants and environment approval policy need to be provisioned before use |
 | Safe telemetry | `Atlas.Api` and Azure observability module | Category-based app diagnostics and metrics via Azure Monitor; no raw SQL auto-instrumentation | Validate cloud ingestion, privacy and cost; durable audit outbox export remains incomplete |
 
-**Public vs private:** The Atlas *website* needs a public HTTPS endpoint for visitors. The SQL *database* now has **no public network endpoint**. The .NET host connects through the Azure VNet and SQL Private Link over an internal IP address. Ordinary GitHub-hosted runners and home machines cannot reach this private SQL endpoint: authorized database migration/administration jobs must run in the VNet. See [PRIVATE-NETWORK-OPERATIONS.md](PRIVATE-NETWORK-OPERATIONS.md).
+**Public vs private:** The Atlas *website* needs a public HTTPS endpoint for visitors. The SQL *database* now has **no public network endpoint**. The .NET host connects through the Azure VNet and SQL Private Link over an internal IP address.
+
+Ordinary GitHub-hosted runners and home machines cannot reach this private SQL endpoint: authorized database migration/administration jobs must run in the VNet. See [PRIVATE-NETWORK-OPERATIONS.md](PRIVATE-NETWORK-OPERATIONS.md).
 
 **Important:** The NSG restricts network flows to SQL, but an authenticated and least-privilege SQL identity still grants actual database access. Database migrations and production runtime must use **separate privileges**, with no schema-admin credential on the public web app.
 
@@ -30,7 +33,7 @@
 | Check | Enforcement | Purpose |
 | --- | --- | --- |
 | `terraform fmt` / `init -backend=false` / `validate` | Blocking | Formatting and configuration validity |
-| `infrastructure/tests/test_security_baseline.py` | **Blocking** | Parse Terraform HCL and verify HTTPS, FTP disabled, TLS minimum, system-assigned identity, SQL public access disabled, VNet integration, SQL Private Endpoint/private DNS/NSG rules, SQL free-offer safety defaults, and DB deletion protection |
+| `tests/Atlas.Infrastructure.Tests/test_security_baseline.py` | **Blocking** | Parse Terraform HCL and verify HTTPS, FTP disabled, TLS minimum, user-assigned identities, SQL public access disabled, VNet integration, SQL Private Endpoint/private DNS/NSG rules, SQL free-offer safety defaults, and DB deletion protection |
 | Trivy Terraform misconfiguration scan | **Advisory initially** | Report high/critical broader best-practice issues without making existing intentional tradeoffs silently disappear |
 | Trivy infrastructure secret scan | **Blocking** | Detect high/critical exposed secrets accidentally committed to the Terraform directory |
 
@@ -38,7 +41,11 @@ The baseline tests use `python-hcl2==8.1.4` and do not access Azure. Trivy uses 
 
 ### Azure-connected predeployment preview (operator-invoked)
 
-The separate [`AtlasAzurePlan.yml`](../.github/workflows/AtlasAzurePlan.yml) workflow authenticates to the selected Azure subscription using GitHub OIDC and consults the **real private Terraform state**. It runs `terraform init`, `validate` and `plan`, without `apply`. It uses the same credential Environment as apply; the Action is read-only by behavior, not by a separate Azure identity. Only trusted, reviewed branches may use those credentials. It **never auto-runs on pull requests** and never uploads a Terraform plan artifact that could contain credentials. The shared `atlas-infra-apply` credential Environment must be configured first (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+The separate [`AtlasAzurePlan.yml`](../.github/workflows/AtlasAzurePlan.yml) workflow authenticates to the selected Azure subscription using GitHub OIDC and consults the **real private Terraform state**. It runs `terraform init`, `validate` and `plan`, without `apply`.
+
+It uses the same credential Environment as apply; the Action is read-only by behavior, not by a separate Azure identity. Only trusted, reviewed branches may use those credentials. It **never auto-runs on pull requests** and never uploads a Terraform plan artifact that could contain credentials.
+
+The shared `atlas-infra-apply` credential Environment must be configured first (see [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 A real Terraform plan catches changes and some provider/state errors that the offline HCL tests cannot; **it is not identical to Azure ARM/Bicep What-If**, and it does not replace real deployment, quota and runtime verification.
 
@@ -47,7 +54,9 @@ A real Terraform plan catches changes and some provider/state errors that the of
 1. Review Trivy's first findings. Confirm actual risks and Azure/free-tier constraints, and resolve them; then make the relevant HIGH/CRITICAL checks blocking. Never suppress a finding without a documented reason.
 2. Exercise the **implemented manual Azure-connected `terraform plan` workflow** against the bootstrapped remote state, with the shared OIDC deployment identity. Review its proposed changes before any separate manual apply.
 3. Verify **deployed configuration and drift** once Azure is running; static CI cannot see Portal-side changes or runtime permissions.
-4. Provision and verify least-privilege per-variant SQL identities and OIDC access, plus a protected in-VNet administration executor. Prefer managed-identity database authentication over storing permanent SQL connection passwords in Terraform state.
+4. Verify deployed SQL grants, OIDC permissions and the protected operations host.
+   Managed-identity sign-in and bootstrap are implemented. Test that runtime access
+   cannot administer schema or cross into another database.
 5. Add runtime security checks after deployment: HTTPS redirect, authentication/session/CSRF, API authorization, direct-link routing, audit-outbox delivery, SQL FTS readiness, and zero cross-database access.
 6. Check backup/restore, telemetry retention/budget, and alerts. Monitor B1 hosting, private endpoint, private DNS and telemetry costs; do not silently replace the private network with public SQL access to save money.
 
@@ -56,8 +65,8 @@ A real Terraform plan catches changes and some provider/state errors that the of
 From the repository root, with Python and Terraform installed:
 
 ```powershell
-python -m pip install "python-hcl2==8.1.4"
-python -m unittest discover -s infrastructure/tests -p "test_*.py" -v
+python -m pip install "python-hcl2==8.1.4" "PyYAML==6.0.3"
+python -m unittest discover -s tests/Atlas.Infrastructure.Tests -p "test_*.py" -v
 Push-Location infrastructure/terraform
 terraform fmt -check -recursive
 terraform init -backend=false

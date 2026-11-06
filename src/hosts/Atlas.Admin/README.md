@@ -14,7 +14,8 @@ managed-identity diagnostic command is retired.
 
 | Execution context | Command |
 | --- | --- |
-| Confirmed bootstrap Action | `--bootstrap-cloud-identities` |
+| Operations App Service SSH (verified rehearsal route) | Tools directory, then `dotnet ./Atlas.Admin.dll --bootstrap-cloud-identities` |
+| Optional bootstrap Action | Runs the same command; its trigger returned HTTP 404 in the rehearsal |
 | Admin App Service SSH | `cd /home/site/wwwroot/tools/atlas-admin` then `dotnet ./Atlas.Admin.dll --setup-database` |
 | Demo admin App Service SSH, after schema | Same directory, then `dotnet ./Atlas.Admin.dll --seed-demo` |
 
@@ -22,7 +23,7 @@ The commands retain these guards:
 
 | Command | Purpose | Safety |
 | --- | --- | --- |
-| `--bootstrap-cloud-identities` | Initial Azure SQL contained users and role grants | Requires temporary SQL admin credentials, correct live/demo target, explicit workflow approval |
+| `--bootstrap-cloud-identities` | Initial Azure SQL contained users and role grants | Requires temporary SQL admin credentials, correct live/demo target, authorized operations host; workflow confirmation when using the Action |
 | `--setup-database` | Apply checked-in EF migrations, SQL supplemental schema and Full-Text Search | Explicit operation only; no app-startup migration |
 | `--seed-demo` | Seed initial demo accounts/content | Rejects live, requires a unique `ATLAS_DEMO_PASSWORD`, refuses existing data |
 
@@ -30,7 +31,9 @@ Only the production administration managed identity can connect to its matching 
 
 ## Role administration — follow-up
 
-The local `Atlas.Console` already supports trusted, interactive GlobalModerator grants; however, that is **not a deployed cloud administration feature** yet. Add tightly scoped `grant-global-moderator` and `revoke-global-moderator` commands here after establishing operator approvals, targeting, error reporting, durable security audit and session invalidation. Do not expose these operations as anonymous endpoints or assume a WebJob terminal can be used interactively.
+The local `Atlas.Console` already supports trusted, interactive GlobalModerator grants; however, that is **not a deployed cloud administration feature** yet.
+
+Add tightly scoped `grant-global-moderator` and `revoke-global-moderator` commands here after establishing operator approvals, targeting, error reporting, durable security audit and session invalidation. Do not expose these operations as anonymous endpoints or assume a WebJob terminal can be used interactively.
 
 An administrative **portal** (a private UI) would be a separate design choice; WebJobs are non-interactive jobs, not an interactive terminal or website.
 
@@ -58,6 +61,15 @@ The first command applies EF migrations and SQL Full-Text setup. The optional se
 
 The protected `AtlasAdmin.yml` workflow publishes this same C# project, optionally invoking only identity bootstrap, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require the shared `atlas-infra-apply` GitHub Environment and Azure OIDC access. Target names come from the selected tracked profile.
 
-After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, use SSH to run `--setup-database` for both, and `--seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
+After provisioning, run `publish` for each selected variant. In the matching
+operations App Service SSH terminal:
+
+1. Run `--bootstrap-cloud-identities` while temporary credentials are enabled.
+2. Confirm success, then apply Terraform with bootstrap disabled.
+3. Run `--setup-database`.
+4. For an empty demo database only, run `--seed-demo`.
+
+A live-only installation has no demo steps. The optional bootstrap Action failed
+at invocation (HTTP 404) during the rehearsal; SSH bootstrap succeeded. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
 
 See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Schema and Full-Text setup succeeded through the admin App Service SSH terminal for live and demo. Use the [first-deployment walkthrough](../../../infrastructure/FIRST-DEPLOYMENT.md) for commands and target checks; schema and seed are no longer packaged as triggered WebJobs.

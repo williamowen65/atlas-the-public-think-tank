@@ -9,7 +9,7 @@ state. It does not offer the main installation as a target.
 
 ## Before using it
 
-Merge the workflow PR first. This is a new workflow filename and it deliberately
+The workflow is available on the default branch. It deliberately
 requires a fresh manual run from branch `main`; no extra branch needs access to
 GitHub Environment secrets. It reuses the existing **`atlas-infra-apply`** shared
 Environment, Azure OIDC identity, state-account configuration and required reviewers.
@@ -36,12 +36,9 @@ Approve access to the shared Environment if prompted. This mode does not apply
 anything. It verifies the existing state blob before initializing the backend;
 missing state is an error rather than a guessed deletion target.
 
-Check the resolved target is **`atlas-rehearsal-1234134-rg`**, with state key
-**`rehearsal/atlas-rehearsal-1234134.tfstate`**. Review the destroy list. Every managed
-resource must be inside that exact resource group and configured subscription.
-The workflow rejects another group, main resource IDs, creation, updates and
-replacements. An already-empty tracked state is a harmless no-op. It does not
-blindly delete an Azure resource group based only on its name.
+Check the resolved target is **`atlas-rehearsal-1234134-rg`**, with state key **`rehearsal/atlas-rehearsal-1234134.tfstate`**. Review the destroy list. Every managed resource must be inside that exact resource group and configured subscription.
+
+The workflow rejects another group, main resource IDs, creation, updates and replacements. An already-empty tracked state is a harmless no-op. It does not blindly delete an Azure resource group based only on its name.
 
 No application-count choice is needed: destroy mode removes the resources actually
 tracked for this installation, whether it was live-only, demo-only or both.
@@ -97,10 +94,13 @@ If you deleted the group manually in Azure already, Terraform's next refresh can
 notice the missing resources. Review a cleanup plan to reconcile the selected
 rehearsal state; do not use the provisioning Action unless recreation is intended.
 
-## Verification limits
+## Observed cleanup and verification limits
+
+The operator confirmed successful plan/delete cleanup of the live-only
+`atlas-rehearsal-1234134` installation on November 6, 2026. This is separate from
+the offline checks and does not prove cleanup of every supported deployment shape.
 
 Offline tests cover scope rejection, confirmations, plan actions, temporary overrides,
 secret-safe messages and workflow wiring. A local Terraform built-in-resource fixture
-also verifies lifecycle override behavior without contacting Azure. An actual Azure
-cleanup is a separate operator action and is not performed when this workflow is
-created or its PR is merged.
+also verifies lifecycle override behavior without contacting Azure. Azure cleanup remains an explicit operator action. Merging code does not delete
+resources.
