@@ -1,6 +1,6 @@
 # Azure resources provisioned for Atlas
 
-Status: **configuration committed, not deployed**. The authoritative definitions are in [`terraform/`](terraform/); check a `terraform plan` before each apply. This inventory describes the planned Azure infrastructure for school deployment (PTT-169), not application-level setup or an already-running system.
+Status: **configuration committed, not deployed**. The authoritative definitions are in [`terraform/`](terraform/); check a `terraform plan` before each apply. This inventory describes the planned Azure infrastructure for Atlas deployment (PTT-169), not application-level setup or an already-running system.
 
 ## Resource inventory
 
@@ -77,7 +77,7 @@ These settings alone do not prove production security: validate authentication/C
 
 Defaults now select a **billable B1** App Service plan (the VNet integration baseline) and an explicitly flagged **Azure SQL General Purpose serverless free offer** using AzAPI. If your subscription or region is ineligible, provisioning should fail rather than silently upgrade to a paid SQL tier. The free SQL allowance has monthly compute, data and backup limits; The VNet itself and App Service VNet integration have no extra fee, but a SQL Private Endpoint and private DNS zone are billable. Terraform state storage, additional Log Analytics ingestion and other Azure services can still incur charges. Terraform defines resources and can estimate *what* is created, but it does not enforce a spending cap.
 
-For reproducible school-report evidence, capture an approved Terraform plan (with secrets removed), resource inventory, successful cloud deployment run, HTTPS/SQL/CSRF smoke tests, telemetry screenshots and a documented rollback or recovery procedure.
+For reproducible deployment verification, capture an approved Terraform plan (with secrets removed), resource inventory, successful cloud deployment run, HTTPS/SQL/CSRF smoke tests, telemetry screenshots and a documented rollback or recovery procedure.
 
 ## Code-driven data initialization
 

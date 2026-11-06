@@ -1,8 +1,8 @@
-# Atlas capstone deployment runbook
+# Atlas deployment runbook
 
-**Status (2026-11-06):** The operator confirmed live and demo are deployed. SQL identity bootstrap succeeded after retry; schema and Full-Text setup succeeded through App Service SSH. Follow the [first-deployment walkthrough](FIRST-DEPLOYMENT.md) for the working sequence and an isolated rehearsal. This records observed results, not a completed school acceptance report.
+**Status (2026-11-06):** The operator confirmed live and demo are deployed. SQL identity bootstrap succeeded after retry; schema and Full-Text setup succeeded through App Service SSH. Follow the [first-deployment walkthrough](FIRST-DEPLOYMENT.md) for the working sequence and an isolated rehearsal.
 
-The goals are **production parity** with the tested local product behavior, minimum feasible recurring Azure costs with private SQL networking, a reproducible deployment, visible telemetry, and documented evidence for the school report.
+The goals are **production parity** with the tested local product behavior, minimum feasible recurring Azure costs with private SQL networking, a reproducible deployment, visible telemetry, and documented operational verification.
 
 ## 1. Deployment architecture
 
@@ -101,7 +101,7 @@ terraform plan
 terraform plan -destroy
 ```
 
-Review every `plan` before applying. A `-target` apply is **not** the default workflow. The SQL databases use `prevent_destroy` to avoid accidental data removal. Do not run `terraform destroy` against student deployment evidence or live data without a recovery plan.
+Review every `plan` before applying. A `-target` apply is **not** the default workflow. The SQL databases use `prevent_destroy` to avoid accidental data removal. Do not run `terraform destroy` against deployment records or live data without a recovery plan.
 
 ### Optional: Azure-connected preview from GitHub Actions (no apply)
 
@@ -172,11 +172,11 @@ Run **Actions → Atlas manual Azure deployment → Run workflow**, select the v
 
 A demo environment must be clearly labeled and should restrict writes to seeded content through application policy. Terraform cannot enforce that business rule. A full A/B experiment additionally needs assignment, exposure tracking and meaningful outcomes.
 
-## 8. Budget and school evidence
+## 8. Budget and deployment verification
 
 The sample now defaults to a **paid B1 App Service plan** for private VNet integration and Azure SQL **General Purpose serverless free offer** with `useFreeLimit=true` and `AutoPause`. Azure SQL free databases have monthly compute/storage limits; eligibility depends on subscription and region. The infrastructure does not silently replace an ineligible free database with a paid SKU. F1 cannot provide App Service VNet integration. B1 is billable even when SQL is within its free allowance. The SQL Private Endpoint has a recurring charge, and the private DNS zone may have usage charges. Log Analytics above its included allowance, Terraform state storage and other Azure services can also incur charges. Compare subscription eligibility, student credits and region restrictions before applying. Set a budget alert using a documented IaC-managed approach before enabling a paid upgrade.
 
-For the WGU deployment report (PTT-170), capture the chosen architecture, Terraform `plan` summary (redacted), workflow runs/commit SHA, HTTPS URL, two variants if enabled, SQL persistence/FTS evidence, auth and security checks, and Application Insights screenshots with no sensitive identifiers. Target the first deployment evidence by **November 16**, first report submission by **November 19**, and confirmed pass before November 30.
+For deployment verification, record the architecture, redacted Terraform plan summary, workflow runs and commit SHA, HTTPS URLs, SQL persistence and Full-Text results, authentication and security checks, and telemetry verification. Exclude secrets and sensitive identifiers.
 
 
 ## Deployment preference and SQL connection diagnostics
