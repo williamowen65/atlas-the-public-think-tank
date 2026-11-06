@@ -139,9 +139,20 @@ A later failure can leave completed migrations; inspect its phase before rerunni
 Logs include redacted provider details and structured SQL/socket codes. Demo seed
 does not have that connection-opening retry policy.
 
-Website publication and smoke checks have distinct results. The current smoke step
-checks `/health/live` and `/`, up to six attempts with ten-second pauses; it does
-not verify SQL readiness. A successful static page is not proof nodes can load.
+Website publication and readiness checks have distinct results. The deployment
+Action now offers `deploy` and `verify`. Deploy publishes the package and performs
+a short HTTP check in a separate job: one request to `/health/live` expecting
+Atlas's `{"status":"ok"}` response, and one to `/`, each bounded to eight seconds.
+It does not wait/retry for minutes. A successful publication with an unavailable
+site is explicitly **verification pending**, with a warning and summary, rather
+than a failed publication or a claimed readiness pass.
+
+Later, run the same Action with operation `verify` and the same target/name/variant.
+That operation skips build, artifacts, Azure login and deployment. It performs only
+the two public HTTP checks, failing if readiness is still unconfirmed. A successful
+check does not establish SQL readiness, authentication, or the exact running release.
+Persistent failure requires startup-log inspection rather than unlimited waiting.
+
 Database wake-up UI is tracked in PTT-172. See [telemetry](TELEMETRY.md) for cloud
 monitoring and the separate durable-audit follow-up.
 

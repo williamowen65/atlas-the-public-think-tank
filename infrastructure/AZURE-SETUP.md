@@ -18,6 +18,7 @@ use it. Live/demo are application variants, not GitHub Environments in this mode
 | App and resource-group names | Derived from the selected profile, matching Terraform | No manual copying of output names into GitHub variables |
 | Installation and applications to provision | Action dropdowns | Default: main both; rehearsal live only |
 | Admin/deployment variant | Action dropdown | Select a variant that was provisioned |
+| Website operation | Action dropdown | `deploy` publishes; `verify` only checks public HTTP readiness |
 | Source branch | Run workflow branch selector / CLI `--ref` | Select the code to test |
 
 Instructions and identifiers may be public. Passwords, tokens, Terraform state and
@@ -223,3 +224,28 @@ admin tools and website deployment. Follow [first deployment](FIRST-DEPLOYMENT.m
 - [Azure Login using OIDC](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect)
 - [Terraform Azure backend authentication and roles](https://developer.hashicorp.com/terraform/language/backend/azurerm)
 - [GitHub Environment approvals and branch restrictions](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+
+## Retiring the old GitHub Environments
+
+After this PR is merged, review workflow checks and confirm all credential-bearing
+cloud jobs reference `atlas-infra-apply`. Check that its six secrets and shared
+variables from the tables above are present; a live-only rehearsal does not test
+`ATLAS_DEMO_PASSWORD`. Retain the original values privately, because GitHub does
+not reveal saved secret values for copying later.
+
+Run the rehearsal plan from branch `main` with the same name/application set and
+bootstrap disabled, then run website operation `verify` from `main` for that same
+rehearsal. Do not provision a new installation just to validate branch routing.
+Ensure no older in-flight or queued runs still depend on the retired Environments.
+Then under Settings → Environments, the obsolete entries are:
+
+- `atlas-demo`
+- `atlas-live`
+- `atlas-ops-demo`
+- `atlas-ops-live`
+- `atlas-infra-review`
+
+Keep `atlas-infra-apply`. Deleting these GitHub configuration entries does not
+delete Azure resource groups/apps/databases, but old workflow revisions using them
+will lose their configuration; start new runs on the merged version instead.
+This cleanup does not include deleting Azure managed identities or federated trusts.

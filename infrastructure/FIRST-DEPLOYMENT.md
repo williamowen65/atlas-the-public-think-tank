@@ -122,11 +122,13 @@ It builds the Svelte static frontend and ASP.NET API into one deployed package.
 The shared `atlas-infra-apply` Environment supplies Azure OIDC secrets; the
 selected tracked profile supplies the target app name.
 
-Record the deployment result separately from the smoke result. The current smoke
-step checks `/health/live` and `/`, up to six attempts with ten-second pauses;
-it does not test SQL readiness or loading nodes. If deployment succeeds and the
-smoke step fails, inspect the app's startup logs and check those URLs again before
-deciding to redeploy. A later successful page load does not retroactively pass CI.
+Choose operation `deploy` to publish. The separate readiness job makes one short
+request each to Atlas liveness and the root page. If Azure has not finished startup,
+the summary says **package publication succeeded; verification pending**. It does
+not keep the runner waiting for minutes. Later select operation `verify`, with the
+same installation/name/variant, to check the site without rebuilding or redeploying.
+Verify-only fails if the site is still unavailable. Inspect startup logs if it
+persists. These checks do not query SQL or confirm the running commit.
 
 Verify the initial feed, Full-Text search, persistent data, and sign-in/out at the
 correct URL. Live may have no nodes; demo should show the intentionally seeded
@@ -228,3 +230,22 @@ the exact rehearsal group first. That does not automatically delete its Terrafor
 state blob. Reusing that name/state after refresh may recreate the resources, so
 handle state/archive/cleanup deliberately and never delete the main state as part
 of a rehearsal cleanup. The deployment workflow does not remove SQL `prevent_destroy`.
+
+## Rehearsal observations (2026-11-06)
+
+For `atlas-rehearsal-1234134`, live-only provisioning and SSH schema setup completed.
+Admin package publication succeeded, but the Azure CLI bootstrap trigger returned
+HTTP 404 before completion polling began. The published C# bootstrap command then
+succeeded through SSH on connection attempt 3. The trigger's root cause remains
+unconfirmed; do not repeatedly invoke bootstrap without checking its result.
+
+If publication succeeded but triggering failed, the operator can explicitly run
+`dotnet ./Atlas.Admin.dll --bootstrap-cloud-identities` from the admin SSH tools
+directory while temporary bootstrap credentials are still enabled. Confirm the
+success output before disabling those credentials through Terraform.
+
+Website package publication also succeeded, while the old six-attempt smoke check
+received HTTP 404. The operator later confirmed the Atlas site became available.
+The new deploy/verify interface records that distinction without treating delayed
+readiness as a failed package publication. Account/feed acceptance remains a
+separate verification step.

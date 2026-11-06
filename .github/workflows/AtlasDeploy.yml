@@ -1,9 +1,17 @@
 name: Atlas manual Azure deployment
-run-name: "Deploy · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ inputs.variant }} · ${{ github.ref_name }}"
+run-name: "${{ inputs.operation }} · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ inputs.variant }} · ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
     inputs:
+      operation:
+        description: "Deploy the package, or verify the running site without redeploying"
+        type: choice
+        required: true
+        default: deploy
+        options:
+          - deploy
+          - verify
       rehearsal_name:
         description: "Rehearsal suffix (e.g. trial01); blank uses the tracked rehearsal profile"
         type: string
@@ -50,6 +58,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify requested operation
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          case "$OPERATION" in deploy|verify) ;; *) echo "Choose deploy or verify"; exit 1 ;; esac
       - name: Resolve installation selection
         id: target
         env:
@@ -58,6 +71,7 @@ jobs:
         run: python infrastructure/scripts/check-deployment-target.py selection
 
   build:
+    if: inputs.operation == 'deploy'
     needs: validate-target
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -130,19 +144,28 @@ jobs:
         with:
           app-name: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
           package: ./atlas-publish
-      - name: Smoke test public HTTPS liveness and home page
+
+  verify:
+    name: Check site readiness (no deployment)
+    needs: [validate-target, deploy]
+    if: ${{ always() && needs.validate-target.result == 'success' && (inputs.operation == 'verify' || needs.deploy.result == 'success') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify installation app target
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          ATLAS_VARIANT: ${{ inputs.variant }}
+          ATLAS_TARGET_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
+        run: python infrastructure/scripts/check-deployment-target.py website
+      - name: Report HTTP readiness separately from publication
         env:
           APP_NAME: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
-        run: |
-          url="https://$APP_NAME.azurewebsites.net"
-          for attempt in 1 2 3 4 5 6; do
-            if curl --fail --silent --show-error --max-time 10 "$url/health/live" &&
-               curl --fail --silent --show-error --max-time 10 "$url/" > /dev/null; then
-              echo "Verified deployed liveness and root page at $url"
-              exit 0
-            fi
-            echo "Deployment not ready for public HTTP smoke test (attempt $attempt)"
-            sleep 10
-          done
-          echo "Azure deployment smoke test failed."
-          exit 1
+          ATLAS_DEPLOY_OPERATION: ${{ inputs.operation }}
+        run: python infrastructure/scripts/check-site-readiness.py
