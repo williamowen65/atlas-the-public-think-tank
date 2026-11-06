@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Dedicated command host for local setup and protected Azure WebJobs.
+  <!-- Dedicated command host for local setup, Azure SSH and the protected bootstrap WebJob.
        No interactive Console UI or public HTTP endpoints. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

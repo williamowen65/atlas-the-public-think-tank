@@ -1,6 +1,8 @@
 # First deployment and isolated rehearsal
 
-This is the operator walkthrough for the workflow used on November 5, 2026.
+This walkthrough follows the successful November 5, 2026 sequence, with the
+admin Action and package layout simplified afterward. Rehearse the updated
+publication path before treating it as verified in Azure.
 Terraform provisions resources; GitHub Actions publishes packages; the dedicated
 admin App Service runs Atlas.Admin against private SQL. Use App Service **SSH**
 for schema and demo seeding. Azure Cloud Shell is useful for Azure CLI management,
@@ -21,7 +23,7 @@ Kudu is the deployment/WebJob service; its console is a different execution cont
 The private SQL administration workflow had multiple distinct failures: Kudu
 HTTP 502 during package deployment, SQL login resets during bootstrap, and
 managed-identity token acquisition cancellation during schema WebJob execution.
-The SSH success does not explain or fix every WebJob failure. Keep the existing
+The SSH success does not explain or fix every WebJob failure. Keep the
 workflow for publishing and bootstrap; use the successful SSH context for schema.
 Detailed diagnostics remain in [DEPLOYMENT.md](DEPLOYMENT.md#deployment-preference-and-sql-connection-diagnostics).
 
@@ -40,7 +42,7 @@ of reconstructing names. The original prefix was `atlas-7k4m9q2x`.
 
 ## 2. Publish Atlas.Admin and bootstrap each database
 
-Run **Atlas manual private SQL administration** (`AtlasAdmin.yml`) from `main`:
+Run **Atlas admin tools (publish or bootstrap)** (`AtlasAdmin.yml`) from `main`:
 
 | Variant | Operation | Confirmation | GitHub Environment |
 | --- | --- | --- | --- |
@@ -49,9 +51,18 @@ Run **Atlas manual private SQL administration** (`AtlasAdmin.yml`) from `main`:
 
 Each environment needs `AZURE_ADMIN_WEBAPP_NAME` and `AZURE_RESOURCE_GROUP` from
 the recorded outputs and the Azure OIDC secrets documented in the runbook.
-The workflow publishes all four job directories before triggering the selected
-operation. Inspect packaging, deployment, invocation, and job completion separately.
-An upload alone does not prove bootstrap completed.
+The Action has two operations:
+
+| Operation | Result |
+| --- | --- |
+| `publish` | Upload the SSH tools and bootstrap job; no SQL command runs |
+| `bootstrap` | Upload the same package, run identity bootstrap, and verify job completion; exact confirmation required |
+
+Tools are published under `/home/site/wwwroot/tools/atlas-admin`; the only triggered
+WebJob is `atlas-bootstrap`. Clean publication removes obsolete WebJob directories
+from the dedicated admin host. It does not deploy the public website. Inspect
+packaging, deployment, invocation, and bootstrap completion separately; an upload
+alone does not prove bootstrap completed.
 
 After both bootstraps succeed, apply Terraform with `enable_sql_bootstrap=false`
 to remove temporary administrator credentials. Do this before normal schema work.
@@ -65,7 +76,7 @@ Check only the non-secret target settings:
 
 ```bash
 printf 'Variant: %s\nDatabase: %s\n' "$ATLAS_DEPLOYMENT_VARIANT" "$ATLAS_EXPECTED_DATABASE"
-cd /home/site/wwwroot/App_Data/jobs/triggered/atlas-schema
+cd /home/site/wwwroot/tools/atlas-admin
 ls Atlas.Admin.dll
 dotnet ./Atlas.Admin.dll --setup-database
 ```
@@ -75,7 +86,9 @@ running the command. Then repeat in the **demo admin app**, checking its demo ta
 Wait for successful migration and supplemental Full-Text initialization output.
 The C# host validates the variant, expected database, and managed identity itself.
 
-If the DLL is missing, check the admin package deployment; do not run a different
+For later schema maintenance, select operation `publish` with confirmation blank
+to refresh the tools without repeating bootstrap. If the DLL is missing, check
+the admin package deployment; do not run a different
 copy or build in the cloud terminal. If a command fails, inspect the phase and
 redacted error before retrying. Connection opening has bounded retries; a failure
 later in migrations can leave completed work. Do not repeatedly replay commands
@@ -87,7 +100,7 @@ In the **demo admin app's SSH terminal**, verify the demo target again:
 
 ```bash
 printf 'Variant: %s\nDatabase: %s\n' "$ATLAS_DEPLOYMENT_VARIANT" "$ATLAS_EXPECTED_DATABASE"
-cd /home/site/wwwroot/App_Data/jobs/triggered/atlas-seed-demo
+cd /home/site/wwwroot/tools/atlas-admin
 dotnet ./Atlas.Admin.dll --seed-demo
 ```
 
@@ -139,7 +152,7 @@ this documentation update.
    or deletes of the existing installation. Stop if the original names appear as
    change targets. Record the new state key and all output targets.
 4. Apply, then follow steps 2–5 with explicitly isolated publishing targets.
-   If using local Azure CLI artifact deployment, preserve the same package layout
+   If using local Azure CLI artifact deployment, preserve the same SSH tools/bootstrap package layout
    and trigger bootstrap only on the new admin hosts. Existing Actions currently
    target the original Environments; they cannot select this second installation.
 5. Record each command, commit, run/artifact, target, completion result, and any

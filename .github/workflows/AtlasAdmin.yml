@@ -1,4 +1,5 @@
-name: Atlas manual private SQL administration
+name: Atlas admin tools (publish or bootstrap)
+run-name: "Admin tools · ${{ inputs.variant }} · ${{ inputs.operation }}"
 
 on:
   workflow_dispatch:
@@ -11,21 +12,23 @@ on:
           - live
           - demo
       operation:
-        description: "Explicit administrative operation"
+        description: "Publish SSH tools, or publish and bootstrap SQL identities"
         type: choice
         required: true
         options:
-          - diagnose
+          - publish
           - bootstrap
-          - schema
-          - seed-demo
       confirmation:
-        description: "Type bootstrap-live / bootstrap-demo / seed-demo when required"
+        description: "For bootstrap only: type bootstrap-live or bootstrap-demo"
         type: string
         required: false
 
 permissions:
   contents: read
+
+concurrency:
+  group: atlas-admin-${{ inputs.variant }}
+  cancel-in-progress: false
 
 jobs:
   package:
@@ -38,28 +41,27 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Build dedicated Atlas.Admin .NET maintenance executable
         run: dotnet publish src/hosts/Atlas.Admin/Atlas.Admin.csproj --configuration Release --output "$RUNNER_TEMP/atlas-admin-publish"
-      - name: Package Linux triggered WebJobs without scheduled execution
+      - name: Package SSH tools and the identity bootstrap job
         shell: bash
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/admin-package"
-          for job in atlas-diagnose atlas-bootstrap atlas-schema atlas-seed-demo; do
-            dir="$root/App_Data/jobs/triggered/$job"
-            mkdir -p "$dir"
-            cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$dir/"
-            cp infrastructure/webjobs/run-webjob.sh "$dir/run.sh"
-            printf '%s\n' "$job" > "$dir/job-name"
-            chmod +x "$dir/run.sh"
-          done
+          tools="$root/tools/atlas-admin"
+          job="$root/App_Data/jobs/triggered/atlas-bootstrap"
+          mkdir -p "$tools" "$job"
+          cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$tools/"
+          cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$job/"
+          cp infrastructure/webjobs/run-webjob.sh "$job/run.sh"
+          chmod +x "$job/run.sh"
           cd "$root"
-          zip -qr "$RUNNER_TEMP/atlas-admin-webjobs.zip" .
-          unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep 'App_Data/jobs/triggered/atlas-schema/run.sh'
-          unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep 'App_Data/jobs/triggered/atlas-schema/Atlas.Admin.dll'
-          ! unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep -q '/Atlas.Console.dll'
+          zip -qr "$RUNNER_TEMP/atlas-admin-tools.zip" .
+          unzip -l "$RUNNER_TEMP/atlas-admin-tools.zip" | grep 'tools/atlas-admin/Atlas.Admin.dll'
+          unzip -l "$RUNNER_TEMP/atlas-admin-tools.zip" | grep 'App_Data/jobs/triggered/atlas-bootstrap/run.sh'
+          ! unzip -l "$RUNNER_TEMP/atlas-admin-tools.zip" | grep -q '/Atlas.Console.dll'
       - uses: actions/upload-artifact@v4
         with:
-          name: atlas-admin-webjobs
-          path: ${{ runner.temp }}/atlas-admin-webjobs.zip
+          name: atlas-admin-tools
+          path: ${{ runner.temp }}/atlas-admin-tools.zip
           retention-days: 2
 
   execute:
@@ -80,48 +82,63 @@ jobs:
           CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
-          if [[ "$OPERATION" == "seed-demo" ]]; then
-            [[ "$VARIANT" == "demo" && "$CONFIRMATION" == "seed-demo" ]] || { echo "Demo-only seed requires exact seed-demo confirmation"; exit 1; }
-          elif [[ "$OPERATION" == "bootstrap" ]]; then
-            [[ "$CONFIRMATION" == "bootstrap-$VARIANT" ]] || { echo "Bootstrap requires exact environment confirmation"; exit 1; }
-          fi
+          [[ "$VARIANT" == "live" || "$VARIANT" == "demo" ]] || { echo "Unknown variant"; exit 1; }
+          case "$OPERATION" in
+            publish) ;;
+            bootstrap)
+              [[ "$CONFIRMATION" == "bootstrap-$VARIANT" ]] || { echo "Bootstrap requires exact environment confirmation"; exit 1; }
+              ;;
+            *) echo "Unknown operation"; exit 1 ;;
+          esac
       - uses: actions/download-artifact@v4
         with:
-          name: atlas-admin-webjobs
+          name: atlas-admin-tools
           path: ./admin-package
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Deploy and explicitly trigger database WebJob
+      - name: Publish admin tools
         shell: bash
         env:
           ADMIN_APP: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
           RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           VARIANT: ${{ inputs.variant }}
-          OPERATION: ${{ inputs.operation }}
-          SUBSCRIPTION: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail
           : "${ADMIN_APP:?Set AZURE_ADMIN_WEBAPP_NAME in the protected GitHub Environment}"
           : "${RESOURCE_GROUP:?Set AZURE_RESOURCE_GROUP in the protected GitHub Environment}"
-          case "$OPERATION" in
-            diagnose) job="atlas-diagnose" ;;
-            bootstrap) job="atlas-bootstrap" ;;
-            schema) job="atlas-schema" ;;
-            seed-demo) job="atlas-seed-demo" ;;
-            *) echo "Unknown job"; exit 1 ;;
-          esac
+          # Clean deployment is allowed only on the dedicated admin host naming
+          # convention produced by Terraform, never on a public website target.
+          [[ "$ADMIN_APP" == *-"$VARIANT"-ops ]] || { echo "Expected a dedicated admin App Service"; exit 1; }
           # Verify the target App Service's protected configuration, not just its name.
           actual_variant="$(az webapp config appsettings list --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --query "[?name=='ATLAS_DEPLOYMENT_VARIANT'].value | [0]" -o tsv)"
           [[ "$actual_variant" == "$VARIANT" ]] || { echo "Admin site variant mismatch"; exit 1; }
-          # Wait for the ZIP deployment. This package contains triggered jobs only.
-          az webapp deploy --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --src-path ./admin-package/atlas-admin-webjobs.zip --type zip --clean false --async false --track-status false
-          start_time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          az webapp webjob triggered run --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --webjob-name "$job"
-          # Poll the ARM history so a triggered job that fails does not appear successful.
-          export ATLAS_ADMIN_JOB="$job" ATLAS_ADMIN_SITE="$ADMIN_APP" ATLAS_ADMIN_RG="$RESOURCE_GROUP" ATLAS_ADMIN_SUB="$SUBSCRIPTION" ATLAS_TRIGGER_STARTED="$start_time"
+          # This host contains only maintenance tools. Clean deployment removes
+          # obsolete diagnostic/schema/seed WebJobs from earlier packages.
+          az webapp deploy --name "$ADMIN_APP" --resource-group "$RESOURCE_GROUP" --src-path ./admin-package/atlas-admin-tools.zip --type zip --clean true --async false --track-status false
+          {
+            echo "### Admin tools published: $VARIANT"
+            echo 'Open the matching admin App Service SSH terminal.'
+            echo 'Tool directory: `/home/site/wwwroot/tools/atlas-admin`'
+            echo 'Schema: `dotnet ./Atlas.Admin.dll --setup-database`'
+            if [[ "$VARIANT" == "demo" ]]; then
+              echo 'After schema succeeds, seed an empty demo: `dotnet ./Atlas.Admin.dll --seed-demo`'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Bootstrap SQL identities and verify completion
+        if: ${{ inputs.operation == 'bootstrap' }}
+        shell: bash
+        env:
+          ATLAS_ADMIN_JOB: atlas-bootstrap
+          ATLAS_ADMIN_SITE: ${{ vars.AZURE_ADMIN_WEBAPP_NAME }}
+          ATLAS_ADMIN_RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ATLAS_ADMIN_SUB: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          export ATLAS_TRIGGER_STARTED="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          az webapp webjob triggered run --name "$ATLAS_ADMIN_SITE" --resource-group "$ATLAS_ADMIN_RG" --webjob-name "$ATLAS_ADMIN_JOB"
           python infrastructure/scripts/wait-for-webjob.py
       - name: Remind operator to revoke bootstrap credentials
         if: ${{ inputs.operation == 'bootstrap' && success() }}

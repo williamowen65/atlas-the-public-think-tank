@@ -63,7 +63,7 @@ These settings alone do not prove production security: validate authentication/C
 | --- | --- |
 | Terraform backend Storage Account and private state container | One-time Azure CLI bootstrap from the [deployment runbook](DEPLOYMENT.md) |
 | GitHub Actions OIDC federation, environment protection and deployment RBAC | Configure manually in Entra ID/GitHub before the manual deploy workflow can authenticate |
-| Database users, migrations, SQL Full-Text indexes or seed content | The [Atlas.Admin workflow](../.github/workflows/AtlasAdmin.yml) triggers WebJobs for SQL identity bootstrap, migrations/Full-Text setup and demo seeding |
+| Database users, migrations, SQL Full-Text indexes or seed content | The [admin tools Action](../.github/workflows/AtlasAdmin.yml) publishes SSH tools and optionally runs SQL identity bootstrap; schema and demo seeding run explicitly through SSH |
 | Runtime secret vault, managed-identity SQL sign-in or automated credential rotation | Not yet implemented; initial runtime connection strings are injected as sensitive Terraform inputs |
 | Azure Blob Storage for user-uploaded images | Deferred until the image-storage design (PTT-167) |
 | Custom public domain/DNS, automated backups beyond Azure service defaults, alert policies or cost budgets | Evaluate and add explicitly if needed for rubric, security or budget |
@@ -81,6 +81,4 @@ For reproducible deployment verification, capture an approved Terraform plan (wi
 
 ## Code-driven data initialization
 
-Run `bootstrap` and then `schema` for each Azure database through the [Atlas.Admin workflow](../.github/workflows/AtlasAdmin.yml). The workflow invokes a WebJob inside the VNet and checks the database name and environment. Run `seed-demo` only for the demo database after schema setup. It requires a unique `ATLAS_DEMO_PASSWORD` secret and refuses a populated database. See the [deployment runbook](DEPLOYMENT.md) for the provisioning and authorization sequence.
-
-See [production telemetry](TELEMETRY.md) for what is exported to Application Insights and which durable cloud-audit pieces are still outstanding.
+Use the [admin tools Action](../.github/workflows/AtlasAdmin.yml) to publish maintenance tools and run confirmed one-time SQL identity bootstrap for each variant. Remove temporary bootstrap credentials through Terraform, then run `dotnet ./Atlas.Admin.dll --setup-database` through each admin App Service's SSH terminal. For an empty demo database only, run `dotnet ./Atlas.Admin.dll --seed-demo` after schema succeeds. See the [walkthrough](FIRST-DEPLOYMENT.md) for the tools directory, target checks and unique demo-password requirement.

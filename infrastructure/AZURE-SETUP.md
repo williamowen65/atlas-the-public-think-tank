@@ -86,8 +86,8 @@ is `api://AzureADTokenExchange`.
 | --- | --- | --- |
 | `atlas-infra-review` | `repo:<owner>/<repo>:environment:atlas-infra-review` | Plan and inspect resources |
 | `atlas-infra-apply` | `repo:<owner>/<repo>:environment:atlas-infra-apply` | Apply the reviewed plan; use a separate identity from review |
-| `atlas-ops-live` | `repo:<owner>/<repo>:environment:atlas-ops-live` | Publish/trigger jobs on the live admin app |
-| `atlas-ops-demo` | `repo:<owner>/<repo>:environment:atlas-ops-demo` | Publish/trigger jobs on the demo admin app |
+| `atlas-ops-live` | `repo:<owner>/<repo>:environment:atlas-ops-live` | Publish tools/bootstrap identities on the live admin app |
+| `atlas-ops-demo` | `repo:<owner>/<repo>:environment:atlas-ops-demo` | Publish tools/bootstrap identities on the demo admin app |
 | `atlas-live` | `repo:<owner>/<repo>:environment:atlas-live` | Deploy the live website |
 | `atlas-demo` | `repo:<owner>/<repo>:environment:atlas-demo` | Deploy the demo website |
 

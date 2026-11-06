@@ -128,7 +128,7 @@ The initial Terraform apply now configures **no public SQL endpoint**: `public_n
 
 **Public site, private data:** the web applications remain available on public HTTPS, but outgoing database connections travel over VNet integration to the private SQL endpoint. VNet DNS resolves `<server>.database.windows.net` to a private address. Never put the private IP directly in the SQL connection string.
 
-Your laptop and GitHub-hosted runners **cannot directly open a connection** to that SQL endpoint. Keep SQL private. Publish the dedicated Atlas.Admin package with [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml), use its bootstrap operation to create SQL identities, and use **Azure Portal → the matching admin App Service → SSH** for schema and demo seeding. The successful SSH commands and exact package directories are in the [walkthrough](FIRST-DEPLOYMENT.md). The WebJob execution path remains available but encountered failures described below.
+Your laptop and GitHub-hosted runners **cannot directly open a connection** to that SQL endpoint. Keep SQL private. Publish the dedicated Atlas.Admin package with [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml), use its bootstrap operation to create SQL identities, and use **Azure Portal → the matching admin App Service → SSH** for schema and demo seeding. The successful SSH commands and exact package directories are in the [walkthrough](FIRST-DEPLOYMENT.md). The Action offers only `publish` and `bootstrap`; schema and seeding run through SSH.
 
 Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege SQL users or Entra-managed identities** for demo/live, never the Terraform provisioning administrator in the public web host. Terraform now configures **separate user-assigned managed identities** and per-variant passwordless SQL connection strings for the public site and operations host. SQL database principal permissions still require the manual, temporary provisioning bootstrap, and Terraform state still contains the SQL server provisioning password; protect the state and use the bootstrap credentials only when needed. Protect credentials, SQL backups, and operator access.
 
@@ -150,7 +150,7 @@ See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable 
 The primary workflows are:
 
 - [AtlasInfrastructure.yml](../.github/workflows/AtlasInfrastructure.yml): on pushes touching IaC, verify Terraform formatting, initialization and structural validity. No cloud credentials or resource creation.
-- [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml): manually publish the minimal **Atlas.Admin** executable as protected triggered WebJobs; explicitly invoke bootstrap, schema or demo-only seed and check execution history. It does **not** deploy the interactive Atlas.Console.
+- [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml): manually publish **Atlas.Admin** SSH tools, optionally bootstrap SQL identities, and verify bootstrap completion. It does **not** deploy the interactive Atlas.Console.
 - [AtlasDeploy.yml](../.github/workflows/AtlasDeploy.yml): manual deploy of one chosen variant (`live` or `demo`). Build the frontend with Node, publish `Atlas.Api` with .NET, copy frontend output into the API package, then deploy it to the chosen Azure App Service using OIDC.
 
 Create GitHub Environments named `atlas-live` and, when provisioned, `atlas-demo`. Each needs environment variable `AZURE_WEBAPP_NAME` from Terraform outputs and secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. Configure an Entra deployment identity with a federated OIDC subject matching `repo:williamowen65/atlas-the-public-think-tank:environment:atlas-live` (and an equivalent subject for demo). Grant only the role needed to deploy to the target App Service. Configure GitHub environment approval rules for live when available.
@@ -187,44 +187,21 @@ Use GitHub Actions as the deployment path for the API and bundled Svelte fronten
 as well as the separate Atlas.Admin host. Website publishing from Visual Studio
 is optional; it is not a prerequisite for SQL identity bootstrap.
 
-### Managed-identity token diagnostic (current `diagnose` operation)
+### Retired troubleshooting paths
 
-Run **Atlas manual private SQL administration** from **main**, with variant
-**live** (or **demo**), operation **diagnose**, and confirmation blank. Open the
-`atlas-diagnose` WebJob output after package deployment. Bootstrap credentials
-are not required; leave `enable_sql_bootstrap=false`.
+The former `diagnose`, `schema`, and `seed-demo` Action options have been removed.
+The temporary managed-identity token diagnostic command was removed as well.
+Earlier WebJob attempts encountered Kudu deployment HTTP 502s, SQL login resets,
+and managed-identity token acquisition cancellation. These occurred at different
+phases; their root causes were not established. Keep error phase information when
+investigating a new failure instead of assuming it is the same issue.
 
-The diagnostic runs inside the WebJob process and reports only whether
-`IDENTITY_ENDPOINT` and `IDENTITY_HEADER` are present. It requests an Azure SQL
-token from the platform endpoint for `ATLAS_ADMIN_MI_CLIENT_ID`, using the
-[App Service REST contract](https://learn.microsoft.com/azure/app-service/overview-managed-identity#rest-endpoint-reference).
-A raw TCP probe first attempts the endpoint host/port with a five-second timeout,
-without sending credentials. Its result includes elapsed time and structured
-socket codes only. The diagnostic then attempts HTTP even if that probe fails.
-HTTP response headers have a separate 30-second budget; a successful response
-body has a ten-second budget. Logs distinguish TCP failure, waiting for HTTP
-headers, and reading the token body, with HTTP status and token presence validation. Endpoint URLs, identity headers, tokens, and response bodies
-are never logged. Redirects and proxy forwarding are disabled for this request.
-
-- Missing endpoint settings: the WebJob did not receive the platform identity environment.
-- Non-success HTTP status: the endpoint responded but rejected the request; the response body is deliberately withheld.
-- TCP failure: raw endpoint connectivity failed at that moment; compare with the subsequent HTTP result.
-- TCP success followed by an HTTP headers timeout: the TCP probe connected, but the separate token request received no headers within budget; this does not prove which service or network component stalled.
-- Body timeout: HTTP headers arrived, but the token body could not be read within budget.
-- Transport failure: token service access failed within the job; this alone does not identify the underlying cause.
-- Success: the platform issued a nonempty token. This does not verify SQL network connectivity, SQL permissions, or SqlClient's own token acquisition path.
-
-No SQL connection is opened and no SQL commands, schema changes, grants or seed
-operations run. Share the complete diagnostic output before retrying schema.
-This replaces the earlier five-attempt SQL-password diagnostic, which required
-temporary bootstrap credentials and ran `SELECT 1`.
-
-This check investigates the 2026-11-05 schema failure during managed-identity
-token acquisition (operation canceled), after the attached identity and configured
-Client ID were checked and matched. It is a diagnostic, not another workaround.
-The original first-login SQL reset and earlier Kudu deployment 502s remain
-separate unresolved issues. Bootstrap and schema retain their documented bounded
-connection retry workaround; this token probe does not silently fix either issue.
+Use **Atlas admin tools (publish or bootstrap)** to publish the tools and to run
+the one-time identity bootstrap. Use the admin App Service SSH terminal for schema
+and demo seeding, following [the walkthrough](FIRST-DEPLOYMENT.md). Publishing
+alone neither opens SQL nor runs a database command. The next successful clean
+admin deployment removes old diagnostic/schema/seed WebJob directories; the public
+website deployment is separate.
 
 ### Bootstrap connection retry workaround
 
@@ -235,7 +212,7 @@ error codes. Other failures, including explicit login rejection, fail immediatel
 Retries stop once the connection opens; user creation and grants are never replayed
 by this policy. This is a workaround for the observed first-login reset, whose
 root cause remains unresolved. It does not establish that serverless resume caused
-the failure. The current token diagnostic does not use this retry policy.
+the failure. Publishing tools does not use this SQL retry policy.
 
 
 ### Schema connection retry workaround (2026-11-05)
@@ -262,7 +239,7 @@ Failure logs now identify the phase and include redacted exception messages,
 inner exceptions, SQL codes, client connection IDs and socket error codes. Use
 these details to distinguish managed-identity authentication, transport and
 migration failures. This is resilience plus diagnostic visibility, not a verified
-root-cause fix. Schema execution subsequently succeeded through App Service SSH; the schema WebJob path still needs separate validation. Demo seeding has not
+root-cause fix. Schema execution subsequently succeeded through App Service SSH; schema is no longer offered as a WebJob operation. Demo seeding has not
 been given this connection retry policy.
 
 The earlier Kudu HTTP 502 failures occurred during package deployment, before
