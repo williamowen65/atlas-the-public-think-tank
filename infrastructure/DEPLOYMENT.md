@@ -18,6 +18,8 @@ The original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/t
 
 ## 2. Local prerequisites and Azure selection
 
+For a fork or fresh setup, use [Azure and GitHub setup](AZURE-SETUP.md): it explains where every secret/variable comes from, which Environment receives it, and how to configure OIDC and permissions.
+
 Install Azure CLI, Terraform, .NET 10 SDK, Node 24 and optionally Visual Studio with ASP.NET/web publishing tooling.
 
 ```powershell

@@ -25,6 +25,9 @@ The SSH success does not explain or fix every WebJob failure. Keep the existing
 workflow for publishing and bootstrap; use the successful SSH context for schema.
 Detailed diagnostics remain in [DEPLOYMENT.md](DEPLOYMENT.md#deployment-preference-and-sql-connection-diagnostics).
 
+Before starting, use [Azure and GitHub setup](AZURE-SETUP.md) to locate every
+Azure value and configure your own repository's Environments, OIDC and secrets.
+
 ## 1. Provision and record targets
 
 Follow [the deployment runbook](DEPLOYMENT.md) for state storage, OIDC, GitHub
