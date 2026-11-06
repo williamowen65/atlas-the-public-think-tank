@@ -1,0 +1,274 @@
+name: Atlas rehearsal cleanup (plan or delete)
+run-name: "Rehearsal cleanup · ${{ inputs.rehearsal_name }} · ${{ inputs.operation }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      rehearsal_name:
+        description: "Existing rehearsal suffix or full prefix; no default target"
+        type: string
+        required: true
+      operation:
+        description: "Preview deletion, or plan and delete after approval"
+        type: choice
+        required: true
+        default: plan
+        options:
+          - plan
+          - delete
+      confirmation:
+        description: "For delete: type the full resource group, e.g. atlas-rehearsal-trial02-rg"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Match rehearsal Terraform apply to prevent concurrent state mutation.
+concurrency:
+  group: atlas-azure-terraform-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  validate-target:
+    name: Confirm rehearsal name and deletion intent
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      name_prefix: ${{ steps.target.outputs.name_prefix }}
+      resource_group: ${{ steps.target.outputs.resource_group }}
+      state_key: ${{ steps.target.outputs.state_key }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolve explicit rehearsal cleanup target
+        id: target
+        env:
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          CLEANUP_OPERATION: ${{ inputs.operation }}
+          CLEANUP_CONFIRMATION: ${{ inputs.confirmation }}
+        run: python infrastructure/scripts/rehearsal-cleanup.py select
+
+  azure-plan:
+    needs: validate-target
+    name: Review rehearsal destroy plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: atlas-infra-apply
+    outputs:
+      has_changes: ${{ steps.scope.outputs.has_changes }}
+      encrypted_plan_sha256: ${{ steps.encrypt.outputs.sha256 }}
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+        shell: bash
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_name_prefix: ${{ needs.validate-target.outputs.name_prefix }}
+      TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+      TF_VAR_sql_entra_admin_login: ${{ vars.AZURE_SQL_ENTRA_ADMIN_LOGIN }}
+      TF_VAR_sql_entra_admin_object_id: ${{ vars.AZURE_SQL_ENTRA_ADMIN_OBJECT_ID }}
+      TF_VAR_sql_admin_password: ${{ secrets.TF_SQL_ADMIN_PASSWORD }}
+      TF_VAR_demo_seed_password: ${{ secrets.ATLAS_DEMO_PASSWORD }}
+      TF_VAR_app_service_sku: "B1"
+      # Destroy mode removes existing state resources; it never creates missing variants.
+      TF_VAR_deployment_variants: '["live","demo"]'
+      TF_VAR_enable_sql_bootstrap: "false"
+      TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
+      TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
+      TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key }}
+      CLEANUP_OPERATION: ${{ inputs.operation }}
+      CLEANUP_CONFIRMATION: ${{ inputs.confirmation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate rehearsal-only cleanup selection
+        working-directory: .
+        run: python infrastructure/scripts/rehearsal-cleanup.py select
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+          terraform_wrapper: false
+      - name: Require the configured subscription and private remote state
+        run: |
+          set -euo pipefail
+          for key in ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID TF_VAR_name_prefix TF_VAR_location \
+            TF_VAR_sql_entra_admin_login TF_VAR_sql_entra_admin_object_id TF_VAR_sql_admin_password \
+            TF_BACKEND_RG TF_BACKEND_STORAGE TF_BACKEND_CONTAINER TF_BACKEND_KEY; do
+            [[ -n "${!key:-}" ]] || { echo "::error::Missing required GitHub Environment configuration: $key"; exit 1; }
+          done
+          echo "Azure plan prerequisites supplied; no credentials printed."
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Require the existing rehearsal state blob
+        run: |
+          exists="$(az storage blob exists --account-name "$TF_BACKEND_STORAGE" --container-name "$TF_BACKEND_CONTAINER" --name "$TF_BACKEND_KEY" --auth-mode login --query exists -o tsv)"
+          [[ "$exists" == "true" ]] || { echo "::error::No existing state for this rehearsal name. Check the name; cleanup will not guess."; exit 1; }
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+      - name: Initialize against private Azure Blob Terraform state
+        run: |
+          terraform init -no-color -input=false \
+            -backend-config="resource_group_name=$TF_BACKEND_RG" \
+            -backend-config="storage_account_name=$TF_BACKEND_STORAGE" \
+            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+      - name: Validate Terraform configuration
+        run: terraform validate -no-color
+      - name: Verify all state resources belong to this rehearsal
+        run: terraform show -json | python ../scripts/rehearsal-cleanup.py state
+      - name: Prepare temporary SQL cleanup override
+        working-directory: .
+        run: python infrastructure/scripts/rehearsal-cleanup.py prepare
+      - name: Plan rehearsal resource deletion
+        id: plan
+        run: |
+          set -euo pipefail
+          umask 077
+          status=0
+          terraform plan -destroy -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$RUNNER_TEMP/atlas.tfplan" || status=$?
+          case "$status" in
+            0) echo "has_changes=false" >> "$GITHUB_OUTPUT" ;;
+            2) echo "has_changes=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
+      - name: Verify destroy scope and pure deletion actions
+        id: scope
+        run: terraform show -json "$RUNNER_TEMP/atlas.tfplan" | python ../scripts/rehearsal-cleanup.py plan
+      - name: Encrypt the reviewed plan
+        id: encrypt
+        if: inputs.operation == 'delete' && steps.scope.outputs.has_changes == 'true'
+        env:
+          PLAN_PASSPHRASE: ${{ secrets.ATLAS_TF_PLAN_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in the shared Environment}"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:PLAN_PASSPHRASE \
+            -in "$RUNNER_TEMP/atlas.tfplan" -out "$RUNNER_TEMP/atlas.tfplan.enc"
+          digest=$(sha256sum "$RUNNER_TEMP/atlas.tfplan.enc" | cut -d ' ' -f 1)
+          echo "sha256=$digest" >> "$GITHUB_OUTPUT"
+          cp .terraform.lock.hcl "$RUNNER_TEMP/terraform-provider.lock.hcl"
+      - uses: actions/upload-artifact@v4
+        if: inputs.operation == 'delete' && steps.scope.outputs.has_changes == 'true'
+        with:
+          name: atlas-encrypted-destroy-plan
+          path: |
+            ${{ runner.temp }}/atlas.tfplan.enc
+            ${{ runner.temp }}/terraform-provider.lock.hcl
+          if-no-files-found: error
+          retention-days: 1
+      - name: Remove plaintext plan and temporary overrides
+        if: always()
+        run: rm -f "$RUNNER_TEMP/atlas.tfplan" rehearsal_cleanup_override.tf.json modules/sql/rehearsal_cleanup_override.tf.json
+
+  delete:
+    name: Delete the approved rehearsal installation
+    needs: [azure-plan, validate-target]
+    if: inputs.operation == 'delete' && needs.azure-plan.outputs.has_changes == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: atlas-infra-apply
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+        shell: bash
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
+      TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
+      TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key }}
+      CLEANUP_OPERATION: ${{ inputs.operation }}
+      CLEANUP_CONFIRMATION: ${{ inputs.confirmation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+    steps:
+      - name: Require a recorded environment approval
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLY_ENVIRONMENT: atlas-infra-apply
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
+            jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
+            { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate rehearsal-only cleanup selection
+        working-directory: .
+        run: python infrastructure/scripts/rehearsal-cleanup.py select
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+          terraform_wrapper: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: atlas-encrypted-destroy-plan
+          path: ${{ runner.temp }}/atlas-plan
+      - name: Prepare temporary SQL cleanup override
+        working-directory: .
+        run: python infrastructure/scripts/rehearsal-cleanup.py prepare
+      - name: Restore the reviewed provider versions
+        run: cp "$RUNNER_TEMP/atlas-plan/terraform-provider.lock.hcl" .terraform.lock.hcl
+      - name: Initialize against private Azure Blob Terraform state
+        run: |
+          terraform init -no-color -input=false -lockfile=readonly \
+            -backend-config="resource_group_name=$TF_BACKEND_RG" \
+            -backend-config="storage_account_name=$TF_BACKEND_STORAGE" \
+            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+      - name: Apply the exact reviewed destroy plan
+        env:
+          PLAN_SHA256: ${{ needs.azure-plan.outputs.encrypted_plan_sha256 }}
+          PLAN_PASSPHRASE: ${{ secrets.ATLAS_TF_PLAN_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in the shared Environment}"
+          plan_file="$RUNNER_TEMP/atlas.tfplan"
+          trap 'rm -f "$plan_file"' EXIT
+          encrypted_plan="$RUNNER_TEMP/atlas-plan/atlas.tfplan.enc"
+          printf '%s  %s\n' "$PLAN_SHA256" "$encrypted_plan" | sha256sum --check --status
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:PLAN_PASSPHRASE \
+            -in "$encrypted_plan" -out "$plan_file"
+          terraform show -json "$plan_file" | python ../scripts/rehearsal-cleanup.py plan
+          terraform apply -no-color -input=false -lock-timeout=2m "$plan_file"
+      - name: Remove temporary overrides
+        if: always()
+        run: rm -f rehearsal_cleanup_override.tf.json modules/sql/rehearsal_cleanup_override.tf.json
+      - name: Report cleanup result
+        run: |
+          echo '### Rehearsal deletion completed' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Terraform state has been updated. The state blob and shared backend storage are retained.' >> "$GITHUB_STEP_SUMMARY"

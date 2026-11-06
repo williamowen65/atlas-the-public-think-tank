@@ -4,6 +4,8 @@ The root of Atlas infrastructure as code (IaC). Runtime application adapters rem
 
 For a fresh clone or fork, start with [Azure and GitHub setup](AZURE-SETUP.md) to find the required IDs and configure secrets, variables, OIDC and roles.
 
+For reviewed rehearsal deletion and state reconciliation, see [Rehearsal cleanup](REHEARSAL-CLEANUP.md).
+
 Cloud Actions share the existing `atlas-infra-apply` credential Environment. Public installation targets are tracked in [deployment-targets.json](config/deployment-targets.json) and selected in the Action dropdown.
 
 For the working operator sequence and a second isolated installation, start with the [first-deployment walkthrough](FIRST-DEPLOYMENT.md).

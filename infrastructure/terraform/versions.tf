@@ -13,6 +13,8 @@ terraform {
   backend "azurerm" {}
 }
 
+# Rehearsal cleanup temporarily adds a provider override requiring an empty
+# resource group before deleting it; the normal provider is not rewritten.
 provider "azurerm" {
   features {}
   subscription_id = var.subscription_id

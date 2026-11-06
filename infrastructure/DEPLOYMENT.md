@@ -57,6 +57,7 @@ dispatched before merging. See [rehearsal instructions](FIRST-DEPLOYMENT.md#6-re
 | --- | --- |
 | [AtlasInfrastructure.yml](../.github/workflows/AtlasInfrastructure.yml) | Offline Terraform validation, admin compilation, policy/workflow tests and security checks |
 | [AtlasAzurePlan.yml](../.github/workflows/AtlasAzurePlan.yml) | Manual Azure-connected preview; never applies or uploads a saved plan |
+| [AtlasAzureCleanup.yml](../.github/workflows/AtlasAzureCleanup.yml) | Rehearsal-only cleanup: preview deletion or explicitly delete after confirmation and approval |
 | [AtlasAzureApply.yml](../.github/workflows/AtlasAzureApply.yml) | Plan, encrypt saved plan, obtain approval and apply that exact plan |
 | [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml) | Publish SSH maintenance tools; optionally run confirmed identity bootstrap and verify completion |
 | [AtlasDeploy.yml](../.github/workflows/AtlasDeploy.yml) | Build and publish the frontend/backend package for the selected installation/variant |
@@ -74,7 +75,8 @@ tracked variants before planning; a plan inspection rejects every action contain
 is checked again immediately before apply. A stopped run explains whether to keep
 the existing application set, choose a new name, or perform deliberate cleanup.
 If a deployment genuinely needs replacement, review it through a separate maintenance
-procedure; this Action has no destructive override.
+procedure; this Action has no destructive override. Rehearsal installation deletion
+uses the separate [cleanup workflow](REHEARSAL-CLEANUP.md).
 
 ## First deployment order
 
