@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Text.RegularExpressions;
@@ -18,7 +17,7 @@ namespace Atlas.Admin;
 /// </summary>
 internal static class CloudDatabaseBootstrap
 {
-    public static async Task RunAsync(IConfiguration configuration, bool connectionOnly = false)
+    public static async Task RunAsync(IConfiguration configuration)
     {
         var variant = configuration["ATLAS_DEPLOYMENT_VARIANT"];
         if (variant is not ("live" or "demo"))
@@ -59,33 +58,14 @@ internal static class CloudDatabaseBootstrap
         var hostname = server.Success ? server.Groups[1].Value : "(unrecognized)";
         System.Console.WriteLine($"Azure SQL connection target. Host: {hostname}, database: {database}.");
 
-        if (connectionOnly && server.Success)
-        {
-            // Run inside the actual WebJob process, rather than a separate Kudu console.
-            var addresses = await Dns.GetHostAddressesAsync(hostname)
-                .WaitAsync(TimeSpan.FromSeconds(10));
-            foreach (var address in addresses)
-                System.Console.WriteLine($"SQL DNS address: {address}.");
-        }
-
         System.Console.WriteLine($"Opening target database connection: {database}.");
         var timer = Stopwatch.StartNew();
         try
         {
-            if (connectionOnly)
-                await connection.OpenAsync();
-            else
-                await OpenConnectionWithRetryAsync(() => connection.OpenAsync());
+            await OpenConnectionWithRetryAsync(() => connection.OpenAsync());
         }
         catch (SqlException error)
         {
-            if (connectionOnly)
-            {
-                // Only the explicit diagnostic prints provider text. Redact before
-                // flattening or truncating, including every nested exception message.
-                for (Exception? detail = error; detail is not null; detail = detail.InnerException)
-                    System.Console.Error.WriteLine($"SQL diagnostic {detail.GetType().Name}: {RedactDiagnosticMessage(detail.Message, admin)}");
-            }
             // Classify provider text without printing account names or connection strings.
             var message = error.Message;
             var phase = message.Contains("pre-login", StringComparison.OrdinalIgnoreCase)
@@ -112,15 +92,6 @@ internal static class CloudDatabaseBootstrap
         finally
         {
             System.Console.WriteLine($"Azure SQL connection attempt took {timer.ElapsedMilliseconds} ms.");
-        }
-        if (connectionOnly)
-        {
-            System.Console.WriteLine($"Target connection opened; client connection ID: {connection.ClientConnectionId}.");
-            // No user creation, grants, schema changes or seed data in this operation.
-            await using var probe = new SqlCommand("SELECT 1", connection) { CommandTimeout = 10 };
-            await probe.ExecuteScalarAsync();
-            System.Console.WriteLine("SQL connection diagnostic succeeded (SELECT 1); no database changes performed.");
-            return;
         }
         System.Console.WriteLine("Connected to Azure SQL. Configuring managed-identity database users.");
 

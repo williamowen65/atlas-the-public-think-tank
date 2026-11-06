@@ -35,8 +35,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Compile the dedicated cloud administration host
         run: dotnet publish ../../src/hosts/Atlas.Admin/Atlas.Admin.csproj --configuration Release --output "$RUNNER_TEMP/atlas-admin-build-check"
-      - name: Install HCL parser for Atlas policy tests
-        run: python -m pip install --disable-pip-version-check "python-hcl2==8.1.4"
+      - name: Install parsers for infrastructure and admin workflow tests
+        run: python -m pip install --disable-pip-version-check "python-hcl2==8.1.4" "PyYAML==6.0.3"
       - name: Enforce Atlas security and free-tier invariants
         run: python -m unittest discover -s ../../tests/Atlas.Infrastructure.Tests -p 'test_*.py' -v
       # New security findings are visible here before we decide which controls

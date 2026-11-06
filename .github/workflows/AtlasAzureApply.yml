@@ -1,8 +1,31 @@
 name: Atlas Azure Terraform apply (manual)
+run-name: "Terraform apply · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
     inputs:
+      deployment_shape:
+        description: "Applications: default = main both, rehearsal live only"
+        type: choice
+        required: true
+        default: default
+        options:
+          - default
+          - live
+          - demo
+          - both
+      rehearsal_name:
+        description: "Rehearsal suffix (e.g. trial01); blank uses the tracked rehearsal profile"
+        type: string
+        required: false
+      installation:
+        description: "Azure installation (independent of the code branch)"
+        type: choice
+        required: true
+        default: rehearsal
+        options:
+          - rehearsal
+          - main
       enable_sql_bootstrap:
         description: Temporarily enable SQL bootstrap credentials for both admin WebJobs
         type: boolean
@@ -12,15 +35,43 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-azure-terraform-apply
+  group: atlas-azure-terraform-${{ inputs.installation }}
   cancel-in-progress: false
 
 jobs:
+  validate-target:
+    name: Resolve tracked deployment target
+    outputs:
+      name_prefix: ${{ steps.target.outputs.name_prefix }}
+      state_key: ${{ steps.target.outputs.state_key }}
+      variants_json: ${{ steps.target.outputs.variants_json }}
+      resource_group: ${{ steps.target.outputs.resource_group }}
+      live_app: ${{ steps.target.outputs.live_app }}
+      demo_app: ${{ steps.target.outputs.demo_app }}
+      live_admin: ${{ steps.target.outputs.live_admin }}
+      demo_admin: ${{ steps.target.outputs.demo_admin }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolve installation selection
+        id: target
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
+        run: python infrastructure/scripts/check-deployment-target.py selection
+
   azure-plan:
+    needs: validate-target
     name: Create the infrastructure plan for review
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: atlas-infra-review
+    environment: atlas-infra-apply
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
       encrypted_plan_sha256: ${{ steps.encrypt.outputs.sha256 }}
@@ -40,30 +91,33 @@ jobs:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      TF_VAR_name_prefix: ${{ vars.ATLAS_NAME_PREFIX }}
+      TF_VAR_name_prefix: ${{ needs.validate-target.outputs.name_prefix }}
       TF_VAR_location: ${{ vars.AZURE_LOCATION }}
       TF_VAR_sql_entra_admin_login: ${{ vars.AZURE_SQL_ENTRA_ADMIN_LOGIN }}
       TF_VAR_sql_entra_admin_object_id: ${{ vars.AZURE_SQL_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_sql_admin_password: ${{ secrets.TF_SQL_ADMIN_PASSWORD }}
       TF_VAR_demo_seed_password: ${{ secrets.ATLAS_DEMO_PASSWORD }}
       TF_VAR_app_service_sku: "B1"
-      TF_VAR_enable_demo: "true"
+      TF_VAR_deployment_variants: ${{ needs.validate-target.outputs.variants_json }}
+      ATLAS_VARIANTS_JSON: ${{ needs.validate-target.outputs.variants_json }}
       TF_VAR_enable_sql_bootstrap: ${{ inputs.enable_sql_bootstrap }}
       TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
-      TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+      ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
+      ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
+      AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_REQUIRE_FRESH_RUN: "true"
     steps:
-      - name: Require a fresh run from main
-        working-directory: .
-        run: |
-          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_RUN_ATTEMPT" == 1 ]] || {
-            echo "::error::Start a new manual run from main."
-            exit 1
-          }
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify installation namespace and state key
+        working-directory: .
+        run: python infrastructure/scripts/check-deployment-target.py infrastructure
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
@@ -90,6 +144,8 @@ jobs:
             -backend-config="use_azuread_auth=true"
       - name: Validate Terraform configuration
         run: terraform validate -no-color
+      - name: Reject removal of an existing application variant
+        run: terraform show -json | python ../scripts/check-terraform-changes.py state
       - name: Plan Azure changes
         id: plan
         run: |
@@ -102,6 +158,8 @@ jobs:
             2) echo "has_changes=true" >> "$GITHUB_OUTPUT" ;;
             *) exit "$status" ;;
           esac
+      - name: Reject resource deletion or replacement in the reviewed plan
+        run: terraform show -json "$RUNNER_TEMP/atlas.tfplan" | python ../scripts/check-terraform-changes.py plan
       - name: Encrypt the reviewed plan
         id: encrypt
         if: steps.plan.outputs.has_changes == 'true'
@@ -109,7 +167,7 @@ jobs:
           PLAN_PASSPHRASE: ${{ secrets.ATLAS_TF_PLAN_PASSPHRASE }}
         run: |
           set -euo pipefail
-          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in both environments}"
+          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in the shared Environment}"
           openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:PLAN_PASSPHRASE \
             -in "$RUNNER_TEMP/atlas.tfplan" -out "$RUNNER_TEMP/atlas.tfplan.enc"
           digest=$(sha256sum "$RUNNER_TEMP/atlas.tfplan.enc" | cut -d ' ' -f 1)
@@ -130,7 +188,7 @@ jobs:
 
   azure-apply:
     name: Apply the approved Azure infrastructure plan
-    needs: azure-plan
+    needs: [azure-plan, validate-target]
     if: needs.azure-plan.outputs.has_changes == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -154,24 +212,34 @@ jobs:
       TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
-      TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+      ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
+      ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
+      AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_REQUIRE_FRESH_RUN: "true"
     steps:
       - name: Require a recorded environment approval
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
+          APPLY_ENVIRONMENT: atlas-infra-apply
         run: |
           set -euo pipefail
-          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_RUN_ATTEMPT" == 1 ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
-            jq -e 'any(.[]; .state == "approved" and any(.environments[]; .name == "atlas-infra-apply"))' >/dev/null ||
-            { echo "::error::Configure required reviewers on atlas-infra-apply and approve this run."; exit 1; }
+            jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
+            { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify installation namespace and state key
+        working-directory: .
+        run: python infrastructure/scripts/check-deployment-target.py infrastructure
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
+          terraform_wrapper: false
       - uses: actions/download-artifact@v4
         with:
           name: atlas-encrypted-plan
@@ -194,11 +262,12 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in both environments}"
+          : "${PLAN_PASSPHRASE:?Configure the plan encryption secret in the shared Environment}"
           plan_file="$RUNNER_TEMP/atlas.tfplan"
           trap 'rm -f "$plan_file"' EXIT
           encrypted_plan="$RUNNER_TEMP/atlas-plan/atlas.tfplan.enc"
           printf '%s  %s\n' "$PLAN_SHA256" "$encrypted_plan" | sha256sum --check --status
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:PLAN_PASSPHRASE \
             -in "$encrypted_plan" -out "$plan_file"
+          terraform show -json "$plan_file" | python ../scripts/check-terraform-changes.py plan
           terraform apply -no-color -input=false -lock-timeout=2m "$plan_file"

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 // Atlas.Admin is deliberately non-interactive: local development commands
-// use the existing .NET User Secrets store, whereas Azure WebJobs use only
+// use the existing .NET User Secrets store, whereas Azure SSH and the bootstrap WebJob use only
 // protected environment configuration and separate managed identities.
 if (args is ["--initialize-local-database"] or ["--initialize-local-database", "--seed-demo"])
 {
@@ -29,10 +29,10 @@ if (args is ["--initialize-local-database"] or ["--initialize-local-database", "
 }
 
 if (args.Length != 1 ||
-    args[0] is not ("--bootstrap-cloud-identities" or "--diagnose-cloud-connection" or "--setup-database" or "--seed-demo"))
+    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo"))
 {
     Console.Error.WriteLine("Usage: Atlas.Admin --initialize-local-database [--seed-demo] (local only)");
-    Console.Error.WriteLine("Azure WebJobs: --diagnose-cloud-connection | --bootstrap-cloud-identities | --setup-database | --seed-demo");
+    Console.Error.WriteLine("Azure: --bootstrap-cloud-identities | --setup-database | --seed-demo");
     return 2;
 }
 
@@ -66,11 +66,6 @@ try
 
     switch (args[0])
     {
-        case "--diagnose-cloud-connection":
-            phase = "managed-identity token diagnostic";
-            await ManagedIdentityDiagnostic.RunAsync(configuration);
-            break;
-
         case "--bootstrap-cloud-identities":
             phase = "identity bootstrap";
             await CloudDatabaseBootstrap.RunAsync(configuration);

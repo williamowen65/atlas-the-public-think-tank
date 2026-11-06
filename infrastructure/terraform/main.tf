@@ -1,7 +1,7 @@
 data "azurerm_client_config" "current" {}
 
 locals {
-  variants = var.enable_demo ? toset(["live", "demo"]) : toset(["live"])
+  variants = var.deployment_variants != null ? var.deployment_variants : (var.enable_demo ? toset(["live", "demo"]) : toset(["live"]))
   tags     = merge(var.tags, { managed_by = "terraform" })
 }
 

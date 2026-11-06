@@ -16,6 +16,19 @@ variable "enable_demo" {
   type        = bool
   default     = true
 }
+variable "deployment_variants" {
+  description = "Explicit live/demo application set. Null preserves the enable_demo compatibility setting."
+  type        = set(string)
+  default     = null
+  validation {
+    condition = var.deployment_variants == null ? true : (
+      length(var.deployment_variants) > 0 &&
+      alltrue([for variant in var.deployment_variants : contains(["live", "demo"], variant)])
+    )
+    error_message = "Select live, demo, or both; an empty or unknown variant set is invalid."
+  }
+}
+
 variable "app_service_sku" {
   type    = string
   default = "B1"

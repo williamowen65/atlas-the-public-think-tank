@@ -1,8 +1,24 @@
 # Atlas.Admin — private, non-interactive administration host
 
-`Atlas.Admin` is a deliberately small .NET 10 command-line host for **local development database setup** and **protected Azure operations**. It is not the interactive `Atlas.Console`, a public website, or a replica of the Atlas frontend.
+`Atlas.Admin` is a deliberately small .NET 10 command-line host for **local development database setup** and **protected Azure SSH and identity-bootstrap operations**. It is not the interactive `Atlas.Console`, a public website, or a replica of the Atlas frontend.
 
-The Azure `AtlasAdmin.yml` manual GitHub Actions workflow publishes this project, packages it into Linux triggered WebJobs and invokes exactly one selected operation:
+The **Atlas admin tools (publish or bootstrap)** Action (`AtlasAdmin.yml`) has two
+operations (for the selected `main` or `rehearsal` installation): `publish` uploads the tools without running SQL; `bootstrap` publishes
+the same package and runs confirmed one-time SQL identity setup. Schema and demo
+seeding are explicit SSH commands, absent from the Action dropdown.
+
+The package contains `/home/site/wwwroot/tools/atlas-admin` for SSH and a single
+`atlas-bootstrap` triggered WebJob. Publishing cleans the dedicated admin host's
+deployment directory, removing old diagnostic/schema/seed jobs. The temporary
+managed-identity diagnostic command is retired.
+
+| Execution context | Command |
+| --- | --- |
+| Confirmed bootstrap Action | `--bootstrap-cloud-identities` |
+| Admin App Service SSH | `cd /home/site/wwwroot/tools/atlas-admin` then `dotnet ./Atlas.Admin.dll --setup-database` |
+| Demo admin App Service SSH, after schema | Same directory, then `dotnet ./Atlas.Admin.dll --seed-demo` |
+
+The commands retain these guards:
 
 | Command | Purpose | Safety |
 | --- | --- | --- |
@@ -10,7 +26,7 @@ The Azure `AtlasAdmin.yml` manual GitHub Actions workflow publishes this project
 | `--setup-database` | Apply checked-in EF migrations, SQL supplemental schema and Full-Text Search | Explicit operation only; no app-startup migration |
 | `--seed-demo` | Seed initial demo accounts/content | Rejects live, requires a unique `ATLAS_DEMO_PASSWORD`, refuses existing data |
 
-Only the production administration managed identity can connect to its matching private SQL database. The separate public API uses a more restricted identity. WebJobs run inside the App Service VNet integration and do **not** require direct SQL access from GitHub-hosted runners.
+Only the production administration managed identity can connect to its matching private SQL database. The separate public API uses a more restricted identity. SSH commands and the bootstrap job run inside the App Service VNet integration and do **not** require direct SQL access from GitHub-hosted runners.
 
 ## Role administration — follow-up
 
@@ -38,10 +54,10 @@ The first command applies EF migrations and SQL Full-Text setup. The optional se
 
 `Atlas.Console` is still a separate, local interactive demo application; it is not the database-initialization tool or deployed Azure administration executable.
 
-## Azure administration — GitHub Actions
+## Azure administration — publishing and SSH
 
-The protected `AtlasAdmin.yml` workflow publishes this same C# project and invokes one cloud command at a time, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require authorized GitHub Environments and Azure OIDC access.
+The protected `AtlasAdmin.yml` workflow publishes this same C# project, optionally invoking only identity bootstrap, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require the shared `atlas-infra-apply` GitHub Environment and Azure OIDC access. Target names come from the selected tracked profile.
 
-After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, run `schema` for both, and `seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
+After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, use SSH to run `--setup-database` for both, and `--seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
 
-See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Azure execution still requires end-to-end verification.
+See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Schema and Full-Text setup succeeded through the admin App Service SSH terminal for live and demo. Use the [first-deployment walkthrough](../../../infrastructure/FIRST-DEPLOYMENT.md) for commands and target checks; schema and seed are no longer packaged as triggered WebJobs.
