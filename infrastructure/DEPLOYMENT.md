@@ -1,6 +1,6 @@
 # Atlas capstone deployment runbook
 
-**Status:** Terraform and GitHub Actions foundation for PTT-169. These files do **not** mean Azure has been provisioned, the site is running, or the school report has passed.
+**Status (2026-11-06):** The operator confirmed live and demo are deployed. SQL identity bootstrap succeeded after retry; schema and Full-Text setup succeeded through App Service SSH. Follow the [first-deployment walkthrough](FIRST-DEPLOYMENT.md) for the working sequence and an isolated rehearsal. This records observed results, not a completed school acceptance report.
 
 The goals are **production parity** with the tested local product behavior, minimum feasible recurring Azure costs with private SQL networking, a reproducible deployment, visible telemetry, and documented evidence for the school report.
 
@@ -12,7 +12,9 @@ The goals are **production parity** with the tested local product behavior, mini
 - Application Insights and a Log Analytics workspace provide cloud observability. Atlas.Api has a production OpenTelemetry exporter: verify real request/log/metric ingestion and audit delivery separately before reporting success.
 - The default demo variant provisions another web app on the **same App Service plan** and a distinct SQL database. Demo can contain the known seed data; live must be separately initialized and protected. This is **two deployment configurations**, not a randomized statistically measured A/B experiment yet. See PTT-171.
 
-The default now uses **B1 Linux App Service**, the least-capacity Basic plan supporting VNet integration, plus explicitly enabled **Azure SQL free-offer databases** (through AzAPI). The virtual network itself and App Service VNet integration add no usage charge, but B1 and the SQL Private Endpoint / private DNS zone are billable. SQL free-offer databases can pause when the monthly allowance is exhausted. This is a cost-conscious student deployment, not a free or high-availability production environment.\n\nThe original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
+The default now uses **B1 Linux App Service**, the least-capacity Basic plan supporting VNet integration, plus explicitly enabled **Azure SQL free-offer databases** (through AzAPI). The virtual network itself and App Service VNet integration add no usage charge, but B1 and the SQL Private Endpoint / private DNS zone are billable. SQL free-offer databases can pause when the monthly allowance is exhausted. This is a cost-conscious student deployment, not a free or high-availability production environment.
+
+The original [legacy Terraform](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) already covered App Service, SQL, Blob, Application Insights and firewall rules. The rewritten configuration is modular; Blob Storage is omitted until there is an actual image-storage requirement (PTT-167).
 
 ## 2. Local prerequisites and Azure selection
 
@@ -124,7 +126,7 @@ The initial Terraform apply now configures **no public SQL endpoint**: `public_n
 
 **Public site, private data:** the web applications remain available on public HTTPS, but outgoing database connections travel over VNet integration to the private SQL endpoint. VNet DNS resolves `<server>.database.windows.net` to a private address. Never put the private IP directly in the SQL connection string.
 
-Your laptop and GitHub-hosted runners **cannot directly open a connection** to that SQL endpoint. Do not temporarily enable public SQL access to apply migrations. Run database initialization from a controlled process already integrated into the VNet. The proposed least-cost pattern is an on-demand **triggered App Service WebJob** using a separately secured, management-only identity and a published dedicated Atlas.Admin executable. Microsoft supports WebJobs on Linux code-based App Service and Azure CLI provides `az webapp webjob triggered run`. The admin host, triggered WebJob packaging, and [manual AtlasAdmin.yml workflow](../.github/workflows/AtlasAdmin.yml) are committed but **not yet deployed or end-to-end verified**. See [private network operations](PRIVATE-NETWORK-OPERATIONS.md).
+Your laptop and GitHub-hosted runners **cannot directly open a connection** to that SQL endpoint. Keep SQL private. Publish the dedicated Atlas.Admin package with [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml), use its bootstrap operation to create SQL identities, and use **Azure Portal → the matching admin App Service → SSH** for schema and demo seeding. The successful SSH commands and exact package directories are in the [walkthrough](FIRST-DEPLOYMENT.md). The WebJob execution path remains available but encountered failures described below.
 
 Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege SQL users or Entra-managed identities** for demo/live, never the Terraform provisioning administrator in the public web host. Terraform now configures **separate user-assigned managed identities** and per-variant passwordless SQL connection strings for the public site and operations host. SQL database principal permissions still require the manual, temporary provisioning bootstrap, and Terraform state still contains the SQL server provisioning password; protect the state and use the bootstrap credentials only when needed. Protect credentials, SQL backups, and operator access.
 
@@ -132,12 +134,12 @@ Migrations, Identity schema creation, SQL Full-Text indexes and seed setup run t
 
 ### Database initialization from versioned code
 
-**Azure:** Use the manually triggered `AtlasAdmin.yml` workflow with GitHub Environments `atlas-ops-live` and `atlas-ops-demo` after Terraform provisioning and OIDC authorization. The operation options are `bootstrap`, `schema`, and (demo only) `seed-demo`; each requires the exact target's Azure admin App Service name and resource group. On a first deployment, temporarily set `enable_sql_bootstrap=true`, run a separate confirmed bootstrap for each environment, then set it back to false and apply Terraform to remove those credentials. Run `schema` before `seed-demo`. The CLI invocation happens inside App Service via the packaged `run.sh` (source: [`run-webjob.sh`](webjobs/run-webjob.sh)) and the non-interactive `Atlas.Admin` executable. None of these steps is a public UI or public SQL endpoint.
+**Azure:** Follow [first deployment](FIRST-DEPLOYMENT.md): provision with temporary bootstrap credentials, publish/run bootstrap for each variant, disable the credentials through Terraform, then run schema through the matching admin host's SSH terminal. Seed demo only after schema succeeds. Publish the website separately with AtlasDeploy.yml.
 
 **Local:** Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` from the repository root. Append `--seed-demo` for a fresh, disposable local database.
 
 
-Check Full-Text population readiness and Azure SQL free-tier serverless cold-resume/retry behavior before declaring the site healthy. Azure SQL administration runs inside the dedicated management-only triggered WebJob. The code and workflow are present; end-to-end Azure execution and authorization remain to be verified.
+Check Full-Text readiness and a real node request before declaring the site healthy. Schema execution through SSH was observed to succeed for live on attempt 3 and demo on attempt 2. This does not prove the WebJob execution path works for every operation or establish the cause of earlier failures.
 
 See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable cloud-audit follow-up.
 
@@ -146,11 +148,12 @@ See [telemetry wiring](TELEMETRY.md) for OpenTelemetry and the separate durable 
 The primary workflows are:
 
 - [AtlasInfrastructure.yml](../.github/workflows/AtlasInfrastructure.yml): on pushes touching IaC, verify Terraform formatting, initialization and structural validity. No cloud credentials or resource creation.
-- [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml): manually publish the minimal **Atlas.Admin** executable as protected triggered WebJobs; explicitly invoke bootstrap, schema or demo-only seed and check execution history. It does **not** deploy the interactive Atlas.Console.\n- [AtlasDeploy.yml](../.github/workflows/AtlasDeploy.yml): manual deploy of one chosen variant (`live` or `demo`). Build the frontend with Node, publish `Atlas.Api` with .NET, copy frontend output into the API package, then deploy it to the chosen Azure App Service using OIDC.
+- [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml): manually publish the minimal **Atlas.Admin** executable as protected triggered WebJobs; explicitly invoke bootstrap, schema or demo-only seed and check execution history. It does **not** deploy the interactive Atlas.Console.
+- [AtlasDeploy.yml](../.github/workflows/AtlasDeploy.yml): manual deploy of one chosen variant (`live` or `demo`). Build the frontend with Node, publish `Atlas.Api` with .NET, copy frontend output into the API package, then deploy it to the chosen Azure App Service using OIDC.
 
 Create GitHub Environments named `atlas-live` and, when provisioned, `atlas-demo`. Each needs environment variable `AZURE_WEBAPP_NAME` from Terraform outputs and secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. Configure an Entra deployment identity with a federated OIDC subject matching `repo:williamowen65/atlas-the-public-think-tank:environment:atlas-live` (and an equivalent subject for demo). Grant only the role needed to deploy to the target App Service. Configure GitHub environment approval rules for live when available.
 
-Run **Actions → Atlas manual Azure deployment → Run workflow**, select the variant, then inspect the build and deploy results. The pipeline does **not** apply Terraform; infrastructure changes remain a separate reviewed action. The workflow is untested against Azure until the credentials/environments are configured.
+Run **Actions → Atlas manual Azure deployment → Run workflow**, select the variant, then inspect the build and deploy results. The pipeline does **not** apply Terraform; infrastructure changes remain a separate reviewed action. The operator confirmed both sites deployed. A smoke-step failure can occur after the deployment step succeeds; inspect those results separately before redeploying.
 
 **Visual Studio alternative:** right-click `Atlas.Api` → Publish → Azure → Azure App Service. Choose the existing provisioned app. Publishing only `Atlas.Api` will not include the SvelteKit build automatically; package the frontend first or use the GitHub pipeline as the reproducible release mechanism. Verify credentials and environment settings rather than relying on local `appsettings.Development.json`.
 
@@ -257,7 +260,7 @@ Failure logs now identify the phase and include redacted exception messages,
 inner exceptions, SQL codes, client connection IDs and socket error codes. Use
 these details to distinguish managed-identity authentication, transport and
 migration failures. This is resilience plus diagnostic visibility, not a verified
-root-cause fix. Azure execution remains to be validated. Demo seeding has not
+root-cause fix. Schema execution subsequently succeeded through App Service SSH; the schema WebJob path still needs separate validation. Demo seeding has not
 been given this connection retry policy.
 
 The earlier Kudu HTTP 502 failures occurred during package deployment, before

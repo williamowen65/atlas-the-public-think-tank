@@ -11,15 +11,11 @@ A VNet is similar to a private LAN. Terraform builds a VNet (`<prefix>-vnet`) wi
 - A standard GitHub-hosted runner or your home Windows machine **is not inside that VNet**. It cannot run SQL commands directly. We must not temporarily open SQL publicly just to run migrations.
 - Terraform controls the network/subnets/NSG/DNS and Azure resources. An authorized administrative job executes application-maintained database schema and seed code **within the VNet**, not from a public CI machine.
 
-## Preferred low-cost administrative execution design
+## Administrative host and execution paths
 
-Use **triggered Azure App Service WebJobs** on Linux, with a management-only web application sharing the existing B1 App Service plan. WebJobs are supported for Linux code apps and can be manually invoked through Azure's authenticated management-plane API; Azure CLI exposes:
+Use the dedicated management-only App Service on the existing B1 plan. GitHub Actions publishes Atlas.Admin as triggered WebJobs and bootstrap succeeded after retry. **App Service SSH is the observed working path for schema and Full-Text setup**; use it for the documented schema and demo-seed sequence. See [first deployment](FIRST-DEPLOYMENT.md).
 
-```powershell
-az webapp webjob triggered run --name "<admin-app-name>" --resource-group "<resource-group>" --webjob-name "atlas-database-setup"
-```
-
-The Terraform admin App Service module, dedicated [Atlas.Admin](../src/hosts/Atlas.Admin/README.md) executable, WebJob package and manually protected [AtlasAdmin.yml](../.github/workflows/AtlasAdmin.yml) workflow are now **implemented in PR #398**, but they have **not yet been deployed or tested against Azure**. Do not assume the sample command can run until the corresponding Azure resources and GitHub OIDC environment are configured.
+The workflow can also trigger jobs through Azure CLI. Retain that capability, but do not treat schema/seed WebJob execution as verified merely because the package was uploaded. Package deployment returned Kudu HTTP 502s on some attempts; later schema jobs failed during managed-identity token acquisition. Those are different failure phases.
 
 The management app should **not** expose a public website or unauthenticated API route for executing SQL operations. Allow only a trusted deployment identity to trigger administrative operations. It can share the **existing paid App Service plan** to avoid an additional always-on compute plan, although it shares memory/CPU capacity and may need scheduling during low traffic.
 
@@ -32,14 +28,14 @@ Separate the jobs so permissions and consequences stay clear:
 | Inspect/search readiness | Read-only schema/index readiness | On demand or post-deploy verification | Safe status logs, no SQL secrets or user content |
 | Grant operator/moderator roles | Narrow operator privilege | Separate privileged command with audit | Authenticated authorization and logged changes; never public API |
 
-Local database setup now uses the dedicated [C# `Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) command with the **same .NET User Secrets store** as the API. Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` locally (append `--seed-demo` only for a fresh disposable local database). No PowerShell helper remains. The local command refuses Azure SQL, and it does not provide Private Link connectivity from a home PC. Azure invokes the same admin executable through a separately guarded WebJob path, supporting SQL identity bootstrap, schema/Full-Text setup, and guarded demo seeding. GitHub publishes that executable into Linux triggered WebJob packages. The repository's [`run-webjob.sh`](webjobs/run-webjob.sh) is packaged as `run.sh` (Azure's WebJob entry-point filename) and launches one command only when Azure triggers that WebJob, **not** when the public Atlas app starts.
+Local database setup now uses the dedicated [C# `Atlas.Admin`](../src/hosts/Atlas.Admin/README.md) command with the **same .NET User Secrets store** as the API. Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` locally (append `--seed-demo` only for a fresh disposable local database). No PowerShell helper remains. The local command refuses Azure SQL, and it does not provide Private Link connectivity from a home PC. Azure can invoke the same admin executable through SSH or a separately guarded WebJob path, supporting SQL identity bootstrap, schema/Full-Text setup, and guarded demo seeding. GitHub publishes that executable into Linux triggered WebJob packages. The repository's [`run-webjob.sh`](webjobs/run-webjob.sh) is packaged as `run.sh` (Azure's WebJob entry-point filename) and launches one command only when Azure triggers that WebJob, **not** when the public Atlas app starts.
 
-## Secure execution sequence (target design)
+## Secure execution sequence
 
 1. Apply reviewed Terraform manually. This creates web apps, VNet integration, private DNS, the Azure SQL Private Endpoint, and SQL databases with public networking disabled.
 2. Use a secure one-time bootstrap to establish **per-variant SQL runtime and management identities**. Prefer Microsoft Entra/managed identity where feasible; do not grant the public application account schema-admin permissions.
 3. Publish the versioned administrative executable/WebJob package to the management app. This should be wired into an **explicit GitHub Actions deployment workflow**, not invoked by a Terraform resource creation.
-4. Choose `live` or `demo` and manually run the schema/Full-Text initializer through a GitHub Environment-protected workflow or authenticated Azure CLI command. Confirm the correct target and output.
+4. Choose `live` or `demo` and manually run the schema/Full-Text initializer through the matching admin App Service's SSH terminal, using the published Atlas.Admin executable. Confirm the correct target and output.
 5. For **demo only**, explicitly run one-time seed setup after schema initialization; never seed `live`, never reseed a populated database or expose a known default account password.
 6. Validate SQL connectivity, private DNS, EF schema, Full-Text Search readiness, runtime SQL privileges, monitoring and response behavior.
 7. Manually deploy application bits after successful database setup. Never assume a successful infrastructure plan proves the application is ready.
@@ -56,7 +52,8 @@ The endpoint subnet's **Network Security Group (NSG)** provides a subnet-level, 
 - Verify real Azure deployment and invocation of schema and demo-seed WebJobs, including private DNS and VNet routing.
 - Bootstrap the chosen database authentication model, grant least-privilege per-database runtime/ops access, and rotate/revoke provisioning credentials.
 - Protect GitHub Environments/OIDC subjects, trigger privileges and job outputs; never log secrets, connection strings or user content.
-- Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.\n- Design explicit GlobalModerator grant/revoke commands with operator approval, auditing, and session invalidation. The current interactive local Console workflow is **not** packaged into Azure. A private interactive administration portal would be a distinct feature, not a WebJob.
+- Add non-destructive integration tests for safe repeatable initialization, wrong-variant rejection and migration failures.
+- Design explicit GlobalModerator grant/revoke commands with operator approval, auditing, and session invalidation. The current interactive local Console workflow is **not** packaged into Azure. A private interactive administration portal would be a distinct feature, not a WebJob.
 - Check Azure SQL free-offer eligibility and private endpoint billing; capture security evidence for PTT-169/170.
 
 Microsoft documentation: [App Service VNet integration](https://learn.microsoft.com/azure/app-service/overview-vnet-integration), [WebJobs overview](https://learn.microsoft.com/azure/app-service/overview-webjobs), [run a triggered WebJob](https://learn.microsoft.com/cli/azure/webapp/webjob/triggered), [SQL Private Link](https://learn.microsoft.com/azure/azure-sql/database/private-endpoint-overview).

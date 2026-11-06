@@ -38,10 +38,10 @@ The first command applies EF migrations and SQL Full-Text setup. The optional se
 
 `Atlas.Console` is still a separate, local interactive demo application; it is not the database-initialization tool or deployed Azure administration executable.
 
-## Azure administration — GitHub Actions
+## Azure administration — publishing and SSH
 
 The protected `AtlasAdmin.yml` workflow publishes this same C# project and invokes one cloud command at a time, with environment checks and **managed identity** authentication. Cloud operations do **not** load local User Secrets and require authorized GitHub Environments and Azure OIDC access.
 
 After Terraform provisioning and GitHub/Azure authorization, run `bootstrap` for live and demo (temporary SQL provisioning credentials must be enabled), then disable/re-apply those credentials, run `schema` for both, and `seed-demo` for demo only. The Azure WebJob entry point is Bash because App Service Linux launches the compiled C# executable; PowerShell is not involved.
 
-See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Azure execution still requires end-to-end verification.
+See [the operations guide](../../../infrastructure/PRIVATE-NETWORK-OPERATIONS.md) and [deployment runbook](../../../infrastructure/DEPLOYMENT.md). Schema and Full-Text setup succeeded through the admin App Service SSH terminal for live and demo. Use the [first-deployment walkthrough](../../../infrastructure/FIRST-DEPLOYMENT.md) for commands and target checks; schema/seed WebJob execution remains separately unverified.
