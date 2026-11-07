@@ -48,3 +48,31 @@ For **Private Email** (not cPanel hosting email), use `mail.privateemail.com`, p
 See [Namecheap's SMTP settings](https://www.namecheap.com/support/knowledgebase/article.aspx/1179/2175/general-private-email-configuration-for-mail-clients-and-mobile-devices/). Domain registration or forwarding alone does not provide an authenticated sending mailbox. Confirm the email product and mailbox before configuring the app.
 
 In Private Email settings, enable SMTP under **Connect third-party apps** and generate an application password for Atlas. Namecheap’s current instructions specify an application password for mail clients.
+
+## Faster local testing with real email
+
+By default, localhost Development writes private JSON mail files and sends no real email. To send through Namecheap locally, explicitly configure SMTP in the API project's .NET user secrets. GitHub Environment variables are not automatically available on your computer.
+
+In Visual Studio, right-click **Atlas.Api → Manage User Secrets** and merge this section into your existing secrets (keep your SQL connection settings):
+
+```json
+{
+  "Atlas": {
+    "AccountMail": {
+      "Transport": "Smtp",
+      "Host": "mail.privateemail.com",
+      "Port": "587",
+      "Username": "YOUR_FULL_MAILBOX_ADDRESS",
+      "From": "YOUR_FULL_MAILBOX_ADDRESS",
+      "Password": "YOUR_NAMECHEAP_APP_PASSWORD",
+      "PublicOrigin": "http://localhost:5173"
+    }
+  }
+}
+```
+
+Use the actual URL and port printed by Vite for PublicOrigin: this is the frontend URL, not the API port. HTTPS origins work too when local certificates are configured. HTTP is accepted only for loopback origins in Development; Production still requires HTTPS.
+
+Run the local API and frontend using `npm run dev:api` from `src/hosts/Atlas.Web`. Use the local database (initialized with Identity roles), then register from the local frontend with an address you control. A real email is sent to that address, and the link returns to the configured localhost frontend. Keep the dev servers running while you open it **on the same computer**. On a phone, localhost refers to the phone; use the separate LAN HTTPS development setup and configure that frontend HTTPS origin if testing across devices.
+
+Use a separate Namecheap application password labeled Atlas local so it can be revoked independently. Local signup must use a local database, not the deployed demo/live database. To return to file-only mail, remove the AccountMail section or its Transport setting from local secrets. Do not commit or share the secrets file.

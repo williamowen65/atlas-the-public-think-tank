@@ -1,4 +1,5 @@
 using Atlas.Api;
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -33,6 +34,38 @@ public sealed class AccountMailTests
             Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/api/unknown-email-endpoint")).StatusCode);
         }
         finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [TestMethod]
+    [DataRow("Development", "http://localhost:5173", true)]
+    [DataRow("Development", "http://127.0.0.1:5173", true)]
+    [DataRow("Development", "http://example.com", false)]
+    [DataRow("Production", "http://localhost:5173", false)]
+    public void Http_mail_links_are_allowed_only_for_development_loopback(string environment, string origin, bool expected)
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["Atlas:AccountMail:Transport"] = "Smtp",
+                ["Atlas:AccountMail:Host"] = "smtp.example",
+                ["Atlas:AccountMail:Username"] = "atlas@example.com",
+                ["Atlas:AccountMail:From"] = "atlas@example.com",
+                ["Atlas:AccountMail:Password"] = "test-only",
+                ["Atlas:AccountMail:PublicOrigin"] = origin
+            }).Build();
+        var host = new MailEnvironment { EnvironmentName = environment };
+        var mail = new AccountMail(config, new DevelopmentAccountMail(host, config), host);
+        Assert.AreEqual(expected, mail.IsAvailable);
+    }
+
+    private sealed class MailEnvironment : IWebHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "Atlas.Api";
+        public string ContentRootPath { get; set; } = ".";
+        public string WebRootPath { get; set; } = ".";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } = new Microsoft.Extensions.FileProviders.NullFileProvider();
     }
 
     // A weak password must produce useful policy feedback without touching SQL.

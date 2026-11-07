@@ -108,6 +108,14 @@
    * instructions.
    */
   let registered = $state(false);
+  let displayNameError = $state('');
+  const passwordChecks = $derived([
+    { label: 'At least 12 characters', met: password.length >= 12 },
+    { label: 'An uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'A lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'A number', met: /[0-9]/.test(password) },
+    { label: 'A symbol', met: /[^a-zA-Z0-9]/.test(password) },
+  ]);
   /** Show a neutral confirmation-resend message without revealing account existence. */
   let resendNotice = $state('');
   /**
@@ -249,6 +257,7 @@
    */
   async function register() {
     if (busy) return;
+    displayNameError = '';
     busy = true;
     error = '';
     try {
@@ -265,7 +274,8 @@
     } catch (cause) {
       // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
       if (cause instanceof ApiRequestError) {
-        error = cause.status === 503
+        displayNameError = cause.fieldErrors.DisplayName?.join(' ') ?? '';
+        error = displayNameError ? 'Check the highlighted display name. If you already registered, use sign-in or account recovery.' : cause.status === 503
           ? 'Account email delivery is temporarily unavailable. Please try again later.'
           : cause.status === 400
             ? cause.message === 'The request was not accepted. Check your text or sign in again.'
@@ -379,7 +389,12 @@
             required
             maxlength="100"
             autocomplete="nickname"
-          />{/if}
+            aria-invalid={displayNameError ? 'true' : undefined}
+            aria-describedby={displayNameError ? `${instance}-name-error` : undefined}
+            oninput={() => { displayNameError = ''; }}
+          />
+          {#if displayNameError}<p id={`${instance}-name-error`} role="alert">{displayNameError}</p>{/if}
+        {/if}
         <label for={`${instance}-email`}>Email</label><input
           id={`${instance}-email`}
           type="email"
@@ -399,7 +414,11 @@
           aria-describedby={registering ? `${instance}-password-help` : undefined}
         />
         {#if registering}
-          <p id={`${instance}-password-help`}>Use at least 12 characters, including an uppercase letter, a lowercase letter, a number, and a symbol.</p>
+          <ul id={`${instance}-password-help`} class="password-checks" aria-label="Password requirements">
+            {#each passwordChecks as requirement}
+              <li><input type="checkbox" checked={requirement.met} disabled aria-hidden="true" tabindex="-1" /><span>{requirement.label}<span class="requirement-state"> — {requirement.met ? 'met' : 'not yet met'}</span></span></li>
+            {/each}
+          </ul>
         {/if}
         <ActionButton
           type="submit"
@@ -407,10 +426,12 @@
           disabled={busy}
         />
       </form>
-      {#if !registering}
-        <a href="/forgot-password">Forgot your password?</a>
+      {#if registering}
+        <p>Already registered? <a href="/forgot-password">Recover your account</a> or switch to sign in.</p>
         <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
         {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
+      {:else}
+        <a href="/forgot-password">Forgot your password?</a>
       {/if}
       <button
         type="button"
@@ -418,6 +439,9 @@
         onclick={() => {
           registering = !registering;
           error = '';
+          displayNameError = '';
+          resendNotice = '';
+          password = '';
         }}
         >{registering
           ? 'Already have an account? Sign in'
@@ -427,6 +451,11 @@
 {/snippet}
 
 <style lang="scss">
+  .password-checks { list-style: none; padding: 0; margin: .5rem 0 1rem; }
+  .password-checks li { display: flex; align-items: center; gap: .5rem; }
+  .password-checks input { width: 1rem; height: 1rem; margin: 0; opacity: 1; }
+  .requirement-state { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
   .session {
     display: flex;
     align-items: center;

@@ -4,7 +4,7 @@ using System.Net.Mail;
 namespace Atlas.Api;
 
 /// <summary>Account email delivery. SMTP is explicit; development files remain local-only.</summary>
-public sealed class AccountMail(IConfiguration configuration, DevelopmentAccountMail development)
+public sealed class AccountMail(IConfiguration configuration, DevelopmentAccountMail development, IWebHostEnvironment environment)
 {
     private string? Setting(string name) => configuration[$"Atlas:AccountMail:{name}"];
     private bool UsesSmtp => string.Equals(Setting("Transport"), "Smtp", StringComparison.OrdinalIgnoreCase);
@@ -14,7 +14,8 @@ public sealed class AccountMail(IConfiguration configuration, DevelopmentAccount
           && !string.IsNullOrWhiteSpace(Setting("Password"))
           && MailAddress.TryCreate(Setting("From"), out _)
           && Uri.TryCreate(Setting("PublicOrigin"), UriKind.Absolute, out var origin)
-          && origin.Scheme == "https" && origin.AbsolutePath == "/"
+          && (origin.Scheme == "https" || (environment.IsDevelopment()
+              && origin.Scheme == "http" && origin.IsLoopback)) && origin.AbsolutePath == "/"
           && string.IsNullOrEmpty(origin.Query) && string.IsNullOrEmpty(origin.Fragment)
           && string.IsNullOrEmpty(origin.UserInfo)
           && int.TryParse(Setting("Port") ?? "587", out var port) && port is > 0 and <= 65535

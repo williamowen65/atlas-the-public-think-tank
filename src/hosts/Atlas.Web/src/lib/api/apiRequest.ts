@@ -2,7 +2,7 @@
 type ApiProblem = {
   /** Display title supplied by the API. */
   title?: string;
-  errors?: { Password?: string[] };
+  errors?: { Password?: string[]; DisplayName?: string[] };
   /** Quota category reported by the API, such as node_creation. */
   quotaType?: string;
   /** Maximum operations allowed in the reported window. */
@@ -40,6 +40,7 @@ export class ApiRequestError extends Error {
   constructor(
     message: string,
     public status: number,
+    public fieldErrors: { DisplayName?: string[] } = {},
   ) {
     super(message);
   }
@@ -170,6 +171,8 @@ export async function apiRequest<T>(
               ? 'The request was not accepted. Check your text or sign in again.'
               : 'The request could not be completed. Please retry.'),
       response.status,
+      path === 'auth/register' && Array.isArray(problem.errors?.DisplayName)
+        ? { DisplayName: problem.errors.DisplayName.filter((item) => typeof item === 'string').slice(0, 3).map((item) => item.slice(0, 300)) } : {},
     );
   }
   // Successful writes such as registration may return 202 Accepted with no body.

@@ -27,3 +27,39 @@ test('missing reset token offers recovery without submitting a password', async 
   await expect(page.getByRole('link', { name: 'Request another reset email' })).toHaveAttribute('href', '/forgot-password');
   await expect(page.getByLabel('New password')).toHaveCount(0);
 });
+
+test('registration shows live checks and name feedback; resend needs only email', async ({ page }) => {
+  let resent: unknown;
+  await page.route('**/atlas-session-api/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/csrf')) return route.fulfill({ json: { token: 'csrf-test' } });
+    if (path.endsWith('/resend-confirmation')) {
+      resent = route.request().postDataJSON();
+      return route.fulfill({ status: 202 });
+    }
+    if (path.endsWith('/register')) return route.fulfill({ status: 400, json: {
+      errors: { DisplayName: ['That display name is already in use. Please choose another.'] },
+    } });
+    return route.fulfill({ status: 401 });
+  });
+  await page.goto('http://127.0.0.1:4173/register');
+  const resend = page.getByRole('button', { name: 'Resend confirmation instructions' });
+  await expect(resend).toBeDisabled();
+  await page.getByLabel('Email', { exact: true }).fill('test@example.com');
+  await resend.click();
+  await expect(page.getByRole('status')).toContainText('account awaiting confirmation');
+  expect(resent).toEqual({ email: 'test@example.com' });
+  await expect(page.locator('.password-checks input:checked')).toHaveCount(0);
+  await page.getByLabel('Password', { exact: true }).fill('LocalTesting123!');
+  await expect(page.locator('.password-checks input:checked')).toHaveCount(5);
+  await page.getByLabel('Display name', { exact: true }).fill('Taken name');
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByLabel('Display name', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByText('That display name is already in use. Please choose another.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Recover your account' })).toHaveAttribute('href', '/forgot-password');
+  await page.getByLabel('Display name', { exact: true }).fill('Another name');
+  await expect(page.getByLabel('Display name', { exact: true })).not.toHaveAttribute('aria-invalid', 'true');
+  await page.getByRole('button', { name: 'Already have an account? Sign in' }).click();
+  await expect(resend).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Forgot your password?' })).toBeVisible();
+});

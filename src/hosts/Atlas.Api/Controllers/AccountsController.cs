@@ -106,10 +106,21 @@ public sealed class AccountsController(
             cancellationToken
         );
         if (!registration.Result.Succeeded)
+        {
+            var nameError = registration.Result.Errors.FirstOrDefault(error =>
+                error.Code is "DuplicateDisplayName" or "InvalidDisplayName");
+            if (nameError is not null)
+                return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["DisplayName"] = [nameError.Code == "DuplicateDisplayName"
+                        ? "That display name is already in use. Please choose another."
+                        : "Enter a valid display name (up to 100 characters)."]
+                }));
             return Problem(
                 statusCode: 400,
                 title: "Registration could not be completed."
             );
+        }
 
         // Generate confirmation evidence only after registration succeeds.
         var user = (await users.FindByIdAsync(registration.ParticipantId!.Value.ToString()))!;
