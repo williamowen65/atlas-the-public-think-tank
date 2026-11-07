@@ -40,6 +40,7 @@ jobs:
       name_prefix: ${{ steps.target.outputs.name_prefix }}
       state_key: ${{ steps.target.outputs.state_key }}
       variants_json: ${{ steps.target.outputs.variants_json }}
+      terraform_demo_only: ${{ steps.target.outputs.terraform_demo_only }}
       resource_group: ${{ steps.target.outputs.resource_group }}
       live_app: ${{ steps.target.outputs.live_app }}
       demo_app: ${{ steps.target.outputs.demo_app }}
@@ -56,6 +57,7 @@ jobs:
       - name: Resolve installation selection
         id: target
         env:
+          ATLAS_TARGET_PURPOSE: infrastructure
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
           ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
@@ -104,6 +106,7 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_TERRAFORM_DEMO_ONLY: ${{ needs.validate-target.outputs.terraform_demo_only }}
       ATLAS_INSTALLATION: ${{ inputs.installation }}
       ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
       ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
@@ -152,7 +155,11 @@ jobs:
           trap 'rm -f "$preview_plan"' EXIT
           # Inspect a private temporary plan; never upload or print its JSON.
           exit_code=0
-          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$preview_plan" || exit_code=$?
+          scope_args=()
+          if [[ "${ATLAS_TERRAFORM_DEMO_ONLY:-false}" == "true" ]]; then
+            scope_args+=('-target=module.sites["demo"]')
+          fi
+          terraform plan "${scope_args[@]}" -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$preview_plan" || exit_code=$?
           if [[ "$exit_code" -ne 0 && "$exit_code" -ne 2 ]]; then
             echo "::error::Azure-connected Terraform planning failed."
             exit "$exit_code"

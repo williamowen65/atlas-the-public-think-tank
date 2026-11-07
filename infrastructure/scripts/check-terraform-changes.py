@@ -29,10 +29,20 @@ def check_existing_variants(state: dict, selected: list[str]) -> None:
                          'or choose a new rehearsal name/state. Deletion is a separate explicit operation.')
 
 
-def check_plan(plan: dict) -> None:
+def check_plan(plan: dict, demo_only: bool = False) -> None:
     changes = plan.get('resource_changes', [])
     if not isinstance(changes, list):
         raise ValueError('Terraform plan did not contain a valid resource change list.')
+    if demo_only:
+        # Targeting includes dependencies. Fail closed if Terraform proposes any
+        # mutation beyond the demo web app; never expose the planned values.
+        forbidden = [r.get('address', '(unknown resource)') for r in changes
+                     if r.get('mode', 'managed') == 'managed'
+                     and r.get('change', {}).get('actions', []) not in (['no-op'], ['read'])
+                     and not r.get('address', '').startswith('module.sites["demo"].')]
+        if forbidden:
+            raise ValueError('Demo-only plan would change live or shared resources: '
+                             + ', '.join(forbidden) + '. Run shared infrastructure changes from main.')
     destructive = [r.get('address', '(unknown resource)') for r in changes
                    if 'delete' in r.get('change', {}).get('actions', [])]
     if destructive:
@@ -52,7 +62,7 @@ if __name__ == '__main__':
                 raise ValueError('Invalid selected application set.')
             check_existing_variants(data, selected)
         elif mode == 'plan':
-            check_plan(data)
+            check_plan(data, demo_only=os.environ.get('ATLAS_TERRAFORM_DEMO_ONLY') == 'true')
         else:
             raise ValueError('Expected state or plan validation mode.')
     except (ValueError, KeyError, TypeError) as error:

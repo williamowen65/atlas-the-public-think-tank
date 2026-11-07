@@ -36,6 +36,18 @@ class TerraformChangeTests(unittest.TestCase):
             with self.subTest(actions=actions), self.assertRaisesRegex(ValueError, 'deletion or replacement'):
                 changes.check_plan({'resource_changes': [{'address': 'fixture', 'change': {'actions': actions}}]})
 
+    def test_demo_scope_allows_demo_updates_and_blocks_live_shared_dependencies(self):
+        def plan(address, actions):
+            return {'resource_changes': [{'address': address, 'mode': 'managed', 'change': {'actions': actions}}]}
+        changes.check_plan(plan('module.sites["demo"].azurerm_linux_web_app.atlas', ['update']), demo_only=True)
+        for address in ['module.sites["live"].azurerm_linux_web_app.atlas',
+                        'azurerm_service_plan.atlas', 'module.sql.azapi_resource.variant["demo"]']:
+            changes.check_plan(plan(address, ['no-op']), demo_only=True)
+            with self.subTest(address=address), self.assertRaisesRegex(ValueError, 'live or shared'):
+                changes.check_plan(plan(address, ['update']), demo_only=True)
+        with self.assertRaisesRegex(ValueError, 'deletion or replacement'):
+            changes.check_plan(plan('module.sites["demo"].azurerm_linux_web_app.atlas', ['delete', 'create']), demo_only=True)
+
     def test_failure_does_not_expose_plan_values(self):
         payload = {'resource_changes': [{'address': 'fixture', 'change': {
             'actions': ['delete'], 'before': {'password': 'fixture-private-password'}}}]}

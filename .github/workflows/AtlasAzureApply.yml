@@ -45,6 +45,7 @@ jobs:
       name_prefix: ${{ steps.target.outputs.name_prefix }}
       state_key: ${{ steps.target.outputs.state_key }}
       variants_json: ${{ steps.target.outputs.variants_json }}
+      terraform_demo_only: ${{ steps.target.outputs.terraform_demo_only }}
       resource_group: ${{ steps.target.outputs.resource_group }}
       live_app: ${{ steps.target.outputs.live_app }}
       demo_app: ${{ steps.target.outputs.demo_app }}
@@ -61,6 +62,7 @@ jobs:
       - name: Resolve installation selection
         id: target
         env:
+          ATLAS_TARGET_PURPOSE: infrastructure
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
           ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
@@ -111,6 +113,7 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_TERRAFORM_DEMO_ONLY: ${{ needs.validate-target.outputs.terraform_demo_only }}
       ATLAS_INSTALLATION: ${{ inputs.installation }}
       ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
       ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
@@ -158,7 +161,11 @@ jobs:
           set -euo pipefail
           umask 077
           status=0
-          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$RUNNER_TEMP/atlas.tfplan" || status=$?
+          scope_args=()
+          if [[ "${ATLAS_TERRAFORM_DEMO_ONLY:-false}" == "true" ]]; then
+            scope_args+=('-target=module.sites["demo"]')
+          fi
+          terraform plan "${scope_args[@]}" -no-color -input=false -lock-timeout=2m -detailed-exitcode -out="$RUNNER_TEMP/atlas.tfplan" || status=$?
           case "$status" in
             0) echo "has_changes=false" >> "$GITHUB_OUTPUT" ;;
             2) echo "has_changes=true" >> "$GITHUB_OUTPUT" ;;
@@ -219,6 +226,7 @@ jobs:
       TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
       TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
       TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
+      ATLAS_TERRAFORM_DEMO_ONLY: ${{ needs.validate-target.outputs.terraform_demo_only }}
       ATLAS_INSTALLATION: ${{ inputs.installation }}
       ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
       ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}

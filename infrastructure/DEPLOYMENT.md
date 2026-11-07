@@ -80,3 +80,9 @@ subscription eligibility and regional pricing before provisioning.
 
 For resource counts, see [Resource inventory](PROVISIONED-RESOURCES.md).
 For monitoring checks, see [Telemetry](TELEMETRY.md).
+
+## Test demo from a feature branch
+
+The website deployment workflow accepts installation **main**, variant **demo** from a feature branch. Live and administrative operations still require main.
+
+For Terraform, select installation **main** and applications **demo** explicitly. The workflow keeps both applications in shared state, targets only `module.sites["demo"]`, and checks the saved plan before encryption and again before applying. Any live/shared resource mutation or deletion/replacement is rejected. Keep SQL bootstrap off. If a dependency needs a change, merge and run the normal infrastructure workflow from main first. Targeted applies are for bounded demo testing; run the full plan from main after merge.

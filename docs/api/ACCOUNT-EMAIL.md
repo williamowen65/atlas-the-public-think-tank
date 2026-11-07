@@ -21,7 +21,7 @@ In repository **Settings → Environments → atlas-infra-apply**, add:
 
 Demo and live share these mailbox settings. Terraform derives a separate HTTPS App Service origin for each app, so demo links go to demo and live links go to live. Only set the optional origins map when using custom site domains. Rehearsal installations also inherit the shared mailbox when email is enabled.
 
-Run **Atlas Azure Terraform plan**, review it, then run the existing **Atlas Azure Terraform apply** workflow with the same installation/application selection. Deploy the matching application code through **AtlasDeploy**. No manual Azure app settings are needed. Later application deployments retain the provisioned settings; mailbox changes use Terraform plan/apply again.
+For branch testing, run **Atlas Azure Terraform plan** from `PTT-174-account-email` with installation **main** and applications **demo**. Review the plan, then run **Atlas Azure Terraform apply** from the same branch with the same selections and SQL bootstrap **off**. This explicitly targets only the demo web app, retains live in Terraform state, and rejects changes to live/shared resources. After merge, run the normal **both** plan/apply from main to configure live too. Deploy the matching application code through **AtlasDeploy**. No manual Azure app settings are needed. Later application deployments retain the provisioned settings; mailbox changes use Terraform plan/apply again.
 
 Keep the application password only in GitHub Secrets. Terraform marks it sensitive, but the protected remote state and encrypted plan still contain it, following the existing infrastructure secret handling. Neither the SMTP password nor tokens are Terraform outputs.
 
