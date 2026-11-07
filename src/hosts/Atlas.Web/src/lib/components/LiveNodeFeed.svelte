@@ -33,7 +33,7 @@
   import LiveReactions from './LiveReactions.svelte';
   import { onMount } from 'svelte';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
-  import { readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
+  import { DatabaseResumingError, readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
   import type { DiscoveryFilters } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
   let {
@@ -95,6 +95,7 @@
    * User-facing load or request failure; empty text hides the error message.
    */
   let error = $state('');
+  let databaseResuming = $state(false);
   /**
    * Whether discovery reports another page to load.
    */
@@ -113,9 +114,10 @@
     if (loading || disposed || !hasMore) return;
     loading = true;
     error = '';
+    databaseResuming = false;
     controller = new AbortController();
     const current = controller;
-    const timeout = setTimeout(() => current.abort(), 10000);
+    const timeout = setTimeout(() => current.abort(), 60000);
     try {
       const moderatorRead = moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api';
       const page = await readDiscovery(apiBase, nextPage, search, current.signal, undefined, {
@@ -146,8 +148,11 @@
       items = [...items, ...additions];
       hasMore = page.hasNextPage;
       nextPage = page.page + 1;
-    } catch {
-      if (!disposed && current === controller) error = 'Could not load more nodes. Please retry.';
+    } catch (cause) {
+      if (!disposed && current === controller) {
+        databaseResuming = cause instanceof DatabaseResumingError;
+        error = cause instanceof DatabaseResumingError ? cause.message : 'Could not load more nodes. Please retry.';
+      }
     } finally {
       clearTimeout(timeout);
       if (!disposed && current === controller) loading = false;
@@ -199,6 +204,7 @@
   {loading}
   {hasMore}
   {error}
+  errorRole={databaseResuming ? 'status' : 'alert'}
   {presentation}
   {emptyTypeName}
   {onCreateFirst}

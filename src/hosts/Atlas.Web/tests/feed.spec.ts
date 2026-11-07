@@ -149,3 +149,45 @@ test('node contribution tab pages fifteen children in scoped groups of three', a
   await expect(panel.locator('article')).toHaveCount(3);
   expect(pages).toEqual([1, 2, 3, 4, 5, 1]);
 });
+
+// Exercise both initial loading and pagination without an automatic observer retry.
+for (const failedPage of [1, 2]) {
+  test(`database resume on page ${failedPage} keeps cards and clears after retry`, async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }); });
+    let failed = false;
+    const requests: number[] = [];
+    await page.route('**/atlas-public-api/**', route => {
+      const url = new URL(route.request().url());
+      if (!url.pathname.endsWith('/nodes')) return route.fulfill({ json: [] });
+      const current = Number(url.searchParams.get('Page'));
+      requests.push(current);
+      if (current === failedPage && !failed) {
+        failed = true;
+        return route.fulfill({ status: 503, json: { code: 'database_resuming' } });
+      }
+      return route.fulfill({ json: {
+        items: [entry(current)], totalCount: 2, page: current, pageSize: 1, hasNextPage: current === 1,
+      } });
+    });
+    await page.goto('http://127.0.0.1:4173');
+    if (failedPage === 2) {
+      await expect(page.locator('article')).toHaveCount(1);
+      await page.getByRole('button', { name: 'Load more nodes', exact: true }).click();
+    }
+    const notice = page.getByRole('status').filter({ hasText: 'The database for this site is waking back up.' });
+    await expect(notice).toContainText('Please try again in about one minute.');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('article')).toHaveCount(failedPage - 1);
+    await page.getByRole('button', { name: 'Retry loading nodes' }).click();
+    await expect(page.locator('article')).toHaveCount(failedPage);
+    await expect(notice).toHaveCount(0);
+    expect(requests).toEqual(failedPage === 1 ? [1, 1] : [1, 2, 2]);
+  });
+}
+
+test('unrecognized service failure keeps the ordinary feed error', async ({ page }) => {
+  await page.route('**/atlas-public-api/**', route => route.fulfill({ status: 503, json: { code: 'request_failed' } }));
+  await page.goto('http://127.0.0.1:4173');
+  await expect(page.getByRole('alert')).toContainText('Could not load more nodes');
+  await expect(page.getByText('The database for this site is waking back up.', { exact: false })).toHaveCount(0);
+});

@@ -3,6 +3,7 @@ using Atlas.Contracts.Identity;
 using Atlas.Contracts.Observability;
 using Atlas.Identity;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Api;
@@ -50,6 +51,10 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
         }
         if (error is SearchUnavailableException)
             logger.LogError(error, "Atlas text search is unavailable. Check SQL Server connectivity, full-text services and indexes.");
+        // 40613 is Azure SQL's database-unavailable response during serverless resume.
+        // Inspect wrappers (including EF retry exhaustion/search failures), never message text.
+        var databaseResuming = IsDatabaseResuming(error);
+        if (databaseResuming) context.Response.Headers.RetryAfter = "60";
         // Only these known quota exceptions may contribute their user-facing message.
         var retry = error switch
         {
@@ -62,7 +67,7 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
         var quota = retry is not null;
         if (retry is {} delay) context.Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(delay.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
         // Other errors expose categories, never arbitrary exception/SQL text.
-        var status = error switch
+        var status = databaseResuming ? 503 : error switch
         {
             BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } => 413,
             SearchUnavailableException => 503,
@@ -79,7 +84,7 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
         return await problems.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
-            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = error is SearchUnavailableException ? "search_unavailable" : quota ? "quota_exceeded" : "request_failed", ["quotaType"] = nodeQuota is null ? null : "node_creation", ["limit"] = allowance?.Limit, ["windowSeconds"] = allowance?.Window.TotalSeconds, ["remaining"] = allowance?.Remaining, ["nextSlotAt"] = allowance?.NextSlotAt?.ToString("O") }, Title = status switch
+            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = databaseResuming ? "database_resuming" : error is SearchUnavailableException ? "search_unavailable" : quota ? "quota_exceeded" : "request_failed", ["quotaType"] = nodeQuota is null ? null : "node_creation", ["limit"] = allowance?.Limit, ["windowSeconds"] = allowance?.Window.TotalSeconds, ["remaining"] = allowance?.Remaining, ["nextSlotAt"] = allowance?.NextSlotAt?.ToString("O") }, Title = databaseResuming ? "The database for this site is waking back up. Please try again in about one minute." : status switch
             {
                 400 => "Invalid request.", 403 => "This operation is not permitted.", 404 => "Resource not found.",
                 413 => "Request body too large.",
@@ -88,6 +93,14 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
                 409 => "The operation conflicts with the current state.", _ => "An unexpected error occurred."
             }}
         });
+    }
+    private static bool IsDatabaseResuming(Exception error)
+    {
+        if (error is SqlException sql && sql.Errors.Cast<SqlError>().Any(item => item.Number == 40613))
+            return true;
+        if (error is AggregateException aggregate)
+            return aggregate.InnerExceptions.Any(IsDatabaseResuming);
+        return error.InnerException is { } inner && IsDatabaseResuming(inner);
     }
 }
 
