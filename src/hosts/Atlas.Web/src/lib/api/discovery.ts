@@ -172,6 +172,14 @@ export class SearchUnavailableError extends Error {
   }
 }
 
+/** Only the API's recognized database availability response receives wake-up copy. */
+export class DatabaseResumingError extends Error {
+  constructor() {
+    super('The database for this site is waking back up. Please try again in about one minute.');
+    this.name = 'DatabaseResumingError';
+  }
+}
+
 /** Anonymous read only. The caller supplies an API base and owns request cancellation. */
 export async function readDiscovery(
   base: string,
@@ -219,6 +227,7 @@ export async function readDiscovery(
   if (!response.ok) {
     if (response.status === 503) {
       const problem = await response.json().catch(() => null);
+      if (problem?.code === 'database_resuming') throw new DatabaseResumingError();
       if (problem?.code === 'search_unavailable') throw new SearchUnavailableError();
     }
     throw new Error(`Atlas API returned HTTP ${response.status}.`);

@@ -62,6 +62,7 @@
     loading = false,
     hasMore = false,
     error = '',
+    errorRole = 'alert',
     presentation = 'ribbon-corner',
     onLoadMore,
     onNavigate,
@@ -86,6 +87,8 @@
     hasMore?: boolean;
     /** Error text for feed paging; a nonempty value exposes retry feedback. */
     error?: string;
+    /** Recoverable availability notices use a polite live region. */
+    errorRole?: 'alert' | 'status';
     /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
     /**
@@ -201,7 +204,7 @@
     remains the manual/retry path.
   -->
   <div class="feed-tail" bind:this={tail}>
-    {#if error}<p role="alert">{error}</p>{/if}
+    {#if error}<p role={errorRole}>{error}</p>{/if}
     {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}
       <div class="empty-invitation">
         <h3>Be the first to create {article} {singularType.toLowerCase()}</h3>
