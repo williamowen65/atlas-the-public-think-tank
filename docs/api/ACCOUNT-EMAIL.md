@@ -76,3 +76,14 @@ Use the actual URL and port printed by Vite for PublicOrigin: this is the fronte
 Run the local API and frontend using `npm run dev:api` from `src/hosts/Atlas.Web`. Use the local database (initialized with Identity roles), then register from the local frontend with an address you control. A real email is sent to that address, and the link returns to the configured localhost frontend. Keep the dev servers running while you open it **on the same computer**. On a phone, localhost refers to the phone; use the separate LAN HTTPS development setup and configure that frontend HTTPS origin if testing across devices.
 
 Use a separate Namecheap application password labeled Atlas local so it can be revoked independently. Local signup must use a local database, not the deployed demo/live database. To return to file-only mail, remove the AccountMail section or its Transport setting from local secrets. Do not commit or share the secrets file.
+
+## Test account recovery locally
+
+1. Start API/Vite with the local SMTP settings above and a local database.
+2. Register an address you control and confirm it. Recovery emails are sent only for confirmed, active accounts.
+3. On Sign in, choose **Forgot your password?**, enter that address, and select **Send reset email**. The response stays generic for account privacy.
+4. Open the newest reset email on a device that can reach PublicOrigin. Enter the new password twice; all requirements should be checked before submitting.
+5. After success, choose **Sign in**. Verify the old password fails and the new password works.
+6. Reusing the reset token should fail. Request a fresh reset email if needed. A request timeout does not prove token expiry; check whether sign-in already works before repeating the reset.
+
+No admin/console action is required for recovery. SMTP provider credentials are separate from the account password being reset.

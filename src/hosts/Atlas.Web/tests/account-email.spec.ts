@@ -76,3 +76,36 @@ test('registration shows live checks and name feedback; resend needs only email'
   await expect(resend).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Forgot your password?' })).toBeVisible();
 });
+
+test('recovery requests email, resets with matching passwords, and offers sign-in', async ({ page }) => {
+  const writes: { path: string; body: unknown }[] = [];
+  await page.route('**/atlas-session-api/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/csrf')) return route.fulfill({ json: { token: 'csrf-test' } });
+    if (path.endsWith('/forgot-password') || path.endsWith('/reset-password')) {
+      expect(route.request().headers()['x-csrf-token']).toBe('csrf-test');
+      writes.push({ path, body: route.request().postDataJSON() });
+      return route.fulfill({ status: path.endsWith('/forgot-password') ? 202 : 204 });
+    }
+    return route.fulfill({ status: 401 });
+  });
+  await page.goto('http://127.0.0.1:4173/forgot-password');
+  await expect(page.getByRole('link', { name: 'Sign in or resend confirmation' })).toHaveCount(0);
+  await page.getByLabel('Email', { exact: true }).fill('recovery@example.com');
+  await page.getByRole('button', { name: 'Send reset email', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('If this address has an eligible account');
+  expect(writes[0].body).toEqual({ email: 'recovery@example.com' });
+  // Simulate opening the provider's email link. Tokens must stay in POST bodies.
+  await page.goto('http://127.0.0.1:4173/reset-password#email=recovery%40example.com&token=reset%2Btoken');
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('recovery@example.com');
+  await page.getByLabel('New password', { exact: true }).fill('NewPassword123!');
+  await page.getByLabel('Confirm new password', { exact: true }).fill('OtherPassword123!');
+  await page.getByRole('button', { name: 'Reset password', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('passwords do not match');
+  expect(writes).toHaveLength(1);
+  await page.getByLabel('Confirm new password', { exact: true }).fill('NewPassword123!');
+  await page.getByRole('button', { name: 'Reset password', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Your password has been reset');
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute('href', '/login');
+  expect(writes[1].body).toEqual({ email: 'recovery@example.com', token: 'reset+token', newPassword: 'NewPassword123!' });
+});
