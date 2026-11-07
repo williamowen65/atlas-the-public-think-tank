@@ -120,4 +120,10 @@ if __name__ == '__main__':
     except (ValueError, OSError) as error:
         print(f'Deployment target rejected: {error}', file=sys.stderr)
         raise SystemExit(1)
+    print('Deployment selection: code branch=' + os.environ.get('GITHUB_REF', '(unknown)')
+          + '; commit=' + os.environ.get('GITHUB_SHA', '(local)')
+          + '; installation=' + os.environ.get('ATLAS_INSTALLATION', '(unknown)')
+          + '; requested applications=' + os.environ.get('ATLAS_DEPLOYMENT_SHAPE', 'default')
+          + '; provisioned applications=' + result['variants_json']
+          + '; demo-only scope=' + result['terraform_demo_only'] + '.')
     print(f'Deployment profile verified: {os.environ["ATLAS_INSTALLATION"]}; resource prefix {result["name_prefix"]}.')

@@ -1,5 +1,5 @@
 name: Atlas Azure Terraform plan (manual, no apply)
-run-name: "Terraform plan · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ github.ref_name }}"
+run-name: "Terraform plan · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · apps=${{ inputs.deployment_shape }} · branch=${{ github.ref_name }}"
 
 # A live preview against the intended Azure subscription and the PRIVATE
 # remote state. This workflow NEVER applies infrastructure or uploads a plan

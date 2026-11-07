@@ -1,5 +1,5 @@
 name: Atlas Azure Terraform apply (manual)
-run-name: "Terraform apply · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · ${{ github.ref_name }}"
+run-name: "Terraform apply · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · apps=${{ inputs.deployment_shape }} · branch=${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
