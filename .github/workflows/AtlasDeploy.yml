@@ -70,6 +70,8 @@ jobs:
           ATLAS_VARIANT: ${{ inputs.variant }}
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          ATLAS_TARGET_PURPOSE: website
+          ATLAS_VARIANT: ${{ inputs.variant }}
         run: python infrastructure/scripts/check-deployment-target.py selection
 
   build:

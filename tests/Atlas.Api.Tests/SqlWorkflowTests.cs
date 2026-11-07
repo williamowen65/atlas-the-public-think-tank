@@ -87,7 +87,9 @@ public sealed class SqlWorkflowTests
         }.ConnectionString;
         var mail = Path.Combine(Path.GetTempPath(), "atlas-mail-" + Guid.NewGuid().ToString("N"));
         using var root = new ApiFactory(connection);
-        using var factory = root.WithWebHostBuilder(b => b.UseSetting("Atlas:DevelopmentMailDirectory", mail));
+        using var factory = root.WithWebHostBuilder(b => b.UseSetting("Atlas:DevelopmentMailDirectory", mail)
+            .ConfigureServices(services => services.Configure<Microsoft.AspNetCore.RateLimiting.RateLimiterOptions>(options =>
+                options.AddPolicy("auth", context => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("recovery-workflow")))));
         var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.

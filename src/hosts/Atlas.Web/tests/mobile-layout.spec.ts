@@ -22,6 +22,8 @@ test.beforeEach(async ({ page }) => {
     return route.fulfill({ json: [] });
   });
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 12, averageVote: 7.5, currentParticipantVote: null } });
     return route.fulfill({ status: 401, json: {} });
@@ -92,6 +94,8 @@ test('joining from a card uses membership transport and updates other controls',
   let joined = false;
   const writes: string[] = [];
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'demo' } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
@@ -115,6 +119,8 @@ for (const rating of [0, 6]) {
   test(`saved mobile rating ${rating} collapses the dial and remains available for editing`, async ({ page }) => {
     let saved: number | null = null;
     await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
       const path = new URL(route.request().url()).pathname;
       if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
       if (path.endsWith('/vote') && route.request().method() === 'PUT') {
@@ -149,6 +155,8 @@ for (const rating of [0, 6]) {
 
 test('mobile header stays on one row and long community drawer scrolls above bottom navigation', async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'demo' } });
     if (path.endsWith('/communities/mine')) return route.fulfill({ json: Array.from({ length: 40 }, (_, i) => ({

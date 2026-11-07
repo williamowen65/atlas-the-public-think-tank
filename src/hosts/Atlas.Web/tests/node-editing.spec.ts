@@ -59,6 +59,8 @@ async function setup(page: Page, participant: string | null = author) {
     });
   });
   await page.route('**/atlas-session-api/**', (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const request = route.request(),
       path = new URL(request.url()).pathname;
     if (path.endsWith('/auth/session'))

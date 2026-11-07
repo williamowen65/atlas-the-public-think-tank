@@ -62,7 +62,7 @@ for (const authenticated of [false, true]) {
       await expect(search).toBeFocused();
       // Desktop search expands inline and hides its trigger while open.
       await expect(toggle).toBeHidden();
-      expect((await search.boundingBox())!.width).toBeGreaterThan(30);
+      await expect.poll(async () => (await search.boundingBox())?.width ?? 0).toBeGreaterThan(30);
       const pill = await header.locator('.search-line').boundingBox();
       const navigation = await header.locator('.right-group').boundingBox();
       expect(pill && navigation).toBeTruthy();

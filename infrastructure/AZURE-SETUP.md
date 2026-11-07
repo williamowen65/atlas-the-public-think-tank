@@ -93,8 +93,8 @@ Do not grant Owner just to bypass an error.
 Both installations now deliberately share that identity's permissions. Profile
 validation prevents targeting mistakes; it does not isolate an untrusted workflow
 from the Azure account. Allow and approve only reviewed, trusted branches for this
-credential-bearing Environment. Main-target runs additionally require branch
-`main` in the workflow. A separate subscription/identity remains an option if a
+credential-bearing Environment. Main live, infrastructure and admin runs require branch
+`main`. Demo website deployments may use a reviewed feature branch. A separate subscription/identity remains an option if a
 stronger authorization boundary is needed later.
 
 ## 4. Find the SQL administrator

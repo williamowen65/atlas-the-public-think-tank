@@ -478,6 +478,7 @@ test('corner action shares dial height and wraps text without blocking pointer i
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 12, averageVote: 7.5, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
