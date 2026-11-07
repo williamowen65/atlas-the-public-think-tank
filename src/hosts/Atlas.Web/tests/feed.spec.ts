@@ -191,3 +191,58 @@ test('unrecognized service failure keeps the ordinary feed error', async ({ page
   await expect(page.getByRole('alert')).toContainText('Could not load more nodes');
   await expect(page.getByText('The database for this site is waking back up.', { exact: false })).toHaveCount(0);
 });
+
+for (const delayedPage of [1, 2]) {
+  test(`pending page ${delayedPage} explains slow loading and clears on success`, async ({ page }) => {
+    await page.clock.install();
+    await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }); });
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    let requested = false;
+    await page.route('**/atlas-public-api/**', async route => {
+      const url = new URL(route.request().url());
+      if (!url.pathname.endsWith('/nodes')) return route.fulfill({ json: [] });
+      const current = Number(url.searchParams.get('Page'));
+      if (current === delayedPage) {
+        requested = true;
+        await pending;
+      }
+      await route.fulfill({ json: { items: [entry(current)], totalCount: 2,
+        page: current, pageSize: 1, hasNextPage: current === 1 } });
+    });
+    await page.goto('http://127.0.0.1:4173');
+    if (delayedPage === 2) {
+      await expect(page.locator('article')).toHaveCount(1);
+      await page.getByRole('button', { name: 'Load more nodes', exact: true }).click();
+    }
+    await expect.poll(() => requested).toBe(true);
+    const notice = page.getByRole('status').filter({ hasText: 'Loading is taking longer than usual.' });
+    await expect(notice).toHaveCount(0);
+    await page.clock.runFor(4100);
+    await expect(notice).toContainText('The server or database may be waking up.');
+    await expect(page.locator('article')).toHaveCount(delayedPage - 1);
+    // The notice precedes the placeholders/list, so it is visible on a phone.
+    await expect(notice).toBeInViewport();
+    release();
+    await expect(page.locator('article')).toHaveCount(delayedPage);
+    await expect(notice).toHaveCount(0);
+  });
+}
+
+test('a timed-out feed stops placeholders and offers retry', async ({ page }) => {
+  await page.clock.install();
+  let requested = false;
+  await page.route('**/atlas-public-api/**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/nodes')) {
+      requested = true;
+      return; // Deliberately leave the request pending until the client aborts.
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.goto('http://127.0.0.1:4173');
+  await expect.poll(() => requested).toBe(true);
+  await page.clock.runFor(60100);
+  await expect(page.getByRole('alert')).toContainText('Loading nodes timed out.');
+  await expect(page.getByRole('button', { name: 'Retry loading nodes' })).toBeEnabled();
+  await expect(page.getByText('Loading is taking longer than usual.', { exact: false })).toHaveCount(0);
+});

@@ -60,6 +60,7 @@
     renderReactions,
     items,
     loading = false,
+    loadingNotice = '',
     hasMore = false,
     error = '',
     errorRole = 'alert',
@@ -83,6 +84,8 @@
     items: FeedItem[];
     /** Whether a page request is in progress; shows loading feedback and restricts paging. */
     loading?: boolean;
+    /** Slow-request feedback, announced outside the busy list and above placeholders. */
+    loadingNotice?: string;
     /** Whether more feed pages remain. Enables automatic loading and the Load more button. */
     hasMore?: boolean;
     /** Error text for feed paging; a nonempty value exposes retry feedback. */
@@ -165,6 +168,10 @@
   loading and the invitation to create the first contribution.
 -->
 
+<!-- Keep delay feedback outside aria-busy so assistive technology can announce it now. -->
+<div class="node-feed" role={loadingNotice ? 'status' : undefined} aria-live="polite">
+  {#if loadingNotice}<p>{loadingNotice}</p>{/if}
+</div>
 <section class="node-feed" aria-label="Node feed" aria-busy={loading || initialLoading}>
   {#if initialLoading}<LoadingPlaceholder />{/if}
   <ul aria-label="Nodes">

@@ -26,8 +26,13 @@ def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) 
     branch = required('GITHUB_REF')
     if not branch.startswith('refs/heads/'):
         raise ValueError('Deployments must run from a branch, not a tag or PR merge ref.')
-    if installation == 'main' and branch != 'refs/heads/main':
-        raise ValueError('The main installation can only be targeted from the main branch.')
+    # Website selection explicitly opts in to branch testing on demo only.
+    # Infrastructure/admin callers do not receive this exception.
+    demo_website = (mode == 'website' or (
+        mode == 'selection' and settings.get('ATLAS_TARGET_PURPOSE') == 'website'
+    )) and settings.get('ATLAS_VARIANT') == 'demo'
+    if installation == 'main' and branch != 'refs/heads/main' and not demo_website:
+        raise ValueError('Main live, infrastructure and admin operations require the main branch.')
     if settings.get('ATLAS_REQUIRE_FRESH_RUN') == 'true' and settings.get('GITHUB_RUN_ATTEMPT') != '1':
         raise ValueError('Start a fresh Terraform apply workflow instead of rerunning an old plan.')
 

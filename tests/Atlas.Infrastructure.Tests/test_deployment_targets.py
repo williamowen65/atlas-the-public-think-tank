@@ -47,6 +47,24 @@ class DeploymentTargetTests(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 self.validate('selection', values)
 
+    def test_feature_branch_can_deploy_only_demo_website_on_main_installation(self):
+        values = self.settings('main', GITHUB_REF='refs/heads/topic',
+                               ATLAS_TARGET_PURPOSE='website', ATLAS_TARGET_APP='atlas-existing-demo')
+        self.validate('selection', values)
+        self.validate('website', values)
+        for mode in ['selection', 'website', 'infrastructure', 'admin']:
+            invalid = dict(values)
+            if mode in ['selection', 'website']:
+                invalid.update(ATLAS_VARIANT='live', ATLAS_TARGET_APP='atlas-existing-live')
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                self.validate(mode, invalid)
+        with self.assertRaises(ValueError):
+            self.validate('selection', dict(values, ATLAS_TARGET_PURPOSE='admin'))
+        with self.assertRaises(ValueError):
+            self.validate('website', dict(values, ATLAS_TARGET_APP='atlas-existing-live'))
+        with self.assertRaises(ValueError):
+            self.validate('website', dict(values, GITHUB_REF='refs/tags/v1'))
+
     def test_main_can_keep_existing_names_and_state(self):
         self.validate('infrastructure', self.settings('main'))
         self.validate('admin', self.settings('main'))
