@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Atlas.Identity;
+using Atlas.Persistence;
+using System.Data;
 using Atlas.Contracts.Observability;
 using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Antiforgery;
@@ -19,7 +21,8 @@ public sealed class AccountsController(
     UserManager<AtlasIdentityUser> users,
     SignInManager<AtlasIdentityUser> signIn,
     IAntiforgery antiforgery,
-    AccountMail mail
+    AccountMail mail,
+    AtlasDataContext database
 ) : ControllerBase
 {
     /// <summary>Get a CSRF token before writes, and get a fresh one after login/logout.</summary>
@@ -247,18 +250,27 @@ public sealed class AccountsController(
         return Accepted();
     }
 
-    /// <summary>Validate the account’s confirmation token through Identity without signing in.</summary>
+    /// <summary>Confirm once, invalidate the email token and establish this browser's session.</summary>
     [HttpPost("confirm-email")]
-    public async Task<IActionResult> Confirm(ConfirmationRequest request)
+    public async Task<IActionResult> Confirm(ConfirmationRequest request, CancellationToken cancellationToken)
     {
+        // Keep confirmation and stamp rotation together. Concurrent redemptions
+        // cannot both commit; replay must never create a new authenticated session.
+        await using var transaction = await database.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, cancellationToken);
         var user = await users.FindByIdAsync(request.UserId.ToString());
-        if (user is null || !(await users.ConfirmEmailAsync(user, request.Token)).Succeeded)
-            return Problem(
-                statusCode: 400,
-                title: "Confirmation could not be completed."
-            );
+        if (user is null || user.EmailConfirmed || await users.IsLockedOutAsync(user)
+            || !await accounts.HasActiveProfileAsync(user.Id, cancellationToken)
+            || !(await users.ConfirmEmailAsync(user, request.Token)).Succeeded)
+            return Problem(statusCode: 400, title: "Confirmation could not be completed. Sign in if already confirmed, or request a fresh email.");
+        // Identity's confirmation tokens depend on the security stamp.
+        if (!(await users.UpdateSecurityStampAsync(user)).Succeeded)
+            return Problem(statusCode: 500, title: "Confirmation could not be completed.");
+        await transaction.CommitAsync(cancellationToken);
+        await signIn.SignInAsync(user, isPersistent: false);
         return NoContent();
     }
+
 }
 
 public sealed record LoginRequest(

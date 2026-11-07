@@ -106,6 +106,18 @@ public sealed class SqlWorkflowTests
             const string newPassword = "Atlas_New_125!Password";
             var confirm = await RegisterUnconfirmedAccount(client, mail, email, oldPassword);
             await CheckGenericRecoveryAndConfirm(client, mail, email, confirm);
+            // Confirmation now establishes a session and rotates the one-time link evidence.
+            Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/auth/session")).StatusCode);
+            await RefreshCsrfToken(client);
+            var replay = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+            {
+                userId = confirm.GetProperty("userId").GetGuid(),
+                token = confirm.GetProperty("token").GetString()
+            });
+            Assert.AreEqual(HttpStatusCode.BadRequest, replay.StatusCode);
+            Assert.IsFalse(replay.Headers.TryGetValues("Set-Cookie", out var cookies)
+                && cookies.Any(cookie => cookie.StartsWith("__Host-Atlas.Session=")));
+            await RefreshCsrfToken(client);
             await ResetPasswordAndCheckTokens(client, mail, email, newPassword);
             await VerifyOldAndNewPasswordLogin(client, email, oldPassword, newPassword);
 

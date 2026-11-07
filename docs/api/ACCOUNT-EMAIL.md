@@ -1,6 +1,6 @@
 # Account email delivery
 
-Registration creates an unconfirmed account. Atlas sends a confirmation email; the user opens the link, selects **Confirm email**, then signs in with their password. No console or administrator action is needed. Sign-in also offers confirmation resend and password recovery.
+Registration creates an unconfirmed account. Atlas sends a confirmation email; opening the link automatically confirms the account and establishes a browser session. The user sees confirmation and can continue to Atlas. No console or administrator action is needed. Sign-in also offers confirmation resend and password recovery.
 
 ## Connect your existing mail provider
 
@@ -31,11 +31,11 @@ Missing required mailbox settings cause an enabled Terraform plan to fail before
 
 1. Configure the GitHub environment, apply Terraform, and deploy this branch to demo.
 2. Register an address you control. Check inbox/spam, sender, and that the link points to demo.
-3. Confirm the email through the website and sign in.
+3. Open the email link and verify automatic confirmation/sign-in, then continue to Atlas.
 4. Request a password reset. Open the email, choose a valid new password, and sign in again.
 5. Exercise confirmation resend, an invalid token, and a provider failure. A registration whose email failed may already exist: use resend confirmation after restoring delivery.
 
-Links carry Identity tokens in the URL fragment. The page removes the fragment after reading it; tokens are sent only in the CSRF-protected POST body. Confirmation requires an explicit button click, preventing link-preview fetches from confirming an account. Password resets do not automatically sign in. Identity owns expiry and token validation.
+Links carry Identity tokens in the URL fragment. The page removes the fragment after reading it; tokens are sent only in the CSRF-protected POST body. Confirmation posts automatically when the page opens. The endpoint accepts only active, unlocked, previously unconfirmed accounts, rotates the security stamp before issuing a session cookie, and rejects repeat use for sign-in. Mail scanners that execute JavaScript may consume a link; users can still sign in with their password if it was already confirmed. Password resets do not automatically sign in. Confirmation does; the client clears its CSRF cache after confirmation and prepares a fresh token for the authenticated session. Identity owns expiry and token validation.
 
 Delivery is synchronous, without a background retry queue. Provider acceptance does not guarantee inbox delivery. Check provider delivery reports for bounces. Preserve the deployment's Identity Data Protection keys across restarts so pending links remain usable. Do not record email bodies, tokens, credentials, or provider responses in logs.
 

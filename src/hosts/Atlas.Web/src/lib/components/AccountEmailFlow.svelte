@@ -1,4 +1,4 @@
-<!-- Account confirmation is submitted explicitly so mail-link scanners cannot confirm accounts. -->
+<!-- Email confirmation redeems the link once on mount through the CSRF-protected API. -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import PasswordInput from './PasswordInput.svelte';
@@ -29,9 +29,10 @@
     email = params.get('email') ?? '';
     if (window.location.hash) window.history.replaceState(null, '', window.location.pathname);
     ready = true;
+    if (mode === 'confirm' && token && userId) void submit();
   });
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  async function submit(event?: SubmitEvent) {
+    event?.preventDefault();
     if (busy) return;
     error = '';
     if (mode === 'reset' && !requirements.every(item => item.met)) {
@@ -55,7 +56,7 @@
       } else if (cause instanceof ApiRequestError && cause.status === 400 && mode !== 'forgot') {
         error = mode === 'reset'
           ? 'This reset request was not accepted. Reopen the email link and try again, or request a fresh reset email. Your new password must meet all requirements.'
-          : 'This confirmation request was not accepted. Reopen the email link and try again, or request a fresh confirmation email.';
+          : 'This link was not accepted or has already been used. Try signing in, or request a fresh confirmation email.';
       } else {
         error = mode === 'forgot'
           ? 'We could not confirm that the reset email was sent. Check your inbox before requesting another, or try again shortly.'
@@ -70,14 +71,14 @@
   <div class="auth-content">
   {#if mode === 'forgot' && !done}<p>Enter the email address you used to register. We’ll email you a link to choose a new password.</p>{/if}
   {#if done}
-    <p role="status">{mode === 'forgot' ? 'If this address has an eligible account, a password reset email has been sent. Check your inbox and spam folder.' : mode === 'confirm' ? 'Your email is confirmed. You can now sign in.' : 'Your password has been reset. You can now sign in.'}</p>
+    <p role="status">{mode === 'forgot' ? 'If this address has an eligible account, a password reset email has been sent. Check your inbox and spam folder.' : mode === 'confirm' ? 'Your email is confirmed and you’re signed in on this browser.' : 'Your password has been reset. You can now sign in.'}</p>
   {:else if ready && mode !== 'forgot' && (!token || (mode === 'confirm' && !userId))}
     <p role="alert">This link is incomplete. Request another email.</p>
+  {:else if mode === 'confirm'}
+    {#if busy}<p role="status">Confirming your email…</p>{:else}<button type="button" class="secondary" onclick={() => void submit()}>Retry confirmation</button>{/if}
   {:else}
     <form onsubmit={submit} aria-label={title} aria-busy={busy}>
-      {#if mode !== 'confirm'}
-        <label>Email <input type="email" bind:value={email} required autocomplete="email" maxlength="256" /></label>
-      {/if}
+      <label>Email <input type="email" bind:value={email} required autocomplete="email" maxlength="256" /></label>
       {#if mode === 'reset'}
         <label for="reset-new-password">New password</label>
         <PasswordInput id="reset-new-password" bind:value={password} autocomplete="new-password" minlength={12} describedBy="reset-password-requirements" />
@@ -87,13 +88,14 @@
         <label for="reset-confirm-password">Confirm new password</label>
         <PasswordInput id="reset-confirm-password" bind:value={confirmation} autocomplete="new-password" minlength={12} />
       {/if}
-      <ActionButton type="submit" disabled={!ready || busy} label={busy ? mode === 'forgot' ? 'Sending reset email…' : 'Please wait…' : mode === 'confirm' ? 'Confirm email' : mode === 'reset' ? 'Reset password' : 'Send reset email'} />
+      <ActionButton type="submit" disabled={!ready || busy} label={busy ? mode === 'forgot' ? 'Sending reset email…' : 'Please wait…' : mode === 'reset' ? 'Reset password' : 'Send reset email'} />
     </form>
   {/if}
   {#if error}<p role="alert">{error}</p>{/if}
-  {#if done && mode !== 'forgot'}<p><a href="/login">Sign in</a></p>{/if}
+  {#if done && mode === 'reset'}<p><a href="/login">Sign in</a></p>{/if}
+  {#if done && mode === 'confirm'}<p><a href="/">Continue to Atlas</a></p>{/if}
   {#if done && mode === 'forgot'}<button type="button" class="secondary" onclick={() => { done = false; error = ''; }}>Request another reset email</button>{/if}
-  {#if !done && mode === 'confirm'}<p><a href="/register">Resend confirmation instructions</a></p>{/if}
+  {#if !done && mode === 'confirm'}<p><a href="/login">Sign in</a></p><p><a href="/register">Resend confirmation instructions</a></p>{/if}
   {#if mode === 'reset'}<p><a href="/forgot-password">Request another reset email</a></p>{/if}
   </div>
 </section>
