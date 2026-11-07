@@ -137,7 +137,7 @@ export const sessionApiGuard: Plugin = {
         && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
 
       const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
-        || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation)$/.test(path)
+        || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation|confirm-email|forgot-password|reset-password)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);

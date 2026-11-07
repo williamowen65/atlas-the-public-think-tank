@@ -60,3 +60,24 @@ test('HTTP/2 authority supports LAN reads and same-origin writes without allowin
     });
   }
 });
+
+test('account email writes pass the local proxy while origin and method restrictions remain', () => {
+  // Exercise the actual guard rather than mocking the HTTP response in the browser.
+  const plugin = sessionApiGuard;
+  let middleware!: (req: IncomingMessage, res: ServerResponse, next: () => void) => void;
+  (plugin.configureServer as Function)({ config: { server: {} }, middlewares: { use(handler: typeof middleware) { middleware = handler; } } });
+  const run = (operation: string, method = 'POST', origin = 'http://localhost:5173') => {
+    let continued = false;
+    const response = { statusCode: 200, setHeader() {}, end() {} };
+    middleware({ url: `/atlas-session-api/auth/${operation}`, method,
+      headers: { host: 'localhost:5173', origin } } as IncomingMessage,
+      response as unknown as ServerResponse, () => { continued = true; });
+    return { continued, status: response.statusCode };
+  };
+  for (const operation of ['forgot-password', 'reset-password', 'confirm-email']) {
+    expect(run(operation).continued).toBe(true);
+    expect(run(operation, 'GET').status).toBe(405);
+    expect(run(operation, 'POST', 'https://other.example').status).toBe(403);
+  }
+  expect(run('unknown-account-action').status).toBe(405);
+});
