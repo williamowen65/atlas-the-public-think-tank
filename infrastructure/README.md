@@ -18,7 +18,7 @@ Start with the guide that matches your task.
 | [Private network operations](PRIVATE-NETWORK-OPERATIONS.md) | Why SQL commands run through operations App Service SSH |
 | [Resource inventory](PROVISIONED-RESOURCES.md) | Azure resource counts and Terraform ownership |
 | [Security](SECURITY.md) | Access boundaries, secrets, approvals and deletion guards |
-| [Telemetry](TELEMETRY.md) | Monitoring checks and cloud audit-delivery limitations |
+| [Telemetry](TELEMETRY.md) | Check Azure logs, requests and metrics; understand audit-delivery limits |
 
 ## Code and checks
 
