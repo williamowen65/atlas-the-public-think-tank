@@ -89,7 +89,13 @@ module "sites" {
     module.sql.database_names[each.key],
     azurerm_user_assigned_identity.runtime[each.key].client_id
   )
-  tags = merge(local.tags, { variant = each.key })
+  account_mail_enabled       = var.account_mail_enabled
+  account_mail_host          = var.account_mail_host
+  account_mail_port          = var.account_mail_port
+  account_mail_address       = var.account_mail_address
+  account_mail_password      = var.account_mail_password
+  account_mail_public_origin = lookup(var.account_mail_public_origins, each.key, null)
+  tags                       = merge(local.tags, { variant = each.key })
 }
 
 # Management-only WebJob hosts share the existing B1 plan but do not share SQL

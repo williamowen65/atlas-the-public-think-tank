@@ -81,6 +81,12 @@ jobs:
       TF_VAR_sql_entra_admin_object_id: ${{ vars.AZURE_SQL_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_sql_admin_password: ${{ secrets.TF_SQL_ADMIN_PASSWORD }}
       TF_VAR_demo_seed_password: ${{ secrets.ATLAS_DEMO_PASSWORD }}
+      TF_VAR_account_mail_enabled: ${{ vars.ATLAS_MAIL_ENABLED || 'false' }}
+      TF_VAR_account_mail_host: ${{ vars.ATLAS_MAIL_HOST || 'mail.privateemail.com' }}
+      TF_VAR_account_mail_port: ${{ vars.ATLAS_MAIL_PORT || '587' }}
+      TF_VAR_account_mail_address: ${{ vars.ATLAS_MAIL_ADDRESS }}
+      TF_VAR_account_mail_password: ${{ secrets.ATLAS_MAIL_PASSWORD }}
+      TF_VAR_account_mail_public_origins: ${{ vars.ATLAS_MAIL_PUBLIC_ORIGINS || '{}' }}
       TF_VAR_app_service_sku: "B1"
       # Destroy mode removes existing state resources; it never creates missing variants.
       TF_VAR_deployment_variants: '["live","demo"]'

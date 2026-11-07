@@ -206,3 +206,10 @@ no post-provisioning GitHub app-name variables are needed.
 - [Azure Login using OIDC](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect)
 - [Terraform Azure backend authentication and roles](https://developer.hashicorp.com/terraform/language/backend/azurerm)
 - [GitHub Environment approvals and branch restrictions](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+
+## Account email (shared demo/live mailbox)
+
+Configure the `ATLAS_MAIL_*` GitHub environment settings in
+[Account email delivery](../docs/api/ACCOUNT-EMAIL.md#configure-once-through-github-and-terraform).
+The existing Terraform plan/apply workflows provision SMTP settings for every public app.
+No Azure portal edits are required. Each app gets its own link origin automatically.

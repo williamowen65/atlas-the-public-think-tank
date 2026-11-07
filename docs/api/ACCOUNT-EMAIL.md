@@ -6,25 +6,30 @@ Registration creates an unconfirmed account. Atlas sends a confirmation email; t
 
 Use an authenticated SMTP service supporting STARTTLS (normally port 587). The sender is a verified mailbox/address from your provider. The Azure app name does not create an email address. If your provider only supports an HTTP API or implicit TLS on port 465, add the appropriate adapter before enabling delivery.
 
-Set these separately for demo and live using App Service configuration/secrets (double underscores map to configuration sections):
+## Configure once through GitHub and Terraform
 
-| Setting | Value |
-| --- | --- |
-| `Atlas__AccountMail__Transport` | `Smtp` |
-| `Atlas__AccountMail__Host` | Provider SMTP host |
-| `Atlas__AccountMail__Port` | `587`, or provider STARTTLS port |
-| `Atlas__AccountMail__Username` | Provider SMTP username |
-| `Atlas__AccountMail__Password` | Provider SMTP credential; secret |
-| `Atlas__AccountMail__From` | Verified sender, for example `atlas@thepublicthinktank.com` |
-| `Atlas__AccountMail__PublicOrigin` | Site HTTPS origin only, without a path; demo must use the demo origin |
+In repository **Settings → Environments → atlas-infra-apply**, add:
 
-Complete the provider's sender/domain verification and DNS requirements first. Never commit credentials. In local development use .NET user secrets for the API project to configure the same keys with colons instead of double underscores.
+| Kind | Name | Value |
+| --- | --- | --- |
+| Variable | `ATLAS_MAIL_ENABLED` | `true` when ready to send |
+| Variable | `ATLAS_MAIL_ADDRESS` | Your full Namecheap mailbox address, used for login and sender |
+| Secret | `ATLAS_MAIL_PASSWORD` | The Namecheap application password |
+| Variable (optional) | `ATLAS_MAIL_HOST` | Defaults to `mail.privateemail.com` |
+| Variable (optional) | `ATLAS_MAIL_PORT` | Defaults to `587` (STARTTLS) |
+| Variable (optional) | `ATLAS_MAIL_PUBLIC_ORIGINS` | JSON map for custom domains, e.g. `{"live":"https://thepublicthinktank.com"}` |
 
-With no transport selected, Development retains the private JSON files in `Atlas:DevelopmentMailDirectory`. Production refuses registration/recovery until email delivery is configured. Explicit invalid SMTP configuration never falls back to files.
+Demo and live share these mailbox settings. Terraform derives a separate HTTPS App Service origin for each app, so demo links go to demo and live links go to live. Only set the optional origins map when using custom site domains. Rehearsal installations also inherit the shared mailbox when email is enabled.
+
+Run **Atlas Azure Terraform plan**, review it, then run the existing **Atlas Azure Terraform apply** workflow with the same installation/application selection. Deploy the matching application code through **AtlasDeploy**. No manual Azure app settings are needed. Later application deployments retain the provisioned settings; mailbox changes use Terraform plan/apply again.
+
+Keep the application password only in GitHub Secrets. Terraform marks it sensitive, but the protected remote state and encrypted plan still contain it, following the existing infrastructure secret handling. Neither the SMTP password nor tokens are Terraform outputs.
+
+Missing required mailbox settings cause an enabled Terraform plan to fail before apply. Email defaults to disabled until configured; disabling it and applying removes the SMTP settings. In Development, no transport retains the private JSON mail files; Production refuses registration/recovery while mail is unavailable.
 
 ## Verify delivery
 
-1. Deploy to demo and configure its provider settings.
+1. Configure the GitHub environment, apply Terraform, and deploy this branch to demo.
 2. Register an address you control. Check inbox/spam, sender, and that the link points to demo.
 3. Confirm the email through the website and sign in.
 4. Request a password reset. Open the email, choose a valid new password, and sign in again.
