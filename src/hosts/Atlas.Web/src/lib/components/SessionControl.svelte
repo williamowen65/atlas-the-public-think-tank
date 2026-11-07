@@ -266,7 +266,7 @@
         'auth/register',
         'POST',
         { email, password, displayName },
-        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
+        AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]),
       );
       // Replace the registration form with next-step instructions for this page visit.
       // This state is intentionally not persisted; refreshing restores the form.
@@ -281,9 +281,9 @@
             ? cause.message === 'The request was not accepted. Check your text or sign in again.'
               ? 'Registration could not be completed. Check your details, try a different display name, or use sign-in and account recovery if you already registered.'
               : cause.message
-            : `Registration failed (HTTP ${cause.status}). Please try again.`;
+            : `Registration did not finish normally (HTTP ${cause.status}). Your account may already exist. Check your inbox or use Resend confirmation instructions.`;
       } else {
-        error = 'Unable to reach the registration service. Check the connection and try again.';
+        error = 'We could not confirm the result of your registration request. Your account may already have been created. Check your inbox or use Resend confirmation instructions before trying to register again.';
       }
     } finally {
       // Discard the secret on both success and failure; allow another submission.
@@ -299,7 +299,7 @@
     resendNotice = '';
     try {
       await apiRequest(sessionBase, 'auth/resend-confirmation', 'POST', { email },
-        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]));
+        AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]));
       resendNotice = 'If this address has an account awaiting confirmation, confirmation instructions have been sent through the configured delivery workflow.';
     } catch {
       error = 'Could not process the confirmation request. Please try again.';
