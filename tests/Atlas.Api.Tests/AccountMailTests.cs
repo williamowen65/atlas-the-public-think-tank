@@ -11,6 +11,15 @@ namespace Atlas.Api.Tests;
 [TestClass]
 public sealed class AccountMailTests
 {
+    [TestMethod]
+    public async Task Recovery_test_host_can_exercise_more_than_twenty_auth_steps()
+    {
+        using var factory = new ApiFactory(disableAuthLimiter: true);
+        using var client = factory.Browser();
+        for (var step = 0; step < 25; step++)
+            Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/auth/csrf")).StatusCode);
+    }
+
     // Exercise the deployed ASP.NET host, not just Vite's permissive SPA fallback.
     [TestMethod]
     public async Task Email_routes_serve_the_spa_but_unknown_routes_stay_404()
