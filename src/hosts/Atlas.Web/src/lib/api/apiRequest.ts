@@ -145,7 +145,9 @@ export async function apiRequest<T>(
   }
   // Do not replay a write. A later explicit action can prepare a new token.
   // 400 includes CSRF rejection but also validation; clearing conservatively is harmless.
-  if ([400, 401, 403].includes(response.status)) clearCsrfTokens();
+  // Anonymous session reads normally return 401. They must not invalidate
+  // preparation already in progress for confirmation or another anonymous write.
+  if (unsafe && [400, 401, 403].includes(response.status)) clearCsrfTokens();
   // Keep user-facing failures consistent while preserving the status for callers.
   if (!response.ok) {
     let problem: ApiProblem = {};

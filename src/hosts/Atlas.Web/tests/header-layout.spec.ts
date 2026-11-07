@@ -5,7 +5,8 @@ for (const authenticated of [false, true]) {
     page,
   }) => {
     await page.route('**/atlas-session-api/**', (route) =>
-      route.fulfill({
+      new URL(route.request().url()).pathname.endsWith('/moderation/queue')
+      ? route.fulfill({ status: 403 }) : route.fulfill({
         status: authenticated ? 200 : 401,
         json: { participantId: authenticated ? 'participant' : null },
       }),

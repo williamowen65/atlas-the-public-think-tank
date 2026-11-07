@@ -30,7 +30,7 @@ These controls separate **which code runs** from **which Azure installation chan
 
 | Control | What to select |
 | --- | --- |
-| Branch | Code and workflow version. A trusted feature branch may deploy the demo website; main live, infrastructure and admin operations require branch `main`. |
+| Branch | Code and workflow version. A trusted feature branch may deploy the demo website; main live, shared infrastructure and admin operations require branch `main` (demo-only Terraform is described below). |
 | Installation | `main` for the existing installation; `rehearsal` for a separate test installation. |
 | Rehearsal name | A unique suffix, such as `trial02`. Keep it the same throughout that rehearsal. |
 | Applications to provision | `default` means both for main, live only for rehearsal. Explicit choices: `live`, `demo`, `both`. |
@@ -91,8 +91,7 @@ migrations or restore demo data.
 
 The shared GitHub Environment must allow the reviewed feature branch. Its Azure
 identity is trusted through the Environment, but branch restrictions can still block
-a run. This exception applies only to demo website deployment/verification;
-Terraform, admin tools and live releases retain their main-branch restriction.
+a run. Demo website deployment/verification and explicitly scoped demo-only Terraform runs are allowed. Shared Terraform changes, admin tools and live releases retain their main-branch restriction.
 
 ## Costs and verification
 
