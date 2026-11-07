@@ -93,10 +93,10 @@ public sealed class AccountsController(
                 .Select(error => error.Description));
         }
         if (passwordErrors.Count > 0)
-            return ValidationProblem(new Dictionary<string, string[]>
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
                 ["Password"] = passwordErrors.Distinct().ToArray()
-            });
+            }));
 
         // Commit the linked account, Participant profile and Member role together.
         var registration = await accounts.RegisterAsync(
