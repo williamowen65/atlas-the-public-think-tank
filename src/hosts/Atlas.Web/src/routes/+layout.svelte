@@ -54,8 +54,8 @@
         pendingModerationCount = 0;
         if (session.participantId) {
           try {
-            const queue = await apiRequest<Array<{ nodeId: string }>>('/atlas-session-api', 'moderation/queue');
-            if (active) { canModerate = true; pendingModerationCount = queue.length; }
+            const queue = await apiRequest<{ items: Array<{ nodeId: string }>; totalCount: number }>('/atlas-session-api', 'moderation/queue');
+            if (active) { canModerate = true; pendingModerationCount = queue.totalCount; }
           } catch { /* Moderation link is only shown when the server grants access. */ }
         }
         if (session.participantId) {

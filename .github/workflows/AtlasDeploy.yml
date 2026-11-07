@@ -66,6 +66,8 @@ jobs:
       - name: Resolve installation selection
         id: target
         env:
+          ATLAS_TARGET_PURPOSE: website
+          ATLAS_VARIANT: ${{ inputs.variant }}
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
         run: python infrastructure/scripts/check-deployment-target.py selection

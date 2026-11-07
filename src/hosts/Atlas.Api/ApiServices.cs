@@ -92,9 +92,11 @@ public static class ApiServices
         // 5. Share the read cache across requests, but keep queries and actors request-scoped.
         services.AddScoped<IPublicSearch>(_ => new SqlPublicSearch(open));
         services.AddSingleton<DiscoveryCache>();
-        services.AddScoped<IDiscoveryService>(s => new DiscoveryService(new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>())));
+        services.AddScoped<IDiscoveryReadQuery>(s => new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>()));
+        services.AddScoped<IDiscoveryService>(s => new DiscoveryService(s.GetRequiredService<IDiscoveryReadQuery>()));
         services.AddScoped<RequestActor>();
         services.AddScoped<DevelopmentAccountMail>();
+        services.AddScoped<AccountMail>();
         // Local telemetry has host lifetime. The hosted worker owns its cancellation/shutdown.
         services.AddSingleton<ApiTelemetry>();
         services.AddHostedService<ApiAuditWorker>();

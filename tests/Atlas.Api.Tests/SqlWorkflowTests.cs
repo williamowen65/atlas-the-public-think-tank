@@ -86,7 +86,7 @@ public sealed class SqlWorkflowTests
             InitialCatalog = "AtlasRecovery_" + Guid.NewGuid().ToString("N")
         }.ConnectionString;
         var mail = Path.Combine(Path.GetTempPath(), "atlas-mail-" + Guid.NewGuid().ToString("N"));
-        using var root = new ApiFactory(connection);
+        using var root = new ApiFactory(connection, disableAuthLimiter: true);
         using var factory = root.WithWebHostBuilder(b => b.UseSetting("Atlas:DevelopmentMailDirectory", mail));
         var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         await using var database = new AtlasDataContext(options);
@@ -106,6 +106,18 @@ public sealed class SqlWorkflowTests
             const string newPassword = "Atlas_New_125!Password";
             var confirm = await RegisterUnconfirmedAccount(client, mail, email, oldPassword);
             await CheckGenericRecoveryAndConfirm(client, mail, email, confirm);
+            // Confirmation must not authenticate the browser; only password sign-in does.
+            Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
+            await RefreshCsrfToken(client);
+            var replay = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+            {
+                userId = confirm.GetProperty("userId").GetGuid(),
+                token = confirm.GetProperty("token").GetString()
+            });
+            Assert.AreEqual(HttpStatusCode.BadRequest, replay.StatusCode);
+            Assert.IsFalse(replay.Headers.TryGetValues("Set-Cookie", out var cookies)
+                && cookies.Any(cookie => cookie.StartsWith("__Host-Atlas.Session=")));
+            await RefreshCsrfToken(client);
             await ResetPasswordAndCheckTokens(client, mail, email, newPassword);
             await VerifyOldAndNewPasswordLogin(client, email, oldPassword, newPassword);
 
@@ -544,7 +556,7 @@ public sealed class SqlWorkflowTests
 
     /// <summary>
     /// Unknown/unconfirmed reset requests return 202 without delivery; resend creates one confirmation
-    /// file, then confirmation returns 204.
+    /// file, then confirmation returns the verified email without signing in.
     /// </summary>
     private static async Task CheckGenericRecoveryAndConfirm(HttpClient client, string mail, string email, JsonElement confirm)
     {
@@ -570,19 +582,18 @@ public sealed class SqlWorkflowTests
             })).StatusCode
         );
         Assert.AreEqual(1, Directory.GetFiles(mail).Length);
-        // Remove consumed test evidence so later file-count checks observe only the next delivery.
         File.Delete(Directory.GetFiles(mail).Single());
-        Assert.AreEqual(
-            HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync(
-                "/api/auth/confirm-email",
-                new
-                {
-                    userId = confirm.GetProperty("userId").GetGuid(),
-                    token = confirm.GetProperty("token").GetString()
-                }
-            )).StatusCode
-        );
+        var confirmed = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+        {
+            userId = confirm.GetProperty("userId").GetGuid(),
+            token = confirm.GetProperty("token").GetString()
+        });
+        Assert.AreEqual(HttpStatusCode.OK, confirmed.StatusCode);
+        var confirmationResult = await confirmed.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(email, confirmationResult.GetProperty("email").GetString());
+        Assert.IsFalse(confirmed.Headers.TryGetValues("Set-Cookie", out var cookies)
+            && cookies.Any(cookie => cookie.StartsWith("__Host-Atlas.Session=")));
+
     }
 
     /// <summary>

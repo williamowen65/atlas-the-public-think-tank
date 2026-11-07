@@ -96,6 +96,7 @@
    */
   let error = $state('');
   let databaseResuming = $state(false);
+  let slowLoading = $state(false);
   /**
    * Whether discovery reports another page to load.
    */
@@ -115,8 +116,14 @@
     loading = true;
     error = '';
     databaseResuming = false;
+    slowLoading = false;
     controller = new AbortController();
     const current = controller;
+    // Pending requests may succeed without ever returning a SQL resume error.
+    // Explain the delay without claiming that its cause is known.
+    const slowNotice = setTimeout(() => {
+      if (!disposed && current === controller) slowLoading = true;
+    }, 4000);
     const timeout = setTimeout(() => current.abort(), 60000);
     try {
       const moderatorRead = moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api';
@@ -151,11 +158,19 @@
     } catch (cause) {
       if (!disposed && current === controller) {
         databaseResuming = cause instanceof DatabaseResumingError;
-        error = cause instanceof DatabaseResumingError ? cause.message : 'Could not load more nodes. Please retry.';
+        error = cause instanceof DatabaseResumingError
+          ? cause.message
+          : current.signal.aborted
+            ? 'Loading nodes timed out. The server or database may still be waking up. Please retry.'
+            : 'Could not load more nodes. Please retry.';
       }
     } finally {
+      clearTimeout(slowNotice);
       clearTimeout(timeout);
-      if (!disposed && current === controller) loading = false;
+      if (!disposed && current === controller) {
+        loading = false;
+        slowLoading = false;
+      }
     }
   }
   // Parent views key the feed when their filters change. Avoid an effect that
@@ -202,6 +217,7 @@
   onNavigate={onOpenNode ?? ((id) => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))}
   {items}
   {loading}
+  loadingNotice={slowLoading ? 'Loading is taking longer than usual. The server or database may be waking up. Please keep this page open.' : ''}
   {hasMore}
   {error}
   errorRole={databaseResuming ? 'status' : 'alert'}

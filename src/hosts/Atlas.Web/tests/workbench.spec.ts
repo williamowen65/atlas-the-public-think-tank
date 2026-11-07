@@ -225,6 +225,7 @@ test('style Controls carry across Storybook layout and composition stories and r
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });

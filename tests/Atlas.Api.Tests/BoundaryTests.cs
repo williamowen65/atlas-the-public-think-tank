@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Atlas.Api.Tests;
 
@@ -25,14 +26,23 @@ namespace Atlas.Api.Tests;
 /// Merely constructing the factory does not send a request; accessing Services or creating clients starts it.
 /// The primary-constructor parameter below is a C# constructor argument available to this class.
 /// </remarks>
-internal sealed class ApiFactory(string? connection = null) : WebApplicationFactory<Program>
+internal sealed class ApiFactory(string? connection = null, bool disableAuthLimiter = false) : WebApplicationFactory<Program>
 {
     // Keep the application's real service registrations, but select Development and disable local telemetry output.
     // The optional connection argument is supplied only by SQL workflow tests; these are not domain factories.
     // Non-SQL tests use an unreachable placeholder: accidental database access should fail.
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
         .UseSetting("Atlas:Telemetry:Enabled", "false")
-        .UseSetting("ATLAS_SQL_CONNECTION_STRING", connection ?? "Server=localhost;Database=Atlas_Not_Used;Integrated Security=true;TrustServerCertificate=true");
+        .UseSetting("ATLAS_SQL_CONNECTION_STRING", connection ?? "Server=localhost;Database=Atlas_Not_Used;Integrated Security=true;TrustServerCertificate=true")
+        .ConfigureServices(services =>
+        {
+            if (!disableAuthLimiter) return;
+            // Recovery exercises more than 20 auth calls. Keep quota tests on the
+            // real policy, but remove its options registration for this scenario.
+            services.RemoveAll<Microsoft.Extensions.Options.IConfigureOptions<Microsoft.AspNetCore.RateLimiting.RateLimiterOptions>>();
+            services.Configure<Microsoft.AspNetCore.RateLimiting.RateLimiterOptions>(options =>
+                options.AddPolicy("auth", context => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("recovery-workflow")));
+        });
     /// <summary>
     /// Create a browser-like HTTP client with an independent cookie jar; it retains cookies across its own requests.
     /// With no login cookie it starts anonymous. Two calls create separate client sessions, not two browser windows.

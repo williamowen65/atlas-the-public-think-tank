@@ -17,22 +17,50 @@ def managed_resources(module: dict):
 
 def check_existing_variants(state: dict, selected: list[str]) -> None:
     existing = set()
+    addresses_by_variant: dict[str, set[str]] = {}
     for resource in managed_resources(state.get('values', {}).get('root_module', {})):
         address = resource.get('address', '')
         # These addresses are the variant-keyed resources from this Terraform root.
         matches = re.findall(r'(?:module\.(?:sites|admin_sites)|azurerm_user_assigned_identity\.(?:runtime|operations)|azapi_resource\.variant)\["(live|demo)"\]', address)
         existing.update(matches)
+        for variant in matches:
+            addresses_by_variant.setdefault(variant, set()).add(address)
     removed = existing - set(selected)
     if removed:
-        raise ValueError('This state already contains ' + ', '.join(sorted(removed)) +
-                         '. The selected application set would remove it. Keep the existing set, '
-                         'or choose a new rehearsal name/state. Deletion is a separate explicit operation.')
+        excluded = sorted(address for variant in removed for address in addresses_by_variant[variant])
+        raise ValueError(
+            'Application selection would omit existing resources. No Terraform plan or apply was run by this check.\n'
+            '  Existing applications: ' + ', '.join(sorted(existing)) + '\n'
+            '  Selected applications: ' + ', '.join(sorted(selected)) + '\n'
+            '  Applications omitted: ' + ', '.join(sorted(removed)) + '\n'
+            '  Existing resource addresses excluded by this selection (not confirmed planned deletions):\n'
+            + '\n'.join('    - ' + address for address in excluded) + '\n'
+            'Terraform interprets the application set as which resources should continue to exist, '
+            'not merely which website to deploy.\n'
+            'For demo-only infrastructure testing, start a NEW run from the updated feature branch, '
+            'installation main, applications demo; it retains live and demo in state and targets only demo. '
+            'The older workflow on main does not include that behavior. '
+            'For a full infrastructure update from main, keep both applications selected. '
+            'Deletion requires a separate explicit cleanup operation.')
+    print('State application check: existing=' + (','.join(sorted(existing)) or '(empty)')
+          + '; selected=' + ','.join(sorted(selected)) + '; no applications omitted.')
 
 
-def check_plan(plan: dict) -> None:
+
+def check_plan(plan: dict, demo_only: bool = False) -> None:
     changes = plan.get('resource_changes', [])
     if not isinstance(changes, list):
         raise ValueError('Terraform plan did not contain a valid resource change list.')
+    if demo_only:
+        # Targeting includes dependencies. Fail closed if Terraform proposes any
+        # mutation beyond the demo web app; never expose the planned values.
+        forbidden = [r.get('address', '(unknown resource)') for r in changes
+                     if r.get('mode', 'managed') == 'managed'
+                     and r.get('change', {}).get('actions', []) not in (['no-op'], ['read'])
+                     and not r.get('address', '').startswith('module.sites["demo"].')]
+        if forbidden:
+            raise ValueError('Demo-only plan would change live or shared resources: '
+                             + ', '.join(forbidden) + '. Run shared infrastructure changes from main.')
     destructive = [r.get('address', '(unknown resource)') for r in changes
                    if 'delete' in r.get('change', {}).get('actions', [])]
     if destructive:
@@ -52,7 +80,7 @@ if __name__ == '__main__':
                 raise ValueError('Invalid selected application set.')
             check_existing_variants(data, selected)
         elif mode == 'plan':
-            check_plan(data)
+            check_plan(data, demo_only=os.environ.get('ATLAS_TERRAFORM_DEMO_ONLY') == 'true')
         else:
             raise ValueError('Expected state or plan validation mode.')
     except (ValueError, KeyError, TypeError) as error:

@@ -125,6 +125,7 @@ test('application breadcrumb still switches API-loaded parents without story pro
   const original = 'b1000000-0000-4000-8000-000000000002';
   const alternative = 'b1000000-0000-4000-8000-000000000003';
   await page.route('**/atlas-session-api/**', (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes'))
       return route.fulfill({

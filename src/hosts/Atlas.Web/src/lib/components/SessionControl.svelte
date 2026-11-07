@@ -24,6 +24,7 @@
 -->
 <script lang="ts">
   import ActionButton from './ActionButton.svelte';
+  import PasswordInput from './PasswordInput.svelte';
   import { onMount, untrack } from 'svelte';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   let {
@@ -32,6 +33,7 @@
     expanded = false,
     collapsible = true,
     startRegister = false,
+    initialEmail = '',
     focusOnMount = false,
     hideWhenSignedIn = false,
     onSession,
@@ -52,6 +54,8 @@
      * afterward.
      */
     startRegister?: boolean;
+    /** Verified address supplied by the confirmation page; initial value only. */
+    initialEmail?: string;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -79,6 +83,9 @@
    * submissions and disables action buttons.
    */
   let busy = $state(false);
+  let resending = $state(false);
+  let emailError = $state('');
+  let emailInput = $state<HTMLInputElement>();
   /**
    * User-facing failure message; empty text hides the error and retry controls.
    */
@@ -88,7 +95,7 @@
   /**
    * Email entered in the login or registration form; retained when switching modes.
    */
-  let email = $state('');
+  let email = $state(untrack(() => initialEmail));
   /**
    * Password input held temporarily in memory and cleared after each login or registration
    * attempt.
@@ -108,6 +115,14 @@
    * instructions.
    */
   let registered = $state(false);
+  let displayNameError = $state('');
+  const passwordChecks = $derived([
+    { label: 'At least 12 characters', met: password.length >= 12 },
+    { label: 'An uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'A lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'A number', met: /[0-9]/.test(password) },
+    { label: 'A symbol', met: /[^a-zA-Z0-9]/.test(password) },
+  ]);
   /** Show a neutral confirmation-resend message without revealing account existence. */
   let resendNotice = $state('');
   /**
@@ -249,6 +264,7 @@
    */
   async function register() {
     if (busy) return;
+    displayNameError = '';
     busy = true;
     error = '';
     try {
@@ -257,7 +273,7 @@
         'auth/register',
         'POST',
         { email, password, displayName },
-        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
+        AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]),
       );
       // Replace the registration form with next-step instructions for this page visit.
       // This state is intentionally not persisted; refreshing restores the form.
@@ -265,13 +281,16 @@
     } catch (cause) {
       // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
       if (cause instanceof ApiRequestError) {
-        error = cause.status === 503
-          ? 'Registration requires local email delivery to be configured.'
+        displayNameError = cause.fieldErrors.DisplayName?.join(' ') ?? '';
+        error = displayNameError ? 'Check the highlighted display name. If you already registered, use sign-in or account recovery.' : cause.status === 503
+          ? 'Account email delivery is temporarily unavailable. Please try again later.'
           : cause.status === 400
-            ? 'Registration was rejected (HTTP 400). Check your information; if it persists, inspect the API response.'
-            : `Registration failed (HTTP ${cause.status}). Please try again.`;
+            ? cause.message === 'The request was not accepted. Check your text or sign in again.'
+              ? 'Registration could not be completed. Check your details, try a different display name, or use sign-in and account recovery if you already registered.'
+              : cause.message
+            : `Registration did not finish normally (HTTP ${cause.status}). Your account may already exist. Check your inbox or use Resend confirmation instructions.`;
       } else {
-        error = 'Unable to reach the registration service. Check the connection and try again.';
+        error = 'We could not confirm the result of your registration request. Your account may already have been created. Check your inbox or use Resend confirmation instructions before trying to register again.';
       }
     } finally {
       // Discard the secret on both success and failure; allow another submission.
@@ -281,18 +300,26 @@
   }
   /** Request another confirmation message; the API responds identically for unknown accounts. */
   async function resendConfirmation() {
-    if (busy || !email.trim()) return;
+    if (busy) return;
+    emailError = '';
+    if (!email.trim() || (emailInput && !emailInput.validity.valid)) {
+      emailError = 'Enter a valid email address above to resend confirmation instructions.';
+      emailInput?.focus();
+      return;
+    }
+    resending = true;
     busy = true;
     error = '';
     resendNotice = '';
     try {
       await apiRequest(sessionBase, 'auth/resend-confirmation', 'POST', { email },
-        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]));
+        AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]));
       resendNotice = 'If this address has an account awaiting confirmation, confirmation instructions have been sent through the configured delivery workflow.';
     } catch {
       error = 'Could not process the confirmation request. Please try again.';
     } finally {
       busy = false;
+      resending = false;
     }
   }
   /**
@@ -358,8 +385,8 @@
 {#if registered}
   <div role="status" class="registration-complete">
     <h2>Account created</h2>
-    <p>Confirm your email address before signing in. In local development, use the development email confirmation workflow.</p>
-    <button type="button" disabled={busy} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+    <p>Check your inbox and spam folder for a confirmation email. Confirm your email address before signing in.</p>
+    <button type="button" disabled={busy} onclick={() => void resendConfirmation()} aria-busy={resending}>{resending ? 'Sending confirmation…' : 'Resend confirmation instructions'}</button>
     {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
   </div>
 {:else}
@@ -377,32 +404,49 @@
             required
             maxlength="100"
             autocomplete="nickname"
-          />{/if}
+            aria-invalid={displayNameError ? 'true' : undefined}
+            aria-describedby={displayNameError ? `${instance}-name-error` : undefined}
+            oninput={() => { displayNameError = ''; }}
+          />
+          {#if displayNameError}<p id={`${instance}-name-error`} role="alert">{displayNameError}</p>{/if}
+        {/if}
         <label for={`${instance}-email`}>Email</label><input
           id={`${instance}-email`}
+          bind:this={emailInput}
+          aria-invalid={emailError ? 'true' : undefined}
+          aria-describedby={emailError ? `${instance}-email-error` : undefined}
+          oninput={() => { emailError = ''; }}
           type="email"
           bind:value={email}
           autocomplete="username"
           required
           maxlength="256"
         />
-        <label for={`${instance}-password`}>Password</label><input
-          id={`${instance}-password`}
-          type="password"
-          bind:value={password}
+        {#if emailError}<p id={`${instance}-email-error`} role="alert">{emailError}</p>{/if}
+        <label for={`${instance}-password`}>Password</label>
+        <PasswordInput id={`${instance}-password`} bind:value={password}
           autocomplete={registering ? 'new-password' : 'current-password'}
-          required
-          maxlength="1024"
-        />
+          minlength={registering ? 12 : undefined}
+          describedBy={registering ? `${instance}-password-help` : undefined} />
+        {#if registering}
+          <ul id={`${instance}-password-help`} class="password-checks" aria-label="Password requirements">
+            {#each passwordChecks as requirement}
+              <li><input type="checkbox" checked={requirement.met} disabled aria-hidden="true" tabindex="-1" /><span>{requirement.label}<span class="requirement-state"> — {requirement.met ? 'met' : 'not yet met'}</span></span></li>
+            {/each}
+          </ul>
+        {/if}
         <ActionButton
           type="submit"
-          label={busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
+          label={busy && !resending ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
           disabled={busy}
         />
       </form>
-      {#if !registering}
-        <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+      {#if registering}
+        <p>Already registered? <a href="/forgot-password">Recover your account</a> or switch to sign in.</p>
+        <button type="button" class="switch-mode" disabled={busy} onclick={() => void resendConfirmation()} aria-busy={resending}>{resending ? 'Sending confirmation…' : 'Resend confirmation instructions'}</button>
         {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
+      {:else}
+        <a href="/forgot-password">Forgot your password?</a>
       {/if}
       <button
         type="button"
@@ -410,6 +454,10 @@
         onclick={() => {
           registering = !registering;
           error = '';
+          displayNameError = '';
+          emailError = '';
+          resendNotice = '';
+          password = '';
         }}
         >{registering
           ? 'Already have an account? Sign in'
@@ -419,6 +467,11 @@
 {/snippet}
 
 <style lang="scss">
+  .password-checks { list-style: none; padding: 0; margin: .5rem 0 1rem; }
+  .password-checks li { display: flex; align-items: center; gap: .5rem; }
+  .password-checks input { width: 1rem; height: 1rem; margin: 0; opacity: 1; }
+  .requirement-state { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
   .session {
     display: flex;
     align-items: center;
@@ -466,6 +519,7 @@
     margin-top: 0.75rem;
   }
   button:disabled {
-    cursor: default;
+    opacity: .55;
+    cursor: not-allowed;
   }
 </style>

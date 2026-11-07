@@ -13,6 +13,8 @@ async function setup(page: Page, anonymous = false) {
     return route.fulfill({ json: { items: [{ nodeId: node, voteCount: 3, averageVote: 5, card: { title: 'Voting question', shortDescription: 'Introduction', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.route('**/atlas-session-api/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
+    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const request = route.request(); const path = new URL(request.url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { ...summary, currentParticipantVote: signedIn ? summary.currentParticipantVote : null } });
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'voter' } }) : route.fulfill({ status: 401, json: {} });

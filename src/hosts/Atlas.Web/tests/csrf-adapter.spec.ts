@@ -135,3 +135,21 @@ test('invalid token payload is not cached or sent in a write', async () => {
   await apiRequest('/session', 'nodes', 'POST', {});
   expect(preparations).toBe(1);
 });
+
+test('email confirmation retains anonymous CSRF until password sign-in', async () => {
+  await apiRequest('/session', 'auth/confirm-email', 'POST', { userId: 'fixture', token: 'fixture' });
+  await apiRequest('/session', 'nodes', 'POST', {});
+  expect(preparations).toBe(1);
+});
+
+
+test('anonymous session reads do not cancel a concurrent confirmation token preparation', async () => {
+  const transport = globalThis.fetch;
+  globalThis.fetch = async (input, init) => String(input).endsWith('/auth/session')
+    ? new Response(null, { status: 401 }) : transport(input, init);
+  const confirmation = apiRequest('/session', 'auth/confirm-email', 'POST', { token: 'test' });
+  await apiRequest('/session', 'auth/session').catch(() => undefined);
+  await confirmation;
+  expect(preparations).toBe(1);
+  expect(requests.find(request => request.path.endsWith('/auth/confirm-email'))?.token).toBe('token-1');
+});

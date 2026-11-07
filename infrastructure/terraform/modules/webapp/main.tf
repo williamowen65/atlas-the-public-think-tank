@@ -14,6 +14,19 @@ variable "connection_string" {
 }
 variable "tags" { type = map(string) }
 
+variable "account_mail_enabled" { type = bool }
+variable "account_mail_host" { type = string }
+variable "account_mail_port" { type = number }
+variable "account_mail_address" { type = string }
+variable "account_mail_password" {
+  type      = string
+  sensitive = true
+}
+variable "account_mail_public_origin" {
+  type    = string
+  default = null
+}
+
 resource "azurerm_linux_web_app" "atlas" {
   name                                           = var.name
   resource_group_name                            = var.resource_group_name
@@ -48,7 +61,26 @@ resource "azurerm_linux_web_app" "atlas" {
     ATLAS_DEPLOYMENT_VARIANT              = var.variant
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
-  })
+    }, var.account_mail_enabled ? {
+    Atlas__AccountMail__Transport    = "Smtp"
+    Atlas__AccountMail__Host         = var.account_mail_host
+    Atlas__AccountMail__Port         = tostring(var.account_mail_port)
+    Atlas__AccountMail__Username     = var.account_mail_address
+    Atlas__AccountMail__From         = var.account_mail_address
+    Atlas__AccountMail__Password     = var.account_mail_password
+    Atlas__AccountMail__PublicOrigin = coalesce(var.account_mail_public_origin, format("https://%s.azurewebsites.net", var.name))
+  } : {})
+
+  lifecycle {
+    precondition {
+      condition = !var.account_mail_enabled || (
+        trimspace(var.account_mail_host) != "" &&
+        can(regex("^[^ @]+@[^ @]+\\.[^ @]+$", var.account_mail_address)) &&
+        length(trimspace(var.account_mail_password)) > 0
+      )
+      error_message = "Enabling account email requires an SMTP host, sender mailbox and application password."
+    }
+  }
 }
 
 output "name" { value = azurerm_linux_web_app.atlas.name }

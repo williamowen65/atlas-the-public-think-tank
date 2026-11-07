@@ -18,3 +18,7 @@ enable_sql_bootstrap = false
 # are defined in modules/network; no public SQL firewall exceptions exist.
 
 # Supply sql_admin_password / runtime_connection_strings privately, not here.
+
+# Shared account email defaults to disabled. GitHub environment atlas-infra-apply
+# supplies ATLAS_MAIL_* variables and the ATLAS_MAIL_PASSWORD secret.
+# See ../../docs/api/ACCOUNT-EMAIL.md; never put the password here.

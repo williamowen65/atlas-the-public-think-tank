@@ -79,3 +79,43 @@ variable "tags" {
     purpose = "school-capstone"
   }
 }
+
+variable "account_mail_enabled" {
+  description = "Enable the shared SMTP mailbox for all public applications."
+  type        = bool
+  default     = false
+}
+variable "account_mail_host" {
+  type    = string
+  default = "mail.privateemail.com"
+}
+variable "account_mail_port" {
+  type    = number
+  default = 587
+  validation {
+    condition     = var.account_mail_port > 0 && var.account_mail_port <= 65535 && floor(var.account_mail_port) == var.account_mail_port
+    error_message = "Use an integer SMTP STARTTLS port from 1 through 65535."
+  }
+}
+variable "account_mail_address" {
+  description = "Shared SMTP username and sender mailbox for demo/live."
+  type        = string
+  default     = ""
+}
+variable "account_mail_password" {
+  description = "Shared SMTP application password. Stored in protected Terraform state and encrypted plans."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "account_mail_public_origins" {
+  description = "Optional per-variant HTTPS origins for custom domains; otherwise use the provisioned App Service hostname."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition = alltrue([for variant, origin in var.account_mail_public_origins :
+      contains(["live", "demo"], variant) && can(regex("^https://[A-Za-z0-9.-]+(:[0-9]+)?/?$", origin))
+    ])
+    error_message = "Map live/demo to HTTPS origins without paths, query strings or fragments."
+  }
+}

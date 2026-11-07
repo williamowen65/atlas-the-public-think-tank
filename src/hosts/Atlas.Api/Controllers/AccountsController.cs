@@ -1,11 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Atlas.Identity;
+using Atlas.Persistence;
+using System.Data;
 using Atlas.Contracts.Observability;
 using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Api.Controllers;
 
@@ -19,7 +22,8 @@ public sealed class AccountsController(
     UserManager<AtlasIdentityUser> users,
     SignInManager<AtlasIdentityUser> signIn,
     IAntiforgery antiforgery,
-    DevelopmentAccountMail mail
+    AccountMail mail,
+    AtlasDataContext database
 ) : ControllerBase
 {
     /// <summary>Get a CSRF token before writes, and get a fresh one after login/logout.</summary>
@@ -74,13 +78,29 @@ public sealed class AccountsController(
         CancellationToken cancellationToken
     )
     {
-        // No production mail provider has been selected. Fail before creating an
-        // unusable account; never expose confirmation/reset tokens in JSON or logs.
+        // Fail before account creation when delivery is unavailable. Tokens stay private.
         if (!mail.IsAvailable)
             return Problem(
                 statusCode: 503,
                 title: "Account email delivery is not configured."
             );
+
+        // Validate password policy before any account lookup. These errors describe
+        // the submitted password, not whether an email/display name is registered.
+        var candidate = new AtlasIdentityUser { UserName = request.Email, Email = request.Email };
+        var passwordErrors = new List<string>();
+        foreach (var validator in users.PasswordValidators)
+        {
+            var validation = await validator.ValidateAsync(users, candidate, request.Password);
+            passwordErrors.AddRange(validation.Errors
+                .Where(error => error.Code.StartsWith("Password", StringComparison.Ordinal))
+                .Select(error => error.Description));
+        }
+        if (passwordErrors.Count > 0)
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["Password"] = passwordErrors.Distinct().ToArray()
+            }));
 
         // Commit the linked account, Participant profile and Member role together.
         var registration = await accounts.RegisterAsync(
@@ -90,16 +110,28 @@ public sealed class AccountsController(
             cancellationToken
         );
         if (!registration.Result.Succeeded)
+        {
+            var nameError = registration.Result.Errors.FirstOrDefault(error =>
+                error.Code is "DuplicateDisplayName" or "InvalidDisplayName");
+            if (nameError is not null)
+                return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["DisplayName"] = [nameError.Code == "DuplicateDisplayName"
+                        ? "That display name is already in use. Please choose another."
+                        : "Enter a valid display name (up to 100 characters)."]
+                }));
             return Problem(
                 statusCode: 400,
                 title: "Registration could not be completed."
             );
+        }
 
         // Generate confirmation evidence only after registration succeeds.
         var user = (await users.FindByIdAsync(registration.ParticipantId!.Value.ToString()))!;
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
-        await mail.WriteAsync(
+        await mail.SendAsync(
             "confirm-email",
+            user.Email!,
             user.Id,
             token,
             cancellationToken
@@ -157,8 +189,9 @@ public sealed class AccountsController(
         var user = await users.FindByEmailAsync(request.Email);
         if (user is not null && await users.IsEmailConfirmedAsync(user)
             && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
-            await mail.WriteAsync(
+            await mail.SendAsync(
                 "reset-password",
+                user.Email!,
                 user.Id,
                 await users.GeneratePasswordResetTokenAsync(user),
                 cancellationToken
@@ -206,8 +239,9 @@ public sealed class AccountsController(
         var user = await users.FindByEmailAsync(request.Email);
         if (user is not null && !await users.IsEmailConfirmedAsync(user)
             && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
-            await mail.WriteAsync(
+            await mail.SendAsync(
                 "confirm-email",
+                user.Email!,
                 user.Id,
                 await users.GenerateEmailConfirmationTokenAsync(user),
                 cancellationToken
@@ -217,18 +251,26 @@ public sealed class AccountsController(
         return Accepted();
     }
 
-    /// <summary>Validate the account’s confirmation token through Identity without signing in.</summary>
+    /// <summary>Confirm once without signing in; return the verified address for the password form.</summary>
     [HttpPost("confirm-email")]
-    public async Task<IActionResult> Confirm(ConfirmationRequest request)
+    public async Task<IActionResult> Confirm(ConfirmationRequest request, CancellationToken cancellationToken)
     {
+        // Keep confirmation and stamp rotation together. Concurrent redemptions
+        // cannot both commit. Confirmation never issues an authentication cookie.
+        await using var transaction = await database.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, cancellationToken);
         var user = await users.FindByIdAsync(request.UserId.ToString());
-        if (user is null || !(await users.ConfirmEmailAsync(user, request.Token)).Succeeded)
-            return Problem(
-                statusCode: 400,
-                title: "Confirmation could not be completed."
-            );
-        return NoContent();
+        if (user is null || user.EmailConfirmed || await users.IsLockedOutAsync(user)
+            || !await accounts.HasActiveProfileAsync(user.Id, cancellationToken)
+            || !(await users.ConfirmEmailAsync(user, request.Token)).Succeeded)
+            return Problem(statusCode: 400, title: "Confirmation could not be completed. Sign in if already confirmed, or request a fresh email.");
+        // Identity's confirmation tokens depend on the security stamp.
+        if (!(await users.UpdateSecurityStampAsync(user)).Succeeded)
+            return Problem(statusCode: 500, title: "Confirmation could not be completed.");
+        await transaction.CommitAsync(cancellationToken);
+        return Ok(new { email = user.Email });
     }
+
 }
 
 public sealed record LoginRequest(

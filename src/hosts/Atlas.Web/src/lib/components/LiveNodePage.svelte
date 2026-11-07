@@ -294,7 +294,15 @@
         if (id) {
           // The authenticated node-detail endpoint, not public discovery, determines access
           // to hidden originals. A public placeholder never contains editable content.
-          const detail = await apiRequest<HiddenDetail>('/atlas-session-api', `nodes/${encodeURIComponent(id)}`, 'GET', undefined, signal);
+          let detail: HiddenDetail;
+          try {
+            detail = await apiRequest<HiddenDetail>('/atlas-session-api', `nodes/${encodeURIComponent(id)}`, 'GET', undefined, signal);
+          } catch (cause) {
+            if (!(cause instanceof ApiRequestError) || ![401, 403].includes(cause.status)) throw cause;
+            // Anonymous visitors still have access to the public projection. A public
+            // hidden placeholder never grants access to the protected original.
+            detail = await readJson<HiddenDetail>(apiBase, `nodes/${encodeURIComponent(id)}`, signal);
+          }
           if (detail.hidden) {
             hiddenDetail = detail;
             if (detail.authorId && detail.title) {

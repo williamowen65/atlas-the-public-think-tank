@@ -2,6 +2,7 @@
 type ApiProblem = {
   /** Display title supplied by the API. */
   title?: string;
+  errors?: { Password?: string[]; DisplayName?: string[] };
   /** Quota category reported by the API, such as node_creation. */
   quotaType?: string;
   /** Maximum operations allowed in the reported window. */
@@ -39,6 +40,7 @@ export class ApiRequestError extends Error {
   constructor(
     message: string,
     public status: number,
+    public fieldErrors: { DisplayName?: string[] } = {},
   ) {
     super(message);
   }
@@ -143,19 +145,25 @@ export async function apiRequest<T>(
   }
   // Do not replay a write. A later explicit action can prepare a new token.
   // 400 includes CSRF rejection but also validation; clearing conservatively is harmless.
-  if ([400, 401, 403].includes(response.status)) clearCsrfTokens();
+  // Anonymous session reads normally return 401. They must not invalidate
+  // preparation already in progress for confirmation or another anonymous write.
+  if (unsafe && [400, 401, 403].includes(response.status)) clearCsrfTokens();
   // Keep user-facing failures consistent while preserving the status for callers.
   if (!response.ok) {
     let problem: ApiProblem = {};
-    if (response.status === 429) {
+    if (response.status === 429 || (response.status === 400 && path === 'auth/register')) {
       try {
         problem = (await response.json()) as ApiProblem;
       } catch {
         /* Non-JSON throttling response. */
       }
     }
+    const passwordErrors = problem.errors?.Password;
+    const passwordMessage = path === 'auth/register' && Array.isArray(passwordErrors)
+      && passwordErrors.every((item) => typeof item === 'string')
+      ? passwordErrors.slice(0, 8).map((item) => item.slice(0, 300)).join(' ') : '';
     throw new ApiRequestError(
-      response.status === 401
+      passwordMessage || (response.status === 401
         ? 'Please sign in to continue.'
         : response.status === 403
           ? 'This action is not permitted. Your session may have expired.'
@@ -163,8 +171,10 @@ export async function apiRequest<T>(
             ? rateLimitMessage(problem, response.headers.get('Retry-After'))
             : response.status === 400
               ? 'The request was not accepted. Check your text or sign in again.'
-              : 'The request could not be completed. Please retry.',
+              : 'The request could not be completed. Please retry.'),
       response.status,
+      path === 'auth/register' && Array.isArray(problem.errors?.DisplayName)
+        ? { DisplayName: problem.errors.DisplayName.filter((item) => typeof item === 'string').slice(0, 3).map((item) => item.slice(0, 300)) } : {},
     );
   }
   // Successful writes such as registration may return 202 Accepted with no body.

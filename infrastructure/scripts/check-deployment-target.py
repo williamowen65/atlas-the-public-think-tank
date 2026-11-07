@@ -26,8 +26,14 @@ def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) 
     branch = required('GITHUB_REF')
     if not branch.startswith('refs/heads/'):
         raise ValueError('Deployments must run from a branch, not a tag or PR merge ref.')
-    if installation == 'main' and branch != 'refs/heads/main':
-        raise ValueError('The main installation can only be targeted from the main branch.')
+    purpose = settings.get('ATLAS_TARGET_PURPOSE', '')
+    demo_website = (mode == 'website' or (mode == 'selection' and purpose == 'website')) and settings.get('ATLAS_VARIANT') == 'demo'
+    demo_infrastructure = installation == 'main' and settings.get('ATLAS_DEPLOYMENT_SHAPE') == 'demo' and (
+        mode == 'infrastructure' or (mode == 'selection' and purpose == 'infrastructure'))
+    if installation == 'main' and branch != 'refs/heads/main' and not (demo_website or demo_infrastructure):
+        raise ValueError('Main live, shared infrastructure and admin operations require the main branch; select an explicit demo-only operation for branch testing.')
+    if demo_infrastructure and settings.get('TF_VAR_enable_sql_bootstrap', '').lower() == 'true':
+        raise ValueError('Demo-only infrastructure cannot enable SQL bootstrap.')
     if settings.get('ATLAS_REQUIRE_FRESH_RUN') == 'true' and settings.get('GITHUB_RUN_ATTEMPT') != '1':
         raise ValueError('Start a fresh Terraform apply workflow instead of rerunning an old plan.')
 
@@ -70,8 +76,10 @@ def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) 
         shape = 'both' if installation == 'main' else 'live'
     if shape not in ('both', 'live', 'demo'):
         raise ValueError('Choose default, both, live or demo for the applications to provision.')
-    variants = ['live', 'demo'] if shape == 'both' else [shape]
+    # Demo is an operation scope, not permission to remove live from shared state.
+    variants = ['live', 'demo'] if shape == 'both' or demo_infrastructure else [shape]
     result = dict(name_prefix=prefix, state_key=state_key,
+                  terraform_demo_only='true' if demo_infrastructure else 'false',
                   variants_json=json.dumps(variants, separators=(',', ':')),
                   resource_group=f'{prefix}-rg', live_app=f'{prefix}-live',
                   demo_app=f'{prefix}-demo', live_admin=f'{prefix}-live-ops',
@@ -112,4 +120,10 @@ if __name__ == '__main__':
     except (ValueError, OSError) as error:
         print(f'Deployment target rejected: {error}', file=sys.stderr)
         raise SystemExit(1)
+    print('Deployment selection: code branch=' + os.environ.get('GITHUB_REF', '(unknown)')
+          + '; commit=' + os.environ.get('GITHUB_SHA', '(local)')
+          + '; installation=' + os.environ.get('ATLAS_INSTALLATION', '(unknown)')
+          + '; requested applications=' + os.environ.get('ATLAS_DEPLOYMENT_SHAPE', 'default')
+          + '; provisioned applications=' + result['variants_json']
+          + '; demo-only scope=' + result['terraform_demo_only'] + '.')
     print(f'Deployment profile verified: {os.environ["ATLAS_INSTALLATION"]}; resource prefix {result["name_prefix"]}.')

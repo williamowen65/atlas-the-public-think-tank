@@ -47,6 +47,27 @@ class DeploymentTargetTests(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 self.validate('selection', values)
 
+    def test_main_demo_branch_operations_are_explicit_and_preserve_live_state(self):
+        branch = self.settings('main', GITHUB_REF='refs/heads/topic')
+        website = dict(branch, ATLAS_TARGET_PURPOSE='website', ATLAS_TARGET_APP='atlas-existing-demo')
+        self.validate('selection', website)
+        self.validate('website', website)
+        for variant in ['live', '']:
+            with self.assertRaises(ValueError):
+                self.validate('selection', dict(website, ATLAS_VARIANT=variant))
+        infra = dict(branch, ATLAS_TARGET_PURPOSE='infrastructure', ATLAS_DEPLOYMENT_SHAPE='demo')
+        for mode in ['selection', 'infrastructure']:
+            selected = self.validate(mode, infra)
+            self.assertEqual(json.loads(selected['variants_json']), ['live', 'demo'])
+            self.assertEqual(selected['terraform_demo_only'], 'true')
+        for shape in ['live', 'both', 'default']:
+            with self.assertRaises(ValueError):
+                self.validate('selection', dict(infra, ATLAS_DEPLOYMENT_SHAPE=shape))
+        with self.assertRaises(ValueError):
+            self.validate('infrastructure', dict(infra, TF_VAR_enable_sql_bootstrap='true'))
+        with self.assertRaises(ValueError):
+            self.validate('admin', infra)
+
     def test_main_can_keep_existing_names_and_state(self):
         self.validate('infrastructure', self.settings('main'))
         self.validate('admin', self.settings('main'))

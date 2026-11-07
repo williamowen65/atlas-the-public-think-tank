@@ -23,10 +23,16 @@ class TerraformChangeTests(unittest.TestCase):
             {'resources': [{'mode': 'managed', 'address': 'module.sql.azapi_resource.variant["demo"]'}]},
         ]}}}
         changes.check_existing_variants(state, ['live', 'demo'])
-        with self.assertRaisesRegex(ValueError, 'already contains demo'):
+        with self.assertRaisesRegex(ValueError, 'Applications omitted: demo'):
             changes.check_existing_variants(state, ['live'])
-        with self.assertRaisesRegex(ValueError, 'already contains live'):
+        with self.assertRaisesRegex(ValueError, 'Applications omitted: live') as blocked:
             changes.check_existing_variants(state, ['demo'])
+        diagnostic = str(blocked.exception)
+        self.assertIn('Selected applications: demo', diagnostic)
+        self.assertIn('module.sites["live"].azurerm_linux_web_app.atlas', diagnostic)
+        self.assertNotIn('module.sql.azapi_resource.variant["demo"]', diagnostic)
+        self.assertIn('not confirmed planned deletions', diagnostic)
+        self.assertIn('No Terraform plan or apply', diagnostic)
         changes.check_existing_variants({}, ['demo'])  # New state is allowed.
 
     def test_create_update_and_noop_allowed_but_delete_and_both_replacement_orders_blocked(self):
@@ -35,6 +41,18 @@ class TerraformChangeTests(unittest.TestCase):
         for actions in [['delete'], ['delete', 'create'], ['create', 'delete']]:
             with self.subTest(actions=actions), self.assertRaisesRegex(ValueError, 'deletion or replacement'):
                 changes.check_plan({'resource_changes': [{'address': 'fixture', 'change': {'actions': actions}}]})
+
+    def test_demo_scope_allows_demo_updates_and_blocks_live_shared_dependencies(self):
+        def plan(address, actions):
+            return {'resource_changes': [{'address': address, 'mode': 'managed', 'change': {'actions': actions}}]}
+        changes.check_plan(plan('module.sites["demo"].azurerm_linux_web_app.atlas', ['update']), demo_only=True)
+        for address in ['module.sites["live"].azurerm_linux_web_app.atlas',
+                        'azurerm_service_plan.atlas', 'module.sql.azapi_resource.variant["demo"]']:
+            changes.check_plan(plan(address, ['no-op']), demo_only=True)
+            with self.subTest(address=address), self.assertRaisesRegex(ValueError, 'live or shared'):
+                changes.check_plan(plan(address, ['update']), demo_only=True)
+        with self.assertRaisesRegex(ValueError, 'deletion or replacement'):
+            changes.check_plan(plan('module.sites["demo"].azurerm_linux_web_app.atlas', ['delete', 'create']), demo_only=True)
 
     def test_failure_does_not_expose_plan_values(self):
         payload = {'resource_changes': [{'address': 'fixture', 'change': {

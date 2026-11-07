@@ -9,7 +9,7 @@ Cloud workflows use short-lived GitHub OIDC tokens and the shared
 `atlas-infra-apply` Environment.
 
 - Only reviewed, trusted branches should have access.
-- Main installation runs require branch `main`.
+- Main live, infrastructure and admin runs require branch `main`. Demo website deployment and verification also allow trusted feature branches approved by the shared Environment.
 - Required reviewers protect credential-bearing jobs.
 - Azure role grants and state-storage access must be configured separately.
 
