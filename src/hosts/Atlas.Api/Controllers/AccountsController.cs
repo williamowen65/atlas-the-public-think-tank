@@ -81,6 +81,23 @@ public sealed class AccountsController(
                 title: "Account email delivery is not configured."
             );
 
+        // Validate password policy before any account lookup. These errors describe
+        // the submitted password, not whether an email/display name is registered.
+        var candidate = new AtlasIdentityUser { UserName = request.Email, Email = request.Email };
+        var passwordErrors = new List<string>();
+        foreach (var validator in users.PasswordValidators)
+        {
+            var validation = await validator.ValidateAsync(users, candidate, request.Password);
+            passwordErrors.AddRange(validation.Errors
+                .Where(error => error.Code.StartsWith("Password", StringComparison.Ordinal))
+                .Select(error => error.Description));
+        }
+        if (passwordErrors.Count > 0)
+            return ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["Password"] = passwordErrors.Distinct().ToArray()
+            });
+
         // Commit the linked account, Participant profile and Member role together.
         var registration = await accounts.RegisterAsync(
             request.Email,

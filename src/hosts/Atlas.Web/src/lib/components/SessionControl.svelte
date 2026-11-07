@@ -266,9 +266,11 @@
       // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
       if (cause instanceof ApiRequestError) {
         error = cause.status === 503
-          ? 'Registration requires local email delivery to be configured.'
+          ? 'Account email delivery is temporarily unavailable. Please try again later.'
           : cause.status === 400
-            ? 'Registration was rejected (HTTP 400). Check your information; if it persists, inspect the API response.'
+            ? cause.message === 'The request was not accepted. Check your text or sign in again.'
+              ? 'Registration could not be completed. Check your details, try a different display name, or use sign-in and account recovery if you already registered.'
+              : cause.message
             : `Registration failed (HTTP ${cause.status}). Please try again.`;
       } else {
         error = 'Unable to reach the registration service. Check the connection and try again.';
@@ -393,7 +395,12 @@
           autocomplete={registering ? 'new-password' : 'current-password'}
           required
           maxlength="1024"
+          minlength={registering ? 12 : undefined}
+          aria-describedby={registering ? `${instance}-password-help` : undefined}
         />
+        {#if registering}
+          <p id={`${instance}-password-help`}>Use at least 12 characters, including an uppercase letter, a lowercase letter, a number, and a symbol.</p>
+        {/if}
         <ActionButton
           type="submit"
           label={busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}

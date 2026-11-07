@@ -136,6 +136,7 @@ app.MapFallback(async context =>
     var clientRoute = path is "/" or "/about" or "/communities" or "/components"
         or "/login" or "/me" or "/moderation" or "/my-drafts" or "/my-settings"
         or "/new" or "/nodes" or "/profiles" or "/profiles/me" or "/register"
+        or "/confirm-email" or "/forgot-password" or "/reset-password"
         || path.StartsWith("/communities/", StringComparison.OrdinalIgnoreCase);
     var indexFile = Path.Combine(app.Environment.WebRootPath ?? "", "index.html");
     if (!clientRoute || !File.Exists(indexFile))

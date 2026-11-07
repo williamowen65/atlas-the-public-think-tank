@@ -2,6 +2,7 @@
 type ApiProblem = {
   /** Display title supplied by the API. */
   title?: string;
+  errors?: { Password?: string[] };
   /** Quota category reported by the API, such as node_creation. */
   quotaType?: string;
   /** Maximum operations allowed in the reported window. */
@@ -147,15 +148,19 @@ export async function apiRequest<T>(
   // Keep user-facing failures consistent while preserving the status for callers.
   if (!response.ok) {
     let problem: ApiProblem = {};
-    if (response.status === 429) {
+    if (response.status === 429 || (response.status === 400 && path === 'auth/register')) {
       try {
         problem = (await response.json()) as ApiProblem;
       } catch {
         /* Non-JSON throttling response. */
       }
     }
+    const passwordErrors = problem.errors?.Password;
+    const passwordMessage = path === 'auth/register' && Array.isArray(passwordErrors)
+      && passwordErrors.every((item) => typeof item === 'string')
+      ? passwordErrors.slice(0, 8).map((item) => item.slice(0, 300)).join(' ') : '';
     throw new ApiRequestError(
-      response.status === 401
+      passwordMessage || (response.status === 401
         ? 'Please sign in to continue.'
         : response.status === 403
           ? 'This action is not permitted. Your session may have expired.'
@@ -163,7 +168,7 @@ export async function apiRequest<T>(
             ? rateLimitMessage(problem, response.headers.get('Retry-After'))
             : response.status === 400
               ? 'The request was not accepted. Check your text or sign in again.'
-              : 'The request could not be completed. Please retry.',
+              : 'The request could not be completed. Please retry.'),
       response.status,
     );
   }
