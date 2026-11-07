@@ -28,11 +28,14 @@ if (args is ["--initialize-local-database"] or ["--initialize-local-database", "
     }
 }
 
-if (args.Length != 1 ||
-    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo"))
+var grantModerator = args.Length == 3 && args[0] == "--grant-global-moderator"
+    && !string.IsNullOrWhiteSpace(args[1]) && args[2] is "grant-live" or "grant-demo";
+if (!grantModerator && (args.Length != 1 ||
+    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo")))
 {
     Console.Error.WriteLine("Usage: Atlas.Admin --initialize-local-database [--seed-demo] (local only)");
     Console.Error.WriteLine("Azure: --bootstrap-cloud-identities | --setup-database | --seed-demo");
+    Console.Error.WriteLine("Moderator: --grant-global-moderator <existing-account-email> grant-live|grant-demo");
     return 2;
 }
 
@@ -63,6 +66,19 @@ try
         || !connectionString.Contains("Authentication=Active Directory Managed Identity", StringComparison.OrdinalIgnoreCase)
         || sql.TrustServerCertificate || sql.Encrypt != SqlConnectionEncryptOption.Mandatory)
         throw new InvalidOperationException("Cloud administration requires the expected Azure SQL database and managed identity.");
+
+    if (grantModerator)
+    {
+        if (args[2] != "grant-" + variant)
+            throw new InvalidOperationException("Moderator confirmation must match the configured database variant.");
+        phase = "global moderator grant";
+        Console.WriteLine($"Granting global moderator in {variant}, database {expectedDatabase}.");
+        using var services = new ServiceCollection().AddAtlasIdentity(connectionString).BuildServiceProvider();
+        var result = await GlobalModeratorGrant.GrantAsync(
+            services.GetRequiredService<IServiceScopeFactory>(), args[1]);
+        Console.WriteLine(result.Message);
+        return result.Succeeded ? 0 : 1;
+    }
 
     switch (args[0])
     {

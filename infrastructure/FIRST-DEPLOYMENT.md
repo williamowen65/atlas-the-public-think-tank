@@ -202,3 +202,35 @@ Log stream in Azure rather than repeatedly redeploying.
 
 Follow [Rehearsal cleanup](REHEARSAL-CLEANUP.md) to delete its tracked resources
 and update its state. Keep the same rehearsal name; main is not a cleanup target.
+
+## Grant a global moderator after registration
+
+First test on demo. Run **Atlas admin tools (publish or bootstrap)** from the
+PR branch with installation **main**, variant **demo**, and operation **publish**.
+This updates the tools without bootstrapping identities, applying migrations, or
+seeding data. Older installations with only WebJob folders need this publication
+to create the current SSH tool directory.
+
+In the **demo Ops App Service → SSH**, run:
+
+```bash
+cd /home/site/wwwroot/tools/atlas-admin
+dotnet ./Atlas.Admin.dll --grant-global-moderator "account@example.com" grant-demo
+```
+
+Use an existing demo account with confirmed email, no active lockout, and an
+active participant profile. The command does not register accounts or confirm
+email. Repeating a successful grant makes no further changes. Sign out and
+sign back in, then open `/moderation` to verify access.
+
+After demo verification and merging the PR, publish the tools from **main** to
+variant **live**. In **live Ops → SSH**, use the same directory and run:
+
+```bash
+dotnet ./Atlas.Admin.dll --grant-global-moderator "account@example.com" grant-live
+```
+
+The confirmation must match the Ops host's configured variant. Existing managed
+identity and expected-database validation also applies. Role assignment and
+security-stamp update run in one transaction. No website deployment or Terraform
+change is required for this command.

@@ -1,5 +1,6 @@
 """Exercise admin packaging and shell guards offline, without Azure or SQL access."""
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -22,6 +23,31 @@ class AdminWorkflowTests(unittest.TestCase):
         env = dict(os.environ, **settings)
         return subprocess.run(['bash', '-c', script], cwd=directory, env=env,
                               capture_output=True, text=True)
+
+    @unittest.skipUnless(shutil.which('dotnet') and
+        (ROOT / 'src/hosts/Atlas.Admin/bin/Release/net10.0/Atlas.Admin.dll').exists(),
+        'Requires .NET 10 and a Release build of Atlas.Admin')
+    def test_moderator_cli_refuses_missing_and_cross_environment_confirmation(self):
+        dll = ROOT / 'src/hosts/Atlas.Admin/bin/Release/net10.0/Atlas.Admin.dll'
+        self.assertTrue(dll.exists(), 'Build Atlas.Admin in Release before running this test')
+        env = dict(os.environ,
+            ATLAS_DEPLOYMENT_VARIANT='demo', ATLAS_EXPECTED_DATABASE='fixture-demo',
+            ATLAS_ADMIN_MI_CLIENT_ID='11111111-1111-1111-1111-111111111111',
+            ATLAS_SQL_CONNECTION_STRING='Server=fixture.database.windows.net,1433;Database=fixture-demo;'
+                'Authentication=Active Directory Managed Identity;'
+                'User Id=11111111-1111-1111-1111-111111111111;Encrypt=True;TrustServerCertificate=False;')
+        for arguments, code, message in [
+            (['--grant-global-moderator'], 2, 'Moderator:'),
+            (['--grant-global-moderator', 'account@example.test'], 2, 'Moderator:'),
+            (['--grant-global-moderator', '', 'grant-demo'], 2, 'Moderator:'),
+            (['--grant-global-moderator', 'account@example.test', 'grant-live'], 1,
+                'confirmation must match'),
+        ]:
+            with self.subTest(arguments=arguments):
+                result = subprocess.run(['dotnet', str(dll), *arguments], env=env,
+                    capture_output=True, text=True, timeout=20)
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertIn(message, result.stderr)
 
     def test_operation_confirmation_before_deployment(self):
         # A mistyped or cross-variant bootstrap confirmation must fail before

@@ -168,6 +168,7 @@ jobs:
             echo "### Admin tools published: $VARIANT"
             echo 'Open the matching admin App Service SSH terminal.'
             echo 'Tool directory: `/home/site/wwwroot/tools/atlas-admin`'
+            echo "Moderator: \`dotnet ./Atlas.Admin.dll --grant-global-moderator EMAIL grant-$VARIANT\`"
             echo 'Schema: `dotnet ./Atlas.Admin.dll --setup-database`'
             if [[ "$VARIANT" == "demo" ]]; then
               echo 'After schema succeeds, seed an empty demo: `dotnet ./Atlas.Admin.dll --seed-demo`'

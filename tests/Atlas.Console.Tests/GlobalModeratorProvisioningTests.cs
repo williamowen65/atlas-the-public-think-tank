@@ -47,11 +47,22 @@ public sealed class GlobalModeratorProvisioningTests
             Assert.IsFalse(await users.IsInRoleAsync(user, AtlasRoles.GlobalModerator));
             var token = await users.GenerateEmailConfirmationTokenAsync(user);
             Assert.IsTrue((await users.ConfirmEmailAsync(user, token)).Succeeded);
+            var originalStamp = user.SecurityStamp;
+            Assert.IsTrue((await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(5))).Succeeded);
+            StringAssert.Contains(await GlobalModeratorProvisioning.GrantAsync(scopes, user.Email!), "unlocked");
+            Assert.IsTrue((await users.SetLockoutEndDateAsync(user, null)).Succeeded);
+            var profile = (await database.ParticipantRows.FindAsync(user.Id))!;
+            profile.IsActive = false;
+            await database.SaveChangesAsync();
+            StringAssert.Contains(await GlobalModeratorProvisioning.GrantAsync(scopes, user.Email!), "active participant");
+            profile.IsActive = true;
+            await database.SaveChangesAsync();
             StringAssert.Contains(
                 await GlobalModeratorProvisioning.GrantAsync(scopes, "moderator@example.test"),
                 "granted");
             database.ChangeTracker.Clear();
             user = (await users.FindByEmailAsync("moderator@example.test"))!;
+            Assert.AreNotEqual(originalStamp, user.SecurityStamp);
             Assert.IsTrue(await users.IsInRoleAsync(user, AtlasRoles.GlobalModerator));
             StringAssert.Contains(
                 await GlobalModeratorProvisioning.GrantAsync(scopes, "moderator@example.test"),
