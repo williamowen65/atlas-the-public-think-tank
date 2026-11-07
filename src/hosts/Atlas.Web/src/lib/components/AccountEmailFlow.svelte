@@ -1,5 +1,7 @@
 <!-- Email confirmation redeems the link once on mount through the CSRF-protected API. -->
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import SessionControl from './SessionControl.svelte';
   import { onMount } from 'svelte';
   import PasswordInput from './PasswordInput.svelte';
   import ActionButton from './ActionButton.svelte';
@@ -47,7 +49,8 @@
     try {
       const path = mode === 'confirm' ? 'confirm-email' : mode === 'reset' ? 'reset-password' : 'forgot-password';
       const body = mode === 'confirm' ? { userId, token } : mode === 'reset' ? { email, token, newPassword: password } : { email };
-      await apiRequest('/atlas-session-api', `auth/${path}`, 'POST', body, AbortSignal.timeout(60000));
+      const result = await apiRequest<{ email?: string } | undefined>('/atlas-session-api', `auth/${path}`, 'POST', body, AbortSignal.timeout(60000));
+      if (mode === 'confirm') email = result?.email ?? '';
       done = true;
       token = '';
     } catch (cause) {
@@ -71,7 +74,7 @@
   <div class="auth-content">
   {#if mode === 'forgot' && !done}<p>Enter the email address you used to register. We’ll email you a link to choose a new password.</p>{/if}
   {#if done}
-    <p role="status">{mode === 'forgot' ? 'If this address has an eligible account, a password reset email has been sent. Check your inbox and spam folder.' : mode === 'confirm' ? 'Your email is confirmed and you’re signed in on this browser.' : 'Your password has been reset. You can now sign in.'}</p>
+    <p role="status">{mode === 'forgot' ? 'If this address has an eligible account, a password reset email has been sent. Check your inbox and spam folder.' : mode === 'confirm' ? 'Your email is confirmed. Enter your password below to sign in.' : 'Your password has been reset. You can now sign in.'}</p>
   {:else if ready && mode !== 'forgot' && (!token || (mode === 'confirm' && !userId))}
     <p role="alert">This link is incomplete. Request another email.</p>
   {:else if mode === 'confirm'}
@@ -93,7 +96,9 @@
   {/if}
   {#if error}<p role="alert">{error}</p>{/if}
   {#if done && mode === 'reset'}<p><a href="/login">Sign in</a></p>{/if}
-  {#if done && mode === 'confirm'}<p><a href="/">Continue to Atlas</a></p>{/if}
+  {#if done && mode === 'confirm'}
+    <SessionControl collapsible={false} initialEmail={email} onSession={(id) => { if (id) void goto('/'); }} />
+  {/if}
   {#if done && mode === 'forgot'}<button type="button" class="secondary" onclick={() => { done = false; error = ''; }}>Request another reset email</button>{/if}
   {#if !done && mode === 'confirm'}<p><a href="/login">Sign in</a></p><p><a href="/register">Resend confirmation instructions</a></p>{/if}
   {#if mode === 'reset'}<p><a href="/forgot-password">Request another reset email</a></p>{/if}

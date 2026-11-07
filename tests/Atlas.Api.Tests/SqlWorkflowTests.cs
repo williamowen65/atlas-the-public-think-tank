@@ -106,8 +106,8 @@ public sealed class SqlWorkflowTests
             const string newPassword = "Atlas_New_125!Password";
             var confirm = await RegisterUnconfirmedAccount(client, mail, email, oldPassword);
             await CheckGenericRecoveryAndConfirm(client, mail, email, confirm);
-            // Confirmation now establishes a session and rotates the one-time link evidence.
-            Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/auth/session")).StatusCode);
+            // Confirmation must not authenticate the browser; only password sign-in does.
+            Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
             await RefreshCsrfToken(client);
             var replay = await client.PostAsJsonAsync("/api/auth/confirm-email", new
             {
@@ -556,7 +556,7 @@ public sealed class SqlWorkflowTests
 
     /// <summary>
     /// Unknown/unconfirmed reset requests return 202 without delivery; resend creates one confirmation
-    /// file, then confirmation returns 204.
+    /// file, then confirmation returns the verified email without signing in.
     /// </summary>
     private static async Task CheckGenericRecoveryAndConfirm(HttpClient client, string mail, string email, JsonElement confirm)
     {
@@ -582,19 +582,18 @@ public sealed class SqlWorkflowTests
             })).StatusCode
         );
         Assert.AreEqual(1, Directory.GetFiles(mail).Length);
-        // Remove consumed test evidence so later file-count checks observe only the next delivery.
         File.Delete(Directory.GetFiles(mail).Single());
-        Assert.AreEqual(
-            HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync(
-                "/api/auth/confirm-email",
-                new
-                {
-                    userId = confirm.GetProperty("userId").GetGuid(),
-                    token = confirm.GetProperty("token").GetString()
-                }
-            )).StatusCode
-        );
+        var confirmed = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+        {
+            userId = confirm.GetProperty("userId").GetGuid(),
+            token = confirm.GetProperty("token").GetString()
+        });
+        Assert.AreEqual(HttpStatusCode.OK, confirmed.StatusCode);
+        var confirmationResult = await confirmed.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(email, confirmationResult.GetProperty("email").GetString());
+        Assert.IsFalse(confirmed.Headers.TryGetValues("Set-Cookie", out var cookies)
+            && cookies.Any(cookie => cookie.StartsWith("__Host-Atlas.Session=")));
+
     }
 
     /// <summary>

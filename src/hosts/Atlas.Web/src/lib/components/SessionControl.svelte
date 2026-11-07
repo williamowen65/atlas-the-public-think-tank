@@ -33,6 +33,7 @@
     expanded = false,
     collapsible = true,
     startRegister = false,
+    initialEmail = '',
     focusOnMount = false,
     hideWhenSignedIn = false,
     onSession,
@@ -53,6 +54,8 @@
      * afterward.
      */
     startRegister?: boolean;
+    /** Verified address supplied by the confirmation page; initial value only. */
+    initialEmail?: string;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -92,7 +95,7 @@
   /**
    * Email entered in the login or registration form; retained when switching modes.
    */
-  let email = $state('');
+  let email = $state(untrack(() => initialEmail));
   /**
    * Password input held temporarily in memory and cleared after each login or registration
    * attempt.

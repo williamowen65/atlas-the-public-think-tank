@@ -250,12 +250,12 @@ public sealed class AccountsController(
         return Accepted();
     }
 
-    /// <summary>Confirm once, invalidate the email token and establish this browser's session.</summary>
+    /// <summary>Confirm once without signing in; return the verified address for the password form.</summary>
     [HttpPost("confirm-email")]
     public async Task<IActionResult> Confirm(ConfirmationRequest request, CancellationToken cancellationToken)
     {
         // Keep confirmation and stamp rotation together. Concurrent redemptions
-        // cannot both commit; replay must never create a new authenticated session.
+        // cannot both commit. Confirmation never issues an authentication cookie.
         await using var transaction = await database.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
         var user = await users.FindByIdAsync(request.UserId.ToString());
@@ -267,8 +267,7 @@ public sealed class AccountsController(
         if (!(await users.UpdateSecurityStampAsync(user)).Succeeded)
             return Problem(statusCode: 500, title: "Confirmation could not be completed.");
         await transaction.CommitAsync(cancellationToken);
-        await signIn.SignInAsync(user, isPersistent: false);
-        return NoContent();
+        return Ok(new { email = user.Email });
     }
 
 }

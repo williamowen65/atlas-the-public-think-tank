@@ -136,8 +136,8 @@ test('invalid token payload is not cached or sent in a write', async () => {
   expect(preparations).toBe(1);
 });
 
-test('automatic email confirmation refreshes CSRF for its new session', async () => {
+test('email confirmation retains anonymous CSRF until password sign-in', async () => {
   await apiRequest('/session', 'auth/confirm-email', 'POST', { userId: 'fixture', token: 'fixture' });
   await apiRequest('/session', 'nodes', 'POST', {});
-  expect(preparations).toBe(2);
+  expect(preparations).toBe(1);
 });

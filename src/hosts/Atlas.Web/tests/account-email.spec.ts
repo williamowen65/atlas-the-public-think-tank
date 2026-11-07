@@ -8,14 +8,16 @@ test('confirmation automatically posts once and removes the token from the addre
     if (route.request().url().endsWith('/confirm-email')) {
       writes.push(route.request().postDataJSON());
       expect(route.request().headers()['x-csrf-token']).toBe('csrf-test');
-      return route.fulfill({ status: 204 });
+      return route.fulfill({ json: { email: 'confirmed@example.com' } });
     }
     return route.fulfill({ status: 401 });
   });
   await page.goto('http://127.0.0.1:4173/confirm-email#userId=00000000-0000-0000-0000-000000000001&token=a%2Bb%2Fc%3D');
   expect(new URL(page.url()).hash).toBe('');
   await expect(page.getByRole('status')).toContainText('Your email is confirmed');
-  await expect(page.getByRole('link', { name: 'Continue to Atlas' })).toHaveAttribute('href', '/');
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('confirmed@example.com');
+  await expect(page.getByLabel('Password', { exact: true })).toBeEmpty();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
   expect(writes).toEqual([{ userId: '00000000-0000-0000-0000-000000000001', token: 'a+b/c=' }]);
 });
 

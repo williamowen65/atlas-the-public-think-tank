@@ -126,7 +126,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   method = method.toUpperCase();
   const unsafe = !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method);
-  const identityTransition = unsafe && /^auth\/(login|logout|delete-account|confirm-email)$/.test(path);
+  const identityTransition = unsafe && /^auth\/(login|logout|delete-account)$/.test(path);
   const headers: Record<string, string> = {};
   if (unsafe) headers['X-CSRF-TOKEN'] = await csrfToken(base, signal);
   if (body !== undefined) headers['Content-Type'] = 'application/json';
