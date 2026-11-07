@@ -36,10 +36,14 @@ public sealed class SearchUnavailableTests
     public async Task Only_database_unavailable_errors_receive_resume_feedback(
         int sqlNumber, bool wrapped, string expectedCode, int expectedStatus)
     {
+        // Build and validate the fixture before entering the HTTP pipeline; a broken
+        // reflection fixture must not masquerade as an expected server error.
+        var sqlFailure = SqlFailure(sqlNumber);
+        Assert.AreEqual(sqlNumber, sqlFailure.Number);
         using var root = new ApiFactory();
         using var factory = root.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
             services.AddSingleton<IDiscoveryReadQuery>(new UnavailableSearch(() =>
-                wrapped ? new SearchUnavailableException(SqlFailure(sqlNumber)) : SqlFailure(sqlNumber)))));
+                wrapped ? new SearchUnavailableException(sqlFailure) : sqlFailure))));
         using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
             { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var response = await client.GetAsync("/api/nodes");
@@ -59,7 +63,7 @@ public sealed class SearchUnavailableTests
         var constructor = typeof(SqlError).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
             .First(ctor => ctor.GetParameters().Length == 9);
         var sqlError = (SqlError)constructor.Invoke(
-            [number, (byte)0, (byte)17, "private-server", "private SQL diagnostic", "", 0, (uint)0, null]);
+            [number, (byte)0, (byte)17, "private-server", "private SQL diagnostic", "", 0, 0, null]);
         var errors = (SqlErrorCollection)Activator.CreateInstance(typeof(SqlErrorCollection), nonPublic: true)!;
         typeof(SqlErrorCollection).GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(errors, [sqlError]);
