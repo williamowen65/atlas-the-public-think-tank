@@ -234,3 +234,13 @@ The confirmation must match the Ops host's configured variant. Existing managed
 identity and expected-database validation also applies. Role assignment and
 security-stamp update run in one transaction. No website deployment or Terraform
 change is required for this command.
+
+### If the moderator command waits
+
+The command prints timestamped progress for SQL connection opening, account checks,
+role assignment, and commit. SQL connection opening retries at most three times
+within a 90-second cancellation budget; each SQL command has a 30-second timeout.
+Retries apply only before account checks or changes, never to the role transaction.
+The connection used for the grant is the same connection opened by the readiness
+step. Copy the last progress message and any following error from SSH when diagnosing
+an issue; SSH command output may not appear in App Service Log stream.

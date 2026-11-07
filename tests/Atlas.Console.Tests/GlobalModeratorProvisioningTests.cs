@@ -57,9 +57,25 @@ public sealed class GlobalModeratorProvisioningTests
             StringAssert.Contains(await GlobalModeratorProvisioning.GrantAsync(scopes, user.Email!), "active participant");
             profile.IsActive = true;
             await database.SaveChangesAsync();
-            StringAssert.Contains(
-                await GlobalModeratorProvisioning.GrantAsync(scopes, "moderator@example.test"),
-                "granted");
+            var progress = new List<string>();
+            using (var grantScope = scopes.CreateScope())
+            {
+                var grantDatabase = grantScope.ServiceProvider.GetRequiredService<AtlasDataContext>();
+                await grantDatabase.Database.OpenConnectionAsync();
+                var grant = await GlobalModeratorGrant.GrantAsync(
+                    grantScope.ServiceProvider, "moderator@example.test", progress.Add);
+                Assert.IsTrue(grant.Succeeded);
+                StringAssert.Contains(grant.Message, "granted");
+                Assert.AreEqual(System.Data.ConnectionState.Open,
+                    grantDatabase.Database.GetDbConnection().State);
+            }
+            CollectionAssert.AreEqual(new[] {
+                "resolving account services", "looking up the existing account",
+                "checking email confirmation, lockout, and active profile",
+                "checking existing moderator role", "starting role transaction",
+                "assigning global moderator role", "updating security stamp",
+                "committing role transaction"
+            }, progress);
             database.ChangeTracker.Clear();
             user = (await users.FindByEmailAsync("moderator@example.test"))!;
             Assert.AreNotEqual(originalStamp, user.SecurityStamp);
