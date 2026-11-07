@@ -95,6 +95,7 @@ public static class ApiServices
         services.AddScoped<IDiscoveryService>(s => new DiscoveryService(new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>())));
         services.AddScoped<RequestActor>();
         services.AddScoped<DevelopmentAccountMail>();
+        services.AddScoped<AccountMail>();
         // Local telemetry has host lifetime. The hosted worker owns its cancellation/shutdown.
         services.AddSingleton<ApiTelemetry>();
         services.AddHostedService<ApiAuditWorker>();

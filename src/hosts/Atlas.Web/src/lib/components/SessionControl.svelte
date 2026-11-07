@@ -358,7 +358,7 @@
 {#if registered}
   <div role="status" class="registration-complete">
     <h2>Account created</h2>
-    <p>Confirm your email address before signing in. In local development, use the development email confirmation workflow.</p>
+    <p>Check your inbox and spam folder for a confirmation email. Confirm your email address before signing in.</p>
     <button type="button" disabled={busy} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
     {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
   </div>
@@ -401,6 +401,7 @@
         />
       </form>
       {#if !registering}
+        <a href="/forgot-password">Forgot your password?</a>
         <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
         {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
       {/if}

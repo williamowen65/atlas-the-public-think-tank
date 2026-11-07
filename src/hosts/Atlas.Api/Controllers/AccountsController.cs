@@ -19,7 +19,7 @@ public sealed class AccountsController(
     UserManager<AtlasIdentityUser> users,
     SignInManager<AtlasIdentityUser> signIn,
     IAntiforgery antiforgery,
-    DevelopmentAccountMail mail
+    AccountMail mail
 ) : ControllerBase
 {
     /// <summary>Get a CSRF token before writes, and get a fresh one after login/logout.</summary>
@@ -74,8 +74,7 @@ public sealed class AccountsController(
         CancellationToken cancellationToken
     )
     {
-        // No production mail provider has been selected. Fail before creating an
-        // unusable account; never expose confirmation/reset tokens in JSON or logs.
+        // Fail before account creation when delivery is unavailable. Tokens stay private.
         if (!mail.IsAvailable)
             return Problem(
                 statusCode: 503,
@@ -98,8 +97,9 @@ public sealed class AccountsController(
         // Generate confirmation evidence only after registration succeeds.
         var user = (await users.FindByIdAsync(registration.ParticipantId!.Value.ToString()))!;
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
-        await mail.WriteAsync(
+        await mail.SendAsync(
             "confirm-email",
+            user.Email!,
             user.Id,
             token,
             cancellationToken
@@ -157,8 +157,9 @@ public sealed class AccountsController(
         var user = await users.FindByEmailAsync(request.Email);
         if (user is not null && await users.IsEmailConfirmedAsync(user)
             && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
-            await mail.WriteAsync(
+            await mail.SendAsync(
                 "reset-password",
+                user.Email!,
                 user.Id,
                 await users.GeneratePasswordResetTokenAsync(user),
                 cancellationToken
@@ -206,8 +207,9 @@ public sealed class AccountsController(
         var user = await users.FindByEmailAsync(request.Email);
         if (user is not null && !await users.IsEmailConfirmedAsync(user)
             && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
-            await mail.WriteAsync(
+            await mail.SendAsync(
                 "confirm-email",
+                user.Email!,
                 user.Id,
                 await users.GenerateEmailConfirmationTokenAsync(user),
                 cancellationToken
