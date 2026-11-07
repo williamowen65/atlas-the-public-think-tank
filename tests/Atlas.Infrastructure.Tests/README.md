@@ -1,6 +1,22 @@
 # Atlas infrastructure tests
 
-Infrastructure checks live here with the other Atlas test suites. The deployed Terraform modules and operational scripts remain in `infrastructure/`.
+These checks run without provisioning Azure. Terraform and operational scripts live
+in [infrastructure](../../infrastructure/README.md).
+
+## What is tested
+
+| Area | Checks |
+| --- | --- |
+| Terraform policy | Private SQL, TLS, VNet integration, identities and free-offer settings |
+| Admin tools | Packaging, target checks, bootstrap confirmation and entry point |
+| Target selection | Branch rules, profiles, names, state keys and application defaults |
+| Website readiness | Pending deployment versus strict verify, placeholder rejection and bounded requests |
+| Plan guards | Variant removal, deletion/replacement and secret-safe diagnostics |
+| Cleanup | Rehearsal scope, exact confirmation, destroy-only plans and temporary overrides |
+
+Script tests use stand-in CLI commands rather than Azure or SQL.
+With Terraform on PATH, a local built-in-resource fixture also exercises lifecycle
+protection and the cleanup override.
 
 ## Run locally
 
@@ -11,12 +27,15 @@ python -m pip install "python-hcl2==8.1.4" "PyYAML==6.0.3"
 python -m unittest discover -s tests/Atlas.Infrastructure.Tests -p "test_*.py" -v
 ```
 
-The admin workflow tests exercise packaging, publication target checks, bootstrap confirmation, and the bootstrap entrypoint using stand-in CLI commands without contacting Azure or SQL.
+These are Python `unittest` tests, not a .NET test project. They do not run through
+`dotnet test` or Visual Studio Test Explorer.
 
-Deployment-target tests also verify branch restrictions, disjoint rehearsal naming/state, app-role checks and tracked profile resolution, custom rehearsal names, application-set defaults, shared-credential routing and workflow output wiring. Readiness tests distinguish pending publication checks from strict verify-only failures, reject placeholder liveness responses and check the bounded requests. Terraform JSON tests cover removal of existing variants, deletion/replacement plans and secret-safe diagnostics.
+## What CI adds
 
-The policy tests inspect Terraform HCL declarations for Atlas-specific rules (private SQL endpoint, TLS, VNet integration, managed identities, free-offer settings). They are **Python unittest tests**, not a .NET/MSTest `.csproj`; they run in GitHub Actions through [AtlasInfrastructure.yml](../../.github/workflows/AtlasInfrastructure.yml), not through `dotnet test` or Visual Studio Test Explorer.
+[Terraform validation](../../.github/workflows/AtlasInfrastructure.yml) also runs
+formatting, provider initialization without remote state, Terraform validation,
+admin compilation and Trivy checks.
 
-The CI workflow also runs `terraform fmt -check`, `terraform init -backend=false`, `terraform validate`, and Trivy checks. Those are separate from the Python assertions. None of these offline checks applies infrastructure or verifies Azure runtime behavior. For an authenticated preview, see the [deployment runbook](../../infrastructure/DEPLOYMENT.md).
-
-Cleanup tests reject main/foreign resource scope, require exact confirmation and main-branch runs, inspect pure destroy plans, and verify temporary overrides preserve the tracked SQL protection. With Terraform on PATH, a built-in-resource fixture exercises lifecycle protection and its cleanup override locally without Azure access.
+Those checks are separate from the Python assertions.
+A passing offline run does not prove Azure deployment or runtime behavior.
+For the Azure-connected preview, use [Deployment overview](../../infrastructure/DEPLOYMENT.md).

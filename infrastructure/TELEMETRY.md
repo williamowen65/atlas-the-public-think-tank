@@ -1,28 +1,199 @@
-# Azure observability for Atlas
+# Check Azure telemetry
 
-The deployment provisions an Application Insights resource connected to a Log Analytics workspace through the Terraform [observability module](terraform/modules/observability/main.tf). This is resource configuration; the **application itself** selects the production exporter.
+**Status:** telemetry is configured in code and Terraform. Cloud delivery has not
+yet been confirmed by the operator.
 
-## What is wired in application code
+Use this guide to check a deployed installation. A working website or a successful
+deployment Action does not prove telemetry is arriving.
 
-- `Atlas.Api` reads `APPLICATIONINSIGHTS_CONNECTION_STRING`, injected by the [Web App Terraform module](terraform/modules/webapp/main.tf). Production refuses to start without it.
-- The [API entry point](../src/hosts/Atlas.Api/Program.cs) initializes Microsoft's OpenTelemetry distro in non-development environments, with Azure Monitor export. Development retains local JSONL instead.
-- [`CloudTelemetry`](../src/hosts/Atlas.Api/CloudTelemetry.cs) adapts existing `Atlas.Contracts.Observability` events into bounded, category-only logs, operation counters, duration histograms and discovery-cache metrics.
-- Existing `Atlas.Contracts` ActivitySource spans and `Atlas.Observability` Meter instruments are registered for export. SQL query auto-instrumentation is deliberately disabled to reduce private-data leakage. The rate limit caps trace collection at two spans per second; sampling and ingestion can be tuned further.
-- The Terraform code no longer enables a separate App Service auto-instrumentation agent, avoiding duplicate telemetry pipelines.
+## What each tool shows
 
-## Distinguish diagnostic telemetry from authoritative audit
+| Azure tool | Use it for |
+| --- | --- |
+| App Service **Log stream** | Startup messages and application console output |
+| **Application Insights** | Application performance and request investigation |
+| **Log Analytics → Logs** | Query stored requests, Atlas diagnostic logs and metrics |
 
-The **SQL audit records and outbox** are durable evidence committed with important operations. Exported traces and diagnostic logs are best-effort. OpenTelemetry accepting an event into a local buffer **is not proof of durable cloud acceptance**, and it must not cause an audit outbox row to be marked delivered.
+**Live Metrics is disabled in the current application configuration.**
+Use stored logs for this walkthrough.
 
-The current `ApiAuditWorker` still handles **local-file delivery only**. The code now exports Atlas semantic diagnostics and custom metrics in Azure, but **a cloud `IAuditDestination` with provider acknowledgement/retry and enabling `RequireCloudAuditDelivery` still need a separate implementation and test** before claiming full durable cloud audit delivery. Do not equate the two.
+## 1. Find the correct resources
 
-## Deployment acceptance checklist
+Open **Azure Portal → Resource groups → your installation’s resource group**.
 
-1. From the deployed HTTPS site, produce an anonymous request and an authenticated allowed action without exposing private content.
-2. Open Application Insights > Logs / Transaction search: verify request traces, safe Atlas semantic log categories and the `atlas.events.count` / `atlas.operation.duration` instruments. Allow time for ingestion.
-3. Confirm the `ATLAS_DEPLOYMENT_VARIANT` tag distinguishes `live` and `demo` (no user identity used as a metric dimension).
-4. Cause a safe rejected request and confirm only a bounded status/reason appears in diagnostics, with no URI query string, request body, token or secret.
-5. Check ingestion costs, privacy/redaction, role-limited access, and retention. The Log Analytics workspace is configured for 30 days.
-6. Confirm pending audit evidence remains queryable in SQL during exporter failure; cloud audit retry/ack is an independent follow-up, not silently claimed complete.
+Find:
 
-See [Azure Monitor's OpenTelemetry .NET instructions](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable) for exporter verification and troubleshooting. The workspace has a limited monthly free ingestion allowance on eligible billing models, but extra ingestion or services can be charged.
+- Public App Service: `<prefix>-live` or `<prefix>-demo`.
+- Application Insights: `<prefix>-insights`.
+- Log Analytics workspace: `<prefix>-logs`.
+
+Use the installation prefix selected during deployment. Live and demo share one
+monitoring resource pair within that installation; a rehearsal has its own pair.
+
+Your Azure account needs permission to read those monitoring resources and query
+their logs.
+
+## 2. Generate a little activity
+
+1. Note the current time, site URL and variant.
+2. Open the deployed site and load its feed.
+3. Open a node or search for content.
+4. If you have a test account, sign in and out.
+
+Use ordinary test activity. You do not need to create production data or deliberately
+cause an error to confirm basic reporting.
+
+An empty live feed can still produce API requests. Opening only a cached static
+page may not produce the activity you expect.
+
+## 3. Check App Service Log stream
+
+Open the **public App Service → Monitoring → Log stream**.
+
+Look for:
+
+- Application startup and listening messages.
+- Startup errors, if the site is unavailable.
+- Messages beginning `Atlas event` after relevant application operations.
+
+Log streaming may require App Service application logging to be enabled. If prompted,
+review the logging settings before enabling it; do not change production verbosity
+to Debug just for this check.
+
+Console output confirms the app is logging. It does **not** confirm export to
+Application Insights.
+
+## 4. Check stored requests
+
+Open **Log Analytics workspace → Logs** and switch to **KQL mode** if needed.
+Select a recent time range, such as the last 30 minutes.
+
+Run:
+
+```kusto
+AppRequests
+| where TimeGenerated > ago(30m)
+| project TimeGenerated, Name, ResultCode, Success, DurationMs, OperationId
+| order by TimeGenerated desc
+| take 20
+```
+
+Look for requests near your test time and their response status.
+Keep an `OperationId` if you want to investigate related records.
+
+Allow a few minutes for export and ingestion, then refresh. Traces are sampled,
+so do not expect every browser request to have a stored request row.
+
+### If you opened Logs from Application Insights
+
+These queries deliberately use **Log Analytics** table and field names.
+Application Insights Logs uses names such as `requests`, `traces` and
+`customMetrics` instead of `AppRequests`, `AppTraces` and `AppMetrics`.
+
+Return to the workspace’s Logs view to run the examples unchanged.
+See Microsoft’s [table-name mapping](https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete#types-of-telemetry).
+
+## 5. Check Atlas diagnostic logs
+
+In the same workspace, run:
+
+```kusto
+AppTraces
+| where TimeGenerated > ago(30m)
+| where Message startswith "Atlas event "
+| project TimeGenerated, Message, Properties, OperationId
+| order by TimeGenerated desc
+| take 20
+```
+
+Atlas messages contain an event name, outcome, reason and deployment variant.
+Expand a row’s `Properties` to inspect the structured fields.
+
+Check that the variant matches your test site. Atlas’s custom diagnostic message
+is designed to omit body text, SQL, credentials, actor IDs and target IDs.
+
+If requests appear but these messages do not, check the activity generated and
+the effective log-level filters before concluding all export has failed.
+
+## 6. Check custom metrics
+
+Run:
+
+```kusto
+AppMetrics
+| where TimeGenerated > ago(30m)
+| where Name startswith "atlas."
+| project TimeGenerated, Name, Sum, ItemCount, Properties
+| order by TimeGenerated desc
+| take 30
+```
+
+The application defines these instruments:
+
+| Instrument | Meaning |
+| --- | --- |
+| `atlas.events.count` | Counts observed Atlas operations |
+| `atlas.operation.duration` | Measures operation duration in milliseconds |
+| `atlas.discovery.cache.lookups` | Counts discovery cache hits and misses |
+
+Expand `Properties` to inspect dimensions such as `variant`, `operation` and
+`outcome`. Dimensions depend on the instrument.
+
+Metrics are exported in batches and aggregates. A metric row is not necessarily
+one operation, and not every action produces every instrument.
+
+## If nothing appears
+
+Check these in order:
+
+1. **Target and time:** correct installation, workspace and time range.
+2. **Activity:** a real API request reached the running site.
+3. **Startup:** inspect the public app’s Log stream for errors.
+4. **Configuration:** `APPLICATIONINSIGHTS_CONNECTION_STRING` exists and points to
+   the intended resource; `Atlas:Telemetry:Enabled` is not false.
+5. **Delivery:** review Azure ingestion/network errors, access permissions and
+   resource ingestion limits.
+
+Inspect configuration privately; do not paste connection strings into logs or
+screenshots. A “table not found” error can mean the wrong query scope or that the
+table has not received data yet.
+
+For exporter-specific diagnostics, use Microsoft’s
+[.NET OpenTelemetry troubleshooting guide](https://learn.microsoft.com/troubleshoot/azure/azure-monitor/app-insights/telemetry/opentelemetry-troubleshooting-dotnet).
+
+## Record what you confirmed
+
+Keep a small verification note:
+
+- Installation, variant and test time.
+- Activity performed.
+- Whether requests, Atlas logs and metrics appeared.
+- Any missing signal or export error.
+
+Record partial success explicitly. Seeing requests alone does not confirm custom
+metrics, and seeing logs does not confirm durable audit delivery.
+
+## Diagnostic telemetry is not the audit trail
+
+SQL audit records and their outbox are the durable application evidence.
+Cloud diagnostic export is best-effort; buffering a log is not an acknowledgement
+that Azure stored an audit record.
+
+The current `ApiAuditWorker` delivers to local files only. A cloud
+`IAuditDestination`, acknowledgement/retry handling and
+`RequireCloudAuditDelivery` still need separate implementation and testing.
+
+## Configuration reference
+
+- [Program.cs](../src/hosts/Atlas.Api/Program.cs): non-development Azure Monitor
+  export, trace sampling target of two per second, Live Metrics disabled, SQL client
+  auto-instrumentation disabled.
+- [CloudTelemetry.cs](../src/hosts/Atlas.Api/CloudTelemetry.cs): bounded Atlas logs
+  and custom metrics, including variant dimensions.
+- [ApiTelemetry.cs](../src/hosts/Atlas.Api/ApiTelemetry.cs): local versus cloud
+  behavior and local-only audit delivery.
+- [Observability module](terraform/modules/observability/main.tf): shared monitoring
+  resources and configured workspace retention of 30 days.
+
+The trace sampling setting does not cap log or metric ingestion. Review monitoring
+usage and retention before assuming telemetry is free.
