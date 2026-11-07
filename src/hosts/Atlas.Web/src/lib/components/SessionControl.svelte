@@ -24,6 +24,7 @@
 -->
 <script lang="ts">
   import ActionButton from './ActionButton.svelte';
+  import PasswordInput from './PasswordInput.svelte';
   import { onMount, untrack } from 'svelte';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   let {
@@ -79,6 +80,9 @@
    * submissions and disables action buttons.
    */
   let busy = $state(false);
+  let resending = $state(false);
+  let emailError = $state('');
+  let emailInput = $state<HTMLInputElement>();
   /**
    * User-facing failure message; empty text hides the error and retry controls.
    */
@@ -293,7 +297,14 @@
   }
   /** Request another confirmation message; the API responds identically for unknown accounts. */
   async function resendConfirmation() {
-    if (busy || !email.trim()) return;
+    if (busy) return;
+    emailError = '';
+    if (!email.trim() || (emailInput && !emailInput.validity.valid)) {
+      emailError = 'Enter a valid email address above to resend confirmation instructions.';
+      emailInput?.focus();
+      return;
+    }
+    resending = true;
     busy = true;
     error = '';
     resendNotice = '';
@@ -305,6 +316,7 @@
       error = 'Could not process the confirmation request. Please try again.';
     } finally {
       busy = false;
+      resending = false;
     }
   }
   /**
@@ -371,7 +383,7 @@
   <div role="status" class="registration-complete">
     <h2>Account created</h2>
     <p>Check your inbox and spam folder for a confirmation email. Confirm your email address before signing in.</p>
-    <button type="button" disabled={busy} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+    <button type="button" disabled={busy} onclick={() => void resendConfirmation()} aria-busy={resending}>{resending ? 'Sending confirmation…' : 'Resend confirmation instructions'}</button>
     {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
   </div>
 {:else}
@@ -397,22 +409,22 @@
         {/if}
         <label for={`${instance}-email`}>Email</label><input
           id={`${instance}-email`}
+          bind:this={emailInput}
+          aria-invalid={emailError ? 'true' : undefined}
+          aria-describedby={emailError ? `${instance}-email-error` : undefined}
+          oninput={() => { emailError = ''; }}
           type="email"
           bind:value={email}
           autocomplete="username"
           required
           maxlength="256"
         />
-        <label for={`${instance}-password`}>Password</label><input
-          id={`${instance}-password`}
-          type="password"
-          bind:value={password}
+        {#if emailError}<p id={`${instance}-email-error`} role="alert">{emailError}</p>{/if}
+        <label for={`${instance}-password`}>Password</label>
+        <PasswordInput id={`${instance}-password`} bind:value={password}
           autocomplete={registering ? 'new-password' : 'current-password'}
-          required
-          maxlength="1024"
           minlength={registering ? 12 : undefined}
-          aria-describedby={registering ? `${instance}-password-help` : undefined}
-        />
+          describedBy={registering ? `${instance}-password-help` : undefined} />
         {#if registering}
           <ul id={`${instance}-password-help`} class="password-checks" aria-label="Password requirements">
             {#each passwordChecks as requirement}
@@ -422,13 +434,13 @@
         {/if}
         <ActionButton
           type="submit"
-          label={busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
+          label={busy && !resending ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
           disabled={busy}
         />
       </form>
       {#if registering}
         <p>Already registered? <a href="/forgot-password">Recover your account</a> or switch to sign in.</p>
-        <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+        <button type="button" class="switch-mode" disabled={busy} onclick={() => void resendConfirmation()} aria-busy={resending}>{resending ? 'Sending confirmation…' : 'Resend confirmation instructions'}</button>
         {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
       {:else}
         <a href="/forgot-password">Forgot your password?</a>
@@ -440,6 +452,7 @@
           registering = !registering;
           error = '';
           displayNameError = '';
+          emailError = '';
           resendNotice = '';
           password = '';
         }}
@@ -503,6 +516,7 @@
     margin-top: 0.75rem;
   }
   button:disabled {
-    cursor: default;
+    opacity: .55;
+    cursor: not-allowed;
   }
 </style>

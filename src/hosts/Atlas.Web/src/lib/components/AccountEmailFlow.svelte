@@ -1,6 +1,7 @@
 <!-- Account confirmation is submitted explicitly so mail-link scanners cannot confirm accounts. -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import PasswordInput from './PasswordInput.svelte';
   import { apiRequest } from '../api/apiRequest';
   let { mode }: { mode: 'confirm' | 'reset' | 'forgot' } = $props();
   let email = $state('');
@@ -50,7 +51,8 @@
       {/if}
       {#if mode === 'reset'}
         <p>Use at least 12 characters, including uppercase and lowercase letters, a number, and a symbol.</p>
-        <label>New password <input type="password" bind:value={password} required autocomplete="new-password" maxlength="1024" /></label>
+        <label for="reset-new-password">New password</label>
+        <PasswordInput id="reset-new-password" bind:value={password} autocomplete="new-password" minlength={12} />
       {/if}
       <button type="submit" disabled={!ready || busy}>{busy ? 'Please wait…' : mode === 'confirm' ? 'Confirm email' : mode === 'reset' ? 'Reset password' : 'Send reset email'}</button>
     </form>

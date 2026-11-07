@@ -30,11 +30,14 @@ test('missing reset token offers recovery without submitting a password', async 
 
 test('registration shows live checks and name feedback; resend needs only email', async ({ page }) => {
   let resent: unknown;
+  let finishResend!: () => void;
+  const resendPending = new Promise<void>(resolve => { finishResend = resolve; });
   await page.route('**/atlas-session-api/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/csrf')) return route.fulfill({ json: { token: 'csrf-test' } });
     if (path.endsWith('/resend-confirmation')) {
       resent = route.request().postDataJSON();
+      await resendPending;
       return route.fulfill({ status: 202 });
     }
     if (path.endsWith('/register')) return route.fulfill({ status: 400, json: {
@@ -44,14 +47,24 @@ test('registration shows live checks and name feedback; resend needs only email'
   });
   await page.goto('http://127.0.0.1:4173/register');
   const resend = page.getByRole('button', { name: 'Resend confirmation instructions' });
-  await expect(resend).toBeDisabled();
+  await expect(resend).toBeEnabled();
+  await resend.click();
+  await expect(page.getByRole('alert')).toContainText('Enter a valid email address above');
   await page.getByLabel('Email', { exact: true }).fill('test@example.com');
   await resend.click();
+  await expect(page.getByRole('button', { name: 'Sending confirmation…' })).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByRole('button', { name: 'Create account', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Please wait…' })).toHaveCount(0);
+  finishResend();
   await expect(page.getByRole('status')).toContainText('account awaiting confirmation');
   expect(resent).toEqual({ email: 'test@example.com' });
   await expect(page.locator('.password-checks input:checked')).toHaveCount(0);
   await page.getByLabel('Password', { exact: true }).fill('LocalTesting123!');
   await expect(page.locator('.password-checks input:checked')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Show password', exact: true }).click();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: 'Hide password', exact: true }).click();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'password');
   await page.getByLabel('Display name', { exact: true }).fill('Taken name');
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByLabel('Display name', { exact: true })).toHaveAttribute('aria-invalid', 'true');
