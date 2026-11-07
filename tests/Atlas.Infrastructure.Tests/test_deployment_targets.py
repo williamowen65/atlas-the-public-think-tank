@@ -66,7 +66,34 @@ class DeploymentTargetTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate('infrastructure', dict(infra, TF_VAR_enable_sql_bootstrap='true'))
         with self.assertRaises(ValueError):
-            self.validate('admin', infra)
+            self.validate('admin', dict(infra, ATLAS_VARIANT='live', ATLAS_TARGET_APP='atlas-existing-live-ops'))
+
+    def test_demo_admin_accepts_feature_branch_at_both_workflow_gates(self):
+        workflow = yaml.load((ROOT / '.github/workflows/AtlasAdmin.yml').read_text(), Loader=yaml.BaseLoader)
+        selection = next(s for s in workflow['jobs']['validate-target']['steps']
+                         if s.get('id') == 'target')
+        self.assertEqual(selection['env']['ATLAS_TARGET_PURPOSE'], 'admin')
+        self.assertEqual(selection['env']['ATLAS_VARIANT'], '${{ inputs.variant }}')
+        self.assertIn('check-deployment-target.py selection', selection['run'])
+        execution = next(s for s in workflow['jobs']['execute']['steps']
+                         if s.get('name') == 'Verify installation app target')
+        self.assertEqual(execution['env']['ATLAS_VARIANT'], '${{ inputs.variant }}')
+        self.assertIn('check-deployment-target.py admin', execution['run'])
+        for mode in ['selection', 'admin']:
+            demo = self.settings('main', GITHUB_REF='refs/heads/topic', ATLAS_TARGET_PURPOSE='admin')
+            self.validate(mode, demo)
+            for variant in ['live', '', 'both']:
+                with self.subTest(mode=mode, variant=variant), self.assertRaises(ValueError):
+                    self.validate(mode, dict(demo, ATLAS_VARIANT=variant))
+            for ref in ['refs/tags/v1', 'refs/pull/412/merge']:
+                with self.subTest(mode=mode, ref=ref), self.assertRaises(ValueError):
+                    self.validate(mode, dict(demo, GITHUB_REF=ref))
+            self.validate(mode, dict(demo, GITHUB_REF='refs/heads/main',
+                ATLAS_VARIANT='live', ATLAS_TARGET_APP='atlas-existing-live-ops'))
+        for overrides in [dict(ATLAS_TARGET_APP='atlas-existing-live-ops'),
+                          dict(AZURE_RESOURCE_GROUP='other-rg')]:
+            with self.subTest(overrides=overrides), self.assertRaises(ValueError):
+                self.validate('admin', dict(demo, **overrides))
 
     def test_main_can_keep_existing_names_and_state(self):
         self.validate('infrastructure', self.settings('main'))
