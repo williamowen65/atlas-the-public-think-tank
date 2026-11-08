@@ -339,6 +339,10 @@ namespace Atlas.Persistence.Migrations
                     b.Property<double?>("Longitude")
                         .HasColumnType("float");
 
+                    b.Property<string>("PinColor")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
                     b.HasKey("Id");
 
                     b.ToTable("GlobeVisitors", (string)null);
