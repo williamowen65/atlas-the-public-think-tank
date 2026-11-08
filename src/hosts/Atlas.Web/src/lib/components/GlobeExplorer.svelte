@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { apiRequest } from '$lib/api/apiRequest';
   import { parseSnapshot, type GlobeSnapshot } from '$lib/globe/presence';
+  import { createGlobeRotation } from '$lib/globe/rotation.svelte';
   import VisitorGlobe from './VisitorGlobe.svelte';
 
   let dialog: HTMLDialogElement;
@@ -10,6 +11,12 @@
   let snapshot = $state<GlobeSnapshot>();
   let status = $state<'connecting' | 'connected' | 'offline'>('connecting');
   let consent = $state(false);
+  let hasLocation = $state(false);
+  let infoOpen = $state(false);
+  let globeTop = $state(90);
+  let globeBottom = $state(16);
+  let globeSize = $state(360);
+  const rotation = createGlobeRotation();
   let sharing = $state(false);
   let message = $state('');
   let alive = false;
@@ -23,6 +30,7 @@
 
   export function open() {
     if (!dialog.open) {
+      placeDialog();
       scrollBefore = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       dialog.showModal();
@@ -33,6 +41,7 @@
     shareGeneration++;
     expanded = false;
     consent = false;
+    infoOpen = false;
     document.body.style.overflow = scrollBefore;
   }
   async function connect() {
@@ -45,11 +54,19 @@
     try {
       const signal = AbortSignal.any([request.signal, AbortSignal.timeout(12000)]);
       const visit = () =>
-        apiRequest('/atlas-session-api', 'globe/visit', 'POST', undefined, signal);
+        apiRequest<{ hasLocation: boolean }>(
+          '/atlas-session-api',
+          'globe/visit',
+          'POST',
+          undefined,
+          signal,
+        );
       // Serialize first-cookie creation across tabs of the same anonymous browser.
-      if (navigator.locks) await navigator.locks.request('atlas-globe-visit', { signal }, visit);
-      else await visit();
+      const visitor = navigator.locks
+        ? await navigator.locks.request('atlas-globe-visit', { signal }, visit)
+        : await visit();
       if (!alive || current !== generation) return;
+      hasLocation = visitor.hasLocation === true;
       const events = new EventSource('/atlas-session-api/globe/events');
       source = events;
       events.onmessage = (event) => {
@@ -79,8 +96,22 @@
       }
     }
   }
+  function placeDialog() {
+    const height = window.innerHeight;
+    const header = document.querySelector('.atlas-header')?.getBoundingClientRect();
+    const navigation = document.querySelector('.bottom-navigation')?.getBoundingClientRect();
+    globeTop = Math.max(16, (header?.bottom ?? 64) + 12);
+    globeBottom =
+      navigation && navigation.height > 0 ? Math.max(16, height - navigation.top + 12) : 16;
+    globeSize = Math.max(
+      90,
+      Math.min(400, window.innerWidth - 64, height - globeTop - globeBottom - 174),
+    );
+  }
   onMount(() => {
     alive = true;
+    placeDialog();
+    window.addEventListener('resize', placeDialog);
     void connect();
     const restart = () => {
       message = '';
@@ -95,6 +126,7 @@
       source?.close();
       clearTimeout(reconnectTimer);
       window.removeEventListener('atlas-session-changed', restart);
+      window.removeEventListener('resize', placeDialog);
       if (expanded) document.body.style.overflow = scrollBefore;
     };
   });
@@ -136,6 +168,7 @@
       );
       if (alive && current === generation) {
         consent = false;
+        hasLocation = true;
         message =
           'Your approximate location is shared on the Atlas globe. You can remove it at any time.';
       }
@@ -162,6 +195,7 @@
       );
       if (alive && current === generation) {
         consent = false;
+        hasLocation = false;
         message = 'Your location was removed from both Live and Historical.';
       }
     } catch {
@@ -180,38 +214,29 @@
   aria-haspopup="dialog"
   onclick={open}
 >
-  <span class="mini-art"
-    ><VisitorGlobe
-      mini
-      pins={status === 'connected' ? snapshot?.live.pins : []}
-      animate={!expanded}
-    /></span
-  >
-  <span
-    ><strong>Atlas, together</strong><span class="mini-caption"
-      >{status === 'connected'
-        ? `${snapshot?.live.visitors} here now`
-        : status === 'connecting'
-          ? 'Connecting…'
-          : 'Reconnecting…'}</span
-    ></span
-  >
+  <VisitorGlobe
+    mini
+    angle={rotation.angle}
+    pins={status === 'connected' ? snapshot?.live.pins : []}
+  />
 </button>
 
-<dialog bind:this={dialog} class="explorer" aria-labelledby="globe-title" onclose={closed}>
-  <div class="explorer-shell">
-    <header>
-      <div>
-        <p class="eyebrow">A world of perspectives</p>
-        <h2 id="globe-title">Atlas, together</h2>
-      </div>
-      <button
-        class="close"
-        type="button"
-        aria-label="Close visitor globe"
-        onclick={() => dialog.close()}>✕</button
-      >
-    </header>
+{#if expanded}<div
+    class="body-shade"
+    aria-hidden="true"
+    style:top={`${globeTop - 6}px`}
+    style:bottom={`${globeBottom - 6}px`}
+  ></div>{/if}
+<dialog
+  bind:this={dialog}
+  class="explorer"
+  aria-label="Visitor globe"
+  onclose={closed}
+  style:top={`${globeTop}px`}
+  style:bottom={`${globeBottom}px`}
+  style:--globe-size={`${globeSize}px`}
+>
+  <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
       <button type="button" aria-pressed={mode === 'live'} onclick={() => (mode = 'live')}
         >Live</button
@@ -222,110 +247,120 @@
         onclick={() => (mode = 'historical')}>Historical</button
       >
     </div>
-    <div class="explorer-content">
-      <div class="world">
-        <VisitorGlobe pins={status === 'connected' ? summary?.pins : []} animate={expanded} />
-      </div>
-      <section class="details" aria-label="Visitor details">
-        <p class="metric">
-          <strong>{status === 'connected' ? summary?.visitors : '—'}</strong><span
-            >unique {summary?.visitors === 1 ? 'visitor' : 'visitors'}<br />{mode === 'live'
-              ? 'here now'
-              : 'since history began'}</span
-          >
-        </p>
-        {#if mode === 'historical' && summary?.since}<p class="muted">
-            Since {new Date(summary.since).toLocaleDateString()}
-          </p>{/if}
-        <p>
-          {mode === 'live'
-            ? 'Visitors exploring Atlas right now.'
-            : 'Visitors recorded since this globe’s history began.'}
-        </p>
-        <details class="count-explanation">
-          <summary>How visitors are counted</summary>
-          <p class="muted">
-            Counts use accounts when signed in, otherwise anonymous browsers. Multiple tabs count
-            once. Pins only appear when visitors choose to share.
-          </p>
-        </details>
-        <div class="connection" role="status">
-          {#if status === 'offline'}Live connection unavailable. Reconnecting… <button
-              type="button"
-              onclick={() => void connect()}>Retry now</button
-            >
-          {:else if status === 'connecting'}Connecting to the visitor globe…
-          {:else}<span class="live-dot" aria-hidden="true"></span> Connected{/if}
-        </div>
-        <div class="share-panel">
-          <h3>Your place on the globe</h3>
-          <p>
-            Sharing is optional. An approximate pin appears in Live while you are here and stays in
-            Historical until you remove it. Your name and exact location are never shown.
-          </p>
-          {#if consent}
-            <p class="consent-copy">
-              Allow location access for the Atlas globe? The next step opens your browser’s
-              permission prompt. We send only a whole-degree location, which can be tens of miles
-              from your actual position.
-            </p>
-            <button
-              type="button"
-              class="primary"
-              disabled={sharing || status !== 'connected'}
-              onclick={share}>{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
-            >
-            <button type="button" disabled={sharing} onclick={() => (consent = false)}
-              >Cancel</button
-            >
-          {:else}
-            <button
-              type="button"
-              class="primary"
-              disabled={sharing || status !== 'connected'}
-              onclick={() => {
-                consent = true;
-                message = '';
-              }}>Share my location on this globe</button
-            >
-          {/if}
-          <button
-            type="button"
-            class="remove"
-            disabled={sharing || status !== 'connected'}
-            onclick={removeLocation}>Remove my shared location</button
-          >
-          <p role="status">{message}</p>
-        </div>
-      </section>
-    </div>
-    <details class="locations">
-      <summary
-        >Shared locations ({status === 'connected'
-          ? (summary?.pins.reduce((total, pin) => total + pin.visitors, 0) ?? 0)
-          : 'unavailable'} visitors)</summary
-      >
-      {#if status !== 'connected'}<p>
-          Waiting for the connection. Locations will appear when it returns.
-        </p>
-      {:else if !summary?.pins.length}<p>
-          No locations shared in this view yet. You are welcome here with or without a pin.
-        </p>
-      {:else}<ul>
-          {#each summary.pins as pin}<li>
-              Near {pin.latitude}° latitude, {pin.longitude}° longitude: {pin.visitors}
-              {pin.visitors === 1 ? 'visitor' : 'visitors'}
-            </li>{/each}
-        </ul>{/if}
-    </details>
-    <footer>
-      Local development preview · <a
-        href="https://www.naturalearthdata.com/about/terms-of-use/"
-        target="_blank"
-        rel="noreferrer">Map: Natural Earth</a
-      >
-    </footer>
+    <button
+      class="close"
+      type="button"
+      aria-label="Close visitor globe"
+      onclick={() => dialog.close()}>✕</button
+    >
   </div>
+  <div class="world">
+    <VisitorGlobe angle={rotation.angle} pins={status === 'connected' ? summary?.pins : []} />
+  </div>
+  <div class="globe-caption">
+    <span class="metric"
+      ><strong>{status === 'connected' ? summary?.visitors : '—'}</strong>
+      {summary?.visitors === 1 ? 'visitor' : 'visitors'}
+      {mode === 'live' ? 'here now' : 'over time'}</span
+    >
+    <span class="connection" role="status"
+      >{status === 'connected'
+        ? 'Connected'
+        : status === 'connecting'
+          ? 'Connecting…'
+          : 'Reconnecting…'}</span
+    >
+  </div>
+  <div class="globe-actions">
+    {#if hasLocation}
+      <span class="shared-state">Location shared</span>
+      <button type="button" disabled={sharing || status !== 'connected'} onclick={removeLocation}
+        >Remove my shared location</button
+      >
+    {:else}
+      <button
+        type="button"
+        disabled={sharing || status !== 'connected'}
+        onclick={() => {
+          consent = true;
+          infoOpen = false;
+          message = '';
+        }}>Share my location on this globe</button
+      >
+    {/if}
+    {#if status === 'offline'}<button type="button" onclick={() => void connect()}>Retry now</button
+      >{/if}
+    <button
+      class="info-toggle"
+      type="button"
+      aria-label="About this globe"
+      aria-expanded={infoOpen}
+      onclick={() => {
+        infoOpen = !infoOpen;
+        consent = false;
+      }}>ⓘ</button
+    >
+  </div>
+  <p class="feedback" role="status">{message}</p>
+  {#if consent}
+    <section class="disclosure consent" aria-label="Share location on this globe">
+      <strong>Put a pin on this globe?</strong>
+      <p>
+        The next step opens your browser’s permission prompt. Only an approximate location is
+        shared, without your name. It appears in Live while you are here and stays in Historical
+        until you remove it.
+      </p>
+      <button
+        class="primary"
+        type="button"
+        disabled={sharing || status !== 'connected'}
+        onclick={share}>{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
+      >
+      <button type="button" disabled={sharing} onclick={() => (consent = false)}>Cancel</button>
+    </section>
+  {/if}
+  {#if infoOpen}
+    <section class="disclosure information" aria-label="Globe information">
+      <div class="info-heading">
+        <strong>About this globe</strong><button
+          type="button"
+          aria-label="Close globe information"
+          onclick={() => (infoOpen = false)}>✕</button
+        >
+      </div>
+      <p>
+        Live shows visitors connected now. Historical counts visitors recorded over time{#if snapshot?.historical.since},
+          since {new Date(snapshot.historical.since).toLocaleDateString()}{/if}. Accounts count once
+        across browsers; anonymous visitors count by browser. Multiple tabs count once.
+      </p>
+      <p>
+        Pins are optional, approximate locations. Connection status does not mean your location is
+        shared.
+      </p>
+      <details class="locations">
+        <summary
+          >Shared locations ({status === 'connected'
+            ? (summary?.pins.reduce((total, pin) => total + pin.visitors, 0) ?? 0)
+            : 'unavailable'} visitors)</summary
+        >
+        {#if status !== 'connected'}<p>Waiting for the connection.</p>
+        {:else if !summary?.pins.length}<p>No locations shared in this view yet.</p>
+        {:else}<ul>
+            {#each summary.pins as pin}<li>
+                Near {pin.latitude}° latitude, {pin.longitude}° longitude: {pin.visitors}
+                {pin.visitors === 1 ? 'visitor' : 'visitors'}
+              </li>{/each}
+          </ul>{/if}
+      </details>
+      <p class="credit">
+        Map data: <a
+          href="https://www.naturalearthdata.com/about/terms-of-use/"
+          target="_blank"
+          rel="noreferrer">Natural Earth</a
+        > (public domain).
+      </p>
+    </section>
+  {/if}
 </dialog>
 
 <style>
@@ -334,229 +369,172 @@
     bottom: 1.25rem;
     right: 1.25rem;
     z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.35rem 1rem 0.35rem 0.35rem;
+    width: 4.25rem;
+    height: 4.25rem;
+    padding: 0.1rem;
     border: 1px solid var(--atlas-border);
-    border-radius: 4rem;
+    border-radius: 50%;
     background: var(--atlas-surface);
-    color: var(--atlas-text);
-    box-shadow: 0 4px 20px #0002;
     cursor: pointer;
-    text-align: left;
-    font: inherit;
+    box-shadow: 0 3px 10px #172b3822;
   }
-  .mini-art {
-    width: 4rem;
-    height: 4rem;
-  }
-  .mini-caption {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--atlas-muted);
+  .body-shade {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 36;
+    background: #172b3817;
+    pointer-events: none;
   }
   .explorer {
-    width: calc(100vw - 2rem);
-    height: calc(100dvh - 2rem);
-    max-width: 100rem;
+    position: fixed;
+    width: min(32rem, calc(100vw - 2rem));
+    height: fit-content;
+    max-width: none;
     max-height: none;
-    padding: 0;
-    border: 1px solid #36566b;
-    border-radius: 1.5rem;
-    background: #0a1b2b;
-    color: #edf5f4;
-    box-sizing: border-box;
+    margin: auto;
+    padding: 0.75rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-text);
+    background: var(--atlas-surface);
+    box-shadow: 0 8px 30px #172b3830;
+    overflow: visible;
   }
   .explorer::backdrop {
-    background: #03101bd9;
-    backdrop-filter: blur(5px);
+    background: transparent;
   }
-  .explorer-shell {
-    padding: clamp(1rem, 2vw, 2rem);
-  }
-  header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: #0a1b2b;
+  .toolbar {
     display: flex;
-    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-  }
-  h2 {
-    font-size: clamp(1.8rem, 4vw, 3rem);
-    margin: 0;
-    letter-spacing: -0.04em;
-  }
-  .eyebrow {
-    color: #9bcabb;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin: 0 0 0.5rem;
+    align-items: center;
+    gap: 0.5rem;
   }
   button {
+    color: var(--atlas-text);
     font: inherit;
+    font-size: 0.85rem;
     cursor: pointer;
-    border-radius: 0.6rem;
-    border: 1px solid #587485;
-    color: #edf5f4;
-    padding: 0.65rem 0.9rem;
-    background: transparent;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    padding: 0.4rem 0.65rem;
   }
   button:disabled {
     opacity: 0.55;
     cursor: default;
   }
-  button:focus-visible,
-  a:focus-visible,
-  summary:focus-visible {
-    outline: 3px solid #ffd481;
-    outline-offset: 3px;
-  }
-  .close {
-    font-size: 1.25rem;
-    padding: 0.4rem 0.75rem;
-  }
   .view-controls {
     display: flex;
-    gap: 0.25rem;
-    margin: 1rem 0 0.5rem;
-    padding: 0.25rem;
-    background: #142d40;
-    width: max-content;
-    border-radius: 0.8rem;
+    gap: 0.15rem;
+    padding: 0.15rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
   }
   .view-controls button {
     border-color: transparent;
-    min-width: 7rem;
+    padding: 0.3rem 0.65rem;
   }
-  .view-controls button[aria-pressed='true'] {
-    background: #cce9df;
-    color: #092d2a;
+  .view-controls button[aria-pressed='true'],
+  .primary {
+    color: var(--atlas-on-accent);
+    background: var(--atlas-accent);
   }
-  .explorer-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
-    gap: clamp(1rem, 4vw, 4rem);
-    align-items: center;
-  }
-  .world {
-    width: min(100%, calc(100dvh - 16rem));
-    justify-self: center;
-  }
-  .details {
-    max-width: 32rem;
-  }
-  .metric {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 0.5rem 0;
-  }
-  .metric strong {
-    font-size: clamp(3rem, 6vw, 5rem);
-    font-weight: 500;
-    line-height: 1;
-  }
-  .metric span,
-  .muted {
-    color: #b1c7d0;
-    font-size: 0.9rem;
-  }
-  p {
-    line-height: 1.6;
-  }
-  .connection {
-    font-size: 0.85rem;
-    margin: 1rem 0;
-    color: #d7e7eb;
-  }
-  .live-dot {
-    display: inline-block;
-    width: 0.5rem;
-    height: 0.5rem;
-    background: #9bdfb6;
-    border-radius: 50%;
-    margin-right: 0.25rem;
-  }
-  .share-panel {
-    background: #122b3b;
-    padding: 1.2rem;
-    border: 1px solid #345464;
-    border-radius: 1rem;
-  }
-  .share-panel h3 {
-    margin: 0;
+  .close {
+    border-color: transparent;
     font-size: 1.1rem;
   }
-  .share-panel p {
-    font-size: 0.85rem;
-    color: #c9dbdf;
+  .world {
+    width: min(100%, var(--globe-size));
+    margin: 0.25rem auto;
+    aspect-ratio: 1;
   }
-  .share-panel p:empty {
+  .globe-caption {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .connection {
+    font-size: 0.75rem;
+    color: var(--atlas-muted);
+  }
+  .globe-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+  .globe-actions > button {
+    font-size: 0.8rem;
+  }
+  .shared-state {
+    font-size: 0.8rem;
+    color: var(--atlas-muted);
+  }
+  .info-toggle {
+    border-color: transparent;
+    font-size: 1.1rem !important;
+    padding: 0.25rem;
+  }
+  .feedback {
+    margin: 0.4rem 0 0;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--atlas-muted);
+    line-height: 1.35;
+  }
+  .feedback:empty {
     display: none;
   }
-  .share-panel button {
-    margin-top: 0.5rem;
-  }
-  .primary {
-    background: #cce9df;
-    color: #092d2a;
-    border-color: #cce9df;
-  }
-  .remove {
-    display: block;
+  .disclosure {
+    position: absolute;
+    z-index: 1;
+    inset: auto 0.75rem 0.75rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    box-shadow: 0 4px 20px #172b382d;
+    padding: 1rem;
     font-size: 0.85rem;
-    border-color: transparent;
-    text-decoration: underline;
-    padding-inline: 0;
-  }
-  .locations {
-    margin-top: 1.5rem;
-    border-top: 1px solid #345464;
-    padding-top: 1rem;
-    font-size: 0.9rem;
-  }
-  .locations ul {
-    max-height: 12rem;
+    line-height: 1.45;
+    max-height: calc(100% - 3.5rem);
     overflow: auto;
   }
-  footer {
-    margin-top: 1.25rem;
-    color: #b1c7d0;
-    font-size: 0.75rem;
+  .disclosure p {
+    margin: 0.65rem 0;
   }
-  footer a {
-    color: inherit;
+  .info-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .info-heading button {
+    padding: 0.2rem 0.45rem;
+    border-color: transparent;
+  }
+  .locations ul {
+    max-height: 7rem;
+    overflow: auto;
+    padding-left: 1.2rem;
+  }
+  .credit {
+    font-size: 0.75rem;
+    color: var(--atlas-muted);
   }
   @media (max-width: 560px) {
     .mini-launcher {
       display: none;
     }
-  }
-  @media (max-width: 700px) {
     .explorer {
-      width: 100vw;
-      height: 100dvh;
-      border-radius: 0;
-      max-width: none;
-      margin: 0;
+      width: calc(100vw - 1.5rem);
     }
-    .explorer-shell {
-      padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
-    }
-    .explorer-content {
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-    }
-    .world {
-      width: min(100%, 45vh);
-    }
-    .details {
-      max-width: none;
+    .globe-actions {
+      gap: 0.25rem;
     }
   }
 </style>

@@ -21,13 +21,30 @@
   let {
     pins = [],
     mini = false,
-    animate = true,
-  }: { pins?: GlobePin[]; mini?: boolean; animate?: boolean } = $props();
+    angle = -25,
+    oceanColor = '#e3eff3',
+    oceanEdgeColor = '#bdd6df',
+    landColor = '#668f87',
+    gridColor = '#385e6b',
+    pinColor = '#b34e10',
+    outlineColor = '#547d89',
+    showGrid = true,
+  }: {
+    pins?: GlobePin[];
+    mini?: boolean;
+    angle?: number;
+    oceanColor?: string;
+    oceanEdgeColor?: string;
+    landColor?: string;
+    gridColor?: string;
+    pinColor?: string;
+    outlineColor?: string;
+    showGrid?: boolean;
+  } = $props();
   let land = $state<GeoPermissibleObjects>();
   let failed = $state(false);
-  let angle = $state(-25);
   const projection = $derived(
-    geoOrthographic().translate([200, 200]).scale(184).rotate([angle, -18]).clipAngle(90),
+    geoOrthographic().translate([200, 200]).scale(176).rotate([angle, -18]).clipAngle(90),
   );
   const path = $derived(geoPath(projection));
   const id = $props.id();
@@ -51,74 +68,82 @@
       .catch(() => {
         if (active) failed = true;
       });
-    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0;
-    let previous = 0;
-    function rotate(now: number) {
-      if (animate && !document.hidden && !reducedMotion.matches && now - previous >= 40) {
-        angle += Math.min(now - previous, 100) * 0.003;
-        previous = now;
-      } else if (!animate || document.hidden || reducedMotion.matches) previous = now;
-      frame = requestAnimationFrame(rotate);
-    }
-    frame = requestAnimationFrame(rotate);
     return () => {
       active = false;
-      cancelAnimationFrame(frame);
     };
   });
 </script>
 
 <div class="globe-art" class:mini>
-  <svg viewBox="0 0 400 400" role="img" aria-labelledby={`${id}-title`}>
+  <svg data-angle={angle} viewBox="0 0 400 400" role="img" aria-labelledby={`${id}-title`}>
     <title id={`${id}-title`}
       >Atlas visitor globe. Pins show approximate locations voluntarily shared by visitors.</title
     >
     <defs>
-      <radialGradient id={`${id}-ocean`} cx="35%" cy="25%" r="80%">
-        <stop offset="0" stop-color="#194d68" /><stop offset="1" stop-color="#061a2e" />
-      </radialGradient>
-      <radialGradient id={`${id}-light`} cx="27%" cy="25%" r="75%">
-        <stop offset="0" stop-color="#fff" stop-opacity="0.10" /><stop
-          offset="0.65"
-          stop-color="#fff"
-          stop-opacity="0"
-        /><stop offset="1" stop-color="#020c18" stop-opacity="0.55" />
+      <radialGradient id={`${id}-ocean`} cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color={oceanColor} /><stop offset="1" stop-color={oceanEdgeColor} />
       </radialGradient>
     </defs>
     <circle
+      class="ocean"
       cx="200"
       cy="200"
-      r="184"
+      r="176"
       fill={`url(#${id}-ocean)`}
-      stroke="#528ba6"
-      stroke-width="1.5"
+      stroke={outlineColor}
+      stroke-width="1"
     />
-    <path
-      d={path(geoGraticule10()) ?? ''}
-      fill="none"
-      stroke="#7cbbc9"
-      stroke-opacity="0.17"
-      stroke-width="0.6"
-    />
-    {#if land}<path d={path(land) ?? ''} fill="#69afa2" stroke="#a7d9bf" stroke-width="0.4" />{/if}
-    <circle cx="200" cy="200" r="184" fill={`url(#${id}-light)`} />
+    {#if showGrid}<path
+        class="graticule"
+        d={path(geoGraticule10()) ?? ''}
+        fill="none"
+        stroke={gridColor}
+        stroke-opacity="0.14"
+        stroke-width="0.6"
+      />{/if}
+    {#if land}<path
+        class="land"
+        d={path(land) ?? ''}
+        fill={landColor}
+        stroke={outlineColor}
+        stroke-width="0.35"
+      />{/if}
     {#each visiblePins as pin}
       {@const point = projection([pin.longitude, pin.latitude])}
       {#if point}
-        <circle
-          cx={point[0]}
-          cy={point[1]}
-          r={mini ? 9 : Math.min(10, 4 + Math.sqrt(pin.visitors))}
-          fill="#ffd481"
-          stroke="#4a310f"
-          stroke-width="1.2"
-        >
+        {@const dx = point[0] - 200}
+        {@const dy = point[1] - 200}
+        {@const length = Math.hypot(dx, dy)}
+        {@const tipX = point[0] + (length > 25 ? (dx / length) * 23 : 3)}
+        {@const tipY = point[1] + (length > 25 ? (dy / length) * 23 : -18)}
+        <g class="map-pin">
           <title
             >{pin.visitors}
             {pin.visitors === 1 ? 'visitor' : 'visitors'} near {pin.latitude}°, {pin.longitude}°</title
           >
-        </circle>
+          <line
+            x1={point[0]}
+            y1={point[1]}
+            x2={tipX}
+            y2={tipY}
+            stroke="#ffffff"
+            stroke-opacity="0.85"
+            stroke-width={mini ? 2.8 : 3.8}
+            vector-effect="non-scaling-stroke"
+            stroke-linecap="round"
+          />
+          <line
+            class="pin-stem"
+            x1={point[0]}
+            y1={point[1]}
+            x2={tipX}
+            y2={tipY}
+            stroke={pinColor}
+            stroke-width={mini ? 1.5 : 2}
+            vector-effect="non-scaling-stroke"
+            stroke-linecap="round"
+          />
+        </g>
       {/if}
     {/each}
   </svg>
@@ -138,9 +163,13 @@
     width: 100%;
     height: 100%;
     display: block;
-    filter: drop-shadow(0 0 24px #54b6b51a);
   }
   .map-fallback {
+    position: absolute;
+    inset: auto 0 0;
+    background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
     padding: 0.75rem;
     text-align: center;
     font-size: 0.9rem;

@@ -1,8 +1,14 @@
-# Local visitor globe (PTT-162 / PTT-163)
+# Visitor globe (PTT-162 / PTT-163)
 
-The desktop corner globe opens a nearly full-screen visitor map. On phones, Globe lives in the existing bottom navigation. Escape or the close button dismisses the dialog and returns focus to its launcher. Live / Historical controls switch counts and pins together.
+The circular desktop corner globe opens a compact visitor map centered over the page body. The Atlas header stays visible; on phones, the popup also stays above the bottom navigation. It uses the site's existing surface, text, border, radius and accent tokens. Escape or the close button dismisses it and returns focus to its launcher. Live / Historical controls switch counts and pins together.
 
-This implementation is a **local development preview**. The widget is mounted only by Vite development builds; API endpoints return 404 outside `Development`. No deployment, Terraform change, cloud service, startup migration, or keep-alive request is included.
+The miniature and expanded globe share one rotation clock, so opening or closing the popup keeps the same part of the world in view. Reduced-motion preferences pause rotation. Pins use thin outward-projecting stems rather than circular dots. The globe has a centered ocean tint without a diagonal lighting band.
+
+Visitor totals, connection status and the current location-sharing action stay compact beneath the globe. Saved sharing state is read from the visit response, so an already-shared location offers removal instead of another share button. Connection status describes the listener, separately from location consent. Counts, text locations and the optional Natural Earth credit are behind **About this globe**.
+
+The globe is intended to run in both local development and the deployed Atlas application. The frontend includes it in production builds, and Atlas.Api serves its endpoints in every environment. The Vite proxy only supports local development; Atlas.Api owns the deployed routes, not Sites.
+
+**Current rollout plan:** develop and test this branch locally while the capstone deployment review is pending. Leave the PR unmerged and do not deploy or apply migrations to Azure during that review. Once the review is complete, explicitly deploy this branch to the demo app, apply its reviewed migration to the demo database, and verify the hosted experience before merging. Deployment timing is a workflow decision, not an environment restriction in the feature code.
 
 ## What the counts mean
 
@@ -40,7 +46,7 @@ dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filte
 dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~Globe
 ```
 
-Do not target an Azure connection string or run the Azure setup/deployment workflows for this work. Migration-dependent persistence tests and the full local SQL experience remain unverified until this developer step is complete. Existing SQL test setup also needs the generated migration before its migration-based checks can pass.
+During the capstone review, use only local connection strings and do not run Azure setup/deployment workflows. Migration-dependent persistence tests and the full local SQL experience remain unverified until this developer step is complete. Existing SQL test setup also needs the generated migration before its migration-based checks can pass.
 
 ## Run and verify
 
@@ -67,16 +73,35 @@ Focused browser checks (mocked event data; no database required):
 ```sh
 npm run check
 npx playwright install chromium
-npx playwright test --config playwright.globe.config.ts
 npm run build
+npx playwright test --config playwright.globe.config.ts
 ```
 
-The normal Playwright configuration excludes the development-only globe spec, since it serves the production build. API tests separately exercise real SSE responses with independent cookie jars and an in-memory history adapter; these do not establish SQL durability. SQL persistence tests exercise merging, restart/repository reload, pin aggregation and removal after the migration is generated.
+Both Playwright configurations exercise the globe in the production frontend build served locally. API tests separately boot real Development and Production hosts and exercise SSE responses through the session API prefix with independent cookie jars and an in-memory history adapter; these do not establish SQL durability or verify Azure. SQL persistence tests exercise merging, restart/repository reload, pin aggregation and removal after the migration is generated.
 
-## Implementation and later deployment work
+## Explore the globe in Storybook
+
+Run `npm run storybook` from `src/hosts/Atlas.Web`, then open **Components → VisitorGlobe → Playground**. The Controls panel exposes ocean center/edge colors, land, grid, outline and pin colors, grid visibility, globe size, fixture pins, rotation speed, angle and animation. Give both ocean colors the same value for a flat fill.
+
+**Paper**, **Night**, and **Miniature** stories provide alternate starting points. These stories use the same renderer as the site, with fixture pins and a vendored map; they need no API, database or geolocation permission. Changes in Storybook are exploratory controls, not saved site preferences. Rotation controls are only in Storybook.
+
+Natural Earth data is public domain and its terms explicitly make credit optional. The reference GeographicPinMap loaded the D3 Graph Gallery's `world.geojson`, rather than this vendored Natural Earth land file. Keep source/licensing notes in `static/globe/README.md`; the popup credit is informational.
+
+## Demo verification before merge
+
+After the capstone deployment review is complete and demo deployment is explicitly authorized:
+
+1. Generate, review and commit the migration; verify the local database round trip first.
+2. Deploy this branch and apply the reviewed migration to **demo only**, using the existing workflows. Keep live unchanged.
+3. Verify the miniature globe in the hosted production build on desktop and mobile.
+4. Repeat the two-browser checks above, including SSE updates without reloads, optional location sharing over HTTPS, pin removal, reconnection, and Historical persistence after an API restart.
+5. Confirm the actual Azure proxy delivers SSE updates/heartbeats promptly rather than buffering them, and ordinary API requests remain usable while listeners are connected.
+6. Review demo results before merging. A local build or a test host configured as Production does not establish that the Azure path works.
+
+## Implementation and hosting limits
 
 The reference is William Owen's [GeographicPinMap](https://github.com/williamowen65/GeographicPinMap) at `68febc15e1b9f0509445339744f9e7c07def16c2`. Its D3 orthographic projection, rotating globe and explicit pin interaction are adapted into Svelte components. The original Express/Socket.IO server is replaced with a .NET server-sent event listener; the feature requires only server-to-browser updates, while normal CSRF-protected HTTP writes handle visits and location changes.
 
 The map asset is vendored Natural Earth public-domain land geometry; no runtime CDN, Glitch endpoint or external map request is used. D3 geometry is bundled through npm. See `src/hosts/Atlas.Web/static/globe/README.md` for attribution.
 
-Live presence is **single API process** and intentionally capped at 100 streams total / 8 per visitor. Each subscriber has a bounded, latest-snapshot queue; disconnects and cancellations clean up listeners. Reconnection is automatic and unavailable live data is not presented as current. Multiple API instances, durable identity deletion/retention policy, production throttling/capacity and production feature enablement require a later deployment design before exposing this publicly. No extra cloud service is provisioned here.
+Live presence is **single API process** and capped at 32 streams total / 8 per visitor, leaving half the existing 64-slot API concurrency budget for other requests. Each subscriber has a bounded, latest-snapshot queue; disconnects and cancellations clean up listeners. Reconnection is automatic and unavailable live data is not presented as current. Verify the single-process assumption and capacity during demo testing. Multiple API instances require coordinated presence rather than the current in-process connection set; durable identity deletion/retention policy also remains follow-up work. No extra cloud service is provisioned here.

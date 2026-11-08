@@ -30,7 +30,7 @@
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
-    /** Local visitor globe launcher in the mobile bottom controls. */
+    /** Visitor globe launcher in the mobile bottom controls. */
     onOpenGlobe?: () => void;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**

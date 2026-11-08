@@ -39,7 +39,7 @@ if (!builder.Environment.IsDevelopment() &&
         (_, meter) => meter.AddMeter("Atlas.Observability"));
 }
 builder.Services.AddAtlasApi(builder.Configuration);
-// No cloud resources or startup migrations. The prototype endpoints refuse non-Development hosts.
+// Globe routes use the existing API host in every environment; schema updates remain explicit.
 builder.Services.AddSingleton<Atlas.Persistence.Globe.IGlobeHistory, Atlas.Persistence.Globe.SqlGlobeHistory>();
 builder.Services.AddSingleton<Atlas.Api.Globe.GlobePresence>();
 // The built-in antiforgery filter protects every unsafe controller request, even
