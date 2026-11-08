@@ -291,3 +291,62 @@ test('reduced motion keeps both globe renderers still and synchronized', async (
     .evaluateAll((elements) => elements.map((element) => element.getAttribute('data-angle')));
   expect(angles).toEqual(['-25', '-25']);
 });
+
+test('outside clicks dismiss the globe without blocking header navigation', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/');
+  const launcher = page
+    .getByRole('button', { name: 'Open Atlas visitor globe', exact: true })
+    .last();
+  await launcher.click();
+  const popup = page.getByRole('dialog', { name: 'Visitor globe' });
+  await expect(popup).toHaveAttribute('aria-modal', 'false');
+  await popup.getByRole('button', { name: 'Historical', exact: true }).click();
+  await expect(popup).toBeVisible();
+  await page.mouse.click(5, 300);
+  await expect(popup).not.toBeVisible();
+  await launcher.click();
+  await page.locator('.atlas-header').getByRole('link', { name: 'Log in', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(popup).not.toBeVisible();
+});
+
+test('backdrop covers the full viewport after scrolling and resizing', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/');
+  await page.evaluate(() => {
+    document.body.style.minHeight = '2500px';
+    window.scrollTo(0, 400);
+  });
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  for (const size of [
+    { width: 1280, height: 720 },
+    { width: 1000, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(size);
+    await expect
+      .poll(() =>
+        page.locator('.body-shade').evaluate((element) => {
+          const r = element.getBoundingClientRect();
+          return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
+        }),
+      )
+      .toEqual({ x: 0, y: 0, right: size.width, bottom: size.height });
+    await expect(page.getByRole('dialog', { name: 'Visitor globe' })).toBeVisible();
+  }
+  await page.mouse.click(2, 100);
+  await expect(page.getByRole('dialog', { name: 'Visitor globe' })).not.toBeVisible();
+});
+
+test('the launcher toggles the open globe closed', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/');
+  const launcher = page
+    .getByRole('button', { name: 'Open Atlas visitor globe', exact: true })
+    .last();
+  await launcher.click();
+  await expect(page.getByRole('dialog', { name: 'Visitor globe' })).toBeVisible();
+  await launcher.click();
+  await expect(page.getByRole('dialog', { name: 'Visitor globe' })).not.toBeVisible();
+});

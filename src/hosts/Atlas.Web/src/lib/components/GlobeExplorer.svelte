@@ -25,24 +25,48 @@
   let generation = 0;
   let shareGeneration = 0;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
-  let scrollBefore = '';
+  let opener: HTMLElement | null = null;
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
 
   export function open() {
-    if (!dialog.open) {
-      placeDialog();
-      scrollBefore = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      dialog.showModal();
-      expanded = true;
+    if (dialog.open) {
+      closeGlobe();
+      return;
     }
+    placeDialog();
+    opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Non-modal dialog: the surrounding site stays interactive.
+    dialog.show();
+    expanded = true;
   }
   function closed() {
+    if (dialog.open) return;
     shareGeneration++;
     expanded = false;
     consent = false;
     infoOpen = false;
-    document.body.style.overflow = scrollBefore;
+  }
+  function closeGlobe(restoreFocus = true) {
+    if (!dialog.open) return;
+    dialog.close();
+    closed();
+    if (restoreFocus && opener?.isConnected) opener.focus({ preventScroll: true });
+  }
+  function outsideClick(event: MouseEvent) {
+    if (!expanded || !(event.target instanceof Node) || dialog.contains(event.target)) return;
+    // Launchers toggle themselves; let header links and buttons receive this same click.
+    if (
+      event.target instanceof Element &&
+      event.target.closest('[aria-label="Open Atlas visitor globe"]')
+    )
+      return;
+    closeGlobe(false);
+  }
+  function escape(event: KeyboardEvent) {
+    if (!expanded || event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeGlobe();
   }
   async function connect() {
     const current = ++generation;
@@ -112,6 +136,9 @@
     alive = true;
     placeDialog();
     window.addEventListener('resize', placeDialog);
+    window.addEventListener('scroll', placeDialog, { passive: true });
+    document.addEventListener('click', outsideClick, true);
+    document.addEventListener('keydown', escape, true);
     void connect();
     const restart = () => {
       message = '';
@@ -127,7 +154,9 @@
       clearTimeout(reconnectTimer);
       window.removeEventListener('atlas-session-changed', restart);
       window.removeEventListener('resize', placeDialog);
-      if (expanded) document.body.style.overflow = scrollBefore;
+      window.removeEventListener('scroll', placeDialog);
+      document.removeEventListener('click', outsideClick, true);
+      document.removeEventListener('keydown', escape, true);
     };
   });
   async function share() {
@@ -221,16 +250,12 @@
   />
 </button>
 
-{#if expanded}<div
-    class="body-shade"
-    aria-hidden="true"
-    style:top={`${globeTop - 6}px`}
-    style:bottom={`${globeBottom - 6}px`}
-  ></div>{/if}
+{#if expanded}<div class="body-shade" aria-hidden="true"></div>{/if}
 <dialog
   bind:this={dialog}
   class="explorer"
   aria-label="Visitor globe"
+  aria-modal="false"
   onclose={closed}
   style:top={`${globeTop}px`}
   style:bottom={`${globeBottom}px`}
@@ -251,7 +276,7 @@
       class="close"
       type="button"
       aria-label="Close visitor globe"
-      onclick={() => dialog.close()}>✕</button
+      onclick={() => closeGlobe()}>✕</button
     >
   </div>
   <div class="world">
@@ -380,14 +405,16 @@
   }
   .body-shade {
     position: fixed;
-    left: 0;
-    right: 0;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
     z-index: 36;
     background: #172b3817;
     pointer-events: none;
   }
   .explorer {
     position: fixed;
+    z-index: 40;
     width: min(32rem, calc(100vw - 2rem));
     height: fit-content;
     max-width: none;
@@ -400,9 +427,6 @@
     background: var(--atlas-surface);
     box-shadow: 0 8px 30px #172b3830;
     overflow: visible;
-  }
-  .explorer::backdrop {
-    background: transparent;
   }
   .toolbar {
     display: flex;

@@ -1,6 +1,6 @@
 # Visitor globe (PTT-162 / PTT-163)
 
-The circular desktop corner globe opens a compact visitor map centered over the page body. The Atlas header stays visible; on phones, the popup also stays above the bottom navigation. It uses the site's existing surface, text, border, radius and accent tokens. Escape or the close button dismisses it and returns focus to its launcher. Live / Historical controls switch counts and pins together.
+The circular desktop corner globe opens a compact visitor map centered over the page body. The Atlas header stays visible; on phones, the popup also stays above the bottom navigation. It uses the site's existing surface, text, border, radius and accent tokens. The popup is a non-modal dialog: outside clicks dismiss it, and the same click can activate a header link or control. Escape, the close button, or its launcher also dismisses it. Escape and the close button return focus to the launcher. A pointer-transparent backdrop covers the full viewport, including while scrolling and resizing; it does not make the surrounding site inert. Live / Historical controls switch counts and pins together.
 
 The miniature and expanded globe share one rotation clock, so opening or closing the popup keeps the same part of the world in view. Reduced-motion preferences pause rotation. Pins use thin outward-projecting stems rather than circular dots. The globe has a centered ocean tint without a diagonal lighting band.
 
@@ -26,27 +26,21 @@ Exact coordinates stay in the browser. It sends whole-degree longitude/latitude;
 
 The normal browser permission prompt uses the site's origin; its browser-owned wording cannot be customized. The preceding Atlas explanation gives that prompt its globe context. Permission denial, unsupported geolocation and save failures leave the globe usable without a pin.
 
-## Generate the local migration
+## Local migration
 
-`src/Atlas.Persistence/AGENTS.md` requires developer-generated migrations and forbids the agent from generating/applying them. The EF model changes are included; the migration, designer and model snapshot deliberately remain unchanged.
+`src/Atlas.Persistence/AGENTS.md` reserves migration generation and application for the developer. The developer-generated `20261108173914_AddGlobeVisitorHistory` migration, designer and snapshot are now included. Do not generate a duplicate migration for this change.
 
-From the solution root, with `ATLAS_SQL_CONNECTION_STRING` set to your **local SQL Server** (or shared user secrets pointing there):
+The generation command was `dotnet ef migrations add AddGlobeVisitorHistory --project src/Atlas.Persistence`. Review the committed migration, which adds `GlobeVisitors` and `GlobeBrowsers` with their foreign key. From the solution root, with `ATLAS_SQL_CONNECTION_STRING` or shared user secrets targeting your **local SQL Server**, verify and apply it yourself:
 
 ```sh
 dotnet tool restore
-dotnet ef migrations add AddGlobeVisitorHistory --project src/Atlas.Persistence
-```
-
-Review the generated migration. It should add `GlobeVisitors` and `GlobeBrowsers`, including the browser-to-visitor foreign key, without changing existing data tables. Commit the migration, designer and snapshot together. Then:
-
-```sh
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlGlobeHistoryTests
 dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~Globe
 ```
 
-During the capstone review, use only local connection strings and do not run Azure setup/deployment workflows. Migration-dependent persistence tests and the full local SQL experience remain unverified until this developer step is complete. Existing SQL test setup also needs the generated migration before its migration-based checks can pass.
+During the capstone review, use only local connection strings and do not run Azure setup/deployment workflows. SQL persistence and the full local database experience remain unverified in this workspace; committing the migration does not by itself verify application to a database.
 
 ## Run and verify
 
@@ -91,7 +85,7 @@ Natural Earth data is public domain and its terms explicitly make credit optiona
 
 After the capstone deployment review is complete and demo deployment is explicitly authorized:
 
-1. Generate, review and commit the migration; verify the local database round trip first.
+1. Review the committed migration and verify the local database round trip first.
 2. Deploy this branch and apply the reviewed migration to **demo only**, using the existing workflows. Keep live unchanged.
 3. Verify the miniature globe in the hosted production build on desktop and mobile.
 4. Repeat the two-browser checks above, including SSE updates without reloads, optional location sharing over HTTPS, pin removal, reconnection, and Historical persistence after an API restart.
