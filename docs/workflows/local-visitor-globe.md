@@ -86,3 +86,5 @@ The rotating orthographic globe adapts William Owen's [GeographicPinMap](https:/
 ## Demo before merge
 
 Keep this PR unmerged and work locally while the capstone deployment review is pending. After that review and explicit demo deployment authorization, apply reviewed migrations and deploy this branch to **demo only**. Verify sign-in enforcement, periodic refresh, recent-activity expiry, history persistence, pin removal, and ordinary app responsiveness before merging. Keep live unchanged. No Azure resources or deployment workflows are changed by this implementation.
+
+Pin controls include round or flat heads and stems only, a single head color or varied colors, shaft color, head radius, shaft length and lean. FlatHeads, StemsOnly and EquatorAndHorizon provide focused comparisons. Lean is deterministic for each location, so pins do not wobble when snapshots refresh. The shafts and heads use the same orthographic camera as the map; far-side parts render behind the globe, allowing raised tips to appear over the horizon without showing through the Earth.

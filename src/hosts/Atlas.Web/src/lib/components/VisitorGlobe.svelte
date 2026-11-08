@@ -16,7 +16,8 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from 'd3-geo';
+  import { geoOrthographic, geoPath, geoGraticule10 } from 'd3-geo';
+  import { projectPin } from '$lib/globe/pinGeometry';
   import type { GlobePin } from '$lib/globe/presence';
   let {
     pins = [],
@@ -26,7 +27,13 @@
     oceanEdgeColor = '#bdd6df',
     landColor = '#668f87',
     gridColor = '#385e6b',
-    pinColor = '#b34e10',
+    pinColor = '#485453',
+    pinHeadColor = '#b73539',
+    variedHeads = true,
+    pinStyle = 'round',
+    pinLength = 23,
+    pinHeadRadius = 3.5,
+    pinLean = 0.2,
     outlineColor = '#547d89',
     showGrid = true,
   }: {
@@ -38,6 +45,12 @@
     landColor?: string;
     gridColor?: string;
     pinColor?: string;
+    pinHeadColor?: string;
+    variedHeads?: boolean;
+    pinStyle?: 'round' | 'flat' | 'stem';
+    pinLength?: number;
+    pinHeadRadius?: number;
+    pinLean?: number;
     outlineColor?: string;
     showGrid?: boolean;
   } = $props();
@@ -48,8 +61,10 @@
   );
   const path = $derived(geoPath(projection));
   const id = $props.id();
-  const visiblePins = $derived(
-    pins.filter((pin) => geoDistance([pin.longitude, pin.latitude], [-angle, 18]) < Math.PI / 2),
+  const projectedPins = $derived(
+    pins
+      .map((pin) => ({ ...projectPin(pin, angle, pinLength, pinLean), pin }))
+      .sort((a, b) => a.head[2] - b.head[2]),
   );
   async function retry() {
     failed = false;
@@ -74,8 +89,51 @@
   });
 </script>
 
+{#snippet renderPins(front: boolean)}
+  {#each projectedPins as item}
+    <g class="map-pin" data-layer={front ? 'front' : 'back'}>
+      <title
+        >{item.pin.visitors}
+        {item.pin.visitors === 1 ? 'account' : 'accounts'} near {item.pin.latitude}°, {item.pin
+          .longitude}°</title
+      >
+      {#each item.segments.filter((segment) => segment.front === front) as segment}
+        <line
+          class="pin-stem"
+          x1={segment.from[0]}
+          y1={segment.from[1]}
+          x2={segment.to[0]}
+          y2={segment.to[1]}
+          stroke={pinColor}
+          stroke-width={mini ? 1.2 : 1.5}
+          stroke-linecap="round"
+        />
+      {/each}
+      {#if pinStyle !== 'stem' && item.head[2] >= 0 === front}
+        <circle
+          class="pin-head"
+          cx={item.head[0]}
+          cy={item.head[1]}
+          r={pinHeadRadius}
+          fill={variedHeads ? item.color : pinHeadColor}
+        />
+        {#if pinStyle === 'round'}
+          <ellipse
+            cx={item.head[0] - pinHeadRadius * 0.3}
+            cy={item.head[1] - pinHeadRadius * 0.35}
+            rx={pinHeadRadius * 0.4}
+            ry={pinHeadRadius * 0.23}
+            fill="white"
+            opacity="0.3"
+          />
+        {/if}
+      {/if}
+    </g>
+  {/each}
+{/snippet}
+
 <div class="globe-art" class:mini>
-  <svg data-angle={angle} viewBox="0 0 400 400" role="img" aria-labelledby={`${id}-title`}>
+  <svg data-angle={angle} viewBox="-20 -20 440 440" role="img" aria-labelledby={`${id}-title`}>
     <title id={`${id}-title`}
       >Atlas visitor globe. Pins show approximate locations voluntarily shared by account holders.</title
     >
@@ -84,6 +142,7 @@
         <stop offset="0" stop-color={oceanColor} /><stop offset="1" stop-color={oceanEdgeColor} />
       </radialGradient>
     </defs>
+    {@render renderPins(false)}
     <circle
       class="ocean"
       cx="200"
@@ -108,44 +167,7 @@
         stroke={outlineColor}
         stroke-width="0.35"
       />{/if}
-    {#each visiblePins as pin}
-      {@const point = projection([pin.longitude, pin.latitude])}
-      {#if point}
-        {@const dx = point[0] - 200}
-        {@const dy = point[1] - 200}
-        {@const length = Math.hypot(dx, dy)}
-        {@const tipX = point[0] + (length > 25 ? (dx / length) * 23 : 3)}
-        {@const tipY = point[1] + (length > 25 ? (dy / length) * 23 : -18)}
-        <g class="map-pin">
-          <title
-            >{pin.visitors}
-            {pin.visitors === 1 ? 'account' : 'accounts'} near {pin.latitude}°, {pin.longitude}°</title
-          >
-          <line
-            x1={point[0]}
-            y1={point[1]}
-            x2={tipX}
-            y2={tipY}
-            stroke="#ffffff"
-            stroke-opacity="0.85"
-            stroke-width={mini ? 2.8 : 3.8}
-            vector-effect="non-scaling-stroke"
-            stroke-linecap="round"
-          />
-          <line
-            class="pin-stem"
-            x1={point[0]}
-            y1={point[1]}
-            x2={tipX}
-            y2={tipY}
-            stroke={pinColor}
-            stroke-width={mini ? 1.5 : 2}
-            vector-effect="non-scaling-stroke"
-            stroke-linecap="round"
-          />
-        </g>
-      {/if}
-    {/each}
+    {@render renderPins(true)}
   </svg>
   {#if !mini && failed}<div class="map-fallback">
       <p>Map details could not load. Visitor counts and locations are still listed below.</p>

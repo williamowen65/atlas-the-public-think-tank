@@ -18,7 +18,13 @@ const meta = {
     oceanEdgeColor: '#bdd6df',
     landColor: '#668f87',
     gridColor: '#385e6b',
-    pinColor: '#b34e10',
+    pinColor: '#485453',
+    pinHeadColor: '#b73539',
+    variedHeads: true,
+    pinStyle: 'round',
+    pinLength: 23,
+    pinHeadRadius: 3.5,
+    pinLean: 0.2,
     outlineColor: '#547d89',
     showGrid: true,
     animate: true,
@@ -39,7 +45,17 @@ const meta = {
     oceanEdgeColor: { control: 'color' },
     landColor: { control: 'color' },
     gridColor: { control: 'color' },
-    pinColor: { control: 'color' },
+    pinColor: { control: 'color', description: 'Shaft color (no outline).' },
+    pinHeadColor: { control: 'color' },
+    variedHeads: { control: 'boolean' },
+    pinStyle: {
+      control: 'select',
+      options: ['round', 'flat', 'stem'],
+      type: { name: 'enum', value: ['round', 'flat', 'stem'] },
+    },
+    pinLength: { control: { type: 'range', min: 8, max: 32, step: 1 } },
+    pinHeadRadius: { control: { type: 'range', min: 1, max: 6, step: 0.5 } },
+    pinLean: { control: { type: 'range', min: 0, max: 0.4, step: 0.02 } },
     outlineColor: { control: 'color' },
     showGrid: { control: 'boolean' },
     animate: { control: 'boolean' },
@@ -86,3 +102,18 @@ export const BusyWorldwide: Story = { args: { pinCount: 100 } };
 export const DenseWorldwide: Story = { args: { pinCount: 500 } };
 export const Clustered: Story = { args: { pinCount: 150, distribution: 'clustered' } };
 export const CustomPins: Story = { args: { distribution: 'custom' } };
+
+export const FlatHeads: Story = { args: { pinStyle: 'flat' } };
+export const StemsOnly: Story = { args: { pinStyle: 'stem' } };
+export const EquatorAndHorizon: Story = {
+  args: {
+    distribution: 'custom',
+    angle: 0,
+    speed: 6,
+    pins: [-105, -95, -90, -85, -10, 0, 10, 85, 90, 95, 105].map((longitude) => ({
+      longitude,
+      latitude: 0,
+      visitors: 1,
+    })),
+  },
+};
