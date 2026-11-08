@@ -1,6 +1,7 @@
 <script lang="ts">
   import VisitorGlobe from '../../src/lib/components/VisitorGlobe.svelte';
   import { createGlobeRotation } from '../../src/lib/globe/rotation.svelte';
+  import { demoPins } from './demoPins';
   import type { GlobePin } from '../../src/lib/globe/presence';
   let {
     oceanColor = '#e3eff3',
@@ -15,6 +16,8 @@
     angle = -25,
     size = 420,
     mini = false,
+    pinCount = 100,
+    distribution = 'worldwide',
     pins = [
       { longitude: 0, latitude: 30, visitors: 1 },
       { longitude: 40, latitude: 5, visitors: 3 },
@@ -33,8 +36,13 @@
     angle?: number;
     size?: number;
     mini?: boolean;
+    pinCount?: number;
+    distribution?: 'worldwide' | 'clustered' | 'custom';
     pins?: GlobePin[];
   } = $props();
+  const displayedPins = $derived(
+    distribution === 'custom' ? pins : demoPins(pinCount, distribution),
+  );
   const rotation = createGlobeRotation(
     () => animate,
     () => speed,
@@ -48,7 +56,7 @@
   <VisitorGlobe
     angle={rotation.angle}
     {mini}
-    {pins}
+    pins={displayedPins}
     {oceanColor}
     {oceanEdgeColor}
     {landColor}
@@ -58,8 +66,25 @@
     {showGrid}
   />
 </div>
+<p class="demo-caption" data-demo-count={displayedPins.length}>
+  {displayedPins.length} demo pins · {distribution}
+</p>
+<p class="demo-note">
+  Fictional demo locations. Only the facing hemisphere is visible; rotate to see the rest.
+</p>
 
 <style>
+  .demo-caption,
+  .demo-note {
+    text-align: center;
+    color: var(--atlas-muted);
+    font-size: 0.85rem;
+  }
+  .demo-note {
+    font-size: 0.75rem;
+    max-width: 28rem;
+    margin-inline: auto;
+  }
   .example {
     max-width: 100%;
     margin: auto;

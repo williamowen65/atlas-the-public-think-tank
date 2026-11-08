@@ -26,7 +26,17 @@ test('globe story controls change colors, grid and angle without calling an API'
   expect(apiCalls).toEqual([]);
 });
 
-for (const variant of ['playground', 'paper', 'night', 'miniature']) {
+for (const variant of [
+  'playground',
+  'paper',
+  'night',
+  'miniature',
+  'sparse-worldwide',
+  'busy-worldwide',
+  'dense-worldwide',
+  'clustered',
+  'custom-pins',
+]) {
   test(`globe ${variant} story loads the vendored map and pin stems`, async ({ page }) => {
     await page.goto(story.replace('--playground', `--${variant}`) + '&args=animate:!false');
     await expect(page.locator('.land')).toBeVisible();
@@ -34,3 +44,17 @@ for (const variant of ['playground', 'paper', 'night', 'miniature']) {
     await page.screenshot({ path: test.info().outputPath(`globe-${variant}.png`) });
   });
 }
+
+test('demo count and distribution controls change the preview without an API', async ({ page }) => {
+  await page.goto(story + '&args=animate:!false;pinCount:12;distribution:worldwide');
+  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '12');
+  const sparse = await page.locator('.pin-stem').count();
+  await page.goto(story + '&args=animate:!false;pinCount:500;distribution:worldwide');
+  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '500');
+  expect(await page.locator('.pin-stem').count()).toBeGreaterThan(sparse);
+  await page.goto(story.replace('--playground', '--clustered') + '&args=animate:!false');
+  await expect(page.locator('[data-demo-count]')).toContainText('150 demo pins · clustered');
+  await page.goto(story.replace('--playground', '--empty') + '&args=animate:!false');
+  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '0');
+  await expect(page.locator('.pin-stem')).toHaveCount(0);
+});

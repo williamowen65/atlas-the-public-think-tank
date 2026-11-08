@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Isolated globe appearance playground. All pins are fixtures; no API, geolocation permission, or database is used. Set oceanColor and oceanEdgeColor to the same color for a flat ocean. Rotation and angle controls are for Storybook exploration only.',
+          'Isolated globe appearance playground. Adjust pinCount and distribution for worldwide or clustered fictional demo pins; select custom to edit the pins array. All pins are fixtures; no API, geolocation permission, or database is used. Set oceanColor and oceanEdgeColor to the same color for a flat ocean. Rotation and angle controls are for Storybook exploration only.',
       },
     },
   },
@@ -26,6 +26,8 @@ const meta = {
     angle: -25,
     size: 420,
     mini: false,
+    pinCount: 100,
+    distribution: 'worldwide',
     pins: [
       { longitude: 0, latitude: 30, visitors: 1 },
       { longitude: 40, latitude: 5, visitors: 3 },
@@ -45,7 +47,12 @@ const meta = {
     speed: { control: { type: 'range', min: 0, max: 15, step: 0.5 } },
     angle: { control: { type: 'range', min: -180, max: 180, step: 1 } },
     size: { control: { type: 'range', min: 60, max: 600, step: 10 } },
-    pins: { control: 'object' },
+    pinCount: {
+      control: { type: 'range', min: 0, max: 1000, step: 1 },
+      description: 'Number of generated demo pins; ignored in custom mode.',
+    },
+    distribution: { control: 'select', options: ['worldwide', 'clustered', 'custom'] },
+    pins: { control: 'object', description: 'Used when distribution is custom.' },
   },
 } satisfies Meta<typeof VisitorGlobeExample>;
 export default meta;
@@ -72,3 +79,10 @@ export const Night: Story = {
   },
 };
 export const Miniature: Story = { args: { size: 68, mini: true } };
+
+export const Empty: Story = { args: { pinCount: 0 } };
+export const SparseWorldwide: Story = { args: { pinCount: 12 } };
+export const BusyWorldwide: Story = { args: { pinCount: 100 } };
+export const DenseWorldwide: Story = { args: { pinCount: 500 } };
+export const Clustered: Story = { args: { pinCount: 150, distribution: 'clustered' } };
+export const CustomPins: Story = { args: { distribution: 'custom' } };

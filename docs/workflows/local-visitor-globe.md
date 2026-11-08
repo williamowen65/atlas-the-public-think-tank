@@ -79,7 +79,7 @@ Service tests cover 120 account pins, uniqueness, expiry, cache isolation and re
 
 ## Storybook appearance
 
-Run `npm run storybook`, then open **Components → VisitorGlobe → Playground**. Controls cover ocean center/edge colors, land, grid, outline and pin colors, size, fixture pins, rotation speed/angle and animation. Set both ocean colors equal for a flat fill. Paper, Night and Miniature provide alternate starting points. These renderer-only stories need no API, account, database or geolocation permission; their controls do not change site preferences.
+Run `npm run storybook`, then open **Components → VisitorGlobe → Playground**. Controls cover ocean center/edge colors, land, grid, outline and pin colors, size, fixture pins, rotation speed/angle and animation. Set both ocean colors equal for a flat fill. Use pinCount (0–1,000) and distribution (worldwide, clustered, custom) to explore fictional demo data. Presets include Empty, SparseWorldwide (12), BusyWorldwide (100), DenseWorldwide (500), Clustered (150), and CustomPins. Custom mode uses the editable pins array. Positions are deterministic so style comparisons keep the same map data. Paper, Night and Miniature provide alternate starting points. These renderer-only stories need no API, account, database or geolocation permission; their controls do not change site preferences.
 
 The rotating orthographic globe adapts William Owen's [GeographicPinMap](https://github.com/williamowen65/GeographicPinMap) at `68febc15e1b9f0509445339744f9e7c07def16c2`; its original Socket.IO listener is not used. Natural Earth land data is vendored locally and public domain; credit is optional. The information panel and `static/globe/README.md` retain its source link.
 
