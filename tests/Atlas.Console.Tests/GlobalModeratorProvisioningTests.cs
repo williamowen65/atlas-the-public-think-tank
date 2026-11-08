@@ -47,11 +47,38 @@ public sealed class GlobalModeratorProvisioningTests
             Assert.IsFalse(await users.IsInRoleAsync(user, AtlasRoles.GlobalModerator));
             var token = await users.GenerateEmailConfirmationTokenAsync(user);
             Assert.IsTrue((await users.ConfirmEmailAsync(user, token)).Succeeded);
-            StringAssert.Contains(
-                await GlobalModeratorProvisioning.GrantAsync(scopes, "moderator@example.test"),
-                "granted");
+            var originalStamp = user.SecurityStamp;
+            Assert.IsTrue((await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(5))).Succeeded);
+            StringAssert.Contains(await GlobalModeratorProvisioning.GrantAsync(scopes, user.Email!), "unlocked");
+            Assert.IsTrue((await users.SetLockoutEndDateAsync(user, null)).Succeeded);
+            var profile = (await database.ParticipantRows.FindAsync(user.Id))!;
+            profile.IsActive = false;
+            await database.SaveChangesAsync();
+            StringAssert.Contains(await GlobalModeratorProvisioning.GrantAsync(scopes, user.Email!), "active participant");
+            profile.IsActive = true;
+            await database.SaveChangesAsync();
+            var progress = new List<string>();
+            using (var grantScope = scopes.CreateScope())
+            {
+                var grantDatabase = grantScope.ServiceProvider.GetRequiredService<AtlasDataContext>();
+                await grantDatabase.Database.OpenConnectionAsync();
+                var grant = await GlobalModeratorGrant.GrantAsync(
+                    grantScope.ServiceProvider, "moderator@example.test", progress.Add);
+                Assert.IsTrue(grant.Succeeded);
+                StringAssert.Contains(grant.Message, "granted");
+                Assert.AreEqual(System.Data.ConnectionState.Open,
+                    grantDatabase.Database.GetDbConnection().State);
+            }
+            CollectionAssert.AreEqual(new[] {
+                "resolving account services", "looking up the existing account",
+                "checking email confirmation, lockout, and active profile",
+                "checking existing moderator role", "starting role transaction",
+                "assigning global moderator role", "updating security stamp",
+                "committing role transaction"
+            }, progress);
             database.ChangeTracker.Clear();
             user = (await users.FindByEmailAsync("moderator@example.test"))!;
+            Assert.AreNotEqual(originalStamp, user.SecurityStamp);
             Assert.IsTrue(await users.IsInRoleAsync(user, AtlasRoles.GlobalModerator));
             StringAssert.Contains(
                 await GlobalModeratorProvisioning.GrantAsync(scopes, "moderator@example.test"),

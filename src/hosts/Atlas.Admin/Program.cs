@@ -28,11 +28,14 @@ if (args is ["--initialize-local-database"] or ["--initialize-local-database", "
     }
 }
 
-if (args.Length != 1 ||
-    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo"))
+var grantModerator = args.Length == 3 && args[0] == "--grant-global-moderator"
+    && !string.IsNullOrWhiteSpace(args[1]) && args[2] is "grant-live" or "grant-demo";
+if (!grantModerator && (args.Length != 1 ||
+    args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo")))
 {
     Console.Error.WriteLine("Usage: Atlas.Admin --initialize-local-database [--seed-demo] (local only)");
     Console.Error.WriteLine("Azure: --bootstrap-cloud-identities | --setup-database | --seed-demo");
+    Console.Error.WriteLine("Moderator: --grant-global-moderator <existing-account-email> grant-live|grant-demo");
     return 2;
 }
 
@@ -63,6 +66,37 @@ try
         || !connectionString.Contains("Authentication=Active Directory Managed Identity", StringComparison.OrdinalIgnoreCase)
         || sql.TrustServerCertificate || sql.Encrypt != SqlConnectionEncryptOption.Mandatory)
         throw new InvalidOperationException("Cloud administration requires the expected Azure SQL database and managed identity.");
+
+    if (grantModerator)
+    {
+        if (args[2] != "grant-" + variant)
+            throw new InvalidOperationException("Moderator confirmation must match the configured database variant.");
+        phase = "global moderator grant";
+        Console.WriteLine($"Granting global moderator in {variant}, database {expectedDatabase}.");
+        void Progress(string step)
+        {
+            phase = "global moderator: " + step;
+            Console.WriteLine($"[{DateTimeOffset.UtcNow:O}] Moderator: {step}.");
+        }
+        // Bound connection attempts independently of operator-configured defaults.
+        // Retry only opening SQL, never account/role mutations.
+        sql.ConnectTimeout = 20;
+        sql.ConnectRetryCount = 0;
+        Progress("building managed-identity account services");
+        using var services = new ServiceCollection().AddAtlasIdentity(sql.ConnectionString).BuildServiceProvider();
+        using var scope = services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<AtlasDataContext>();
+        database.Database.SetCommandTimeout(30);
+        using var connectionDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        Progress("opening SQL connection with managed identity (90-second connection budget)");
+        await CloudDatabaseBootstrap.OpenConnectionWithRetryAsync(
+            () => database.Database.OpenConnectionAsync(connectionDeadline.Token),
+            delay: duration => Task.Delay(duration, connectionDeadline.Token), operation: "Moderator");
+        Progress("SQL connection opened");
+        var result = await GlobalModeratorGrant.GrantAsync(scope.ServiceProvider, args[1], Progress);
+        Console.WriteLine(result.Message);
+        return result.Succeeded ? 0 : 1;
+    }
 
     switch (args[0])
     {

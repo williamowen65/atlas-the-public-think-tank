@@ -64,6 +64,8 @@ jobs:
       - name: Resolve installation selection
         id: target
         env:
+          ATLAS_TARGET_PURPOSE: admin
+          ATLAS_VARIANT: ${{ inputs.variant }}
           ATLAS_INSTALLATION: ${{ inputs.installation }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
         run: python infrastructure/scripts/check-deployment-target.py selection
@@ -168,6 +170,7 @@ jobs:
             echo "### Admin tools published: $VARIANT"
             echo 'Open the matching admin App Service SSH terminal.'
             echo 'Tool directory: `/home/site/wwwroot/tools/atlas-admin`'
+            echo "Moderator: \`dotnet ./Atlas.Admin.dll --grant-global-moderator EMAIL grant-$VARIANT\`"
             echo 'Schema: `dotnet ./Atlas.Admin.dll --setup-database`'
             if [[ "$VARIANT" == "demo" ]]; then
               echo 'After schema succeeds, seed an empty demo: `dotnet ./Atlas.Admin.dll --seed-demo`'

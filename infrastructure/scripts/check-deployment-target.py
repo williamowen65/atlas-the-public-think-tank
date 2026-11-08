@@ -28,10 +28,11 @@ def validate(mode: str, settings: dict[str, str], profiles: dict | None = None) 
         raise ValueError('Deployments must run from a branch, not a tag or PR merge ref.')
     purpose = settings.get('ATLAS_TARGET_PURPOSE', '')
     demo_website = (mode == 'website' or (mode == 'selection' and purpose == 'website')) and settings.get('ATLAS_VARIANT') == 'demo'
+    demo_admin = (mode == 'admin' or (mode == 'selection' and purpose == 'admin')) and settings.get('ATLAS_VARIANT') == 'demo'
     demo_infrastructure = installation == 'main' and settings.get('ATLAS_DEPLOYMENT_SHAPE') == 'demo' and (
         mode == 'infrastructure' or (mode == 'selection' and purpose == 'infrastructure'))
-    if installation == 'main' and branch != 'refs/heads/main' and not (demo_website or demo_infrastructure):
-        raise ValueError('Main live, shared infrastructure and admin operations require the main branch; select an explicit demo-only operation for branch testing.')
+    if installation == 'main' and branch != 'refs/heads/main' and not (demo_website or demo_admin or demo_infrastructure):
+        raise ValueError('Main live and shared infrastructure operations require the main branch; select an explicit demo-only operation for branch testing.')
     if demo_infrastructure and settings.get('TF_VAR_enable_sql_bootstrap', '').lower() == 'true':
         raise ValueError('Demo-only infrastructure cannot enable SQL bootstrap.')
     if settings.get('ATLAS_REQUIRE_FRESH_RUN') == 'true' and settings.get('GITHUB_RUN_ATTEMPT') != '1':
