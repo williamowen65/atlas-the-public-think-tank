@@ -4,7 +4,7 @@ import { onMount } from 'svelte';
 export function createGlobeRotation(
   enabled = () => true,
   degreesPerSecond = () => 3,
-  targetFps = () => 25,
+  targetFps = () => 60,
 ) {
   const rotation = $state({ angle: -25, updatesPerSecond: 0 });
   onMount(() => {

@@ -1,8 +1,8 @@
 # Learning WebGL through the Atlas globe
 
-This guide follows the code in this branch. Start with the Storybook comparison, then read the implementation a piece at a time. You do not need to learn a game engine first.
+This guide follows the code in this branch. Start with the Storybook playground, then read the implementation a piece at a time. You do not need to learn a game engine first.
 
-## What changes when we use WebGL?
+## What WebGL does here
 
 The browser still displays a rectangular `<canvas>`. WebGL supplies its pixels using small programs called **shaders**, usually executed on the GPU. JavaScript prepares the data, sends it to WebGL, and asks it to draw. The GPU can run the same calculations across many vertices or pixels in parallel.
 
@@ -11,6 +11,8 @@ The browser still displays a rectangular `<canvas>`. WebGL supplies its pixels u
 | SVG | Update the coordinates of individual shaft, head and highlight elements, plus projected map paths. |
 | Canvas 2D | Project the map and pins in JavaScript, then issue drawing commands to one bitmap. |
 | WebGL 2 | Reuse uploaded positions and a map image; change the camera angle and draw batches on the GPU. |
+
+WebGL is the sole globe renderer in both the application and Storybook; the earlier SVG and Canvas 2D implementations were removed after the visual comparison. The table above explains the approaches we explored.
 
 D3 still has a role. It produces the geographic map image that WebGL samples. We use native WebGL 2, with no Three.js or scene-graph library. The view keeps the same orthographic presentation: distant parts do not shrink as they would with a perspective camera.
 
@@ -95,7 +97,7 @@ The Earth fragment shader writes its calculated front-surface depth into `gl_Fra
 
 `DEPTH_TEST` and `depthFunc(LEQUAL)` allow a pixel to draw when it is at least as near as the pixel already stored at that location. A shaft behind Earth's surface fails that test. A raised tip beyond Earth's visible disc has no Earth pixel in front of it, so it can still appear around the horizon.
 
-The SVG/Canvas renderers achieve a similar result by drawing back-side pin portions before Earth and front-side portions afterward. WebGL handles the overlap with the depth buffer instead.
+The earlier SVG/Canvas experiment used back/earth/front drawing order. The current implementation handles overlap with the depth buffer.
 
 Head sprites use the depth of their centers across their circular faces. They are an approximation, so their silhouettes are not identical to physical spherical knobs intersecting Earth.
 
@@ -118,11 +120,11 @@ The Storybook readout counts delivered rotation updates per second. It does not 
 
 `getContext('webgl2')` can fail even in a browser that implements WebGL 2. Hardware, drivers and browser policy matter. This feature does not explicitly require a discrete graphics card; compatible integrated graphics can run WebGL. Actual smoothness needs testing on target devices.
 
-The component listens for `webglcontextlost` and stops drawing when that happens. Calling `preventDefault()` allows restoration; when `webglcontextrestored` arrives, it rebuilds programs, buffers and the texture. Switching away calls `dispose()`, which deletes allocated graphics resources. Initialization errors are reported in the console and explained in the preview. SVG and Canvas remain selectable; the app still defaults to SVG.
+The component listens for `webglcontextlost` and stops drawing when that happens. Calling `preventDefault()` allows restoration; when `webglcontextrestored` arrives, it rebuilds programs, buffers and the texture. Unmounting the globe calls `dispose()`, which deletes allocated graphics resources. The expanded globe is mounted only while its dialog is open, so closing it releases those resources. Its angle comes from the shared clock, keeping it synchronized with the miniature when reopened. Initialization errors are reported in the console and explained in the expanded view. The existing account counts and location text remain available; there is no alternate drawing backend. Both the miniature and expanded view use WebGL.
 
 We provide one accessible description for the picture. There are no individual pin focus targets or hover controls in this renderer. A separate textual breakdown could be added later.
 
-The tests run real shaders using Chromium's software WebGL implementation. They check that rotation does not re-upload geometry/texture data, confirm cleanup and recovery, and exercise a 10,000-pin fixture. They do not establish hardware FPS or a production capacity limit.
+The tests run real shaders using Chromium's software WebGL implementation. They check that rotation does not re-upload geometry/texture data, confirm unavailable-state handling and recovery, and exercise a 10,000-pin fixture. They do not establish hardware FPS or a production capacity limit.
 
 ## Try it in Storybook
 
@@ -132,9 +134,7 @@ From `src/hosts/Atlas.Web`:
 npm run storybook
 ```
 
-Open **Components → VisitorGlobe → Playground**. Keep size, pin distribution, speed and target FPS fixed while switching **renderer** between SVG, Canvas and WebGL. Try 100, 1,000, 5,000 and 10,000 pins. Then compare round heads with stems only, and test the miniature separately.
-
-If SVG remains preferable, the geometry caching and hidden-pin culling added here help both SVG and Canvas. SVG still updates many browser elements during rotation. A later option is to batch similarly styled pins into fewer SVG paths, trading individual elements for less DOM work. That is separate from this WebGL experiment.
+Open **Components → VisitorGlobe → Playground**. There is no renderer selector: WebGL is the sole implementation. Keep size, distribution, speed and target FPS fixed while trying 100, 1,000, 5,000 and 10,000 pins. Compare round heads with stems only, and test the miniature separately. The application targets 60 updates per second; Storybook can lower the target for experimentation.
 
 ## References
 

@@ -1,9 +1,21 @@
 import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo';
-import type { CanvasGlobeOptions } from './canvasRenderer';
 import type { PreparedPin } from './pinGeometry';
-export type WebGLGlobeOptions = Omit<CanvasGlobeOptions, 'projection' | 'pins'> & {
+export interface WebGLGlobeOptions {
+  land?: import('d3-geo').GeoPermissibleObjects;
   pins: PreparedPin[];
-};
+  oceanColor: string;
+  oceanEdgeColor: string;
+  landColor: string;
+  gridColor: string;
+  outlineColor: string;
+  pinColor: string;
+  pinHeadColor: string;
+  variedHeads: boolean;
+  pinStyle: 'round' | 'flat' | 'stem';
+  pinHeadRadius: number;
+  mini: boolean;
+  showGrid: boolean;
+}
 
 const camera = `
 vec3 camera(vec3 p) {

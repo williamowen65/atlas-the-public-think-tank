@@ -4,7 +4,6 @@
   import { demoPins } from './demoPins';
   import type { GlobePin } from '../../src/lib/globe/presence';
   let {
-    renderer = 'svg',
     targetFps = 60,
     oceanColor = '#e3eff3',
     oceanEdgeColor = '#bdd6df',
@@ -32,7 +31,6 @@
       { longitude: -122, latitude: 48, visitors: 1 },
     ],
   }: {
-    renderer?: 'svg' | 'canvas' | 'webgl';
     targetFps?: number;
     oceanColor?: string;
     oceanEdgeColor?: string;
@@ -71,7 +69,6 @@
 
 <div class="example" style:width={`${size}px`}>
   <VisitorGlobe
-    {renderer}
     angle={rotation.angle}
     {mini}
     pins={displayedPins}
@@ -91,7 +88,7 @@
   />
 </div>
 <p class="demo-caption" data-performance>
-  {renderer.toUpperCase()} · target {targetFps} FPS · {rotation.updatesPerSecond} rotation updates/s
+  WebGL · target {targetFps} FPS · {rotation.updatesPerSecond} rotation updates/s
 </p>
 <p class="demo-caption" data-demo-count={displayedPins.length}>
   {displayedPins.length} demo pins · {distribution}

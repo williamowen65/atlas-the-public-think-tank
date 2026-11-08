@@ -14,7 +14,6 @@ const meta = {
     },
   },
   args: {
-    renderer: 'svg',
     targetFps: 60,
     oceanColor: '#e3eff3',
     oceanEdgeColor: '#bdd6df',
@@ -43,11 +42,6 @@ const meta = {
     ],
   },
   argTypes: {
-    renderer: {
-      control: 'select',
-      options: ['svg', 'canvas', 'webgl'],
-      type: { name: 'enum', value: ['svg', 'canvas', 'webgl'] },
-    },
     targetFps: {
       control: 'select',
       options: [10, 15, 24, 30, 60],
@@ -131,8 +125,4 @@ export const EquatorAndHorizon: Story = {
   },
 };
 
-export const Canvas: Story = { args: { renderer: 'canvas' } };
-export const CanvasStress: Story = { args: { renderer: 'canvas', pinCount: 5000 } };
-
-export const WebGL: Story = { args: { renderer: 'webgl' } };
-export const WebGLStress: Story = { args: { renderer: 'webgl', pinCount: 10000 } };
+export const Stress: Story = { args: { pinCount: 10000 } };

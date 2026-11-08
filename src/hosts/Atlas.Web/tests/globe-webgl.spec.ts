@@ -36,7 +36,7 @@ test('WebGL draws instanced pins and rotates without uploading geometry or map e
   });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(story + '&args=renderer:webgl;pinCount:10000;targetFps:30');
+  await page.goto(story + '&args=pinCount:10000;targetFps:30');
   const canvas = page.locator('canvas[data-renderer="webgl"]');
   await expect(canvas).toHaveAttribute('data-ready', 'true');
   await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '10000');
@@ -60,34 +60,13 @@ test('WebGL draws instanced pins and rotates without uploading geometry or map e
   expect(errors).toEqual([]);
 });
 
-test('WebGL preserves globe controls and releases resources on renderer changes', async ({
-  page,
-}) => {
-  await page.addInitScript(() => {
-    (window as any).deletedPrograms = 0;
-    const original = WebGL2RenderingContext.prototype.deleteProgram;
-    WebGL2RenderingContext.prototype.deleteProgram = function (program) {
-      (window as any).deletedPrograms++;
-      return original.call(this, program);
-    };
-  });
-  await page.goto(story + '&args=renderer:webgl;animate:!false;angle:40;pinCount:100');
-  const canvas = page.locator('canvas[data-renderer="webgl"]');
-  await expect(canvas).toHaveAttribute('data-ready', 'true');
-  await expect(canvas).toHaveAttribute('data-angle', '40');
-  await page.screenshot({ path: test.info().outputPath('globe-webgl.png') });
-  // Same document: updating Storybook args unmounts the old renderer.
-  await page.evaluate(() => {
-    (window as any).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
-      storyId: 'components-visitorglobe--playground',
-      updatedArgs: { renderer: 'svg' },
-    });
-  });
-  await expect(page.locator('svg[data-renderer="svg"]')).toBeVisible();
-  expect(await page.evaluate(() => (window as any).deletedPrograms)).toBe(2);
+test('WebGL preserves angle controls', async ({ page }) => {
+  await page.goto(story + '&args=animate:!false;angle:40;pinCount:100');
+  await expect(page.locator('canvas[data-renderer="webgl"]')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('canvas[data-renderer="webgl"]')).toHaveAttribute('data-angle', '40');
 });
 
-test('unavailable WebGL is explained and Canvas remains selectable', async ({ page }) => {
+test('unavailable WebGL leaves an accessible explanation', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (
@@ -99,14 +78,12 @@ test('unavailable WebGL is explained and Canvas remains selectable', async ({ pa
       return Reflect.apply(original, this, [type, ...args]);
     } as typeof original;
   });
-  await page.goto(story + '&args=renderer:webgl;animate:!false');
+  await page.goto(story + '&args=animate:!false');
   await expect(page.getByRole('status')).toContainText('WebGL 2 is unavailable');
-  await page.goto(story + '&args=renderer:canvas;animate:!false');
-  await expect(page.locator('canvas[data-renderer="canvas"]')).toBeVisible();
 });
 
 test('WebGL recovers from context loss', async ({ page }) => {
-  await page.goto(story + '&args=renderer:webgl;animate:!false');
+  await page.goto(story + '&args=animate:!false');
   const canvas = page.locator('canvas[data-renderer="webgl"]');
   await expect(canvas).toHaveAttribute('data-ready', 'true');
   await canvas.evaluate((element: HTMLCanvasElement) => {

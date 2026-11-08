@@ -292,7 +292,10 @@
     >
   </div>
   <div class="world">
-    <VisitorGlobe angle={rotation.angle} pins={status === 'ready' ? summary?.pins : []} />
+    {#if expanded}<VisitorGlobe
+        angle={rotation.angle}
+        pins={status === 'ready' ? summary?.pins : []}
+      />{/if}
   </div>
   <div class="globe-caption">
     <span class="metric"

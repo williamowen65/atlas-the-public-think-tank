@@ -79,14 +79,25 @@
     Atlas visitor globe showing approximate shared account locations.
   </canvas>
 </div>
-{#if unavailable || lost}
+{#if (unavailable || lost) && !options.mini}
   <p role="status">
-    {lost ? 'WebGL graphics context was lost.' : 'WebGL 2 is unavailable in this browser.'} Select SVG
-    or Canvas to continue comparing.
+    {lost ? 'WebGL graphics context was lost.' : 'WebGL 2 is unavailable in this browser.'} Visitor counts
+    and shared locations remain available in the globe panel.
   </p>
 {/if}
 
+{#if (unavailable || lost) && options.mini}<span class="unavailable-globe" aria-hidden="true"
+    >🌐</span
+  >{/if}
+
 <style>
+  .unavailable-globe {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+  }
   canvas {
     display: block;
     width: 100%;

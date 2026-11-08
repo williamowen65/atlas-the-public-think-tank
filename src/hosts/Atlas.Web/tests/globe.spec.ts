@@ -1,4 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+test.use({
+  launchOptions: {
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+  },
+});
+
 import AxeBuilder from '@axe-core/playwright';
 
 const snapshot = {
@@ -48,6 +55,10 @@ test('desktop mini opens compact globe, toggles history, and restores focus on E
     .last();
   await launcher.click();
   const dialog = page.getByRole('dialog', { name: 'Visitor globe' });
+  await expect(dialog.locator('canvas[data-renderer="webgl"]')).toHaveAttribute(
+    'data-ready',
+    'true',
+  );
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Live', exact: true })).toHaveAttribute(
     'aria-pressed',
@@ -195,7 +206,7 @@ test('miniature and popup share one rotation across opening and reopening', asyn
   await launcher.click();
   const angles = () =>
     page
-      .locator('svg[data-angle]')
+      .locator('canvas[data-angle]')
       .evaluateAll((elements) => elements.map((element) => element.getAttribute('data-angle')));
   const before = await angles();
   expect(before).toHaveLength(2);
@@ -252,7 +263,9 @@ test('small phone popup fits between site controls and follows the site theme', 
   await expect(dialog).toHaveCSS('background-color', 'rgb(29, 42, 56)');
 });
 
-test('reduced motion keeps both globe renderers still and synchronized', async ({ page }) => {
+test('reduced motion keeps miniature and expanded globes still and synchronized', async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await mockApi(page);
   await page.goto('/');
@@ -269,7 +282,7 @@ test('reduced motion keeps both globe renderers still and synchronized', async (
       }),
   );
   const angles = await page
-    .locator('svg[data-angle]')
+    .locator('canvas[data-angle]')
     .evaluateAll((elements) => elements.map((element) => element.getAttribute('data-angle')));
   expect(angles).toEqual(['-25', '-25']);
 });
@@ -394,4 +407,56 @@ test('hidden tabs pause polling and refresh on return', async ({ page }) => {
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect.poll(() => activity).toBe(2);
+});
+
+test('unsupported WebGL keeps the launcher and textual globe information usable', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      ...args: unknown[]
+    ) {
+      if (type === 'webgl2') return null;
+      return Reflect.apply(original, this, [type, ...args]);
+    } as typeof original;
+  });
+  await mockApi(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  const dialog = page.getByRole('dialog', { name: 'Visitor globe' });
+  await expect(
+    dialog.getByRole('status').filter({ hasText: 'WebGL 2 is unavailable' }),
+  ).toContainText('WebGL 2 is unavailable');
+  await expect(dialog.locator('.metric strong')).toHaveText('2');
+  await dialog.getByRole('button', { name: 'Historical', exact: true }).click();
+  await expect(dialog.locator('.metric strong')).toHaveText('12');
+  await dialog.getByRole('button', { name: 'About this globe', exact: true }).click();
+  await dialog.locator('summary').filter({ hasText: 'Shared locations' }).click();
+  await expect(dialog.getByText('Near 48° latitude, -122° longitude: 3 accounts')).toBeVisible();
+});
+
+test('closing the expanded globe releases its GPU programs', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).deletedGlobePrograms = 0;
+    const original = WebGL2RenderingContext.prototype.deleteProgram;
+    WebGL2RenderingContext.prototype.deleteProgram = function (program) {
+      (window as any).deletedGlobePrograms++;
+      return original.call(this, program);
+    };
+  });
+  await mockApi(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  await expect(page.getByRole('dialog').locator('canvas[data-renderer="webgl"]')).toHaveAttribute(
+    'data-ready',
+    'true',
+  );
+  const before = await page.evaluate(() => (window as any).deletedGlobePrograms);
+  await page.keyboard.press('Escape');
+  await expect
+    .poll(() => page.evaluate(() => (window as any).deletedGlobePrograms))
+    .toBe(before + 2);
 });

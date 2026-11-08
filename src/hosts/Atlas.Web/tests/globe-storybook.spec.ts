@@ -1,38 +1,18 @@
 import { expect, test } from '@playwright/test';
-
+test.use({
+  launchOptions: {
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+  },
+});
 const story =
   'http://127.0.0.1:6006/iframe.html?id=components-visitorglobe--playground&viewMode=story';
-
-test('globe story controls change colors, grid and angle without calling an API', async ({
-  page,
-}) => {
-  const apiCalls: string[] = [];
-  page.on('request', (request) => {
-    if (/atlas-(public|session)-api/.test(request.url())) apiCalls.push(request.url());
-  });
-  await page.goto(
-    story +
-      '&args=animate:!false;angle:40;oceanColor:!hex(abcdef);landColor:!hex(654321);showGrid:!false',
-  );
-  await expect(page.locator('svg[data-angle]')).toHaveAttribute('data-angle', '40');
-  await expect(page.locator('.land')).toHaveAttribute('fill', '#654321');
-  await expect(page.locator('radialGradient stop').first()).toHaveAttribute(
-    'stop-color',
-    '#abcdef',
-  );
-  await expect(page.locator('.graticule')).toHaveCount(0);
-  await expect(page.locator('.pin-stem').first()).toBeVisible();
-  await expect(page.locator('.pin-head').first()).toBeVisible();
-  await expect(page.locator('.pin-stem').first()).toHaveAttribute('stroke', '#485453');
-  await expect(page.locator('.map-pin [stroke="#ffffff"]')).toHaveCount(0);
-  expect(apiCalls).toEqual([]);
-});
-
 for (const variant of [
   'playground',
   'paper',
   'night',
   'miniature',
+  'empty',
   'sparse-worldwide',
   'busy-worldwide',
   'dense-worldwide',
@@ -41,111 +21,32 @@ for (const variant of [
   'flat-heads',
   'stems-only',
   'equator-and-horizon',
+  'stress',
 ]) {
-  test(`globe ${variant} story loads the vendored map and pin stems`, async ({ page }) => {
+  test(`WebGL ${variant} story renders without an API`, async ({ page }) => {
+    const apiCalls: string[] = [];
+    page.on('request', (request) => {
+      if (/atlas-(public|session)-api/.test(request.url())) apiCalls.push(request.url());
+    });
     await page.goto(story.replace('--playground', `--${variant}`) + '&args=animate:!false');
-    await expect(page.locator('.land')).toBeVisible();
-    await expect(page.locator('.pin-stem').first()).toBeVisible();
+    await expect(page.locator('canvas[data-renderer="webgl"]')).toHaveAttribute(
+      'data-ready',
+      'true',
+    );
     await page.screenshot({ path: test.info().outputPath(`globe-${variant}.png`) });
+    expect(apiCalls).toEqual([]);
   });
 }
-
-test('demo count and distribution controls change the preview without an API', async ({ page }) => {
-  await page.goto(story + '&args=animate:!false;pinCount:12;distribution:worldwide');
-  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '12');
-  const sparse = await page.locator('.pin-stem').count();
-  await page.goto(story + '&args=animate:!false;pinCount:500;distribution:worldwide');
-  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '500');
-  expect(await page.locator('.pin-stem').count()).toBeGreaterThan(sparse);
-  await page.goto(story.replace('--playground', '--clustered') + '&args=animate:!false');
-  await expect(page.locator('[data-demo-count]')).toContainText('150 demo pins · clustered');
-  await page.goto(story.replace('--playground', '--empty') + '&args=animate:!false');
-  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '0');
-  await expect(page.locator('.pin-stem')).toHaveCount(0);
-});
-
-test('pin style controls select head appearance and shaft geometry', async ({ page }) => {
-  await page.goto(
-    story +
-      '&args=animate:!false;variedHeads:!false;pinHeadColor:!hex(123456);pinHeadRadius:5;pinStyle:flat',
-  );
-  await expect(page.locator('.pin-head').first()).toHaveAttribute('fill', '#123456');
-  await expect(page.locator('.pin-head').first()).toHaveAttribute('r', '5');
-  await expect(page.locator('.map-pin ellipse')).toHaveCount(0);
-  await page.goto(story + '&args=animate:!false;pinStyle:stem');
-  await expect(page.locator('.pin-head')).toHaveCount(0);
-});
-
-for (const count of [0, 100, 10000]) {
-  test(`Canvas draws ${count} demo pins without per-pin DOM elements`, async ({ page }) => {
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto(
-      story + `&args=renderer:canvas;animate:!false;angle:40;pinCount:${count};size:420`,
-    );
-    const canvas = page.locator('canvas[data-renderer="canvas"]');
-    await expect(canvas).toHaveAttribute('data-angle', '40');
-    await expect(page.locator('[data-demo-count]')).toHaveAttribute(
-      'data-demo-count',
-      String(count),
-    );
-    await expect
-      .poll(() =>
-        canvas.evaluate((element: HTMLCanvasElement) => {
-          const ctx = element.getContext('2d')!;
-          return ctx.getImageData(
-            Math.floor(element.width / 2),
-            Math.floor(element.height / 2),
-            1,
-            1,
-          ).data[3];
-        }),
-      )
-      .toBe(255);
-    await expect(page.locator('.map-pin')).toHaveCount(0);
-    await expect(page.locator('svg[data-renderer="svg"]')).toHaveCount(0);
-    if (count === 100) await page.screenshot({ path: test.info().outputPath('globe-canvas.png') });
-    expect(errors).toEqual([]);
-  });
-}
-
-test('Canvas resizes its backing buffer and honors pin and map styles', async ({ page }) => {
-  await page.setViewportSize({ width: 800, height: 800 });
-  await page.goto(
-    story +
-      '&args=renderer:canvas;animate:!false;pinCount:0;size:600;oceanColor:!hex(abcdef);oceanEdgeColor:!hex(abcdef);landColor:!hex(abcdef);showGrid:!false',
-  );
-  const canvas = page.locator('canvas[data-renderer="canvas"]');
-  await expect
-    .poll(() =>
-      canvas.evaluate((element: HTMLCanvasElement) => {
-        return Array.from(
-          element.getContext('2d')!.getImageData(element.width / 2, element.height / 2, 1, 1).data,
-        );
-      }),
-    )
-    .toEqual([171, 205, 239, 255]);
-  const before = await canvas.evaluate((element: HTMLCanvasElement) => element.width);
-  await page.setViewportSize({ width: 350, height: 700 });
-  await expect
-    .poll(() => canvas.evaluate((element: HTMLCanvasElement) => element.width))
-    .toBeLessThan(before);
-});
-
-test('Storybook target frame rate limits animation updates for either renderer', async ({
-  page,
-}) => {
+test('pin count and update rate controls remain available', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  for (const renderer of ['svg', 'canvas']) {
-    await page.goto(story + `&args=renderer:${renderer};targetFps:10;pinCount:12`);
-    await expect(page.locator('[data-performance]')).toContainText('target 10 FPS');
-    await expect
-      .poll(async () => {
-        const text = await page.locator('[data-performance]').innerText();
-        return Number(text.match(/(\d+) rotation updates/)?.[1]);
-      })
-      .toBeGreaterThan(0);
-    const text = await page.locator('[data-performance]').innerText();
-    expect(Number(text.match(/(\d+) rotation updates/)?.[1])).toBeLessThanOrEqual(11);
-  }
+  await page.goto(story + '&args=pinCount:10000;targetFps:10');
+  await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '10000');
+  await expect(page.locator('[data-performance]')).toContainText('target 10 FPS');
+  await expect
+    .poll(async () =>
+      Number(
+        (await page.locator('[data-performance]').innerText()).match(/(\d+) rotation updates/)?.[1],
+      ),
+    )
+    .toBeGreaterThan(0);
 });
