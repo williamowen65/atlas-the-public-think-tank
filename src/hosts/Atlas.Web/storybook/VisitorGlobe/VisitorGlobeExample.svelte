@@ -8,7 +8,13 @@
     oceanEdgeColor = '#bdd6df',
     landColor = '#668f87',
     gridColor = '#385e6b',
-    pinColor = '#b34e10',
+    pinColor = '#485453',
+    pinHeadColor = '#b73539',
+    variedHeads = true,
+    pinStyle = 'round',
+    pinLength = 23,
+    pinHeadRadius = 3.5,
+    pinLean = 0.2,
     outlineColor = '#547d89',
     showGrid = true,
     animate = true,
@@ -29,6 +35,12 @@
     landColor?: string;
     gridColor?: string;
     pinColor?: string;
+    pinHeadColor?: string;
+    variedHeads?: boolean;
+    pinStyle?: 'round' | 'flat' | 'stem';
+    pinLength?: number;
+    pinHeadRadius?: number;
+    pinLean?: number;
     outlineColor?: string;
     showGrid?: boolean;
     animate?: boolean;
@@ -62,6 +74,12 @@
     {landColor}
     {gridColor}
     {pinColor}
+    {pinHeadColor}
+    {variedHeads}
+    {pinStyle}
+    {pinLength}
+    {pinHeadRadius}
+    {pinLean}
     {outlineColor}
     {showGrid}
   />

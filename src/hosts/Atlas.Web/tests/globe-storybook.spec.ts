@@ -22,7 +22,9 @@ test('globe story controls change colors, grid and angle without calling an API'
   );
   await expect(page.locator('.graticule')).toHaveCount(0);
   await expect(page.locator('.pin-stem').first()).toBeVisible();
-  await expect(page.locator('.map-pin circle')).toHaveCount(0);
+  await expect(page.locator('.pin-head').first()).toBeVisible();
+  await expect(page.locator('.pin-stem').first()).toHaveAttribute('stroke', '#485453');
+  await expect(page.locator('.map-pin [stroke="#ffffff"]')).toHaveCount(0);
   expect(apiCalls).toEqual([]);
 });
 
@@ -36,6 +38,9 @@ for (const variant of [
   'dense-worldwide',
   'clustered',
   'custom-pins',
+  'flat-heads',
+  'stems-only',
+  'equator-and-horizon',
 ]) {
   test(`globe ${variant} story loads the vendored map and pin stems`, async ({ page }) => {
     await page.goto(story.replace('--playground', `--${variant}`) + '&args=animate:!false');
@@ -57,4 +62,16 @@ test('demo count and distribution controls change the preview without an API', a
   await page.goto(story.replace('--playground', '--empty') + '&args=animate:!false');
   await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '0');
   await expect(page.locator('.pin-stem')).toHaveCount(0);
+});
+
+test('pin style controls select head appearance and shaft geometry', async ({ page }) => {
+  await page.goto(
+    story +
+      '&args=animate:!false;variedHeads:!false;pinHeadColor:!hex(123456);pinHeadRadius:5;pinStyle:flat',
+  );
+  await expect(page.locator('.pin-head').first()).toHaveAttribute('fill', '#123456');
+  await expect(page.locator('.pin-head').first()).toHaveAttribute('r', '5');
+  await expect(page.locator('.map-pin ellipse')).toHaveCount(0);
+  await page.goto(story + '&args=animate:!false;pinStyle:stem');
+  await expect(page.locator('.pin-head')).toHaveCount(0);
 });
