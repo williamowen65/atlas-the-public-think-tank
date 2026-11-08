@@ -13,8 +13,9 @@ public sealed class GlobeService(IGlobeHistory history, TimeProvider clock)
     public async Task<GlobeView> View(string? account, CancellationToken cancellationToken)
     {
         var snapshot = await Snapshot(cancellationToken);
-        var hasPin = account is not null && await history.HasPin(account, cancellationToken);
-        return new(snapshot.Live, snapshot.Historical, snapshot.CapturedAt, account is not null, hasPin);
+        var pinColor = account is null ? null : await history.GetPinColor(account, cancellationToken);
+        return new(snapshot.Live, snapshot.Historical, snapshot.CapturedAt, account is not null, pinColor is not null,
+            PinColor: pinColor);
     }
 
     public async Task<GlobeView> Activity(string account, CancellationToken cancellationToken)

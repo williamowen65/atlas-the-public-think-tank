@@ -17,11 +17,12 @@ public sealed record GlobePin(double Longitude, double Latitude, int Visitors, s
 public sealed record GlobeHistorySummary(int Visitors, DateTimeOffset? Since, GlobePin[] Pins);
 public sealed record GlobeSnapshot(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt);
 public sealed record GlobeView(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt,
-    bool CanShare, bool HasLocation, int OnlineWindowMinutes = 5);
+    bool CanShare, bool HasLocation, int OnlineWindowMinutes = 5, string? PinColor = null);
 
 public interface IGlobeHistory
 {
     Task<bool> HasPin(string account, CancellationToken cancellationToken);
+    Task<string?> GetPinColor(string account, CancellationToken cancellationToken);
     Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken, string color = "#b73539");
     Task<bool> Touch(string account, DateTimeOffset now, CancellationToken cancellationToken);
     Task<GlobeSnapshot> Snapshot(DateTimeOffset now, DateTimeOffset onlineSince, CancellationToken cancellationToken);
@@ -34,6 +35,13 @@ public sealed class SqlGlobeHistory(Func<AtlasDataContext> open) : IGlobeHistory
         await using var db = open();
         return await db.Set<GlobeVisitorRow>().AnyAsync(x => x.Id == account && x.Id.StartsWith("a:")
             && x.Longitude != null && x.Latitude != null, cancellationToken);
+    }
+
+    public async Task<string?> GetPinColor(string account, CancellationToken cancellationToken)
+    {
+        await using var db = open();
+        return await db.Set<GlobeVisitorRow>().Where(x => x.Id == account && x.Id.StartsWith("a:") && x.Longitude != null && x.Latitude != null)
+            .Select(x => x.PinColor ?? "#b73539").FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken, string color = "#b73539")

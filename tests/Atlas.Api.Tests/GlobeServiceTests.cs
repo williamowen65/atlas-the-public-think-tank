@@ -13,6 +13,8 @@ public sealed class GlobeServiceTests
         await service.SetLocation("a:red", 10, 20, default, "#AA1122");
         var view = await service.SetLocation("a:blue", 10, 20, default, "#1122aa");
         Assert.AreEqual(2, view.Live.Visitors);
+        Assert.AreEqual("#1122aa", view.PinColor);
+        Assert.IsNull((await service.View(null, default)).PinColor);
         CollectionAssert.AreEquivalent(new[] { "#aa1122", "#1122aa" }, view.Live.Pins.Select(x => x.Color).ToArray());
         foreach (var color in new[] { "red", "#fff", "url(x)", "#000000\n", "#1234567" })
             await Assert.ThrowsAsync<ArgumentException>(() => service.SetLocation("a:bad", 10, 20, default, color));
@@ -104,6 +106,7 @@ internal sealed class MemoryGlobeHistory : IGlobeHistory
     public int SnapshotReads { get; private set; }
     public Task<bool> HasPin(string account, CancellationToken cancellationToken) => Task.FromResult(
         Rows.TryGetValue(account, out var row) && row.Id.StartsWith("a:") && row.Longitude != null && row.Latitude != null);
+    public Task<string?> GetPinColor(string account, CancellationToken cancellationToken) => Task.FromResult<string?>(Rows.TryGetValue(account, out var row) && row.Id.StartsWith("a:") && row.Longitude != null && row.Latitude != null ? row.PinColor ?? "#b73539" : null);
     public Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken, string color = "#b73539")
     {
         if (longitude is null) Rows.Remove(account);

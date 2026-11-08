@@ -110,4 +110,13 @@ dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filte
 dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~Globe
 ```
 
-Worldwide Storybook fixtures are now uniformly spread over the sphere (including oceans), for synthetic density/performance testing rather than population simulation. Clustered retains city anchors. Demo colors are seeded independently of position and lean, preventing repeated color bands in clusters. Real account coordinates remain rounded to whole degrees for privacy.
+Worldwide Storybook fixtures now use region-weighted land-only positions, checked against the local Natural Earth coastline after whole-degree rounding. They illustrate usage rather than model population. Uniform remains an ocean-inclusive sphere stress test; Clustered retains tight city anchors. Demo colors are seeded independently of position and lean, preventing repeated color bands in clusters. Real account coordinates remain rounded to whole degrees for privacy.
+
+
+### Choose a location without browser permission
+
+Signed-in accounts can open the globe, choose **Share my location on this globe**, then **Choose a spot on the globe instead**. This path never calls browser geolocation. Rotation pauses for both globe views. Use **Turn globe** to reach another region, then click/tap Earth to place a draft pin. The coordinate fields provide an equivalent keyboard path. Coordinates must be valid whole degrees before Save is enabled. The preview uses the selected color; account totals and saved data do not change until **Save this pin** succeeds. Cancel or closing the panel discards the draft.
+
+Existing pinned accounts can choose **Edit my pin**. Their saved color is loaded through the account-specific snapshot state, while public snapshots never include that personal field. Picking and saving replaces the existing pin rather than adding a second pin. The API and database continue to store one approximate pin per account, not travel history. Browser-assisted placement remains available as a separate option. Real users may choose ocean locations; only the illustrative land-based fixture distribution excludes oceans.
+
+Manual picking inverts the same orthographic camera as the shader: screen coordinates map to a sphere point, the camera rotation is reversed, then latitude/longitude are rounded. Outside-Earth clicks do not place a pin. Editing mode uses a smaller globe and a bounded scrollable panel to keep its controls reachable on desktop and mobile. No additional schema change is needed beyond the pending AddGlobePinColor migration.

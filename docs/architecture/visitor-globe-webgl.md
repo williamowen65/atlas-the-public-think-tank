@@ -136,6 +136,14 @@ npm run storybook
 
 Open **Components → VisitorGlobe → Playground**. There is no renderer selector: WebGL is the sole implementation. Keep size, distribution, speed and target FPS fixed while trying 100, 1,000, 5,000 and 10,000 pins. Compare round heads with stems only, and test the miniature separately. The application targets 60 updates per second; Storybook can lower the target for experimentation.
 
+## Selecting a pin on the globe
+
+[pickLocation.ts](../../src/hosts/Atlas.Web/src/lib/globe/pickLocation.ts) reverses the shader camera for manual placement. The Svelte component converts a click/tap from the canvas rectangle into the same 440-unit view used by WebGL. A point outside the 176-unit Earth disc is ignored. Inside the disc, the square-root sphere-depth calculation reconstructs the visible surface point. Reversing the 18-degree tilt and longitude rotation gives its world vector. `atan2` recovers longitude and `asin` recovers latitude; the result is rounded to whole degrees.
+
+The globe and miniature pause on the shared clock during placement. A turn slider changes that camera angle explicitly, and numeric fields provide keyboard access without focusing individual pin graphics. The selected pin is appended only to the displayed preview until Save; it is not added to visitor counts or stored by a click alone. Cancel discards that local draft. This workflow calls no browser geolocation API.
+
+Storybook's default worldwide fixture samples a mixture of broad regions and scattered points, filters them against the land geometry, and uses independent seeded colors. Bounding boxes cheaply reject irrelevant land features before the detailed containment test. The static coastline data uses Svelte's raw state so thousands of geographic checks do not create deep reactive dependencies. Uniform and clustered fixture modes remain useful for stress testing. These distributions are illustrative, not estimates of population or account activity.
+
 ## References
 
 - [MDN: WebGL overview and browser compatibility](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)

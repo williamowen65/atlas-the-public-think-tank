@@ -74,7 +74,7 @@ const meta = {
       control: { type: 'range', min: 0, max: 10000, step: 1 },
       description: 'Number of generated demo pins; ignored in custom mode.',
     },
-    distribution: { control: 'select', options: ['worldwide', 'clustered', 'custom'] },
+    distribution: { control: 'select', options: ['worldwide', 'uniform', 'clustered', 'custom'] },
     pins: { control: 'object', description: 'Used when distribution is custom.' },
   },
 } satisfies Meta<typeof VisitorGlobeExample>;
@@ -126,3 +126,5 @@ export const EquatorAndHorizon: Story = {
 };
 
 export const Stress: Story = { args: { pinCount: 10000 } };
+
+export const UniformStress: Story = { args: { distribution: 'uniform', pinCount: 10000 } };

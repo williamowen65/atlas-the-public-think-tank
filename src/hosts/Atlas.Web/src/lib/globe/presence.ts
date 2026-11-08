@@ -7,6 +7,7 @@ export type GlobeSnapshot = {
   canShare: boolean;
   hasLocation: boolean;
   onlineWindowMinutes: number;
+  pinColor?: string | null;
 };
 
 /** Validate the short JSON snapshot without trusting network data in the renderer. */
@@ -16,6 +17,7 @@ export function parseSnapshot(data: unknown): GlobeSnapshot {
     !snapshot ||
     typeof snapshot.canShare !== 'boolean' ||
     typeof snapshot.hasLocation !== 'boolean' ||
+    (snapshot.pinColor != null && !/^#[0-9a-fA-F]{6}$/.test(snapshot.pinColor)) ||
     !Number.isFinite(Date.parse(snapshot.capturedAt)) ||
     !Number.isSafeInteger(snapshot.onlineWindowMinutes) ||
     snapshot.onlineWindowMinutes < 1
