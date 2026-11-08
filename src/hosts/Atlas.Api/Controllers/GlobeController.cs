@@ -31,7 +31,19 @@ public sealed class GlobeController(GlobePresence presence, IDataProtectionProvi
         var browser = Browser(create: false);
         if (browser is null) { Response.StatusCode = 400; return; }
         var visit = await presence.Visit(browser, Account(), cancellationToken);
-        var connection = await presence.Connect(visit.VisitorId, cancellationToken);
+        (Guid Id, System.Threading.Channels.ChannelReader<GlobeSnapshot> Updates) connection;
+        try { connection = await presence.Connect(visit.VisitorId, cancellationToken); }
+        catch (GlobeConnectionLimitException)
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            Response.Headers.RetryAfter = "5";
+            await Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Status = 429, Title = "The globe connection limit has been reached. Please retry shortly.",
+                Extensions = { ["code"] = "globe_connection_limit" }
+            }, cancellationToken);
+            return;
+        }
         Response.ContentType = "text/event-stream";
         Response.Headers["X-Accel-Buffering"] = "no";
         HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
@@ -64,7 +76,7 @@ public sealed class GlobeController(GlobePresence presence, IDataProtectionProvi
         finally
         {
             try { await presence.Disconnect(connection.Id); }
-            catch (Exception) { logger.LogWarning("Local globe disconnected; snapshot refresh unavailable."); }
+            catch (Exception) { logger.LogWarning("Globe disconnected; snapshot refresh unavailable."); }
         }
     }
 

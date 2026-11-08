@@ -99,3 +99,12 @@ The reference is William Owen's [GeographicPinMap](https://github.com/williamowe
 The map asset is vendored Natural Earth public-domain land geometry; no runtime CDN, Glitch endpoint or external map request is used. D3 geometry is bundled through npm. See `src/hosts/Atlas.Web/static/globe/README.md` for attribution.
 
 Live presence is **single API process** and capped at 32 streams total / 8 per visitor, leaving half the existing 64-slot API concurrency budget for other requests. Each subscriber has a bounded, latest-snapshot queue; disconnects and cancellations clean up listeners. Reconnection is automatic and unavailable live data is not presented as current. Verify the single-process assumption and capacity during demo testing. Multiple API instances require coordinated presence rather than the current in-process connection set; durable identity deletion/retention policy also remains follow-up work. No extra cloud service is provisioned here.
+
+
+## LAN event-stream cleanup
+
+The globe uses server-sent events (SSE), not WebSockets. LAN HTTPS can negotiate HTTP/2 with Vite while Vite forwards HTTP/1.1 to the API. A reset HTTP/2 stream can report `writableFinished`, causing the generic proxy to leave that upstream SSE request running. Repeated reloads then consume the per-visitor stream limit despite only a few visible tabs.
+
+The session proxy explicitly destroys the upstream globe request whenever the browser response closes or aborts, and removes its cleanup listeners when the request ends. A regression test repeatedly opens and closes real HTTPS HTTP/1.1 and HTTP/2 streams and verifies upstream connections return to zero. The test uses a temporary certificate and skips if OpenSSL is unavailable.
+
+After pulling this fix, restart the frontend and backend once to load the proxy cleanup and clear pre-existing in-memory streams. Close unused Atlas tabs. The existing limits (8 streams per visitor, 32 total) remain; hitting legitimate capacity now returns handled HTTP 429 with `Retry-After`, rather than an unhandled exception. Repeated client failures back off from 5 seconds to at most 30 seconds, resetting after a successful update.

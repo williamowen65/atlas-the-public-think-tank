@@ -61,6 +61,33 @@ public sealed class GlobeHttpTests
     }
 
     [TestMethod]
+    public async Task Capacity_returns_429_with_retry_after_instead_of_an_unhandled_error()
+    {
+        using var factory = new GlobeApiFactory("Production");
+        using var client = factory.CreateClient(new() { BaseAddress = new("https://localhost") });
+        var csrf = await client.GetFromJsonAsync<JsonElement>("/atlas-session-api/auth/csrf");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+        (await client.PostAsync("/atlas-session-api/globe/visit", null)).EnsureSuccessStatusCode();
+        using var cancelled = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var streams = new List<HttpResponseMessage>();
+        try
+        {
+            for (var i = 0; i < 8; i++)
+                streams.Add(await client.GetAsync("/atlas-session-api/globe/events", HttpCompletionOption.ResponseHeadersRead, cancelled.Token));
+            var rejected = await client.GetAsync("/atlas-session-api/globe/events");
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+            Assert.AreEqual(TimeSpan.FromSeconds(5), rejected.Headers.RetryAfter?.Delta);
+            var body = await rejected.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.AreEqual("globe_connection_limit", body.GetProperty("code").GetString());
+        }
+        finally
+        {
+            cancelled.Cancel();
+            foreach (var response in streams) response.Dispose();
+        }
+    }
+
+    [TestMethod]
     [DataRow("Development")]
     [DataRow("Production")]
     public async Task Visit_and_location_require_csrf_in_every_environment(string environment)

@@ -34,7 +34,7 @@ public sealed class GlobePresence(IGlobeHistory history)
         {
             // SSE holds an API concurrency slot; leave half the global 64-slot budget for other work.
             if (connections.Count >= 32 || connections.Values.Count(x => x.Visitor == visitor) >= 8)
-                throw new InvalidOperationException("Too many globe connections.");
+                throw new GlobeConnectionLimitException();
             var channel = Channel.CreateBounded<GlobeSnapshot>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
             var id = Guid.NewGuid();
             connections.Add(id, (visitor, channel));
@@ -87,4 +87,11 @@ public sealed class GlobePresence(IGlobeHistory history)
         var snapshot = new GlobeSnapshot(live, historical);
         foreach (var connection in connections.Values) connection.Channel.Writer.TryWrite(snapshot);
     }
+}
+
+
+/// <summary>Expected capacity rejection, translated to HTTP 429 by the event endpoint.</summary>
+public sealed class GlobeConnectionLimitException : Exception
+{
+    public GlobeConnectionLimitException() : base("Too many globe connections.") { }
 }

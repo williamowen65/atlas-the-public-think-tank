@@ -174,7 +174,20 @@ export function sessionApiProxy(): ProxyOptions {
     ...options,
     rewrite: path => path.replace(/^\/atlas-session-api/, '/api'),
     configure(proxy) {
-      proxy.on('proxyReq', request => {
+      proxy.on('proxyReq', (request, incoming, response) => {
+        // HTTP/2 can mark writableFinished when the browser resets its stream.
+        // The generic proxy then skips destroying the still-running upstream SSE request.
+        if (/^\/(?:api|atlas-session-api)\/globe\/events(?:\?|$)/.test(incoming.url ?? '')) {
+          const disconnect = () => request.destroy();
+          const cleanup = () => {
+            response.off('close', disconnect);
+            incoming.off('aborted', disconnect);
+          };
+          response.once('close', disconnect);
+          incoming.once('aborted', disconnect);
+          request.once('close', cleanup);
+          if (incoming.aborted || response.destroyed) disconnect();
+        }
         request.removeHeader('authorization');
         // Forward only Atlas session/CSRF cookies, including chunked sessions.
         const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())

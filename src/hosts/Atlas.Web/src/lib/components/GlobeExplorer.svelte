@@ -25,6 +25,7 @@
   let generation = 0;
   let shareGeneration = 0;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  let reconnectDelay = 5000;
   let opener: HTMLElement | null = null;
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
 
@@ -98,6 +99,7 @@
         try {
           snapshot = parseSnapshot(event.data);
           status = 'connected';
+          reconnectDelay = 5000;
         } catch {
           disconnected();
         }
@@ -106,19 +108,21 @@
       function disconnected() {
         if (!alive || current !== generation) return;
         events.close();
-        status = 'offline';
-        reconnectTimer = setTimeout(() => {
-          void connect();
-        }, 5000);
+        scheduleReconnect();
       }
     } catch {
       if (alive && current === generation) {
-        status = 'offline';
-        reconnectTimer = setTimeout(() => {
-          void connect();
-        }, 5000);
+        scheduleReconnect();
       }
     }
+  }
+  function scheduleReconnect() {
+    status = 'offline';
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      void connect();
+    }, reconnectDelay);
+    reconnectDelay = Math.min(30000, reconnectDelay * 2);
   }
   function placeDialog() {
     const height = window.innerHeight;

@@ -82,7 +82,7 @@ public sealed class GlobePresenceTests
             connections.Add((await service.Connect(visitor, default)).Id);
         }
         await service.Visit("overflow", null, default);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.Connect("overflow", default));
+        await Assert.ThrowsAsync<GlobeConnectionLimitException>(() => service.Connect("overflow", default));
         await service.Disconnect(connections[0]);
         var available = await service.Connect("overflow", default);
         Assert.AreEqual(32, (await available.Updates.ReadAsync()).Live.Visitors);
@@ -97,7 +97,7 @@ public sealed class GlobePresenceTests
         await service.Visit("one", null, default);
         var ids = new List<Guid>();
         for (var i = 0; i < 8; i++) ids.Add((await service.Connect("one", default)).Id);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.Connect("one", default));
+        await Assert.ThrowsAsync<GlobeConnectionLimitException>(() => service.Connect("one", default));
         foreach (var id in ids) await service.Disconnect(id);
         var fresh = await service.Connect("one", default);
         Assert.AreEqual(1, (await fresh.Updates.ReadAsync()).Live.Visitors);
