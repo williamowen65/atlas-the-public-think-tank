@@ -75,3 +75,77 @@ test('pin style controls select head appearance and shaft geometry', async ({ pa
   await page.goto(story + '&args=animate:!false;pinStyle:stem');
   await expect(page.locator('.pin-head')).toHaveCount(0);
 });
+
+for (const count of [0, 100, 10000]) {
+  test(`Canvas draws ${count} demo pins without per-pin DOM elements`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(
+      story + `&args=renderer:canvas;animate:!false;angle:40;pinCount:${count};size:420`,
+    );
+    const canvas = page.locator('canvas[data-renderer="canvas"]');
+    await expect(canvas).toHaveAttribute('data-angle', '40');
+    await expect(page.locator('[data-demo-count]')).toHaveAttribute(
+      'data-demo-count',
+      String(count),
+    );
+    await expect
+      .poll(() =>
+        canvas.evaluate((element: HTMLCanvasElement) => {
+          const ctx = element.getContext('2d')!;
+          return ctx.getImageData(
+            Math.floor(element.width / 2),
+            Math.floor(element.height / 2),
+            1,
+            1,
+          ).data[3];
+        }),
+      )
+      .toBe(255);
+    await expect(page.locator('.map-pin')).toHaveCount(0);
+    await expect(page.locator('svg[data-renderer="svg"]')).toHaveCount(0);
+    if (count === 100) await page.screenshot({ path: test.info().outputPath('globe-canvas.png') });
+    expect(errors).toEqual([]);
+  });
+}
+
+test('Canvas resizes its backing buffer and honors pin and map styles', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 800 });
+  await page.goto(
+    story +
+      '&args=renderer:canvas;animate:!false;pinCount:0;size:600;oceanColor:!hex(abcdef);oceanEdgeColor:!hex(abcdef);landColor:!hex(abcdef);showGrid:!false',
+  );
+  const canvas = page.locator('canvas[data-renderer="canvas"]');
+  await expect
+    .poll(() =>
+      canvas.evaluate((element: HTMLCanvasElement) => {
+        return Array.from(
+          element.getContext('2d')!.getImageData(element.width / 2, element.height / 2, 1, 1).data,
+        );
+      }),
+    )
+    .toEqual([171, 205, 239, 255]);
+  const before = await canvas.evaluate((element: HTMLCanvasElement) => element.width);
+  await page.setViewportSize({ width: 350, height: 700 });
+  await expect
+    .poll(() => canvas.evaluate((element: HTMLCanvasElement) => element.width))
+    .toBeLessThan(before);
+});
+
+test('Storybook target frame rate limits animation updates for either renderer', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  for (const renderer of ['svg', 'canvas']) {
+    await page.goto(story + `&args=renderer:${renderer};targetFps:10;pinCount:12`);
+    await expect(page.locator('[data-performance]')).toContainText('target 10 FPS');
+    await expect
+      .poll(async () => {
+        const text = await page.locator('[data-performance]').innerText();
+        return Number(text.match(/(\d+) rotation updates/)?.[1]);
+      })
+      .toBeGreaterThan(0);
+    const text = await page.locator('[data-performance]').innerText();
+    expect(Number(text.match(/(\d+) rotation updates/)?.[1])).toBeLessThanOrEqual(11);
+  }
+});

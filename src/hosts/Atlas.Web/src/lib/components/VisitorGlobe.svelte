@@ -15,11 +15,13 @@
 </script>
 
 <script lang="ts">
+  import CanvasGlobe from './CanvasGlobe.svelte';
   import { onMount } from 'svelte';
   import { geoOrthographic, geoPath, geoGraticule10 } from 'd3-geo';
   import { projectPin } from '$lib/globe/pinGeometry';
   import type { GlobePin } from '$lib/globe/presence';
   let {
+    renderer = 'svg',
     pins = [],
     mini = false,
     angle = -25,
@@ -37,6 +39,7 @@
     outlineColor = '#547d89',
     showGrid = true,
   }: {
+    renderer?: 'svg' | 'canvas';
     pins?: GlobePin[];
     mini?: boolean;
     angle?: number;
@@ -133,42 +136,71 @@
 {/snippet}
 
 <div class="globe-art" class:mini>
-  <svg data-angle={angle} viewBox="-20 -20 440 440" role="img" aria-labelledby={`${id}-title`}>
-    <title id={`${id}-title`}
-      >Atlas visitor globe. Pins show approximate locations voluntarily shared by account holders.</title
-    >
-    <defs>
-      <radialGradient id={`${id}-ocean`} cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color={oceanColor} /><stop offset="1" stop-color={oceanEdgeColor} />
-      </radialGradient>
-    </defs>
-    {@render renderPins(false)}
-    <circle
-      class="ocean"
-      cx="200"
-      cy="200"
-      r="176"
-      fill={`url(#${id}-ocean)`}
-      stroke={outlineColor}
-      stroke-width="1"
+  {#if renderer === 'canvas'}
+    <CanvasGlobe
+      {angle}
+      options={{
+        projection,
+        land,
+        pins: projectedPins,
+        oceanColor,
+        oceanEdgeColor,
+        landColor,
+        gridColor,
+        outlineColor,
+        pinColor,
+        pinHeadColor,
+        variedHeads,
+        pinStyle,
+        pinHeadRadius,
+        mini,
+        showGrid,
+      }}
     />
-    {#if showGrid}<path
-        class="graticule"
-        d={path(geoGraticule10()) ?? ''}
-        fill="none"
-        stroke={gridColor}
-        stroke-opacity="0.14"
-        stroke-width="0.6"
-      />{/if}
-    {#if land}<path
-        class="land"
-        d={path(land) ?? ''}
-        fill={landColor}
+  {:else}
+    <svg
+      data-renderer="svg"
+      data-angle={angle}
+      viewBox="-20 -20 440 440"
+      role="img"
+      aria-labelledby={`${id}-title`}
+    >
+      <title id={`${id}-title`}
+        >Atlas visitor globe. Pins show approximate locations voluntarily shared by account holders.</title
+      >
+      <defs>
+        <radialGradient id={`${id}-ocean`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color={oceanColor} /><stop offset="1" stop-color={oceanEdgeColor} />
+        </radialGradient>
+      </defs>
+      {@render renderPins(false)}
+      <circle
+        class="ocean"
+        cx="200"
+        cy="200"
+        r="176"
+        fill={`url(#${id}-ocean)`}
         stroke={outlineColor}
-        stroke-width="0.35"
-      />{/if}
-    {@render renderPins(true)}
-  </svg>
+        stroke-width="1"
+      />
+      {#if showGrid}<path
+          class="graticule"
+          d={path(geoGraticule10()) ?? ''}
+          fill="none"
+          stroke={gridColor}
+          stroke-opacity="0.14"
+          stroke-width="0.6"
+        />{/if}
+      {#if land}<path
+          class="land"
+          d={path(land) ?? ''}
+          fill={landColor}
+          stroke={outlineColor}
+          stroke-width="0.35"
+        />{/if}
+      {@render renderPins(true)}
+    </svg>
+  {/if}
   {#if !mini && failed}<div class="map-fallback">
       <p>Map details could not load. Visitor counts and locations are still listed below.</p>
       <button type="button" onclick={retry}>Retry map</button>

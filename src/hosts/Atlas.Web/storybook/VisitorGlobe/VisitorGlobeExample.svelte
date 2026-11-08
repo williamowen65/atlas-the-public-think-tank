@@ -4,6 +4,8 @@
   import { demoPins } from './demoPins';
   import type { GlobePin } from '../../src/lib/globe/presence';
   let {
+    renderer = 'svg',
+    targetFps = 60,
     oceanColor = '#e3eff3',
     oceanEdgeColor = '#bdd6df',
     landColor = '#668f87',
@@ -30,6 +32,8 @@
       { longitude: -122, latitude: 48, visitors: 1 },
     ],
   }: {
+    renderer?: 'svg' | 'canvas';
+    targetFps?: number;
     oceanColor?: string;
     oceanEdgeColor?: string;
     landColor?: string;
@@ -58,6 +62,7 @@
   const rotation = createGlobeRotation(
     () => animate,
     () => speed,
+    () => targetFps,
   );
   $effect(() => {
     rotation.angle = angle;
@@ -66,6 +71,7 @@
 
 <div class="example" style:width={`${size}px`}>
   <VisitorGlobe
+    {renderer}
     angle={rotation.angle}
     {mini}
     pins={displayedPins}
@@ -84,6 +90,9 @@
     {showGrid}
   />
 </div>
+<p class="demo-caption" data-performance>
+  {renderer.toUpperCase()} · target {targetFps} FPS · {rotation.updatesPerSecond} rotation updates/s
+</p>
 <p class="demo-caption" data-demo-count={displayedPins.length}>
   {displayedPins.length} demo pins · {distribution}
 </p>
@@ -104,7 +113,7 @@
     margin-inline: auto;
   }
   .example {
-    max-width: 100%;
+    max-width: min(100%, calc(100vw - 2rem));
     margin: auto;
   }
 </style>

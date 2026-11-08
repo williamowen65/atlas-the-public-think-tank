@@ -14,6 +14,8 @@ const meta = {
     },
   },
   args: {
+    renderer: 'svg',
+    targetFps: 60,
     oceanColor: '#e3eff3',
     oceanEdgeColor: '#bdd6df',
     landColor: '#668f87',
@@ -41,6 +43,17 @@ const meta = {
     ],
   },
   argTypes: {
+    renderer: {
+      control: 'select',
+      options: ['svg', 'canvas'],
+      type: { name: 'enum', value: ['svg', 'canvas'] },
+    },
+    targetFps: {
+      control: 'select',
+      options: [10, 15, 24, 30, 60],
+      description:
+        'Animation update ceiling; observed updates/s is not a GPU paint-time measurement.',
+    },
     oceanColor: { control: 'color' },
     oceanEdgeColor: { control: 'color' },
     landColor: { control: 'color' },
@@ -64,7 +77,7 @@ const meta = {
     angle: { control: { type: 'range', min: -180, max: 180, step: 1 } },
     size: { control: { type: 'range', min: 60, max: 600, step: 10 } },
     pinCount: {
-      control: { type: 'range', min: 0, max: 1000, step: 1 },
+      control: { type: 'range', min: 0, max: 10000, step: 1 },
       description: 'Number of generated demo pins; ignored in custom mode.',
     },
     distribution: { control: 'select', options: ['worldwide', 'clustered', 'custom'] },
@@ -117,3 +130,6 @@ export const EquatorAndHorizon: Story = {
     })),
   },
 };
+
+export const Canvas: Story = { args: { renderer: 'canvas' } };
+export const CanvasStress: Story = { args: { renderer: 'canvas', pinCount: 5000 } };

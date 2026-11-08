@@ -31,14 +31,7 @@ Signed-out viewers see **Sign in to place a pin**. Signed-in viewers can choose 
 
 The developer-generated `20261108173914_AddGlobeVisitorHistory` migration remains unchanged. This redesign adds nullable `GlobeVisitors.LastSeenAt` and removes the unused `GlobeBrowsers` model/table. The existing account pin keys remain compatible. Existing anonymous visitor rows remain excluded by query; no migration should copy them into accounts.
 
-`src/Atlas.Persistence/AGENTS.md` reserves migration generation and application for the developer. The model is updated; the new migration/designer/snapshot are deliberately not generated here. From the solution root, with shared user secrets or `ATLAS_SQL_CONNECTION_STRING` targeting **local SQL Server**:
-
-```sh
-dotnet tool restore
-dotnet ef migrations add AddAccountPinActivity --project src/Atlas.Persistence
-```
-
-Review and commit the new migration, designer and snapshot. Expect a nullable LastSeenAt column and removal of GlobeBrowsers, with no unrelated schema changes. Then:
+The developer-generated `20261108210201_AddAccountPinActivity` migration, designer and snapshot are now committed on this branch. Do not generate a second migration with the same purpose. `src/Atlas.Persistence/AGENTS.md` reserves migration generation and application for the developer. From the solution root, with shared user secrets or `ATLAS_SQL_CONNECTION_STRING` targeting **local SQL Server**, apply and verify the committed migration:
 
 ```sh
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
@@ -75,11 +68,11 @@ npm run build
 npx playwright test --config playwright.globe.config.ts
 ```
 
-Service tests cover 120 account pins, uniqueness, expiry, cache isolation and removal. HTTP tests cover finite anonymous reads, denied anonymous writes, and removed listener routes. SQL tests cover persistence and exclusion of legacy anonymous rows once the migration is generated.
+Service tests cover 120 account pins, uniqueness, expiry, cache isolation and removal. HTTP tests cover finite anonymous reads, denied anonymous writes, and removed listener routes. SQL tests cover persistence and exclusion of legacy anonymous rows after the committed migration is applied locally.
 
 ## Storybook appearance
 
-Run `npm run storybook`, then open **Components → VisitorGlobe → Playground**. Controls cover ocean center/edge colors, land, grid, outline and pin colors, size, fixture pins, rotation speed/angle and animation. Set both ocean colors equal for a flat fill. Use pinCount (0–1,000) and distribution (worldwide, clustered, custom) to explore fictional demo data. Presets include Empty, SparseWorldwide (12), BusyWorldwide (100), DenseWorldwide (500), Clustered (150), and CustomPins. Custom mode uses the editable pins array. Positions are deterministic so style comparisons keep the same map data. Paper, Night and Miniature provide alternate starting points. These renderer-only stories need no API, account, database or geolocation permission; their controls do not change site preferences.
+Run `npm run storybook`, then open **Components → VisitorGlobe → Playground**. Controls cover ocean center/edge colors, land, grid, outline and pin colors, size, fixture pins, rotation speed/angle and animation. Set both ocean colors equal for a flat fill. Use pinCount (0–10,000) and distribution (worldwide, clustered, custom) to explore fictional demo data. Presets include Empty, SparseWorldwide (12), BusyWorldwide (100), DenseWorldwide (500), Clustered (150), and CustomPins. Custom mode uses the editable pins array. Positions are deterministic so style comparisons keep the same map data. Paper, Night and Miniature provide alternate starting points. These renderer-only stories need no API, account, database or geolocation permission; their controls do not change site preferences.
 
 The rotating orthographic globe adapts William Owen's [GeographicPinMap](https://github.com/williamowen65/GeographicPinMap) at `68febc15e1b9f0509445339744f9e7c07def16c2`; its original Socket.IO listener is not used. Natural Earth land data is vendored locally and public domain; credit is optional. The information panel and `static/globe/README.md` retain its source link.
 
@@ -88,3 +81,11 @@ The rotating orthographic globe adapts William Owen's [GeographicPinMap](https:/
 Keep this PR unmerged and work locally while the capstone deployment review is pending. After that review and explicit demo deployment authorization, apply reviewed migrations and deploy this branch to **demo only**. Verify sign-in enforcement, periodic refresh, recent-activity expiry, history persistence, pin removal, and ordinary app responsiveness before merging. Keep live unchanged. No Azure resources or deployment workflows are changed by this implementation.
 
 Pin controls include round or flat heads and stems only, a single head color or varied colors, shaft color, head radius, shaft length and lean. FlatHeads, StemsOnly and EquatorAndHorizon provide focused comparisons. Lean is deterministic for each location, so pins do not wobble when snapshots refresh. The shafts and heads use the same orthographic camera as the map; far-side parts render behind the globe, allowing raised tips to appear over the horizon without showing through the Earth.
+
+### Comparing SVG and Canvas
+
+The Playground's **renderer** control switches between SVG and Canvas 2D while retaining the same fixtures, camera, pin styles and rotation settings. Canvas and CanvasStress (5,000 pins) are additional starting points. The site still defaults to SVG; this comparison does not change production behavior. Both renderers use the same D3 projection and local map geometry. Canvas draws into one resolution-aware bitmap rather than creating DOM elements for individual pins. Its accessible description identifies the globe; no per-pin keyboard interaction or new table is introduced.
+
+Use **targetFps** (10, 15, 24, 30 or 60) and **pinCount** (0–10,000) to explore loads. The displayed rotation updates/s is measured once per second; it counts delivered animation updates, not GPU paints or total rendering time. Paused animation, a hidden tab, or reduced-motion preferences stop rotation. For a fair comparison, keep pin count/distribution, globe size, styles, speed, target FPS, browser zoom and viewport unchanged when switching renderers. Compare 100, 1,000, 5,000 and 10,000 pins, then test the miniature separately. Device, pixel density and browser affect results; passing a large fixture test does not establish smooth animation at that count. Browser Performance tools can measure scripting and paint costs more precisely. API polling is independent of drawing frequency.
+
+Canvas drawing is in `src/hosts/Atlas.Web/src/lib/globe/canvasRenderer.ts`; the SVG implementation remains in `VisitorGlobe.svelte`. Both share `pinGeometry.ts`. WebGL is not part of this comparison.

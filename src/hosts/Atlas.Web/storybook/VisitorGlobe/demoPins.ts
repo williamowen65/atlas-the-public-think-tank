@@ -59,7 +59,7 @@ export function demoPins(count: number, distribution: 'worldwide' | 'clustered')
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  const total = Math.max(0, Math.min(1000, Math.floor(Number.isFinite(count) ? count : 0)));
+  const total = Math.max(0, Math.min(10000, Math.floor(Number.isFinite(count) ? count : 0)));
   return Array.from({ length: total }, (_, index) => {
     const [longitude, latitude] = centers[(index * 17) % centers.length];
     const spread = distribution === 'clustered' ? 1.8 : 4;
