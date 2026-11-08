@@ -11,7 +11,7 @@ namespace Atlas.Api.Controllers;
 
 [ApiController, Route("api/globe"), AutoValidateAntiforgeryToken]
 public sealed class GlobeController(GlobePresence presence, IDataProtectionProvider protection,
-    IWebHostEnvironment environment, RequestActor actor, ILogger<GlobeController> logger) : ControllerBase
+    RequestActor actor, ILogger<GlobeController> logger) : ControllerBase
 {
     private const string Cookie = "__Host-Atlas.Globe";
     private readonly IDataProtector protector = protection.CreateProtector("Atlas.LocalGlobe.Visitor.v1");
@@ -20,7 +20,6 @@ public sealed class GlobeController(GlobePresence presence, IDataProtectionProvi
     [HttpPost("visit"), EnableRateLimiting("auth")]
     public async Task<IActionResult> Visit(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment()) return NotFound();
         var browser = Browser(create: true)!;
         var visit = await presence.Visit(browser, Account(), cancellationToken);
         return Ok(new { visit.HasLocation });
@@ -29,7 +28,6 @@ public sealed class GlobeController(GlobePresence presence, IDataProtectionProvi
     [HttpGet("events")]
     public async Task Events(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment()) { Response.StatusCode = 404; return; }
         var browser = Browser(create: false);
         if (browser is null) { Response.StatusCode = 400; return; }
         var visit = await presence.Visit(browser, Account(), cancellationToken);
@@ -73,7 +71,6 @@ public sealed class GlobeController(GlobePresence presence, IDataProtectionProvi
     [HttpPut("location"), EnableRateLimiting("auth")]
     public async Task<IActionResult> Location(GlobeLocation input, CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment()) return NotFound();
         var browser = Browser(create: false);
         if (browser is null) return BadRequest();
         var visit = await presence.Visit(browser, Account(), cancellationToken);

@@ -71,6 +71,26 @@ public sealed class GlobePresenceTests
     }
 
     [TestMethod]
+    public async Task Total_stream_cap_leaves_room_for_other_API_requests()
+    {
+        var service = new GlobePresence(new MemoryGlobeHistory());
+        var connections = new List<Guid>();
+        for (var i = 0; i < 32; i++)
+        {
+            var visitor = $"visitor-{i}";
+            await service.Visit(visitor, null, default);
+            connections.Add((await service.Connect(visitor, default)).Id);
+        }
+        await service.Visit("overflow", null, default);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.Connect("overflow", default));
+        await service.Disconnect(connections[0]);
+        var available = await service.Connect("overflow", default);
+        Assert.AreEqual(32, (await available.Updates.ReadAsync()).Live.Visitors);
+        foreach (var id in connections.Skip(1)) await service.Disconnect(id);
+        await service.Disconnect(available.Id);
+    }
+
+    [TestMethod]
     public async Task Connection_limits_do_not_leave_ghost_visitors()
     {
         var service = new GlobePresence(new MemoryGlobeHistory());

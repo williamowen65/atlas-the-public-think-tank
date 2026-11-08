@@ -319,7 +319,7 @@
         </ul>{/if}
     </details>
     <footer>
-      Local development preview · <a
+      Atlas visitor globe · <a
         href="https://www.naturalearthdata.com/about/terms-of-use/"
         target="_blank"
         rel="noreferrer">Map: Natural Earth</a

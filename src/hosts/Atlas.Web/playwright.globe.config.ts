@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-// Local development surface: production intentionally excludes the globe prototype.
+// Exercise the production frontend build locally; API responses are mocked by the spec.
 export default defineConfig({
   testDir: './tests',
   testMatch: 'globe.spec.ts',
@@ -12,7 +12,7 @@ export default defineConfig({
       : {},
   },
   webServer: {
-    command: 'npx vite dev --host localhost --port 4175 --strictPort',
+    command: 'npx vite preview --host localhost --port 4175 --strictPort',
     url: 'http://localhost:4175',
     reuseExistingServer: !process.env.CI,
   },
