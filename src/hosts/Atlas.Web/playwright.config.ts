@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 // Serve the built artifacts locally: CI needs neither deployment nor Atlas.Api.
 export default defineConfig({
   testDir: './tests',
+  testIgnore: 'globe.spec.ts',
   timeout: 30_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

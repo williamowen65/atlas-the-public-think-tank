@@ -33,6 +33,7 @@
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@types/d3-geo": "^3.1.1",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^24.19.2",
     "concurrently": "^10.0.6",
@@ -47,6 +48,7 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
+    "d3-geo": "^3.1.2",
     "markdown-it": "^15.0.3"
   },
   "msw": {

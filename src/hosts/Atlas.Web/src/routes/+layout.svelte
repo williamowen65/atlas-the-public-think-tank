@@ -11,10 +11,13 @@
   import { onMount, type ComponentProps, type Snippet } from 'svelte';
   // SvelteKit's reactive route information, including the current URL; not Redux state.
   import { page } from '$app/state';
+  import { dev } from '$app/environment';
+  import GlobeExplorer from '$lib/components/GlobeExplorer.svelte';
   import { apiRequest } from '$lib/api/apiRequest';
   import AtlasHeader from '$lib/components/AtlasHeader.svelte';
   import AtlasFooter from '$lib/components/AtlasFooter.svelte';
   import '../styles.scss';
+  let globe = $state<GlobeExplorer>();
 
   // The router supplies the current page (and any nested layouts) as this snippet.
   let {
@@ -105,12 +108,13 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader mobileExperiment {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
+  <AtlasHeader mobileExperiment onOpenGlobe={dev ? () => globe?.open() : undefined} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
   <!-- The current route renders between the shared header and footer. -->
   <main id="main-content">
     {@render children()}
   </main>
   <AtlasFooter />
+  {#if dev}<GlobeExplorer bind:this={globe} />{/if}
 </div>
 
 <style>

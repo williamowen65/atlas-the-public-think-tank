@@ -116,6 +116,7 @@ export const sessionApiGuard: Plugin = {
         || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
         || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
         || path === '/atlas-session-api/moderation/queue'
+        || path === '/atlas-session-api/globe/events'
         || new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:history|revisions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
 
@@ -136,7 +137,9 @@ export const sessionApiGuard: Plugin = {
       const moderationWrite = method === 'POST'
         && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
 
-      const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
+      const globeWrite = method === 'POST' && path === '/atlas-session-api/globe/visit'
+        || method === 'PUT' && path === '/atlas-session-api/globe/location';
+      const writable = globeWrite || nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
         || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation|confirm-email|forgot-password|reset-password)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
@@ -175,12 +178,12 @@ export function sessionApiProxy(): ProxyOptions {
         request.removeHeader('authorization');
         // Forward only Atlas session/CSRF cookies, including chunked sessions.
         const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())
-          .filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+          .filter(cookie => /^__Host-Atlas\.(?:Csrf|Globe|Session(?:C\d+)?)=/.test(cookie));
         if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
       });
       proxy.on('proxyRes', response => {
         // Preserve Secure/HttpOnly/SameSite and __Host semantics; never weaken API cookies.
-        const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+        const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Globe|Session(?:C\d+)?)=/.test(cookie));
         if (cookies?.length) response.headers['set-cookie'] = cookies; else delete response.headers['set-cookie'];
         response.headers['cache-control'] = 'no-store';
       });
