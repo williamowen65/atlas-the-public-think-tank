@@ -25,7 +25,7 @@ The API shares public snapshot data for up to ten seconds to reduce database rea
 
 Pin/activity writes require the API's confirmed-member policy and CSRF validation. The server derives the account key from the verified request actor, never an account ID submitted by the client. No anonymous globe cookie is issued or forwarded.
 
-Signed-out viewers see **Sign in to place a pin**. Signed-in viewers can choose **Share my location on this globe**; a globe-specific explanation precedes the browser's permission prompt. Only whole-degree coordinates leave the browser; the API validates and rounds again. Approximate pins aggregate when they coincide, and account names/IDs are not returned in map data. Existing saved pins show a removal action instead of another share button.
+Signed-out viewers see **Sign in to place a pin**. Signed-in viewers can choose **Share my location on this globe**; a globe-specific explanation precedes the browser's permission prompt. The consent panel includes a labeled color picker and a preview of the chosen pin. The selected six-digit hex color is saved with the pin and returned in both snapshots. Existing pins without a color use red (`#b73539`). Only whole-degree coordinates leave the browser; the API validates and rounds again. Approximate pins aggregate when both their coordinates and selected colors coincide, and account names/IDs are not returned in map data. Existing saved pins show a removal action instead of another share button.
 
 ## Required local migration
 
@@ -93,3 +93,21 @@ For repeatable tests keep globe size, distribution, styles, speed, browser zoom 
 If WebGL 2 is unavailable, the expanded view explains the condition and retains the existing textual account counts and location lists. A context-loss message remains until restoration rebuilds GPU resources. The compact launcher keeps a globe symbol when graphics are unavailable. There is no alternative drawing backend.
 
 See [Learning WebGL through the Atlas globe](../architecture/visitor-globe-webgl.md) for the shader, buffer, instancing, camera and depth-testing walkthrough.
+
+
+### Local migration for pin colors
+
+The model now adds nullable `GlobeVisitors.PinColor` (maximum length 7). Existing rows remain nullable and are displayed with the default red; no account identities are added to snapshot data. Per `src/Atlas.Persistence/AGENTS.md`, the developer must generate, review and commit the migration/designer/snapshot. No migration has been generated or applied for this column, and SQL persistence is not verified until the local migration and SQL tests run.
+
+From the solution root, with the connection targeting **local SQL Server**:
+
+```sh
+dotnet tool restore
+dotnet ef migrations add AddGlobePinColor --project src/Atlas.Persistence
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlGlobeHistoryTests
+dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~Globe
+```
+
+Worldwide Storybook fixtures are now uniformly spread over the sphere (including oceans), for synthetic density/performance testing rather than population simulation. Clustered retains city anchors. Demo colors are seeded independently of position and lean, preventing repeated color bands in clusters. Real account coordinates remain rounded to whole degrees for privacy.

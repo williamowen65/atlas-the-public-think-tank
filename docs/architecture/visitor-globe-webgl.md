@@ -59,7 +59,7 @@ z = sin(latitude)
 
 Angles must be in radians. This unit vector points outward from Earth's center. Multiplying it by the globe radius, 176, gives the shaft's base.
 
-The head is farther along an outward direction. A small contribution from the local east/north directions creates lean. Its bearing comes from a deterministic function of the location, so it stays attached to the same place during rotation and snapshot refreshes. A seeded palette choice supplies the varied head color.
+The head is farther along an outward direction. A small contribution from the local east/north directions creates lean. Its bearing comes from a deterministic function of the location, so it stays attached to the same place during rotation and snapshot refreshes. A saved pin supplies its user-selected hex color. Synthetic Storybook fixtures choose palette colors independently of location and lean; missing colors retain a deterministic palette fallback for standalone renderer fixtures. The API supplies red for older persisted pins without a saved color.
 
 `setPins()` packs each pin into nine floating-point values: three for its base, three for its head, and three for its RGB color. A `Float32Array` holds these records. Each record occupies 36 bytes; 10,000 records occupy about 360,000 bytes before other graphics resources. `bufferData(..., STATIC_DRAW)` uploads them. The usage hint describes our intent to reuse the data; it is not a prohibition on future updates.
 

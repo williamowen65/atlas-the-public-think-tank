@@ -32,7 +32,7 @@ export function preparePin(pin: GlobePin, length = 23, lean = 0.2) {
     head: normal.map(
       (value, i) => value * globeRadius + (direction[i] / magnitude) * length,
     ) as Vector,
-    color: palette[Math.floor(fraction * palette.length)],
+    color: pin.color ?? palette[Math.floor(fraction * palette.length)],
     pin,
   };
 }

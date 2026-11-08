@@ -20,9 +20,9 @@ public sealed class GlobeController(GlobeService globe, RequestActor actor) : Co
 
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("location")]
     public Task<GlobeView> Location(GlobeLocation input, CancellationToken cancellationToken) => globe.SetLocation(
-        Account(actor.ParticipantId), input.Longitude, input.Latitude, cancellationToken);
+        Account(actor.ParticipantId), input.Longitude, input.Latitude, cancellationToken, input.Color);
 
     private static string Account(Guid id) => "a:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(id.ToString())));
 }
 
-public sealed record GlobeLocation(double? Longitude, double? Latitude);
+public sealed record GlobeLocation(double? Longitude, double? Latitude, string? Color = null);

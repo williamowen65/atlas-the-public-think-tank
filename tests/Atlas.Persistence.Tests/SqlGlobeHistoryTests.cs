@@ -13,9 +13,10 @@ public sealed class SqlGlobeHistoryTests
         var now = DateTimeOffset.UtcNow;
         Assert.IsFalse(await history.Touch("a:no-pin", now, default));
         Assert.AreEqual(0, (await history.Snapshot(now, now.AddMinutes(-5), default)).Historical.Visitors);
-        await history.SetLocation("a:member", -122, 48, now, default);
+        await history.SetLocation("a:member", -122, 48, now, default, "#123abc");
         var reloaded = new SqlGlobeHistory(database.Open);
         Assert.IsTrue(await reloaded.HasPin("a:member", default));
+        Assert.AreEqual("#123abc", (await reloaded.Snapshot(now, now.AddMinutes(-5), default)).Historical.Pins.Single().Color);
         var later = now.AddMinutes(6);
         var away = await reloaded.Snapshot(later, later.AddMinutes(-5), default);
         Assert.AreEqual(0, away.Live.Visitors);

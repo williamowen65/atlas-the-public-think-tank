@@ -13,6 +13,7 @@
   let status = $state<'loading' | 'ready' | 'failed'>('loading');
   let canShare = $state(false);
   let consent = $state(false);
+  let pinColor = $state('#b73539');
   let hasLocation = $state(false);
   let infoOpen = $state(false);
   let globeTop = $state(90);
@@ -207,6 +208,7 @@
         {
           longitude: Math.round(position.coords.longitude),
           latitude: Math.round(position.coords.latitude),
+          color: pinColor,
         },
         AbortSignal.timeout(12000),
       );
@@ -351,6 +353,13 @@
   {#if consent}
     <section class="disclosure consent" aria-label="Share location on this globe">
       <strong>Put a pin on this globe?</strong>
+      <div class="pin-choice">
+        <label>Pin color <input type="color" bind:value={pinColor} disabled={sharing} /></label>
+        <span class="pin-preview" role="img" aria-label={`Your pin preview: ${pinColor}`}>
+          <span class="preview-head" style:background={pinColor}></span><span class="preview-shaft"
+          ></span>
+        </span>
+      </div>
       <p>
         The next step opens your browser’s permission prompt. Only an approximate location is
         shared, without your name. It appears in Live while recently active and stays in Historical
@@ -408,6 +417,41 @@
 </dialog>
 
 <style>
+  .pin-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+  }
+  .pin-choice label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .pin-choice input {
+    width: 3rem;
+    height: 2.5rem;
+    padding: 0.15rem;
+  }
+  .pin-preview {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    transform: rotate(15deg);
+  }
+  .preview-head {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    box-shadow: inset -2px -2px 3px #0003;
+  }
+  .preview-shaft {
+    width: 2px;
+    height: 1.5rem;
+    background: #485453;
+  }
+
   .mini-launcher {
     position: fixed;
     bottom: 1.25rem;

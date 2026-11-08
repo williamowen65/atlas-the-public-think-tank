@@ -94,7 +94,8 @@
   {displayedPins.length} demo pins · {distribution}
 </p>
 <p class="demo-note">
-  Fictional demo locations. Only the facing hemisphere is visible; rotate to see the rest.
+  Synthetic demo locations. Worldwide spreads across the globe, including oceans; clustered uses
+  city anchors. Rotate to see the rest.
 </p>
 
 <style>

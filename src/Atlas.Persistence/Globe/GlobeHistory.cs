@@ -10,9 +10,10 @@ public sealed class GlobeVisitorRow
     public DateTimeOffset? LastSeenAt { get; set; }
     public double? Longitude { get; set; }
     public double? Latitude { get; set; }
+    public string? PinColor { get; set; }
 }
 
-public sealed record GlobePin(double Longitude, double Latitude, int Visitors);
+public sealed record GlobePin(double Longitude, double Latitude, int Visitors, string Color = "#b73539");
 public sealed record GlobeHistorySummary(int Visitors, DateTimeOffset? Since, GlobePin[] Pins);
 public sealed record GlobeSnapshot(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt);
 public sealed record GlobeView(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt,
@@ -21,7 +22,7 @@ public sealed record GlobeView(GlobeHistorySummary Live, GlobeHistorySummary His
 public interface IGlobeHistory
 {
     Task<bool> HasPin(string account, CancellationToken cancellationToken);
-    Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken);
+    Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken, string color = "#b73539");
     Task<bool> Touch(string account, DateTimeOffset now, CancellationToken cancellationToken);
     Task<GlobeSnapshot> Snapshot(DateTimeOffset now, DateTimeOffset onlineSince, CancellationToken cancellationToken);
 }
@@ -35,7 +36,7 @@ public sealed class SqlGlobeHistory(Func<AtlasDataContext> open) : IGlobeHistory
             && x.Longitude != null && x.Latitude != null, cancellationToken);
     }
 
-    public async Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken)
+    public async Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken, string color = "#b73539")
     {
         if (!account.StartsWith("a:")) throw new ArgumentException("An account is required.");
         await using var db = open();
@@ -55,6 +56,7 @@ public sealed class SqlGlobeHistory(Func<AtlasDataContext> open) : IGlobeHistory
             else if (row.Longitude is null) row.FirstSeenAt = now;
             row.Longitude = longitude;
             row.Latitude = latitude;
+            row.PinColor = color;
             row.LastSeenAt = now;
         }
         await db.SaveChangesAsync(cancellationToken);
@@ -77,14 +79,14 @@ public sealed class SqlGlobeHistory(Func<AtlasDataContext> open) : IGlobeHistory
         // Legacy anonymous rows are deliberately excluded. No anonymous pin is adopted by an account.
         var pins = await db.Set<GlobeVisitorRow>().AsNoTracking()
             .Where(x => x.Id.StartsWith("a:") && x.Longitude != null && x.Latitude != null)
-            .Select(x => new { Longitude = x.Longitude!.Value, Latitude = x.Latitude!.Value, x.FirstSeenAt, x.LastSeenAt })
+            .Select(x => new { Longitude = x.Longitude!.Value, Latitude = x.Latitude!.Value, x.FirstSeenAt, x.LastSeenAt, Color = x.PinColor ?? "#b73539" })
             .ToArrayAsync(cancellationToken);
         GlobeHistorySummary Summarize(bool live)
         {
             var selected = pins.Where(x => !live || x.LastSeenAt >= onlineSince).ToArray();
             return new(selected.Length, selected.Length == 0 ? null : selected.Min(x => x.FirstSeenAt),
-                selected.GroupBy(x => new { x.Longitude, x.Latitude })
-                    .Select(x => new GlobePin(x.Key.Longitude, x.Key.Latitude, x.Count())).ToArray());
+                selected.GroupBy(x => new { x.Longitude, x.Latitude, x.Color })
+                    .Select(x => new GlobePin(x.Key.Longitude, x.Key.Latitude, x.Count(), x.Key.Color)).ToArray());
         }
         return new(Summarize(true), Summarize(false), now);
     }

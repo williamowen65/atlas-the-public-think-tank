@@ -23,13 +23,17 @@ public sealed class GlobeService(IGlobeHistory history, TimeProvider clock)
         return await View(account, cancellationToken);
     }
 
-    public async Task<GlobeView> SetLocation(string account, double? longitude, double? latitude, CancellationToken cancellationToken)
+    public async Task<GlobeView> SetLocation(string account, double? longitude, double? latitude, CancellationToken cancellationToken, string? color = null)
     {
         if (longitude is { } lon && (!double.IsFinite(lon) || lon < -180 || lon > 180)
             || latitude is { } lat && (!double.IsFinite(lat) || lat < -90 || lat > 90)
             || (longitude is null) != (latitude is null)) throw new ArgumentException("Invalid globe coordinates.");
+        color ??= "#b73539";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(color, "^#[0-9a-fA-F]{6}\\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant))
+            throw new ArgumentException("Invalid globe pin color. Use a six-digit hex color.");
+        color = color.ToLowerInvariant();
         await history.SetLocation(account, longitude is null ? null : Math.Round(longitude.Value),
-            latitude is null ? null : Math.Round(latitude.Value), clock.GetUtcNow(), cancellationToken);
+            latitude is null ? null : Math.Round(latitude.Value), clock.GetUtcNow(), cancellationToken, color);
         Invalidate();
         return await View(account, cancellationToken);
     }

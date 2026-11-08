@@ -132,11 +132,14 @@ test('location permission waits for globe consent and only rounded coordinates l
   expect(
     await page.evaluate(() => (window as unknown as { locationCalls: number }).locationCalls),
   ).toBe(0);
+  await page.getByLabel('Pin color', { exact: true }).fill('#2468ac');
+  await expect(page.getByRole('img', { name: 'Your pin preview: #2468ac' })).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('pin-color-choice.png') });
   const write = page.waitForRequest(
     (request) => request.url().endsWith('/globe/location') && request.method() === 'PUT',
   );
   await page.getByRole('button', { name: 'Continue: share on this globe' }).click();
-  expect((await write).postDataJSON()).toEqual({ longitude: -122, latitude: 48 });
+  expect((await write).postDataJSON()).toEqual({ longitude: -122, latitude: 48, color: '#2468ac' });
   await expect(
     page.getByText('Your approximate location is shared on the Atlas globe.', { exact: false }),
   ).toBeVisible();

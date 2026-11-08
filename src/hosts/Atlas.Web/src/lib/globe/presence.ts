@@ -1,4 +1,4 @@
-export type GlobePin = { longitude: number; latitude: number; visitors: number };
+export type GlobePin = { longitude: number; latitude: number; visitors: number; color?: string };
 export type GlobeSummary = { visitors: number; since: string | null; pins: GlobePin[] };
 export type GlobeSnapshot = {
   live: GlobeSummary;
@@ -9,7 +9,7 @@ export type GlobeSnapshot = {
   onlineWindowMinutes: number;
 };
 
-/** Validate the short JSON snapshot without trusting network data in the SVG. */
+/** Validate the short JSON snapshot without trusting network data in the renderer. */
 export function parseSnapshot(data: unknown): GlobeSnapshot {
   const snapshot = (typeof data === 'string' ? JSON.parse(data) : data) as GlobeSnapshot;
   if (
@@ -41,7 +41,8 @@ export function parseSnapshot(data: unknown): GlobeSnapshot {
         !Number.isFinite(pin.latitude) ||
         Math.abs(pin.latitude) > 90 ||
         !Number.isSafeInteger(pin.visitors) ||
-        pin.visitors < 1
+        pin.visitors < 1 ||
+        (pin.color !== undefined && !/^#[0-9a-fA-F]{6}$/.test(pin.color))
       )
         throw new Error('Invalid globe pin');
     }
