@@ -77,7 +77,7 @@
 <div class="globe-art" class:mini>
   <svg data-angle={angle} viewBox="0 0 400 400" role="img" aria-labelledby={`${id}-title`}>
     <title id={`${id}-title`}
-      >Atlas visitor globe. Pins show approximate locations voluntarily shared by visitors.</title
+      >Atlas visitor globe. Pins show approximate locations voluntarily shared by account holders.</title
     >
     <defs>
       <radialGradient id={`${id}-ocean`} cx="50%" cy="50%" r="50%">
@@ -119,7 +119,7 @@
         <g class="map-pin">
           <title
             >{pin.visitors}
-            {pin.visitors === 1 ? 'visitor' : 'visitors'} near {pin.latitude}°, {pin.longitude}°</title
+            {pin.visitors === 1 ? 'account' : 'accounts'} near {pin.latitude}°, {pin.longitude}°</title
           >
           <line
             x1={point[0]}

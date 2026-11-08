@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { apiRequest } from '$lib/api/apiRequest';
   import { parseSnapshot, type GlobeSnapshot } from '$lib/globe/presence';
   import { createGlobeRotation } from '$lib/globe/rotation.svelte';
@@ -9,7 +10,8 @@
   let expanded = $state(false);
   let mode = $state<'live' | 'historical'>('live');
   let snapshot = $state<GlobeSnapshot>();
-  let status = $state<'connecting' | 'connected' | 'offline'>('connecting');
+  let status = $state<'loading' | 'ready' | 'failed'>('loading');
+  let canShare = $state(false);
   let consent = $state(false);
   let hasLocation = $state(false);
   let infoOpen = $state(false);
@@ -20,12 +22,12 @@
   let sharing = $state(false);
   let message = $state('');
   let alive = false;
-  let source: EventSource | undefined;
   let request: AbortController | undefined;
   let generation = 0;
   let shareGeneration = 0;
-  let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
-  let reconnectDelay = 5000;
+  let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let requestNumber = 0;
+  let loading = false;
   let opener: HTMLElement | null = null;
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
 
@@ -39,6 +41,7 @@
     // Non-modal dialog: the surrounding site stays interactive.
     dialog.show();
     expanded = true;
+    void refresh();
   }
   function closed() {
     if (dialog.open) return;
@@ -69,61 +72,53 @@
     event.stopPropagation();
     closeGlobe();
   }
-  async function connect() {
-    const current = ++generation;
-    clearTimeout(reconnectTimer);
-    source?.close();
+  function apply(value: unknown) {
+    snapshot = parseSnapshot(value);
+    hasLocation = snapshot.hasLocation;
+    canShare = snapshot.canShare;
+    status = 'ready';
+  }
+  async function refresh(force = false) {
+    if (!alive || document.hidden || sharing || (loading && !force)) return;
+    const ticket = ++requestNumber;
     request?.abort();
     request = new AbortController();
-    status = 'connecting';
+    loading = true;
+    if (!snapshot) status = 'loading';
     try {
       const signal = AbortSignal.any([request.signal, AbortSignal.timeout(12000)]);
-      const visit = () =>
-        apiRequest<{ hasLocation: boolean }>(
+      let view = await apiRequest<GlobeSnapshot>(
+        '/atlas-session-api',
+        canShare && hasLocation ? 'globe/activity' : 'globe/snapshot',
+        canShare && hasLocation ? 'POST' : 'GET',
+        undefined,
+        signal,
+      );
+      if (!alive || ticket !== requestNumber) return;
+      // Initial/session refresh learns the account state before recording any activity.
+      if (!(canShare && hasLocation) && view.canShare && view.hasLocation)
+        view = await apiRequest<GlobeSnapshot>(
           '/atlas-session-api',
-          'globe/visit',
+          'globe/activity',
           'POST',
           undefined,
           signal,
         );
-      // Serialize first-cookie creation across tabs of the same anonymous browser.
-      const visitor = navigator.locks
-        ? await navigator.locks.request('atlas-globe-visit', { signal }, visit)
-        : await visit();
-      if (!alive || current !== generation) return;
-      hasLocation = visitor.hasLocation === true;
-      const events = new EventSource('/atlas-session-api/globe/events');
-      source = events;
-      events.onmessage = (event) => {
-        if (!alive || current !== generation) return;
-        try {
-          snapshot = parseSnapshot(event.data);
-          status = 'connected';
-          reconnectDelay = 5000;
-        } catch {
-          disconnected();
-        }
-      };
-      events.onerror = disconnected;
-      function disconnected() {
-        if (!alive || current !== generation) return;
-        events.close();
-        scheduleReconnect();
-      }
+      if (alive && ticket === requestNumber) apply(view);
     } catch {
-      if (alive && current === generation) {
-        scheduleReconnect();
-      }
+      if (alive && ticket === requestNumber) status = 'failed';
+    } finally {
+      if (ticket === requestNumber) loading = false;
     }
   }
-  function scheduleReconnect() {
-    status = 'offline';
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(() => {
-      void connect();
-    }, reconnectDelay);
-    reconnectDelay = Math.min(30000, reconnectDelay * 2);
+  function cancelRead() {
+    requestNumber++;
+    request?.abort();
+    loading = false;
   }
+  afterNavigate(({ from }) => {
+    if (from && alive) void refresh();
+  });
   function placeDialog() {
     const height = window.innerHeight;
     const header = document.querySelector('.atlas-header')?.getBoundingClientRect();
@@ -143,19 +138,30 @@
     window.addEventListener('scroll', placeDialog, { passive: true });
     document.addEventListener('click', outsideClick, true);
     document.addEventListener('keydown', escape, true);
-    void connect();
+    void refresh();
     const restart = () => {
+      generation++;
+      cancelRead();
       message = '';
       consent = false;
-      void connect();
+      canShare = false;
+      hasLocation = false;
+      void refresh(true);
     };
+    const visible = () => {
+      if (!document.hidden) void refresh();
+    };
+    document.addEventListener('visibilitychange', visible);
+    pollTimer = setInterval(() => {
+      void refresh();
+    }, 60000);
     window.addEventListener('atlas-session-changed', restart);
     return () => {
       alive = false;
       generation++;
       request?.abort();
-      source?.close();
-      clearTimeout(reconnectTimer);
+      clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', visible);
       window.removeEventListener('atlas-session-changed', restart);
       window.removeEventListener('resize', placeDialog);
       window.removeEventListener('scroll', placeDialog);
@@ -164,6 +170,11 @@
     };
   });
   async function share() {
+    if (!canShare) {
+      message = 'Sign in to place a pin.';
+      return;
+    }
+    cancelRead();
     if (!navigator.geolocation) {
       message = 'Location sharing is unavailable in this browser.';
       return;
@@ -189,7 +200,7 @@
       )
         return;
       // Exact coordinates stay in this browser; only whole-degree positions are sent.
-      await apiRequest(
+      const updated = await apiRequest<GlobeSnapshot>(
         '/atlas-session-api',
         'globe/location',
         'PUT',
@@ -201,7 +212,7 @@
       );
       if (alive && current === generation) {
         consent = false;
-        hasLocation = true;
+        apply(updated);
         message =
           'Your approximate location is shared on the Atlas globe. You can remove it at any time.';
       }
@@ -216,10 +227,11 @@
     }
   }
   async function removeLocation() {
+    cancelRead();
     sharing = true;
     const current = generation;
     try {
-      await apiRequest(
+      const updated = await apiRequest<GlobeSnapshot>(
         '/atlas-session-api',
         'globe/location',
         'PUT',
@@ -228,7 +240,7 @@
       );
       if (alive && current === generation) {
         consent = false;
-        hasLocation = false;
+        apply(updated);
         message = 'Your location was removed from both Live and Historical.';
       }
     } catch {
@@ -247,11 +259,7 @@
   aria-haspopup="dialog"
   onclick={open}
 >
-  <VisitorGlobe
-    mini
-    angle={rotation.angle}
-    pins={status === 'connected' ? snapshot?.live.pins : []}
-  />
+  <VisitorGlobe mini angle={rotation.angle} pins={status === 'ready' ? snapshot?.live.pins : []} />
 </button>
 
 {#if expanded}<div class="body-shade" aria-hidden="true"></div>{/if}
@@ -284,32 +292,38 @@
     >
   </div>
   <div class="world">
-    <VisitorGlobe angle={rotation.angle} pins={status === 'connected' ? summary?.pins : []} />
+    <VisitorGlobe angle={rotation.angle} pins={status === 'ready' ? summary?.pins : []} />
   </div>
   <div class="globe-caption">
     <span class="metric"
-      ><strong>{status === 'connected' ? summary?.visitors : '—'}</strong>
-      {summary?.visitors === 1 ? 'visitor' : 'visitors'}
-      {mode === 'live' ? 'here now' : 'over time'}</span
+      ><strong>{status === 'ready' ? summary?.visitors : '—'}</strong>
+      {summary?.visitors === 1 ? 'account' : 'accounts'}
+      {mode === 'live' ? 'recently active' : 'with saved pins'}</span
     >
     <span class="connection" role="status"
-      >{status === 'connected'
-        ? 'Connected'
-        : status === 'connecting'
-          ? 'Connecting…'
-          : 'Reconnecting…'}</span
+      >{status === 'ready'
+        ? 'Updated ' +
+          new Date(snapshot!.capturedAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : status === 'loading'
+          ? 'Loading…'
+          : 'Update unavailable'}</span
     >
   </div>
   <div class="globe-actions">
-    {#if hasLocation}
+    {#if !canShare}
+      <a class="sign-in" href="/login">Sign in to place a pin</a>
+    {:else if hasLocation}
       <span class="shared-state">Location shared</span>
-      <button type="button" disabled={sharing || status !== 'connected'} onclick={removeLocation}
+      <button type="button" disabled={sharing || status !== 'ready'} onclick={removeLocation}
         >Remove my shared location</button
       >
     {:else}
       <button
         type="button"
-        disabled={sharing || status !== 'connected'}
+        disabled={sharing || status !== 'ready'}
         onclick={() => {
           consent = true;
           infoOpen = false;
@@ -317,7 +331,7 @@
         }}>Share my location on this globe</button
       >
     {/if}
-    {#if status === 'offline'}<button type="button" onclick={() => void connect()}>Retry now</button
+    {#if status === 'failed'}<button type="button" onclick={() => void refresh()}>Retry now</button
       >{/if}
     <button
       class="info-toggle"
@@ -336,14 +350,11 @@
       <strong>Put a pin on this globe?</strong>
       <p>
         The next step opens your browser’s permission prompt. Only an approximate location is
-        shared, without your name. It appears in Live while you are here and stays in Historical
+        shared, without your name. It appears in Live while recently active and stays in Historical
         until you remove it.
       </p>
-      <button
-        class="primary"
-        type="button"
-        disabled={sharing || status !== 'connected'}
-        onclick={share}>{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
+      <button class="primary" type="button" disabled={sharing || status !== 'ready'} onclick={share}
+        >{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
       >
       <button type="button" disabled={sharing} onclick={() => (consent = false)}>Cancel</button>
     </section>
@@ -358,26 +369,27 @@
         >
       </div>
       <p>
-        Live shows visitors connected now. Historical counts visitors recorded over time{#if snapshot?.historical.since},
-          since {new Date(snapshot.historical.since).toLocaleDateString()}{/if}. Accounts count once
-        across browsers; anonymous visitors count by browser. Multiple tabs count once.
+        Historical shows accounts that chose to save a pin. Live shows those accounts active within
+        the last {snapshot?.onlineWindowMinutes ?? 5} minutes. Each account counts once, across tabs and
+        devices. Anonymous visitors are not included.
       </p>
       <p>
-        Pins are optional, approximate locations. Connection status does not mean your location is
-        shared.
+        The map refreshes about once a minute while this page is visible. Leaving or signing out can
+        take up to five minutes to drop out of Live. Pins stay in Historical until removed. Only
+        approximate locations are shown, without account names.
       </p>
       <details class="locations">
         <summary
-          >Shared locations ({status === 'connected'
+          >Shared locations ({status === 'ready'
             ? (summary?.pins.reduce((total, pin) => total + pin.visitors, 0) ?? 0)
-            : 'unavailable'} visitors)</summary
+            : 'unavailable'} accounts)</summary
         >
-        {#if status !== 'connected'}<p>Waiting for the connection.</p>
+        {#if status !== 'ready'}<p>The latest snapshot is unavailable. Try refreshing.</p>
         {:else if !summary?.pins.length}<p>No locations shared in this view yet.</p>
         {:else}<ul>
             {#each summary.pins as pin}<li>
                 Near {pin.latitude}° latitude, {pin.longitude}° longitude: {pin.visitors}
-                {pin.visitors === 1 ? 'visitor' : 'visitors'}
+                {pin.visitors === 1 ? 'account' : 'accounts'}
               </li>{/each}
           </ul>{/if}
       </details>
@@ -496,6 +508,10 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: 0.6rem;
+  }
+  .sign-in {
+    font-size: 0.8rem;
+    padding: 0.4rem;
   }
   .globe-actions > button {
     font-size: 0.8rem;

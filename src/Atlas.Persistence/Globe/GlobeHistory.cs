@@ -2,88 +2,90 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Persistence.Globe;
 
-// Pseudonymous local visitor records, separate from profiles and content.
+/// <summary>One opted-in pin per account. IDs are server-derived account hashes, never browser identities.</summary>
 public sealed class GlobeVisitorRow
 {
     public string Id { get; set; } = "";
     public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset? LastSeenAt { get; set; }
     public double? Longitude { get; set; }
     public double? Latitude { get; set; }
 }
 
-public sealed class GlobeBrowserRow
-{
-    public string Id { get; set; } = "";
-    public string VisitorId { get; set; } = "";
-}
-
 public sealed record GlobePin(double Longitude, double Latitude, int Visitors);
 public sealed record GlobeHistorySummary(int Visitors, DateTimeOffset? Since, GlobePin[] Pins);
-public sealed record GlobeVisit(string VisitorId, string? MergedVisitorId, bool HasLocation);
+public sealed record GlobeSnapshot(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt);
+public sealed record GlobeView(GlobeHistorySummary Live, GlobeHistorySummary Historical, DateTimeOffset CapturedAt,
+    bool CanShare, bool HasLocation, int OnlineWindowMinutes = 5);
 
 public interface IGlobeHistory
 {
-    Task<GlobeVisit> Visit(string browser, string? account, CancellationToken cancellationToken);
-    Task SetLocation(string visitor, double? longitude, double? latitude, CancellationToken cancellationToken);
-    Task<GlobeHistorySummary> Summary(string[]? visitors, CancellationToken cancellationToken);
+    Task<bool> HasPin(string account, CancellationToken cancellationToken);
+    Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken);
+    Task<bool> Touch(string account, DateTimeOffset now, CancellationToken cancellationToken);
+    Task<GlobeSnapshot> Snapshot(DateTimeOffset now, DateTimeOffset onlineSince, CancellationToken cancellationToken);
 }
 
-/// <summary>Called under the local presence service's gate; every operation owns its context.</summary>
 public sealed class SqlGlobeHistory(Func<AtlasDataContext> open) : IGlobeHistory
 {
-    public async Task<GlobeVisit> Visit(string browser, string? account, CancellationToken cancellationToken)
+    public async Task<bool> HasPin(string account, CancellationToken cancellationToken)
     {
         await using var db = open();
-        var alias = await db.Set<GlobeBrowserRow>().FindAsync([browser], cancellationToken);
-        var id = account ?? alias?.VisitorId ?? browser;
-        var visitor = await db.Set<GlobeVisitorRow>().FindAsync([id], cancellationToken);
-        if (visitor is null)
+        return await db.Set<GlobeVisitorRow>().AnyAsync(x => x.Id == account && x.Id.StartsWith("a:")
+            && x.Longitude != null && x.Latitude != null, cancellationToken);
+    }
+
+    public async Task SetLocation(string account, double? longitude, double? latitude, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (!account.StartsWith("a:")) throw new ArgumentException("An account is required.");
+        await using var db = open();
+        var row = await db.Set<GlobeVisitorRow>().FindAsync([account], cancellationToken);
+        if (longitude is null)
         {
-            visitor = new() { Id = id, FirstSeenAt = DateTimeOffset.UtcNow };
-            db.Add(visitor);
+            if (row is null) return;
+            db.Remove(row);
         }
-        string? merged = null;
-        // Upgrade anonymous history on sign-in, but never merge two different accounts.
-        if (account is not null && alias is not null && alias.VisitorId.StartsWith("b:") && alias.VisitorId != id)
+        else
         {
-            var previous = await db.Set<GlobeVisitorRow>().FindAsync([alias.VisitorId], cancellationToken);
-            if (previous is not null)
+            if (row is null)
             {
-                merged = previous.Id;
-                visitor.FirstSeenAt = visitor.FirstSeenAt < previous.FirstSeenAt ? visitor.FirstSeenAt : previous.FirstSeenAt;
-                // Sharing as a guest does not silently grant an account permission to share.
-                // Require a fresh explicit action after the anonymous-to-account upgrade.
-                var aliases = await db.Set<GlobeBrowserRow>().Where(x => x.VisitorId == previous.Id).ToListAsync(cancellationToken);
-                foreach (var other in aliases) other.VisitorId = id;
-                db.Remove(previous);
+                row = new() { Id = account, FirstSeenAt = now };
+                db.Add(row);
             }
+            else if (row.Longitude is null) row.FirstSeenAt = now;
+            row.Longitude = longitude;
+            row.Latitude = latitude;
+            row.LastSeenAt = now;
         }
-        if (alias is null) db.Add(new GlobeBrowserRow { Id = browser, VisitorId = id });
-        else alias.VisitorId = id;
-        await db.SaveChangesAsync(cancellationToken);
-        return new(id, merged, visitor.Longitude is not null);
-    }
-
-    public async Task SetLocation(string visitor, double? longitude, double? latitude, CancellationToken cancellationToken)
-    {
-        await using var db = open();
-        var row = await db.Set<GlobeVisitorRow>().SingleAsync(x => x.Id == visitor, cancellationToken);
-        row.Longitude = longitude;
-        row.Latitude = latitude;
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<GlobeHistorySummary> Summary(string[]? visitors, CancellationToken cancellationToken)
+    public async Task<bool> Touch(string account, DateTimeOffset now, CancellationToken cancellationToken)
     {
         await using var db = open();
-        var query = db.Set<GlobeVisitorRow>().AsNoTracking();
-        if (visitors is not null) query = query.Where(x => visitors.Contains(x.Id));
-        var count = await query.CountAsync(cancellationToken);
-        var since = await query.MinAsync(x => (DateTimeOffset?)x.FirstSeenAt, cancellationToken);
-        var pins = await query.Where(x => x.Longitude != null && x.Latitude != null)
-            .GroupBy(x => new { x.Longitude, x.Latitude })
-            .Select(x => new GlobePin(x.Key.Longitude!.Value, x.Key.Latitude!.Value, x.Count()))
+        // Polls from multiple tabs update an existing pin at most once per 45 seconds.
+        // Unpinned accounts and anonymous visitors never create activity/history records.
+        var before = now.AddSeconds(-45);
+        return await db.Set<GlobeVisitorRow>().Where(x => x.Id == account && x.Id.StartsWith("a:")
+            && x.Longitude != null && x.Latitude != null && (x.LastSeenAt == null || x.LastSeenAt <= before))
+            .ExecuteUpdateAsync(set => set.SetProperty(x => x.LastSeenAt, now), cancellationToken) > 0;
+    }
+
+    public async Task<GlobeSnapshot> Snapshot(DateTimeOffset now, DateTimeOffset onlineSince, CancellationToken cancellationToken)
+    {
+        await using var db = open();
+        // Legacy anonymous rows are deliberately excluded. No anonymous pin is adopted by an account.
+        var pins = await db.Set<GlobeVisitorRow>().AsNoTracking()
+            .Where(x => x.Id.StartsWith("a:") && x.Longitude != null && x.Latitude != null)
+            .Select(x => new { Longitude = x.Longitude!.Value, Latitude = x.Latitude!.Value, x.FirstSeenAt, x.LastSeenAt })
             .ToArrayAsync(cancellationToken);
-        return new(count, since, pins);
+        GlobeHistorySummary Summarize(bool live)
+        {
+            var selected = pins.Where(x => !live || x.LastSeenAt >= onlineSince).ToArray();
+            return new(selected.Length, selected.Length == 0 ? null : selected.Min(x => x.FirstSeenAt),
+                selected.GroupBy(x => new { x.Longitude, x.Latitude })
+                    .Select(x => new GlobePin(x.Key.Longitude, x.Key.Latitude, x.Count())).ToArray());
+        }
+        return new(Summarize(true), Summarize(false), now);
     }
 }

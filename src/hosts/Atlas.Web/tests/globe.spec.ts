@@ -13,42 +13,24 @@ const snapshot = {
     pins: [{ longitude: -122, latitude: 48, visitors: 3 }],
   },
 };
-async function mockApi(page: Page, offline = false, hasLocation = false) {
-  // Hold a deterministic listener open; actual SSE transport is covered by GlobeHttpTests.
-  await page.addInitScript(
-    ({ snapshot, offline }) => {
-      class GlobeEvents {
-        onmessage: ((event: MessageEvent) => void) | null = null;
-        onerror: (() => void) | null = null;
-        closed = false;
-        constructor() {
-          setTimeout(() => {
-            if (this.closed) return;
-            if (offline) this.onerror?.();
-            else this.onmessage?.(new MessageEvent('message', { data: JSON.stringify(snapshot) }));
-          }, 100);
-        }
-        close() {
-          this.closed = true;
-        }
-      }
-      Object.defineProperty(window, 'EventSource', { value: GlobeEvents });
-    },
-    { snapshot, offline },
-  );
+async function mockApi(page: Page, offline = false, hasLocation = false, canShare = true) {
+  let saved = hasLocation;
+  const view = () => ({
+    ...snapshot,
+    canShare,
+    hasLocation: saved,
+    capturedAt: '2026-11-08T12:00:00Z',
+    onlineWindowMinutes: 5,
+  });
   await page.route('**/atlas-session-api/**', async (route) => {
-    const url = new URL(route.request().url());
-    if (url.pathname.endsWith('/auth/csrf'))
-      return route.fulfill({ json: { token: 'test-token' } });
-    if (url.pathname.endsWith('/globe/visit')) return route.fulfill({ json: { hasLocation } });
-    if (url.pathname.endsWith('/globe/events'))
-      return offline
-        ? route.abort()
-        : route.fulfill({
-            contentType: 'text/event-stream',
-            body: `data: ${JSON.stringify(snapshot)}\n\n`,
-          });
-    if (url.pathname.endsWith('/globe/location')) return route.fulfill({ status: 204 });
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'test-token' } });
+    if (path.endsWith('/globe/snapshot') || path.endsWith('/globe/activity'))
+      return offline ? route.fulfill({ status: 503 }) : route.fulfill({ json: view() });
+    if (path.endsWith('/globe/location')) {
+      saved = route.request().postDataJSON().longitude !== null;
+      return route.fulfill({ json: view() });
+    }
     return route.fulfill({ status: 401, json: {} });
   });
   await page.route('**/atlas-public-api/**', (route) =>
@@ -80,7 +62,7 @@ test('desktop mini opens compact globe, toggles history, and restores focus on E
   await page.screenshot({ path: test.info().outputPath('desktop-globe.png') });
   await dialog.getByRole('button', { name: 'About this globe', exact: true }).click();
   await dialog.getByText('Shared locations', { exact: false }).click();
-  await expect(dialog.getByText('Near 48° latitude, -122° longitude: 3 visitors')).toBeVisible();
+  await expect(dialog.getByText('Near 48° latitude, -122° longitude: 3 accounts')).toBeVisible();
   expect((await new AxeBuilder({ page }).include('dialog').analyze()).violations).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
@@ -154,11 +136,11 @@ test('location permission waits for globe consent and only rounded coordinates l
   expect((await remove).postDataJSON()).toEqual({ longitude: null, latitude: null });
 });
 
-test('unavailable listener has recovery and does not show stale live counts', async ({ page }) => {
+test('unavailable snapshot has recovery and does not show stale live counts', async ({ page }) => {
   await mockApi(page, true);
   await page.goto('/');
   await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
-  await expect(page.getByText('Reconnecting…', { exact: true })).toBeVisible();
+  await expect(page.getByText('Update unavailable', { exact: true })).toBeVisible();
   await expect(page.locator('.metric strong')).toHaveText('—');
   await expect(page.getByRole('button', { name: 'Retry now' })).toBeEnabled();
 });
@@ -198,7 +180,7 @@ test('map failure leaves counts and text locations usable', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Retry map' })).toBeEnabled();
   await page.getByRole('button', { name: 'About this globe', exact: true }).click();
   await page.getByText('Shared locations', { exact: false }).click();
-  await expect(page.getByText('Near 48° latitude, -122° longitude: 1 visitor')).toBeVisible();
+  await expect(page.getByText('Near 48° latitude, -122° longitude: 1 account')).toBeVisible();
 });
 
 test('miniature and popup share one rotation across opening and reopening', async ({ page }) => {
@@ -349,4 +331,67 @@ test('the launcher toggles the open globe closed', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Visitor globe' })).toBeVisible();
   await launcher.click();
   await expect(page.getByRole('dialog', { name: 'Visitor globe' })).not.toBeVisible();
+});
+
+test('anonymous viewers see snapshots and a sign-in link without activity or stream requests', async ({
+  page,
+}) => {
+  await mockApi(page, false, false, false);
+  const requests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/atlas-session-api/globe/'))
+      requests.push(request.method() + ' ' + new URL(request.url()).pathname);
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  await expect(page.getByRole('link', { name: 'Sign in to place a pin' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Share my location on this globe', exact: true }),
+  ).toHaveCount(0);
+  expect(
+    requests.every((request) => request.startsWith('GET /atlas-session-api/globe/snapshot')),
+  ).toBe(true);
+  expect(requests.length).toBeGreaterThan(0);
+});
+
+test('visible pages poll using short requests once a minute without event streams', async ({
+  page,
+}) => {
+  await page.clock.install();
+  await mockApi(page, false, true, true);
+  let activity = 0;
+  const streams: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith('/globe/activity')) activity++;
+    if (/\/globe\/(events|visit)(?:\?|$)/.test(request.url())) streams.push(request.url());
+  });
+  await page.goto('/');
+  await expect.poll(() => activity).toBe(1);
+  await page.clock.fastForward(59000);
+  expect(activity).toBe(1);
+  await page.clock.fastForward(1000);
+  await expect.poll(() => activity).toBe(2);
+  expect(streams).toEqual([]);
+});
+
+test('hidden tabs pause polling and refresh on return', async ({ page }) => {
+  await page.clock.install();
+  await mockApi(page, false, true, true);
+  let activity = 0;
+  page.on('request', (request) => {
+    if (request.url().endsWith('/globe/activity')) activity++;
+  });
+  await page.goto('/');
+  await expect.poll(() => activity).toBe(1);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.clock.fastForward(120000);
+  expect(activity).toBe(1);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(() => activity).toBe(2);
 });

@@ -180,14 +180,6 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasMaxLength(66);
         });
-        model.Entity<Globe.GlobeBrowserRow>(entity =>
-        {
-            entity.ToTable("GlobeBrowsers");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasMaxLength(66);
-            entity.Property(x => x.VisitorId).HasMaxLength(66);
-            entity.HasOne<Globe.GlobeVisitorRow>().WithMany().HasForeignKey(x => x.VisitorId).OnDelete(DeleteBehavior.Restrict);
-        });
         model.Entity<AuditRecordRow>(entity =>
         {
             entity.ToTable("AuditRecords");
