@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { geoOrthographic } from 'd3-geo';
-import { globeRadius, projectPin } from '../src/lib/globe/pinGeometry';
+import {
+  globeRadius,
+  projectPin,
+  preparePin,
+  projectPreparedPin,
+  isPinVisible,
+} from '../src/lib/globe/pinGeometry';
 
 test('pin anchors follow the same camera as the map at every latitude', () => {
   for (const angle of [-180, -45, 0, 90, 180]) {
@@ -40,4 +46,12 @@ test('far-side raised heads extend beyond the limb while the globe hides their r
   expect(Math.hypot(head[0] - 200, head[1] - 200)).toBeGreaterThan(globeRadius);
   const hidden = projectPin({ latitude: 0, longitude: 150, visitors: 1 }, 0, 23, 0);
   expect(Math.hypot(hidden.head[0] - 200, hidden.head[1] - 200)).toBeLessThan(globeRadius);
+});
+
+test('cached geometry matches direct projection and culling retains horizon tips', () => {
+  const pin = { latitude: 0, longitude: 100, visitors: 1 };
+  const prepared = preparePin(pin);
+  expect(projectPreparedPin(prepared, 40)).toEqual(projectPin(pin, 40));
+  expect(isPinVisible(projectPin(pin, 0), 3.5)).toBe(true);
+  expect(isPinVisible(projectPin({ ...pin, longitude: 180 }, 0), 3.5)).toBe(false);
 });

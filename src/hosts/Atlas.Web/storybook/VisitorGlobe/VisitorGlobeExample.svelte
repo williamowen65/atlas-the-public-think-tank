@@ -32,7 +32,7 @@
       { longitude: -122, latitude: 48, visitors: 1 },
     ],
   }: {
-    renderer?: 'svg' | 'canvas';
+    renderer?: 'svg' | 'canvas' | 'webgl';
     targetFps?: number;
     oceanColor?: string;
     oceanEdgeColor?: string;

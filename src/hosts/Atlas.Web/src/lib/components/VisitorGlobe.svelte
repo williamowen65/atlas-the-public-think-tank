@@ -15,10 +15,11 @@
 </script>
 
 <script lang="ts">
+  import WebGLGlobe from './WebGLGlobe.svelte';
   import CanvasGlobe from './CanvasGlobe.svelte';
   import { onMount } from 'svelte';
   import { geoOrthographic, geoPath, geoGraticule10 } from 'd3-geo';
-  import { projectPin } from '$lib/globe/pinGeometry';
+  import { preparePin, projectPreparedPin, isPinVisible } from '$lib/globe/pinGeometry';
   import type { GlobePin } from '$lib/globe/presence';
   let {
     renderer = 'svg',
@@ -39,7 +40,7 @@
     outlineColor = '#547d89',
     showGrid = true,
   }: {
-    renderer?: 'svg' | 'canvas';
+    renderer?: 'svg' | 'canvas' | 'webgl';
     pins?: GlobePin[];
     mini?: boolean;
     angle?: number;
@@ -64,9 +65,11 @@
   );
   const path = $derived(geoPath(projection));
   const id = $props.id();
+  const preparedPins = $derived(pins.map((pin) => preparePin(pin, pinLength, pinLean)));
   const projectedPins = $derived(
-    pins
-      .map((pin) => ({ ...projectPin(pin, angle, pinLength, pinLean), pin }))
+    preparedPins
+      .map((pin) => projectPreparedPin(pin, angle))
+      .filter((pin) => isPinVisible(pin, pinStyle === 'stem' ? 1 : pinHeadRadius))
       .sort((a, b) => a.head[2] - b.head[2]),
   );
   async function retry() {
@@ -136,7 +139,27 @@
 {/snippet}
 
 <div class="globe-art" class:mini>
-  {#if renderer === 'canvas'}
+  {#if renderer === 'webgl'}
+    <WebGLGlobe
+      {angle}
+      options={{
+        land,
+        pins: preparedPins,
+        oceanColor,
+        oceanEdgeColor,
+        landColor,
+        gridColor,
+        outlineColor,
+        pinColor,
+        pinHeadColor,
+        variedHeads,
+        pinStyle,
+        pinHeadRadius,
+        mini,
+        showGrid,
+      }}
+    />
+  {:else if renderer === 'canvas'}
     <CanvasGlobe
       {angle}
       options={{

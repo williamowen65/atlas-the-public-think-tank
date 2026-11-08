@@ -45,8 +45,8 @@ const meta = {
   argTypes: {
     renderer: {
       control: 'select',
-      options: ['svg', 'canvas'],
-      type: { name: 'enum', value: ['svg', 'canvas'] },
+      options: ['svg', 'canvas', 'webgl'],
+      type: { name: 'enum', value: ['svg', 'canvas', 'webgl'] },
     },
     targetFps: {
       control: 'select',
@@ -133,3 +133,6 @@ export const EquatorAndHorizon: Story = {
 
 export const Canvas: Story = { args: { renderer: 'canvas' } };
 export const CanvasStress: Story = { args: { renderer: 'canvas', pinCount: 5000 } };
+
+export const WebGL: Story = { args: { renderer: 'webgl' } };
+export const WebGLStress: Story = { args: { renderer: 'webgl', pinCount: 10000 } };
