@@ -4,6 +4,7 @@
   import { apiRequest } from '$lib/api/apiRequest';
   import { parseSnapshot, type GlobeSnapshot } from '$lib/globe/presence';
   import { createGlobeRotation } from '$lib/globe/rotation.svelte';
+  import { pickLocation } from '$lib/globe/pickLocation';
   import VisitorGlobe from './VisitorGlobe.svelte';
 
   let dialog: HTMLDialogElement;
@@ -19,7 +20,26 @@
   let globeTop = $state(90);
   let globeBottom = $state(16);
   let globeSize = $state(360);
-  const rotation = createGlobeRotation();
+  let manual = $state(false);
+  let chosenLatitude = $state<number | undefined>();
+  let chosenLongitude = $state<number | undefined>();
+  const picked = $derived(
+    chosenLatitude !== undefined &&
+      chosenLongitude !== undefined &&
+      Number.isInteger(chosenLatitude) &&
+      Number.isInteger(chosenLongitude) &&
+      Math.abs(chosenLatitude) <= 90 &&
+      Math.abs(chosenLongitude) <= 180
+      ? { latitude: chosenLatitude, longitude: chosenLongitude }
+      : null,
+  );
+
+  const rotation = createGlobeRotation(() => !(consent && manual));
+  const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
+  const previewPins = $derived([
+    ...(status === 'ready' ? (summary?.pins ?? []) : []),
+    ...(consent && manual && picked ? [{ ...picked, visitors: 1, color: pinColor }] : []),
+  ]);
   let sharing = $state(false);
   let message = $state('');
   let alive = false;
@@ -30,7 +50,6 @@
   let requestNumber = 0;
   let loading = false;
   let opener: HTMLElement | null = null;
-  const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
 
   export function open() {
     if (dialog.open) {
@@ -49,6 +68,9 @@
     shareGeneration++;
     expanded = false;
     consent = false;
+    manual = false;
+    chosenLatitude = undefined;
+    chosenLongitude = undefined;
     infoOpen = false;
   }
   function closeGlobe(restoreFocus = true) {
@@ -76,6 +98,7 @@
   function apply(value: unknown) {
     snapshot = parseSnapshot(value);
     hasLocation = snapshot.hasLocation;
+    if (!consent && snapshot.pinColor) pinColor = snapshot.pinColor;
     canShare = snapshot.canShare;
     status = 'ready';
   }
@@ -170,6 +193,49 @@
       document.removeEventListener('keydown', escape, true);
     };
   });
+  function chooseSpot(event: MouseEvent) {
+    if (!manual || !consent || sharing) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const point = pickLocation(
+      event.detail === 0 ? rect.width / 2 : event.clientX - rect.left,
+      event.detail === 0 ? rect.height / 2 : event.clientY - rect.top,
+      rect.width,
+      rotation.angle,
+    );
+    if (point) {
+      chosenLatitude = point.latitude;
+      chosenLongitude = point.longitude;
+    }
+  }
+  async function savePicked() {
+    if (!picked || !canShare || !consent || sharing) return;
+    cancelRead();
+    sharing = true;
+    const current = generation;
+    const ticket = ++shareGeneration;
+    try {
+      const updated = await apiRequest<GlobeSnapshot>(
+        '/atlas-session-api',
+        'globe/location',
+        'PUT',
+        { ...picked, color: pinColor },
+        AbortSignal.timeout(12000),
+      );
+      if (alive && current === generation && ticket === shareGeneration && expanded && consent) {
+        apply(updated);
+        consent = false;
+        manual = false;
+        chosenLatitude = undefined;
+        chosenLongitude = undefined;
+        message = 'Your chosen approximate location is shared on the Atlas globe.';
+      }
+    } catch {
+      if (alive && current === generation && ticket === shareGeneration)
+        message = 'Your pin could not be saved. Please try again.';
+    } finally {
+      sharing = false;
+    }
+  }
   async function share() {
     if (!canShare) {
       message = 'Sign in to place a pin.';
@@ -268,12 +334,14 @@
 <dialog
   bind:this={dialog}
   class="explorer"
+  class:editing={consent && manual}
   aria-label="Visitor globe"
   aria-modal="false"
   onclose={closed}
   style:top={`${globeTop}px`}
   style:bottom={`${globeBottom}px`}
-  style:--globe-size={`${globeSize}px`}
+  style:--globe-size={`${consent && manual ? Math.min(globeSize, 240) : globeSize}px`}
+  style:max-height={consent && manual ? `calc(100dvh - ${globeTop + globeBottom}px)` : 'none'}
 >
   <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
@@ -294,10 +362,14 @@
     >
   </div>
   <div class="world">
-    {#if expanded}<VisitorGlobe
-        angle={rotation.angle}
-        pins={status === 'ready' ? summary?.pins : []}
-      />{/if}
+    {#if expanded}<VisitorGlobe angle={rotation.angle} pins={previewPins} />{/if}
+    {#if consent && manual}<button
+        class="pick-surface"
+        type="button"
+        aria-label="Choose a location on the globe"
+        onclick={chooseSpot}
+        disabled={sharing}
+      ></button>{/if}
   </div>
   <div class="globe-caption">
     <span class="metric"
@@ -322,6 +394,19 @@
       <a class="sign-in" href="/login">Sign in to place a pin</a>
     {:else if hasLocation}
       <span class="shared-state">Location shared</span>
+      <button
+        type="button"
+        disabled={sharing || status !== 'ready'}
+        onclick={() => {
+          consent = true;
+          rotation.angle = ((((rotation.angle + 180) % 360) + 360) % 360) - 180;
+          manual = true;
+          chosenLatitude = undefined;
+          chosenLongitude = undefined;
+          infoOpen = false;
+          message = '';
+        }}>Edit my pin</button
+      >
       <button type="button" disabled={sharing || status !== 'ready'} onclick={removeLocation}
         >Remove my shared location</button
       >
@@ -331,6 +416,9 @@
         disabled={sharing || status !== 'ready'}
         onclick={() => {
           consent = true;
+          manual = false;
+          chosenLatitude = undefined;
+          chosenLongitude = undefined;
           infoOpen = false;
           message = '';
         }}>Share my location on this globe</button
@@ -351,7 +439,7 @@
   </div>
   <p class="feedback" role="status">{message}</p>
   {#if consent}
-    <section class="disclosure consent" aria-label="Share location on this globe">
+    <section class="disclosure consent" class:manual aria-label="Share location on this globe">
       <strong>Put a pin on this globe?</strong>
       <div class="pin-choice">
         <label>Pin color <input type="color" bind:value={pinColor} disabled={sharing} /></label>
@@ -360,14 +448,81 @@
           ></span>
         </span>
       </div>
-      <p>
-        The next step opens your browser’s permission prompt. Only an approximate location is
-        shared, without your name. It appears in Live while recently active and stays in Historical
-        until you remove it.
-      </p>
-      <button class="primary" type="button" disabled={sharing || status !== 'ready'} onclick={share}
-        >{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
-      >
+      {#if manual}
+        <p>
+          Choose an approximate spot on the globe. No browser location permission is needed. This
+          replaces your saved pin only when you save.
+        </p>
+        <label class="turn-globe"
+          >Turn globe <input
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            bind:value={rotation.angle}
+            disabled={sharing}
+          /></label
+        >
+        <div class="coordinate-fields">
+          <label
+            >Latitude <input
+              type="number"
+              min="-90"
+              max="90"
+              step="1"
+              bind:value={chosenLatitude}
+              disabled={sharing}
+            /></label
+          >
+          <label
+            >Longitude <input
+              type="number"
+              min="-180"
+              max="180"
+              step="1"
+              bind:value={chosenLongitude}
+              disabled={sharing}
+            /></label
+          >
+        </div>
+        <button
+          class="primary"
+          type="button"
+          disabled={!picked || sharing || status !== 'ready'}
+          onclick={savePicked}>{sharing ? 'Saving…' : 'Save this pin'}</button
+        >
+        <button
+          type="button"
+          disabled={sharing}
+          onclick={() => {
+            manual = false;
+            chosenLatitude = undefined;
+            chosenLongitude = undefined;
+          }}>Use browser location instead</button
+        >
+      {:else}
+        <p>
+          The next step opens your browser’s permission prompt. Only an approximate location is
+          shared, without your name. It appears in Live while recently active and stays in
+          Historical until you remove it.
+        </p>
+        <button
+          class="primary"
+          type="button"
+          disabled={sharing || status !== 'ready'}
+          onclick={share}>{sharing ? 'Sharing…' : 'Continue: share on this globe'}</button
+        >
+        <button
+          type="button"
+          disabled={sharing}
+          onclick={() => {
+            rotation.angle = ((((rotation.angle + 180) % 360) + 360) % 360) - 180;
+            manual = true;
+            chosenLatitude = undefined;
+            chosenLongitude = undefined;
+          }}>Choose a spot on the globe instead</button
+        >
+      {/if}
       <button type="button" disabled={sharing} onclick={() => (consent = false)}>Cancel</button>
     </section>
   {/if}
@@ -417,6 +572,59 @@
 </dialog>
 
 <style>
+  .pick-surface {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: crosshair;
+    border-radius: 50%;
+  }
+  .pick-surface:focus-visible {
+    outline: 2px solid var(--atlas-accent);
+  }
+  .explorer.editing {
+    overflow: auto;
+  }
+  .editing .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--atlas-surface);
+  }
+  .editing .globe-caption,
+  .editing .globe-actions {
+    display: none;
+  }
+  .disclosure.manual {
+    max-height: none;
+    overflow: visible;
+    position: static;
+    margin: 0.75rem;
+  }
+  .turn-globe {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .coordinate-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  .coordinate-fields label {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .coordinate-fields input {
+    width: 5rem;
+  }
+
   .pin-choice {
     display: flex;
     align-items: center;
@@ -532,6 +740,7 @@
     font-size: 1.1rem;
   }
   .world {
+    position: relative;
     width: min(100%, var(--globe-size));
     margin: 0.25rem auto;
     aspect-ratio: 1;

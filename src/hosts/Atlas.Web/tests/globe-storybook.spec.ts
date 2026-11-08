@@ -22,6 +22,7 @@ for (const variant of [
   'stems-only',
   'equator-and-horizon',
   'stress',
+  'uniform-stress',
 ]) {
   test(`WebGL ${variant} story renders without an API`, async ({ page }) => {
     const apiCalls: string[] = [];

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import type { GeoPermissibleObjects } from 'd3-geo';
   import VisitorGlobe from '../../src/lib/components/VisitorGlobe.svelte';
   import { createGlobeRotation } from '../../src/lib/globe/rotation.svelte';
   import { demoPins } from './demoPins';
@@ -51,11 +53,30 @@
     size?: number;
     mini?: boolean;
     pinCount?: number;
-    distribution?: 'worldwide' | 'clustered' | 'custom';
+    distribution?: 'worldwide' | 'uniform' | 'clustered' | 'custom';
     pins?: GlobePin[];
   } = $props();
+  let demoLand = $state.raw<GeoPermissibleObjects>();
+  let demoFailed = $state(false);
+  onMount(() => {
+    let active = true;
+    void fetch('/globe/land.geojson')
+      .then((response) => {
+        if (!response.ok) throw new Error('Map unavailable');
+        return response.json();
+      })
+      .then((value) => {
+        if (active) demoLand = value;
+      })
+      .catch(() => {
+        if (active) demoFailed = true;
+      });
+    return () => {
+      active = false;
+    };
+  });
   const displayedPins = $derived(
-    distribution === 'custom' ? pins : demoPins(pinCount, distribution),
+    distribution === 'custom' ? pins : demoPins(pinCount, distribution, demoLand),
   );
   const rotation = createGlobeRotation(
     () => animate,
@@ -90,12 +111,13 @@
 <p class="demo-caption" data-performance>
   WebGL · target {targetFps} FPS · {rotation.updatesPerSecond} rotation updates/s
 </p>
+{#if demoFailed}<p role="status">Demo land data could not load.</p>{/if}
 <p class="demo-caption" data-demo-count={displayedPins.length}>
   {displayedPins.length} demo pins · {distribution}
 </p>
 <p class="demo-note">
-  Synthetic demo locations. Worldwide spreads across the globe, including oceans; clustered uses
-  city anchors. Rotate to see the rest.
+  Synthetic demo locations. Worldwide uses land-only, region-weighted positions; uniform includes
+  oceans; clustered tests dense areas. These are illustrative, not population estimates.
 </p>
 
 <style>

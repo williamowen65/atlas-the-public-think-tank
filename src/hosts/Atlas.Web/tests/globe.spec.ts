@@ -463,3 +463,98 @@ test('closing the expanded globe releases its GPU programs', async ({ page }) =>
     .poll(() => page.evaluate(() => (window as any).deletedGlobePrograms))
     .toBe(before + 2);
 });
+
+test('choose a globe spot previews and saves without browser location access', async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript(() => {
+    (window as any).manualLocationCalls = 0;
+    navigator.geolocation.getCurrentPosition = () => {
+      (window as any).manualLocationCalls++;
+    };
+  });
+  const writes: unknown[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith('/globe/location') && request.method() === 'PUT')
+      writes.push(request.postDataJSON());
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Share my location on this globe', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose a spot on the globe instead' }).click();
+  const canvas = page.getByRole('dialog').locator('canvas[data-angle]');
+  const angle = Number(await canvas.getAttribute('data-angle'));
+  await page.getByRole('button', { name: 'Choose a location on the globe', exact: true }).click();
+  await expect(page.getByLabel('Latitude', { exact: true })).toHaveValue('18');
+  const pickedLongitude = Number(await page.getByLabel('Longitude', { exact: true }).inputValue());
+  // Pointer clicks can land half a CSS pixel away from the geometric center.
+  expect(Math.abs(pickedLongitude + angle)).toBeLessThanOrEqual(1);
+  await page.getByLabel('Pin color', { exact: true }).fill('#2468ac');
+  expect(writes).toHaveLength(0);
+  await expect(canvas).toHaveAttribute('data-angle', String(angle));
+  await page.screenshot({ path: test.info().outputPath('manual-pin-preview.png') });
+  await page.getByRole('button', { name: 'Save this pin', exact: true }).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toEqual({ longitude: pickedLongitude, latitude: 18, color: '#2468ac' });
+  expect(await page.evaluate(() => (window as any).manualLocationCalls)).toBe(0);
+});
+
+test('manual edit preserves saved color and cancel makes no location write', async ({ page }) => {
+  await mockApi(page, false, true);
+  await page.route('**/atlas-session-api/globe/activity', (route) =>
+    route.fulfill({
+      json: {
+        ...snapshot,
+        canShare: true,
+        hasLocation: true,
+        pinColor: '#123abc',
+        capturedAt: '2026-11-08T12:00:00Z',
+        onlineWindowMinutes: 5,
+      },
+    }),
+  );
+  const writes: unknown[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith('/globe/location') && request.method() === 'PUT')
+      writes.push(request.postDataJSON());
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Edit my pin', exact: true }).click();
+  await expect(page.getByLabel('Pin color', { exact: true })).toHaveValue('#123abc');
+  await page.getByLabel('Latitude', { exact: true }).fill('-33');
+  await page.getByLabel('Longitude', { exact: true }).fill('151');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect(writes).toHaveLength(0);
+  await expect(page.getByText('Location shared', { exact: true })).toBeVisible();
+});
+
+test('mobile manual placement supports valid coordinates without leaving the viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Share my location on this globe', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose a spot on the globe instead' }).click();
+  const save = page.getByRole('button', { name: 'Save this pin', exact: true });
+  await expect(save).toBeDisabled();
+  await page.getByLabel('Latitude', { exact: true }).fill('100');
+  await page.getByLabel('Longitude', { exact: true }).fill('-122');
+  await expect(save).toBeDisabled();
+  await page.getByLabel('Latitude', { exact: true }).fill('47');
+  await expect(save).toBeEnabled();
+  const bounds = await page.getByRole('dialog').boundingBox();
+  expect(bounds!.y).toBeGreaterThanOrEqual(0);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
+  await page.screenshot({ path: test.info().outputPath('manual-pin-mobile.png') });
+  const request = page.waitForRequest(
+    (request) => request.url().endsWith('/globe/location') && request.method() === 'PUT',
+  );
+  await save.click();
+  expect((await request).postDataJSON()).toEqual({
+    latitude: 47,
+    longitude: -122,
+    color: '#b73539',
+  });
+});
