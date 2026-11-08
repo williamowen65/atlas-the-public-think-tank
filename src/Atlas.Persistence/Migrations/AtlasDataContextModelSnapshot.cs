@@ -321,24 +321,6 @@ namespace Atlas.Persistence.Migrations
                     b.ToTable("DocumentRows", (string)null);
                 });
 
-            modelBuilder.Entity("Atlas.Persistence.Globe.GlobeBrowserRow", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(66)
-                        .HasColumnType("nvarchar(66)");
-
-                    b.Property<string>("VisitorId")
-                        .IsRequired()
-                        .HasMaxLength(66)
-                        .HasColumnType("nvarchar(66)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VisitorId");
-
-                    b.ToTable("GlobeBrowsers", (string)null);
-                });
-
             modelBuilder.Entity("Atlas.Persistence.Globe.GlobeVisitorRow", b =>
                 {
                     b.Property<string>("Id")
@@ -346,6 +328,9 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("nvarchar(66)");
 
                     b.Property<DateTimeOffset>("FirstSeenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("LastSeenAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<double?>("Latitude")
@@ -1351,15 +1336,6 @@ namespace Atlas.Persistence.Migrations
                         .WithMany("Blocks")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Atlas.Persistence.Globe.GlobeBrowserRow", b =>
-                {
-                    b.HasOne("Atlas.Persistence.Globe.GlobeVisitorRow", null)
-                        .WithMany()
-                        .HasForeignKey("VisitorId")
-                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
