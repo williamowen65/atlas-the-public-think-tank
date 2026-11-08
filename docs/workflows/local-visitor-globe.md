@@ -1,6 +1,10 @@
 # Visitor globe (PTT-162 / PTT-163)
 
-The desktop corner globe opens a nearly full-screen visitor map. On phones, Globe lives in the existing bottom navigation. Escape or the close button dismisses the dialog and returns focus to its launcher. Live / Historical controls switch counts and pins together.
+The circular desktop corner globe opens a compact visitor map centered over the page body. The Atlas header stays visible; on phones, the popup also stays above the bottom navigation. It uses the site's existing surface, text, border, radius and accent tokens. Escape or the close button dismisses it and returns focus to its launcher. Live / Historical controls switch counts and pins together.
+
+The miniature and expanded globe share one rotation clock, so opening or closing the popup keeps the same part of the world in view. Reduced-motion preferences pause rotation. Pins use thin outward-projecting stems rather than circular dots. The globe has a centered ocean tint without a diagonal lighting band.
+
+Visitor totals, connection status and the current location-sharing action stay compact beneath the globe. Saved sharing state is read from the visit response, so an already-shared location offers removal instead of another share button. Connection status describes the listener, separately from location consent. Counts, text locations and the optional Natural Earth credit are behind **About this globe**.
 
 The globe is intended to run in both local development and the deployed Atlas application. The frontend includes it in production builds, and Atlas.Api serves its endpoints in every environment. The Vite proxy only supports local development; Atlas.Api owns the deployed routes, not Sites.
 
@@ -74,6 +78,14 @@ npx playwright test --config playwright.globe.config.ts
 ```
 
 Both Playwright configurations exercise the globe in the production frontend build served locally. API tests separately boot real Development and Production hosts and exercise SSE responses through the session API prefix with independent cookie jars and an in-memory history adapter; these do not establish SQL durability or verify Azure. SQL persistence tests exercise merging, restart/repository reload, pin aggregation and removal after the migration is generated.
+
+## Explore the globe in Storybook
+
+Run `npm run storybook` from `src/hosts/Atlas.Web`, then open **Components → VisitorGlobe → Playground**. The Controls panel exposes ocean center/edge colors, land, grid, outline and pin colors, grid visibility, globe size, fixture pins, rotation speed, angle and animation. Give both ocean colors the same value for a flat fill.
+
+**Paper**, **Night**, and **Miniature** stories provide alternate starting points. These stories use the same renderer as the site, with fixture pins and a vendored map; they need no API, database or geolocation permission. Changes in Storybook are exploratory controls, not saved site preferences. Rotation controls are only in Storybook.
+
+Natural Earth data is public domain and its terms explicitly make credit optional. The reference GeographicPinMap loaded the D3 Graph Gallery's `world.geojson`, rather than this vendored Natural Earth land file. Keep source/licensing notes in `static/globe/README.md`; the popup credit is informational.
 
 ## Demo verification before merge
 
