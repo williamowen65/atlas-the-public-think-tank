@@ -199,6 +199,59 @@ The browser and driver can queue these commands, so returning from a draw call m
 
 Svelte keeps the upload effects separate from the draw effect. A rotation tick changes `angle` and triggers another draw using the existing buffer and texture. A resize also triggers a draw and can resize the canvas backing buffer. [Svelte effects](../../src/hosts/Atlas.Web/src/lib/components/WebGLGlobe.svelte#L46)
 
+## WebGL method lookup
+
+Use this table when you encounter a `gl.*()` call in the renderer or its browser tests. The parameters follow the order used in Atlas. Constants such as `gl.ARRAY_BUFFER` are values passed into these calls. [Renderer](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L119) · [Browser tests](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts)
+
+| Method | Parameters in order | What it does here |
+| --- | --- | --- |
+| `activeTexture` | `unit` | Selects the texture unit affected by subsequent texture bindings. Atlas uses `TEXTURE0`, which the map sampler refers to as integer `0`. |
+| `attachShader` | `program, shader` | Adds a compiled vertex or fragment shader to the program before linking. |
+| `bindBuffer` | `target, buffer` | Selects the pin buffer for `ARRAY_BUFFER` so subsequent uploads and attribute definitions use it. |
+| `bindTexture` | `target, texture` | Selects a texture for the given target on the active texture unit. Atlas binds the map as `TEXTURE_2D`. |
+| `bindVertexArray` | `vao` | Selects the vertex input configuration to edit or draw with. Atlas uses separate Earth and pin VAOs. |
+| `blendFunc` | `sourceFactor, destinationFactor` | Sets the weights for the new fragment and existing pixel when blending. Atlas uses `SRC_ALPHA` and `ONE_MINUS_SRC_ALPHA`. |
+| `bufferData` | `target, data, usage` | Allocates or replaces storage for the bound buffer and copies in the packed pin array. `STATIC_DRAW` signals that Atlas expects to reuse the data across many draws. |
+| `clear` | `mask` | Resets the buffers selected by the mask. Atlas combines the color and depth buffer bits at the start of each frame. |
+| `clearColor` | `red, green, blue, alpha` | Sets the color used by the next color clear. Four zeros give the canvas a transparent background. |
+| `compileShader` | `shader` | Compiles the GLSL source assigned to a shader. |
+| `createBuffer` | None | Creates the buffer object that later holds pin records. |
+| `createProgram` | None | Creates the program object that will link a vertex and fragment shader. |
+| `createShader` | `type` | Creates a shader object of type `VERTEX_SHADER` or `FRAGMENT_SHADER`. |
+| `createTexture` | None | Creates the texture object that later holds the map image. |
+| `createVertexArray` | None | Creates a vertex array object for recording vertex input state. |
+| `deleteBuffer` | `buffer` | Deletes the renderer's pin buffer object during cleanup. |
+| `deleteProgram` | `program` | Marks a linked program for deletion during cleanup. |
+| `deleteShader` | `shader` | Marks a shader for deletion during cleanup. |
+| `deleteTexture` | `texture` | Deletes the map texture object during cleanup. |
+| `deleteVertexArray` | `vao` | Deletes a vertex array object during cleanup. |
+| `depthFunc` | `comparison` | Sets the depth comparison. `LEQUAL` lets a fragment pass when its depth is less than or equal to the stored depth. |
+| `drawArrays` | `mode, firstVertex, vertexCount` | Submits geometry using consecutive vertex indices. Atlas uses `TRIANGLES, 0, 6` for the Earth rectangle. |
+| `drawArraysInstanced` | `mode, firstVertex, vertexCount, instanceCount` | Repeats the same geometry for each instance. Atlas uses six vertices per rectangle and one instance per pin for the shaft or head pass. |
+| `enable` | `capability` | Enables the named feature. Atlas turns on `DEPTH_TEST` and `BLEND`. |
+| `enableVertexAttribArray` | `attributeIndex` | Enables reading an attribute from its buffer at the specified shader input index. |
+| `getError` | None | Reads a pending WebGL error code. The rotation test expects zero, which is `NO_ERROR`. |
+| `getExtension` | `name` | Requests an optional WebGL feature. The context recovery test uses `WEBGL_lose_context` to simulate loss and restoration. |
+| `getParameter` | `parameter` | Reads a context setting. The sizing tests use `CURRENT_PROGRAM` to find the program whose uniforms they want to inspect. |
+| `getProgramInfoLog` | `program` | Reads the program's diagnostic log. Atlas uses it to report link failures. |
+| `getProgramParameter` | `program, parameter` | Queries a program property. Atlas reads `LINK_STATUS` to check whether linking succeeded. |
+| `getShaderInfoLog` | `shader` | Reads the shader's diagnostic log. Atlas uses it to report compilation failures. |
+| `getShaderParameter` | `shader, parameter` | Queries a shader property. Atlas reads `COMPILE_STATUS` to check whether compilation succeeded. |
+| `getUniform` | `program, location` | Reads a uniform's current value. The sizing tests use it to inspect the head radius and shaft width. |
+| `getUniformLocation` | `program, name` | Looks up the handle for a named uniform in a linked program. Atlas caches the handles for repeated updates. |
+| `linkProgram` | `program` | Links the attached shaders into a program that can be selected for drawing. |
+| `pixelStorei` | `parameter, value` | Sets a pixel transfer option. Atlas enables `UNPACK_FLIP_Y_WEBGL` to flip the canvas image vertically during texture upload. |
+| `shaderSource` | `shader, source` | Assigns the GLSL source string to the shader object for compilation. |
+| `texImage2D` | `target, level, internalFormat, format, type, source` | Uploads the map canvas to level `0` of the bound 2D texture. Atlas requests `RGBA` storage and supplies `RGBA` pixels of type `UNSIGNED_BYTE`. |
+| `texParameteri` | `target, parameter, value` | Sets a texture sampling option. Atlas uses linear filtering, repeats longitude with `TEXTURE_WRAP_S`, and clamps latitude to the edge with `TEXTURE_WRAP_T`. |
+| `uniform1f` | `location, value` | Sets one float uniform in the active program, such as the angle in radians, head radius, or shaft width. |
+| `uniform1i` | `location, value` | Sets one integer uniform in the active program. Atlas uses it for the map texture unit, pin mode, and style flags. |
+| `uniform3fv` | `location, values` | Supplies the three float components of an RGB uniform, such as ocean color or shaft color. |
+| `useProgram` | `program` | Selects the linked shader program used by subsequent draw calls. Uniform writes then apply to that program. |
+| `vertexAttribDivisor` | `attributeIndex, divisor` | Controls when an attribute advances during instanced drawing. Atlas uses `1` so each pin gets one record shared across its rectangle's vertices. |
+| `vertexAttribPointer` | `attributeIndex, componentCount, type, normalized, stride, offset` | Describes how to read an attribute from the bound buffer. Each pin field has three floats, normalization is false, records are 36 bytes apart, and the three fields begin at byte offsets 0, 12, and 24. |
+| `viewport` | `x, y, width, height` | Sets the drawing region in backing-buffer pixels. Atlas starts at `(0, 0)` and uses the full canvas dimensions. |
+
 ## How to read the WebGL tests
 
 The rotation test uses Chromium's SwiftShader software renderer and wraps three WebGL methods before the page starts. Each wrapper counts the call and then forwards it to the original method with the same arguments and context. This lets the test watch actual draw and upload calls while the renderer still does its normal work. [Rotation test](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts#L15)
