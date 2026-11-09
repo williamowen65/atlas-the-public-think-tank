@@ -349,7 +349,7 @@ test('the launcher toggles the open globe closed', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Visitor globe' })).not.toBeVisible();
 });
 
-test('anonymous viewers see snapshots and a sign-in link without activity or stream requests', async ({
+test('anonymous viewers only request snapshots and the sign-in link closes the globe', async ({
   page,
 }) => {
   await mockApi(page, false, false, false);
@@ -368,6 +368,9 @@ test('anonymous viewers see snapshots and a sign-in link without activity or str
     requests.every((request) => request.startsWith('GET /atlas-session-api/globe/snapshot')),
   ).toBe(true);
   expect(requests.length).toBeGreaterThan(0);
+  await page.getByRole('link', { name: 'Sign in to place a pin' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('dialog', { name: 'Visitor globe' })).toBeHidden();
 });
 
 test('visible pages poll using short requests once a minute without event streams', async ({

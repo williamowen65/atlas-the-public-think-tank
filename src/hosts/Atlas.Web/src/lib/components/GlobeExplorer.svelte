@@ -140,8 +140,10 @@
     request?.abort();
     loading = false;
   }
-  afterNavigate(({ from }) => {
-    if (from && alive) void refresh();
+  afterNavigate(({ from, to }) => {
+    if (!from || !alive) return;
+    if (to?.url.pathname === '/login') closeGlobe(false);
+    void refresh();
   });
   function placeDialog() {
     const height = window.innerHeight;
