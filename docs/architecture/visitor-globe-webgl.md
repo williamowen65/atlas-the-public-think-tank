@@ -47,6 +47,33 @@ Paths below are relative to this guide. The frontend root is `src/hosts/Atlas.We
 
 The shader strings use GLSL, a different language from TypeScript. `vec2`, `vec3` and `vec4` hold two, three and four numbers. `mix(a, b, t)` interpolates between values. `uniform` declares shared inputs, while `in` and `out` connect stages. `gl_Position` is the vertex shader's output position; our fragment shaders write their output color and, for Earth, an explicit depth.
 
+## From TypeScript to the canvas
+
+TypeScript prepares the data and asks WebGL to draw. The GPU then runs the vertex and fragment shaders at different stages.
+
+```mermaid
+flowchart TD
+    A["TypeScript prepares the map texture and pin data"]
+    B["TypeScript sets the current angle and issues a draw call"]
+
+    subgraph GPU["GPU"]
+        direction TB
+        C["Vertex shader main() places the triangle corners"]
+        D["Rasterizer finds the covered fragments and interpolates their inputs"]
+        E["Fragment shader main() supplies color and depth or discards the fragment"]
+        F["Depth testing and blending determine what reaches the image"]
+        C --> D --> E --> F
+    end
+
+    A -->|"Upload when data changes"| B
+    B -->|"Draw again as the globe rotates"| C
+    F --> G["Globe appears on the canvas"]
+```
+
+For the **Earth draw**, the vertex shader places two triangles that form a rectangle. The rasterizer fills in the positions between their corners. At each candidate fragment, the Earth fragment shader checks whether that position is inside the circle. Inside the circle, it reconstructs the sphere’s front surface, looks up the map color, and writes the surface depth.
+
+The **pin draws** come afterward. Their vertex shader places the shafts and heads. As those fragments reach the depth test, WebGL compares them with the depth Earth already wrote. That’s how the flat rectangle can hide a pin behind the globe as though it were a sphere.
+
 ## Follow one pin from coordinates to pixels
 
 `preparePin()` first turns longitude and latitude into a point on a sphere:
