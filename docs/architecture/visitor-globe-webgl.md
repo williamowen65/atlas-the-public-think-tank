@@ -203,6 +203,12 @@ Svelte keeps the upload effects separate from the draw effect. A rotation tick c
 
 Use this table when you encounter a `gl.*()` call in the renderer or its browser tests. The parameters follow the order used in Atlas. Constants such as `gl.ARRAY_BUFFER` are values passed into these calls. [Renderer](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L119) · [Browser tests](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts)
 
+The names carry clues about the operation and the value it expects.
+
+- **`tex` means texture.** In `texImage2D`, `2D` describes a two-dimensional image. In `texParameteri`, the final `i` means the setting takes an integer value, often a named constant like `gl.LINEAR`.
+- **`i` means integer, `f` means float, and `v` means the values arrive together in an array or typed array.** `uniform1i` takes one integer, `uniform1f` takes one float, and `uniform3fv` takes an array of three floats for an RGB color in Atlas. The number in these uniform names counts components per value.
+- **Numbers in the argument list have their own meaning.** In `drawArrays(gl.TRIANGLES, 0, 6)`, `0` is the first vertex index and `6` is the vertex count. In `uniform1i(mapTextureLocation, 0)`, `0` selects texture unit zero for the map sampler.
+
 | Method | Parameters in order | What it does here |
 | --- | --- | --- |
 | `activeTexture` | `unit` | Selects the texture unit affected by subsequent texture bindings. Atlas uses `TEXTURE0`, which the map sampler refers to as integer `0`. |
