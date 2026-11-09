@@ -5,6 +5,7 @@ using OpenTelemetry.Metrics;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.StaticFiles;
 using System.Threading.RateLimiting;
 
 // Top-level statements are the application's Main method. ASP.NET Core supplies
@@ -118,7 +119,9 @@ app.Use(async (context, next) =>
 });
 // The release pipeline places the SvelteKit static build under API wwwroot.
 app.UseDefaultFiles();
-app.UseStaticFiles();
+var staticContentTypes = new FileExtensionContentTypeProvider();
+staticContentTypes.Mappings[".geojson"] = "application/geo+json";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = staticContentTypes });
 // Match a route before applying endpoint-specific rate limits and policies.
 app.UseRouting();
 app.UseRateLimiter();
