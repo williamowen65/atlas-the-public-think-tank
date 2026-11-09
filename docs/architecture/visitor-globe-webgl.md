@@ -186,7 +186,16 @@ Read `createWebGLGlobe()` in three passes. The outer function runs when a render
 | Data or style updates | `setMap()`, `setPins()`, and `setStyle()` | Upload the map and pin data or update shader settings. Texture filtering and wrapping are set in `setMap()`, so that work can recur when the map is rebuilt. |
 | Each frame | `draw(angle, width)` | Clear the color and depth buffers, select the programs and inputs, update uniforms, and submit the Earth and pin draws. |
 
-Inside `draw()`, `useProgram()` selects the shader pair, `bindVertexArray()` selects the recorded vertex input state, and the uniform calls supply values such as the current angle. Then `drawArrays()` submits the Earth triangles and `drawArraysInstanced()` submits the pin shafts and, when enabled, the heads. Those draw calls are where WebGL is asked to run the shaders for that geometry. Commands are submitted in order, and the browser and driver can queue the work before the frame appears on screen.
+### Follow one frame through `draw()`
+
+Think of `useProgram()` as selecting the script and the draw call as saying “Action!” Selecting a linked program sets the shader pair for subsequent draws. Binding a vertex array, binding a texture, and setting uniforms supply the inputs those draws will use. Shader execution is requested when the draw is submitted.
+
+| Pass | State and inputs | Draw command |
+| --- | --- | --- |
+| Earth | `useProgram(earth)` selects the Earth shader pair. `bindVertexArray(earthVao)` selects its vertex input state. The renderer binds the map texture and sets the sampler and rotation angle. | `drawArrays(gl.TRIANGLES, 0, 6)` submits six vertices for the two triangles that cover the Earth rectangle. The fragment shader evaluates the covered fragments, discards those outside the disc, and supplies color and depth for the sphere surface. |
+| Pins | `useProgram(pins)` switches to the pin shader pair. `bindVertexArray(pinVao)` selects the existing pin buffer layout. Uniforms supply the angle, size, and whether to draw shafts or heads. | `drawArraysInstanced(gl.TRIANGLES, 0, 6, count)` submits one rectangle per pin. The renderer submits the shafts first, then sets `kind` for a separate head draw when heads are enabled. Pin fragments are depth-tested against the Earth surface. |
+
+The browser and driver can queue these commands, so returning from a draw call means the work has been submitted. The GPU can execute shader invocations in parallel as it processes the draw. [Frame drawing code](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L246)
 
 Svelte keeps the upload effects separate from the draw effect. A rotation tick changes `angle` and triggers another draw using the existing buffer and texture. A resize also triggers a draw and can resize the canvas backing buffer. [Svelte effects](../../src/hosts/Atlas.Web/src/lib/components/WebGLGlobe.svelte#L46)
 
