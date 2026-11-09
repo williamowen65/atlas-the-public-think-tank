@@ -116,6 +116,7 @@ export const sessionApiGuard: Plugin = {
         || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
         || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
         || path === '/atlas-session-api/moderation/queue'
+        || path === '/atlas-session-api/globe/snapshot'
         || new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:history|revisions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
 
@@ -136,7 +137,9 @@ export const sessionApiGuard: Plugin = {
       const moderationWrite = method === 'POST'
         && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
 
-      const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
+      const globeWrite = method === 'POST' && path === '/atlas-session-api/globe/activity'
+        || method === 'PUT' && path === '/atlas-session-api/globe/location';
+      const writable = globeWrite || nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
         || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation|confirm-email|forgot-password|reset-password)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))

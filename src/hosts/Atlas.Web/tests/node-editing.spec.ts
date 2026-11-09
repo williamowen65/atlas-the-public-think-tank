@@ -63,6 +63,7 @@ async function setup(page: Page, participant: string | null = author) {
     if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
     const request = route.request(),
       path = new URL(request.url()).pathname;
+    if (path.startsWith('/atlas-session-api/globe/')) return route.fulfill({ status: 503, json: {} });
     if (path.endsWith('/auth/session'))
       return participant
         ? route.fulfill({ json: { participantId: participant } })

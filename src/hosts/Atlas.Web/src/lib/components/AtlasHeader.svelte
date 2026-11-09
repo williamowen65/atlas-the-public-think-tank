@@ -16,7 +16,7 @@
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { moderatorVisibility, setModeratorVisibility, setIncludeHidden } from '../state/moderatorVisibility.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, type Snippet } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
   let {
     mobileExperiment = false,
@@ -25,10 +25,13 @@
     displayName = 'Atlas User',
     canModerate = false,
     pendingModerationCount = 0,
+    globeLauncher,
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
+    /** Visitor globe launcher in the mobile bottom controls. */
+    globeLauncher?: Snippet;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
      * Selects the signed-in header menu versus login/register links; does not authenticate by
@@ -411,6 +414,7 @@
   <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
+    {#if globeLauncher}<div class="globe-nav">{@render globeLauncher()}</div>{/if}
     {#if authenticated}
       <div class="bottom-account" bind:this={mobileAccountElement}>
         <button class="bottom-account-toggle" bind:this={mobileAccountToggle} type="button" aria-label="Open account menu" aria-expanded={menuOpen} aria-controls="mobile-account-menu" onclick={() => { menuOpen = !menuOpen; if (menuOpen) { closeDrawer(); headerVisible = true; } }}>
@@ -460,8 +464,9 @@
       padding: 0.35rem 0 max(0.35rem, env(safe-area-inset-bottom));
       border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
       transition: transform 180ms ease;
-      a, .bottom-account-toggle { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
+      a, .bottom-account-toggle, .globe-nav { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
       > a > span { font-size: 1.4rem; line-height: 1.3; }
+      .globe-nav { justify-content: center; }
       .bottom-account { flex: 1; display: flex; justify-content: center; }
       .bottom-account-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: var(--atlas-text); font: inherit; cursor: pointer; }
       .bottom-avatar { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid var(--atlas-border); border-radius: 50%; font-size: 0.9rem; font-weight: 700; line-height: 1; }

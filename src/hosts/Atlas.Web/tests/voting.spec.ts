@@ -20,6 +20,19 @@ async function setup(page: Page, anonymous = false) {
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'voter' } }) : route.fulfill({ status: 401, json: {} });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'csrf-fixture' } });
     if (request.method() === 'GET' && path.endsWith('/reactions')) return route.fulfill({ json: [] });
+    // The shared layout fetches a read-only globe snapshot on the feed.
+    if (request.method() === 'GET' && path.endsWith('/globe/snapshot')) {
+      return route.fulfill({
+        json: {
+          live: { visitors: 0, since: null, pins: [] },
+          historical: { visitors: 0, since: null, pins: [] },
+          canShare: signedIn,
+          hasLocation: false,
+          capturedAt: '2026-11-08T12:00:00Z',
+          onlineWindowMinutes: 5,
+        },
+      });
+    }
     expect(request.headers()['x-csrf-token']).toBe('csrf-fixture');
     if (path.endsWith('/auth/login')) { signedIn = true; return route.fulfill({ status: 204 }); }
     if (path.endsWith('/vote')) {

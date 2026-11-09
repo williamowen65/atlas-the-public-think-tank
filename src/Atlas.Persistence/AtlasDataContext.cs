@@ -174,6 +174,13 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     protected override void OnModelCreating(ModelBuilder model)
     {
         base.OnModelCreating(model);
+        model.Entity<Globe.GlobeVisitorRow>(entity =>
+        {
+            entity.ToTable("GlobeVisitors");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(66);
+            entity.Property(x => x.PinColor).HasMaxLength(7);
+        });
         model.Entity<AuditRecordRow>(entity =>
         {
             entity.ToTable("AuditRecords");
