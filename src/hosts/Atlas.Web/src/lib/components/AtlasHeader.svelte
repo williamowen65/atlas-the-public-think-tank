@@ -16,7 +16,7 @@
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { moderatorVisibility, setModeratorVisibility, setIncludeHidden } from '../state/moderatorVisibility.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, type Snippet } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
   let {
     mobileExperiment = false,
@@ -25,13 +25,13 @@
     displayName = 'Atlas User',
     canModerate = false,
     pendingModerationCount = 0,
-    onOpenGlobe,
+    globeLauncher,
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
     /** Visitor globe launcher in the mobile bottom controls. */
-    onOpenGlobe?: () => void;
+    globeLauncher?: Snippet;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
      * Selects the signed-in header menu versus login/register links; does not authenticate by
@@ -414,7 +414,7 @@
   <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
-    {#if onOpenGlobe}<button class="globe-nav" type="button" aria-label="Open Atlas visitor globe" aria-haspopup="dialog" onclick={onOpenGlobe}><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18M5 6.5h14M5 17.5h14" /></svg>Globe</button>{/if}
+    {#if globeLauncher}<div class="globe-nav">{@render globeLauncher()}</div>{/if}
     {#if authenticated}
       <div class="bottom-account" bind:this={mobileAccountElement}>
         <button class="bottom-account-toggle" bind:this={mobileAccountToggle} type="button" aria-label="Open account menu" aria-expanded={menuOpen} aria-controls="mobile-account-menu" onclick={() => { menuOpen = !menuOpen; if (menuOpen) { closeDrawer(); headerVisible = true; } }}>
@@ -466,8 +466,7 @@
       transition: transform 180ms ease;
       a, .bottom-account-toggle, .globe-nav { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
       > a > span { font-size: 1.4rem; line-height: 1.3; }
-      .globe-nav { border: 0; background: transparent; color: var(--atlas-text); cursor: pointer; font-family: inherit; }
-      .globe-nav svg { fill: none; stroke: currentColor; stroke-width: 1.2; margin-block: 0.1rem; }
+      .globe-nav { justify-content: center; }
       .bottom-account { flex: 1; display: flex; justify-content: center; }
       .bottom-account-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: var(--atlas-text); font: inherit; cursor: pointer; }
       .bottom-avatar { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid var(--atlas-border); border-radius: 50%; font-size: 0.9rem; font-weight: 700; line-height: 1; }

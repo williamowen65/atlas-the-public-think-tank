@@ -84,10 +84,15 @@ test('mobile bottom control opens without overflow or overlapping the dialog', a
   await page.setViewportSize({ width: 390, height: 844 });
   await mockApi(page);
   await page.goto('/');
-  await page
+  const launcher = page
     .getByRole('navigation', { name: 'Bottom navigation' })
-    .getByRole('button', { name: 'Open Atlas visitor globe' })
-    .click();
+    .getByRole('button', { name: 'Open Atlas visitor globe' });
+  const miniature = launcher.locator('canvas[data-angle]');
+  await expect(miniature).toBeVisible();
+  const initialAngle = await miniature.getAttribute('data-angle');
+  await expect.poll(() => miniature.getAttribute('data-angle')).not.toBe(initialAngle);
+  await expect(launcher.getByText('Globe', { exact: true })).toHaveCount(0);
+  await launcher.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   const fits = await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth);

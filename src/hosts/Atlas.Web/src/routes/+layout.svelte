@@ -16,7 +16,6 @@
   import AtlasHeader from '$lib/components/AtlasHeader.svelte';
   import AtlasFooter from '$lib/components/AtlasFooter.svelte';
   import '../styles.scss';
-  let globe = $state<GlobeExplorer>();
 
   // The router supplies the current page (and any nested layouts) as this snippet.
   let {
@@ -107,13 +106,16 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader mobileExperiment onOpenGlobe={() => globe?.open()} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
+  <GlobeExplorer>
+    {#snippet navigation(globeLauncher)}
+      <AtlasHeader mobileExperiment {globeLauncher} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
+    {/snippet}
+  </GlobeExplorer>
   <!-- The current route renders between the shared header and footer. -->
   <main id="main-content">
     {@render children()}
   </main>
   <AtlasFooter />
-  <GlobeExplorer bind:this={globe} />
 </div>
 
 <style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import { afterNavigate } from '$app/navigation';
   import { apiRequest } from '$lib/api/apiRequest';
   import { parseSnapshot, type GlobeSnapshot } from '$lib/globe/presence';
@@ -7,6 +7,8 @@
   import { pickLocation } from '$lib/globe/pickLocation';
   import VisitorGlobe from './VisitorGlobe.svelte';
 
+  let { navigation }: { navigation?: Snippet<[Snippet]> } = $props();
+  let mobile = $state(false);
   let dialog: HTMLDialogElement;
   let expanded = $state(false);
   let mode = $state<'live' | 'historical'>('live');
@@ -159,6 +161,10 @@
   }
   onMount(() => {
     alive = true;
+    const mobileQuery = matchMedia('(max-width: 560px)');
+    const updateMobile = () => (mobile = mobileQuery.matches);
+    updateMobile();
+    mobileQuery.addEventListener('change', updateMobile);
     placeDialog();
     window.addEventListener('resize', placeDialog);
     window.addEventListener('scroll', placeDialog, { passive: true });
@@ -183,6 +189,7 @@
     }, 60000);
     window.addEventListener('atlas-session-changed', restart);
     return () => {
+      mobileQuery.removeEventListener('change', updateMobile);
       alive = false;
       generation++;
       request?.abort();
@@ -322,15 +329,29 @@
   }
 </script>
 
-<button
-  class="mini-launcher"
-  type="button"
-  aria-label="Open Atlas visitor globe"
-  aria-haspopup="dialog"
-  onclick={open}
->
-  <VisitorGlobe mini angle={rotation.angle} pins={status === 'ready' ? snapshot?.live.pins : []} />
-</button>
+{#snippet launcher(inNavigation: boolean)}
+  <button
+    class="mini-launcher"
+    class:in-navigation={inNavigation}
+    type="button"
+    aria-label="Open Atlas visitor globe"
+    aria-haspopup="dialog"
+    onclick={open}
+  >
+    <VisitorGlobe
+      mini
+      angle={rotation.angle}
+      pins={status === 'ready' ? snapshot?.live.pins : []}
+    />
+  </button>
+{/snippet}
+
+{#snippet mobileLauncher()}
+  {#if mobile}{@render launcher(true)}{/if}
+{/snippet}
+
+{@render navigation?.(mobileLauncher)}
+{#if !mobile || !navigation}{@render launcher(false)}{/if}
 
 {#if expanded}<div class="body-shade" aria-hidden="true"></div>{/if}
 <dialog
@@ -676,6 +697,12 @@
     cursor: pointer;
     box-shadow: 0 3px 10px #172b3822;
   }
+  .mini-launcher.in-navigation {
+    position: static;
+    width: 2.75rem;
+    height: 2.75rem;
+    box-shadow: none;
+  }
   .body-shade {
     position: fixed;
     inset: 0;
@@ -829,7 +856,7 @@
     color: var(--atlas-muted);
   }
   @media (max-width: 560px) {
-    .mini-launcher {
+    .mini-launcher:not(.in-navigation) {
       display: none;
     }
     .explorer {
