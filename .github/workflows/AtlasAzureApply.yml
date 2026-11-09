@@ -56,7 +56,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Resolve installation selection
@@ -121,13 +121,13 @@ jobs:
       AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
       ATLAS_REQUIRE_FRESH_RUN: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify installation namespace and state key
         working-directory: .
         run: python infrastructure/scripts/check-deployment-target.py infrastructure
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
@@ -186,7 +186,7 @@ jobs:
           digest=$(sha256sum "$RUNNER_TEMP/atlas.tfplan.enc" | cut -d ' ' -f 1)
           echo "sha256=$digest" >> "$GITHUB_OUTPUT"
           cp .terraform.lock.hcl "$RUNNER_TEMP/terraform-provider.lock.hcl"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: steps.plan.outputs.has_changes == 'true'
         with:
           name: atlas-encrypted-plan
@@ -244,17 +244,17 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
             jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
             { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify installation namespace and state key
         working-directory: .
         run: python infrastructure/scripts/check-deployment-target.py infrastructure
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: atlas-encrypted-plan
           path: ${{ runner.temp }}/atlas-plan
