@@ -14,6 +14,7 @@ export interface WebGLGlobeOptions {
   pinStyle: 'round' | 'flat' | 'stem';
   pinHeadRadius: number;
   mini: boolean;
+  miniPinSize: number;
   showGrid: boolean;
 }
 
@@ -86,7 +87,7 @@ precision highp float;
 precision highp int;
 in vec2 local;
 in vec3 tint;
-uniform int kind, roundHead;
+uniform int kind, roundHead, miniature;
 uniform vec3 shaft;
 out vec4 color;
 void main() {
@@ -95,7 +96,9 @@ void main() {
   if(distance>1.0) discard;
   vec3 fill=tint;
   if(roundHead==1 && length((local-vec2(-0.3,0.35))/vec2(0.4,0.23))<1.0) fill=mix(fill,vec3(1),0.3);
-  color=vec4(fill,1.0-smoothstep(1.0-fwidth(distance),1.0,distance));
+  float edgeWidth=fwidth(distance);
+  if(miniature==1) edgeWidth=min(edgeWidth,0.4);
+  color=vec4(fill,1.0-smoothstep(1.0-edgeWidth,1.0,distance));
 }`;
 
 function rgb(value: string): [number, number, number] {
@@ -232,9 +235,10 @@ export function createWebGLGlobe(canvas: HTMLCanvasElement) {
         gl.uniform3fv(location(pins, 'shaft'), rgb(o.pinColor));
         gl.uniform1f(location(pins, 'radius'), o.pinHeadRadius);
         gl.uniform1f(location(pins, 'shaftWidth'), o.mini ? 1.2 : 1.5);
+        gl.uniform1i(location(pins, 'miniature'), o.mini ? 1 : 0);
         gl.uniform1i(location(pins, 'roundHead'), o.pinStyle === 'round' ? 1 : 0);
       },
-      draw(angle: number) {
+      draw(angle: number, cssSize: number) {
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -252,6 +256,17 @@ export function createWebGLGlobe(canvas: HTMLCanvasElement) {
         gl.useProgram(pins);
         gl.bindVertexArray(pinVao);
         gl.uniform1f(location(pins, 'angle'), (angle * Math.PI) / 180);
+        // Minimum CSS-pixel sizing keeps tiny launcher pins legible on any pixel density.
+        const unitsPerPixel = 440 / Math.max(1, cssSize);
+        const minimum = current.mini ? Math.max(0, Math.min(3, current.miniPinSize)) : 0;
+        gl.uniform1f(
+          location(pins, 'radius'),
+          Math.max(current.pinHeadRadius, (minimum * unitsPerPixel) / 2),
+        );
+        gl.uniform1f(
+          location(pins, 'shaftWidth'),
+          Math.max(current.mini ? 1.2 : 1.5, minimum * 0.275 * unitsPerPixel),
+        );
         gl.uniform1i(location(pins, 'kind'), 0);
         gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count);
         if (current.pinStyle !== 'stem') {

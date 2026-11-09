@@ -136,6 +136,14 @@ npm run storybook
 
 Open **Components → VisitorGlobe → Playground**. There is no renderer selector: WebGL is the sole implementation. Keep size, distribution, speed and target FPS fixed while trying 100, 1,000, 5,000 and 10,000 pins. Compare round heads with stems only, and test the miniature separately. The application targets 60 updates per second; Storybook can lower the target for experimentation.
 
+## Keeping miniature pins visible
+
+The miniature uses the same pin positions and rotation as the expanded view, but pins need a minimum screen size to remain readable. At a 68 CSS-pixel width, the 440-unit view scales a 7-unit head diameter down to about 1.1 CSS pixels. The old 1.2-unit miniature shaft becomes less than 0.2 CSS pixels wide.
+
+`miniPinSize` now sets a minimum miniature head diameter, defaulting to 2 CSS pixels. Shafts receive a proportional minimum width (0.55 CSS pixels at the default). `draw(angle, cssSize)` converts that floor back into view units using `440 / cssSize`, so it responds to resizing and stays consistent across display pixel densities. The normal configured radius still wins when larger. Expanded views ignore this setting. No pin locations, counts or shaft lengths change.
+
+Storybook's MiniatureSparse and MiniatureBusy presets show sparse and dense activity. Set miniPinSize to zero to compare the original fully scaled drawing. The control is an appearance aid, not a visitor-count indicator; dense pins can overlap at miniature size.
+
 ## Selecting a pin on the globe
 
 [pickLocation.ts](../../src/hosts/Atlas.Web/src/lib/globe/pickLocation.ts) reverses the shader camera for manual placement. The Svelte component converts a click/tap from the canvas rectangle into the same 440-unit view used by WebGL. A point outside the 176-unit Earth disc is ignored. Inside the disc, the square-root sphere-depth calculation reconstructs the visible surface point. Reversing the 18-degree tilt and longitude rotation gives its world vector. `atan2` recovers longitude and `asin` recovers latitude; the result is rounded to whole degrees.

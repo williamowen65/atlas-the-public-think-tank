@@ -33,6 +33,7 @@ const meta = {
     angle: -25,
     size: 420,
     mini: false,
+    miniPinSize: 2,
     pinCount: 100,
     distribution: 'worldwide',
     pins: [
@@ -67,6 +68,11 @@ const meta = {
     showGrid: { control: 'boolean' },
     animate: { control: 'boolean' },
     mini: { control: 'boolean' },
+    miniPinSize: {
+      control: { type: 'range', min: 0, max: 3, step: 0.25 },
+      description:
+        'Minimum miniature head diameter in CSS pixels; shafts scale proportionally. Zero restores fully scaled pins. Expanded globes are unaffected.',
+    },
     speed: { control: { type: 'range', min: 0, max: 15, step: 0.5 } },
     angle: { control: { type: 'range', min: -180, max: 180, step: 1 } },
     size: { control: { type: 'range', min: 60, max: 600, step: 10 } },
@@ -128,3 +134,18 @@ export const EquatorAndHorizon: Story = {
 export const Stress: Story = { args: { pinCount: 10000 } };
 
 export const UniformStress: Story = { args: { distribution: 'uniform', pinCount: 10000 } };
+
+export const MiniatureSparse: Story = {
+  args: {
+    mini: true,
+    size: 68,
+    animate: false,
+    distribution: 'custom',
+    pins: [
+      { longitude: 25, latitude: 18, visitors: 1, color: '#b73539' },
+      { longitude: 65, latitude: 45, visitors: 1, color: '#d5a51c' },
+      { longitude: -15, latitude: 0, visitors: 1, color: '#356b9b' },
+    ],
+  },
+};
+export const MiniatureBusy: Story = { args: { mini: true, size: 68, pinCount: 1000 } };

@@ -12,6 +12,8 @@ for (const variant of [
   'paper',
   'night',
   'miniature',
+  'miniature-sparse',
+  'miniature-busy',
   'empty',
   'sparse-worldwide',
   'busy-worldwide',

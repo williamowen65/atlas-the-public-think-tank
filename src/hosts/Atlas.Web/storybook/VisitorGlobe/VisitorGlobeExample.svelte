@@ -25,6 +25,7 @@
     angle = -25,
     size = 420,
     mini = false,
+    miniPinSize = 2,
     pinCount = 100,
     distribution = 'worldwide',
     pins = [
@@ -52,6 +53,7 @@
     angle?: number;
     size?: number;
     mini?: boolean;
+    miniPinSize?: number;
     pinCount?: number;
     distribution?: 'worldwide' | 'uniform' | 'clustered' | 'custom';
     pins?: GlobePin[];
@@ -92,6 +94,7 @@
   <VisitorGlobe
     angle={rotation.angle}
     {mini}
+    {miniPinSize}
     pins={displayedPins}
     {oceanColor}
     {oceanEdgeColor}

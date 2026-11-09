@@ -96,3 +96,56 @@ test('WebGL recovers from context loss', async ({ page }) => {
   await expect(canvas).toHaveAttribute('data-ready', 'true');
   await expect(page.getByRole('status')).toHaveCount(0);
 });
+
+test.describe('High-density miniature sizing', () => {
+  test.use({ deviceScaleFactor: 2 });
+  test('miniature pins maintain a subtle CSS-pixel minimum on resize', async ({ page }) => {
+    await page.goto(story + '&args=mini:!true;size:68;animate:!false;distribution:custom');
+    const canvas = page.locator('canvas[data-renderer="webgl"]');
+    await expect(canvas).toHaveAttribute('data-ready', 'true');
+    const sizing = () =>
+      canvas.evaluate((element: HTMLCanvasElement) => {
+        const gl = element.getContext('webgl2')!;
+        const program = gl.getParameter(gl.CURRENT_PROGRAM);
+        const width = element.getBoundingClientRect().width;
+        return {
+          diameter:
+            (gl.getUniform(program, gl.getUniformLocation(program, 'radius')!) * 2 * width) / 440,
+          shaft:
+            (gl.getUniform(program, gl.getUniformLocation(program, 'shaftWidth')!) * width) / 440,
+        };
+      });
+    await expect.poll(async () => (await sizing()).diameter).toBeCloseTo(2, 4);
+    expect((await sizing()).shaft).toBeCloseTo(0.55, 4);
+    await page.screenshot({ path: test.info().outputPath('miniature-readable-pins.png') });
+    await page.evaluate(() => {
+      (window as any).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
+        storyId: 'components-visitorglobe--playground',
+        updatedArgs: { size: 100 },
+      });
+    });
+    await expect.poll(async () => (await sizing()).diameter).toBeCloseTo(2, 4);
+    await page.evaluate(() => {
+      (window as any).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
+        storyId: 'components-visitorglobe--playground',
+        updatedArgs: { miniPinSize: 0 },
+      });
+    });
+    await expect.poll(async () => (await sizing()).diameter).toBeCloseTo((7 * 100) / 440, 4);
+  });
+});
+
+test('miniature pin tuning does not change expanded globe pin geometry', async ({ page }) => {
+  await page.goto(story + '&args=mini:!false;miniPinSize:3;size:420;animate:!false');
+  const canvas = page.locator('canvas[data-renderer="webgl"]');
+  await expect(canvas).toHaveAttribute('data-ready', 'true');
+  await expect
+    .poll(() =>
+      canvas.evaluate((element: HTMLCanvasElement) => {
+        const gl = element.getContext('webgl2')!;
+        const program = gl.getParameter(gl.CURRENT_PROGRAM);
+        return gl.getUniform(program, gl.getUniformLocation(program, 'radius')!);
+      }),
+    )
+    .toBe(3.5);
+});

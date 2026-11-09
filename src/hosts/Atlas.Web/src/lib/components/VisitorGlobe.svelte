@@ -22,6 +22,7 @@
   let {
     pins = [],
     mini = false,
+    miniPinSize = 2,
     angle = -25,
     oceanColor = '#e3eff3',
     oceanEdgeColor = '#bdd6df',
@@ -39,6 +40,7 @@
   }: {
     pins?: GlobePin[];
     mini?: boolean;
+    miniPinSize?: number;
     angle?: number;
     oceanColor?: string;
     oceanEdgeColor?: string;
@@ -97,6 +99,7 @@
       pinStyle,
       pinHeadRadius,
       mini,
+      miniPinSize,
       showGrid,
     }}
   />

@@ -61,7 +61,7 @@
       canvas.width = pixels;
       canvas.height = pixels;
     }
-    engine.draw(angle);
+    engine.draw(angle, width);
   });
 </script>
 

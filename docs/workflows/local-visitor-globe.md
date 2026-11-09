@@ -97,17 +97,13 @@ See [Learning WebGL through the Atlas globe](../architecture/visitor-globe-webgl
 
 ### Local migration for pin colors
 
-The model now adds nullable `GlobeVisitors.PinColor` (maximum length 7). Existing rows remain nullable and are displayed with the default red; no account identities are added to snapshot data. Per `src/Atlas.Persistence/AGENTS.md`, the developer must generate, review and commit the migration/designer/snapshot. No migration has been generated or applied for this column, and SQL persistence is not verified until the local migration and SQL tests run.
-
-From the solution root, with the connection targeting **local SQL Server**:
+The developer-generated `20261108221754_AddGlobePinColor` migration, designer and snapshot are committed. The nullable `GlobeVisitors.PinColor` column has maximum length 7; existing rows display with default red. Do not generate a second migration for this column. SQL application and integration verification remain unverified here. With the connection targeting **local SQL Server**, run from the solution root if not already applied:
 
 ```sh
 dotnet tool restore
-dotnet ef migrations add AddGlobePinColor --project src/Atlas.Persistence
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlGlobeHistoryTests
-dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~Globe
 ```
 
 Worldwide Storybook fixtures now use region-weighted land-only positions, checked against the local Natural Earth coastline after whole-degree rounding. They illustrate usage rather than model population. Uniform remains an ocean-inclusive sphere stress test; Clustered retains tight city anchors. Demo colors are seeded independently of position and lean, preventing repeated color bands in clusters. Real account coordinates remain rounded to whole degrees for privacy.
@@ -120,3 +116,6 @@ Signed-in accounts can open the globe, choose **Share my location on this globe*
 Existing pinned accounts can choose **Edit my pin**. Their saved color is loaded through the account-specific snapshot state, while public snapshots never include that personal field. Picking and saving replaces the existing pin rather than adding a second pin. The API and database continue to store one approximate pin per account, not travel history. Browser-assisted placement remains available as a separate option. Real users may choose ocean locations; only the illustrative land-based fixture distribution excludes oceans.
 
 Manual picking inverts the same orthographic camera as the shader: screen coordinates map to a sphere point, the camera rotation is reversed, then latitude/longitude are rounded. Outside-Earth clicks do not place a pin. Editing mode uses a smaller globe and a bounded scrollable panel to keep its controls reachable on desktop and mobile. No additional schema change is needed beyond the pending AddGlobePinColor migration.
+
+
+Miniature pins have a 2 CSS-pixel minimum head diameter and a proportional stem-width floor, retaining a small glimpse of activity without changing the expanded globe. Storybook exposes **miniPinSize** (0–3 CSS pixels); zero restores fully scaled pins. MiniatureSparse and MiniatureBusy allow comparisons at the launcher's size. The minimum adapts to resizing and display density, and does not alter pin positions or account counts.
