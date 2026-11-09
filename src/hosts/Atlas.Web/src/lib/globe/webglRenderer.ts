@@ -41,19 +41,24 @@ uniform sampler2D mapTexture;
 uniform vec3 ocean, edge, outline;
 out vec4 color;
 void main() {
+  // Test the interpolated screen position against the globe silhouette.
   float radius=length(position);
   if(radius>176.0) discard;
+  // Solve x^2 + y^2 + depth^2 = r^2 for the front intersection.
   float depth=sqrt(max(0.0,176.0*176.0-dot(position,position)));
+  // Undo the 18-degree tilt, then undo the spin around the north axis.
   float forward=depth*0.9510565163-position.y*0.3090169944;
   float north=position.y*0.9510565163+depth*0.3090169944;
   float x=forward*cos(angle)+position.x*sin(angle);
   float y=-forward*sin(angle)+position.x*cos(angle);
+  // Shift signed longitude and latitude into the texture range [0, 1].
   vec2 uv=vec2(atan(y,x)/6.28318530718+0.5,asin(clamp(north/176.0,-1.0,1.0))/3.14159265359+0.5);
   vec4 map=texture(mapTexture,uv);
   vec3 background=mix(ocean,edge,radius/176.0);
   vec3 surface=mix(background,map.rgb,map.a);
   surface=mix(surface,outline,smoothstep(175.2,176.0,radius));
   color=vec4(surface,1.0-smoothstep(176.0-fwidth(radius),176.0,radius));
+  // Match the pin depth scale after the viewport maps clip-space Z to [0, 1].
   gl_FragDepth=0.5-depth/500.0;
 }`;
 const pinVertex = `#version 300 es

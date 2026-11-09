@@ -77,29 +77,54 @@ The `corners` shader constant describes six vertices: two triangles forming one 
 
 The number of calls stays small as the pin count grows. The GPU still processes more triangles and pixels for more pins; instancing does not make that work free. Dense overlapping heads can remain expensive and visually cluttered.
 
-## How the Earth appears round without a sphere mesh
+## Work backward from one fragment on Earth
 
-`setMap()` uses D3's equirectangular projection to draw land and grid lines into a 2048 × 1024 image. The ocean is transparent in this image. `texImage2D()` uploads it as a texture. This happens when the map or its relevant styles change, rather than on every camera update.
+D3 draws land and grid lines into a 2048 × 1024 equirectangular image. `setMap()` uploads that image with `texImage2D()`. The Earth draw starts with a flat rectangle made of two triangles. Its vertex shader runs at each triangle corner and passes along a `position` in globe units, from −220 to +220 on both axes. The GPU interpolates that value across each triangle. [Earth shaders](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L31)
 
-The Earth vertex shader covers the view with two triangles. The fragment shader treats the center of that view as a sphere. Pixels outside radius 176 are discarded. For a pixel inside the disc, it computes the sphere's front depth:
+Your per-pixel intuition is a good starting point. Think of the Earth fragment shader's `main()` as answering “What color and depth should this candidate contribution to the image have?” The rectangle determines where candidates are generated. The shader can discard one, and later depth testing and blending help determine the final pixel. The vertex shader also has a `main()`. Its job is to position vertices and supply values for interpolation.
+
+### 1. Does this point fall on the globe?
+
+`length(position)` measures the distance from the center using the screen-plane coordinates. If that distance exceeds 176 globe units, `discard` drops the fragment. The rest of the calculation only needs to handle points inside the visible disc.
+
+### 2. Where does the viewing ray meet the sphere?
+
+With an orthographic camera, imagine parallel rays going straight through the rectangle. For one ray, screen `x` and `y` stay fixed. We solve the sphere equation for the missing coordinate.
 
 ```text
-depth = sqrt(radius * radius - screenX * screenX - screenY * screenY)
+x² + y² + depth² = 176²
+depth = sqrt(176² − x² − y²)
 ```
 
-The shader reverses the camera rotation to find that surface point's longitude and latitude, converts them to texture coordinates, then samples the map image. The transparent ocean areas receive our center-to-edge ocean colors. A narrow edge band supplies the outline. `fwidth()` helps soften pixel boundaries; it estimates how quickly a value changes across neighboring fragments.
+There are two possible intersections inside the disc. Positive depth points toward the viewer in this renderer, so the positive square root picks the front surface. The center has depth 176 and the rim has depth zero. `dot(position, position)` computes `x² + y²`. The `max(0.0, …)` guards the square root against small rounding errors at the rim.
 
-This method is an analytic sphere drawn by a shader. It retains real surface depth without a tessellated globe mesh. Texture resolution still affects coastline sharpness, so it may look different from vector SVG when enlarged. Increasing texture resolution trades additional memory and upload work for map detail; it does not reduce pin cost.
+### 3. Which geographic point is on that ray?
 
-## How pins disappear behind Earth
+The screen-plane point and its depth now describe a point in camera coordinates. The map image is indexed in geographic coordinates, so we undo the camera transforms in reverse order.
 
-The Earth fragment shader writes its calculated front-surface depth into `gl_FragDepth`. The pin shader supplies each shaft/head's depth through its projected position.
+- Undo the 18° tilt by mixing screen height and depth. The results are `forward` and `north`. The constants `0.9510565163` and `0.3090169944` are cosine and sine of 18°.
+- Undo the spin using `forward`, screen `position.x`, and the sine and cosine of `angle`. This recovers the geographic `x` and `y` in the equatorial plane. `north` stays fixed during this step because the spin is around the north axis.
 
-`DEPTH_TEST` and `depthFunc(LEQUAL)` allow a pixel to draw when it is at least as near as the pixel already stored at that location. A shaft behind Earth's surface fails that test. A raised tip beyond Earth's visible disc has no Earth pixel in front of it, so it can still appear around the horizon.
+As a sanity check, at the screen center with `angle = 0`, the shader finds longitude 0° and latitude 18°. Changing the spin changes which longitude faces the viewer.
 
-The earlier SVG/Canvas experiment used back/earth/front drawing order. The current implementation handles overlap with the depth buffer.
+### 4. Which part of the map image supplies the color?
 
-Head sprites use the depth of their centers across their circular faces. They are an approximation, so their silhouettes are not identical to physical spherical knobs intersecting Earth.
+GLSL's two-argument `atan(y, x)` is the equivalent of `atan2(y, x)`. It recovers longitude in radians. `asin(north / 176)` recovers latitude because the sphere's north-axis coordinate is radius times sine of latitude. The clamp keeps that ratio in the valid range for `asin`.
+
+```text
+u = longitude / (2π) + 0.5    // −180° → 0, 0° → 0.5, +180° → 1
+v = latitude  / π    + 0.5    //  −90° → 0, 0° → 0.5,  +90° → 1
+```
+
+Both coordinates need the half-unit shift to put the midpoint at 0.5. `texture(mapTexture, uv)` samples the map. Transparent areas let the ocean gradient show through. Near the rim, the shader mixes in the outline color and uses `fwidth(radius)` to soften the edge.
+
+### 5. Which pins should the Earth hide?
+
+The Earth rectangle starts at a single depth. Writing `gl_FragDepth` lets each surviving fragment supply the depth of the sphere surface instead. The pin vertex shader emits clip-space Z as `-p.z / 250.0` with W equal to 1. The default viewport depth mapping converts that to `0.5 - p.z / 500.0`. Earth uses the same formula with its reconstructed `depth`. That shared scale lets the depth buffer compare both surfaces.
+
+With `DEPTH_TEST` and `LEQUAL`, smaller depth-buffer values are closer. At the globe center, Earth writes 0.148. A pin fragment along that ray with camera depth 190 maps to 0.12 and can appear in front. One with camera depth 160 maps to 0.18 and is hidden. Beyond the disc, Earth discarded the fragment, so a raised pin tip can show around the horizon.
+
+Pin heads use their center depth across the whole circular face. That is why their overlap at the edge can differ from a fully modeled spherical knob.
 
 ## What updates, and when?
 
