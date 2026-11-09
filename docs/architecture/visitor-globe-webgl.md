@@ -258,6 +258,43 @@ The names carry clues about the operation and the value it expects.
 | `vertexAttribPointer` | `attributeIndex, componentCount, type, normalized, stride, offset` | Describes how to read an attribute from the bound buffer. Each pin field has three floats, normalization is false, records are 36 bytes apart, and the three fields begin at byte offsets 0, 12, and 24. |
 | `viewport` | `x, y, width, height` | Sets the drawing region in backing-buffer pixels. Atlas starts at `(0, 0)` and uses the full canvas dimensions. |
 
+## WebGL constant lookup
+
+These uppercase names are WebGL’s named numeric constants. Your enum intuition fits. In JavaScript they’re numbers exposed on the WebGL context, and their names make it easier to see what each argument selects. Some choose a mode, like `TRIANGLES`. Some name a capability, like `DEPTH_TEST`. The two clear-buffer constants are bit flags that can be combined with the bitwise OR operator so one `clear()` call resets both buffers. [Renderer source](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L246)
+
+Depth testing decides whether a fragment is visible at its depth. Blending determines how a visible fragment’s color mixes with the color already there. With Atlas’s blend factors, a fragment with alpha 0.25 contributes 25% of the resulting RGB color and the existing framebuffer color contributes 75%.
+
+| Constant | What it means in Atlas |
+| --- | --- |
+| `gl.ARRAY_BUFFER` | Buffer target for vertex attributes. Atlas binds and uploads its packed pin records here. |
+| `gl.BLEND` | Capability that mixes fragment output with the color already in the framebuffer. Atlas enables it for partially transparent edges. |
+| `gl.CLAMP_TO_EDGE` | Texture wrap mode that holds samples at the nearest edge. Atlas uses it vertically so sampling past a pole stays at that pole. |
+| `gl.COLOR_BUFFER_BIT` | Mask bit that tells `clear()` to reset the color buffer to the value set by `clearColor()`. |
+| `gl.COMPILE_STATUS` | Shader property queried to see whether GLSL compilation succeeded. |
+| `gl.CURRENT_PROGRAM` | Context property queried by the sizing tests to find the active linked program. |
+| `gl.DEPTH_BUFFER_BIT` | Mask bit that tells `clear()` to reset the depth buffer. Atlas clears depth before drawing the Earth and pins again. |
+| `gl.DEPTH_TEST` | Capability that compares each fragment’s depth with the stored depth. This lets the Earth hide pins behind its surface. |
+| `gl.FLOAT` | Attribute type for 32-bit floating-point components. The pin positions and colors are packed as floats. |
+| `gl.FRAGMENT_SHADER` | Shader type for computing a candidate fragment’s color and, in the Earth pass, its depth. |
+| `gl.LEQUAL` | Depth comparison meaning less than or equal to. In Atlas, smaller depth values are nearer. |
+| `gl.LINEAR` | Texture filter that blends neighboring samples for smoother color transitions. Atlas uses it for both minification and magnification. |
+| `gl.LINK_STATUS` | Program property queried to see whether the attached shaders linked successfully. |
+| `gl.ONE_MINUS_SRC_ALPHA` | Blend factor equal to one minus the incoming fragment’s alpha. Atlas uses it to weight the existing framebuffer color. |
+| `gl.REPEAT` | Texture wrap mode that repeats samples outside the texture range. Atlas uses it horizontally so longitude can wrap across the map seam. |
+| `gl.RGBA` | Color format with red, green, blue, and alpha channels. Atlas uses it for the map texture upload. |
+| `gl.SRC_ALPHA` | Blend factor equal to the incoming fragment’s alpha. Atlas uses it to weight the incoming fragment color. |
+| `gl.STATIC_DRAW` | Buffer usage hint indicating that Atlas expects to upload the data and reuse it across many draws. |
+| `gl.TEXTURE0` | Selector for the first texture unit in `activeTexture()`. The shader sampler refers to that unit with the integer `0`. |
+| `gl.TEXTURE_2D` | Target identifying a two-dimensional texture. Atlas binds and uploads its flat map image to this target. |
+| `gl.TEXTURE_MAG_FILTER` | Texture setting that chooses the filter when a texture is enlarged on screen. |
+| `gl.TEXTURE_MIN_FILTER` | Texture setting that chooses the filter when a texture is reduced on screen. |
+| `gl.TEXTURE_WRAP_S` | Texture setting that controls sampling beyond the horizontal coordinate range. Atlas sets it to `REPEAT`. |
+| `gl.TEXTURE_WRAP_T` | Texture setting that controls sampling beyond the vertical coordinate range. Atlas sets it to `CLAMP_TO_EDGE`. |
+| `gl.TRIANGLES` | Drawing mode that groups every three submitted vertices into a triangle. Six vertices form each Atlas rectangle. |
+| `gl.UNPACK_FLIP_Y_WEBGL` | Pixel upload setting that flips the map canvas vertically as it becomes a texture. |
+| `gl.UNSIGNED_BYTE` | Pixel component type for an unsigned eight-bit value from 0 to 255. Atlas uses it for the canvas image upload. |
+| `gl.VERTEX_SHADER` | Shader type that computes clip-space vertex positions and supplies values for interpolation. |
+
 ## How to read the WebGL tests
 
 The rotation test uses Chromium's SwiftShader software renderer and wraps three WebGL methods before the page starts. Each wrapper counts the call and then forwards it to the original method with the same arguments and context. This lets the test watch actual draw and upload calls while the renderer still does its normal work. [Rotation test](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts#L15)
