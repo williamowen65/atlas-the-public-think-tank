@@ -96,6 +96,14 @@ The pin vertex shader's `camera()` rotates the 3D positions around Earth, then a
 
 For a shaft, the shader forms a thin rectangle between the projected base and head. For a head, it forms a square centered on the projected head; the fragment shader discards pixels outside a circle. Round heads add a small elliptical highlight. These are **camera-facing shapes positioned in 3D**, not detailed spherical pin meshes. This preserves the existing illustration style.
 
+## Why rotation reuses the pin buffer
+
+Think of a pin's uploaded base and head as fixed points on Earth. The angle tells the GPU how to view those same points on this frame. `setPins()` uploads the positions and colors with `bufferData()`. WebGL retains that buffer across draw calls, and the vertex array object tells the GPU how to read each record. The graphics implementation manages the storage, which can be dedicated graphics memory or shared system memory.
+
+On a rotation tick, TypeScript updates the angle uniform for the Earth and pin programs, clears the drawing buffers, and submits the draw calls. The pin vertex shader reads the original base and head from the existing buffer and applies `camera()` using the new angle. The transformed positions are outputs for that draw. Each new draw starts from the same stored coordinates, so successive rotations never accumulate in the pin buffer.
+
+That split keeps CPU work per rotation tick from growing with the number of pin coordinates. The GPU transforms the vertices across the instances in parallel, and a change in angle alone calls for zero pin geometry uploads. When pin data changes, `setPins()` supplies an updated buffer for subsequent frames. [Pin upload and frame drawing](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L217)
+
 ## Why two pin draw calls can draw thousands of pins
 
 The `corners` shader constant describes six vertices: two triangles forming one rectangle. `gl_VertexID` selects a corner without needing a separate corner buffer.
