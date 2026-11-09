@@ -698,10 +698,23 @@
     box-shadow: 0 3px 10px #172b3822;
   }
   .mini-launcher.in-navigation {
-    position: static;
+    position: relative;
+    inset: auto;
     width: 2.75rem;
     height: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
     box-shadow: none;
+  }
+  .mini-launcher.in-navigation :global(.globe-art) {
+    /* The Earth disc fills 80% of the canvas. Leave room for raised pins. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 125%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
   .body-shade {
     position: fixed;
