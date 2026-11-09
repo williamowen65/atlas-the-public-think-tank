@@ -176,6 +176,30 @@ Svelte effects connect these updates to the renderer. The pin geometry is separa
 
 The Storybook readout counts delivered rotation updates per second. It does not measure completed GPU frames. A busy GPU can lag behind submitted commands, so use browser performance tools and visual inspection alongside that number. API polling remains independent of the animation clock.
 
+## Which calls set up a draw, and which ones draw?
+
+Read `createWebGLGlobe()` in three passes. The outer function runs when a renderer is created. The methods it returns run later, when Svelte calls them. This distinction explains why the `try` block contains both initial setup and the definition of `draw()`. [Renderer source](../../src/hosts/Atlas.Web/src/lib/globe/webglRenderer.ts#L119)
+
+| When | Calls to look for | What they do |
+| --- | --- | --- |
+| Renderer creation | `compileShader()`, `linkProgram()`, `createBuffer()`, and the vertex array setup | Prepare the programs and buffer handles. The pin VAO records which buffer to read, how its fields are laid out, and which fields advance per instance. |
+| Data or style updates | `setMap()`, `setPins()`, and `setStyle()` | Upload the map and pin data or update shader settings. Texture filtering and wrapping are set in `setMap()`, so that work can recur when the map is rebuilt. |
+| Each frame | `draw(angle, width)` | Clear the color and depth buffers, select the programs and inputs, update uniforms, and submit the Earth and pin draws. |
+
+Inside `draw()`, `useProgram()` selects the shader pair, `bindVertexArray()` selects the recorded vertex input state, and the uniform calls supply values such as the current angle. Then `drawArrays()` submits the Earth triangles and `drawArraysInstanced()` submits the pin shafts and, when enabled, the heads. Those draw calls are where WebGL is asked to run the shaders for that geometry. Commands are submitted in order, and the browser and driver can queue the work before the frame appears on screen.
+
+Svelte keeps the upload effects separate from the draw effect. A rotation tick changes `angle` and triggers another draw using the existing buffer and texture. A resize also triggers a draw and can resize the canvas backing buffer. [Svelte effects](../../src/hosts/Atlas.Web/src/lib/components/WebGLGlobe.svelte#L46)
+
+## How to read the WebGL tests
+
+The rotation test uses Chromium's SwiftShader software renderer and wraps three WebGL methods before the page starts. Each wrapper counts the call and then forwards it to the original method with the same arguments and context. This lets the test watch actual draw and upload calls while the renderer still does its normal work. [Rotation test](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts#L15)
+
+1. Load the globe with 10,000 demo pins. Wait for renderer readiness and for the initial texture and asynchronous land update before taking a snapshot of the counters.
+2. Wait for the canvas angle to change and for the `drawArraysInstanced()` counter to increase. The counter measures draw calls, with one call able to draw thousands of instances.
+3. Check that the `bufferData()` and `texImage2D()` counters stayed flat during that interval. Together, the assertions show that rotation kept drawing while reusing the uploaded inputs. The test also checks WebGL and page errors and saves a screenshot for inspection.
+
+The remaining tests cover the requested angle, the fallback message when WebGL 2 is unavailable, and recovery after simulated context loss. The miniature sizing tests read the current shader uniforms with `getUniform()`. They convert the renderer's units back to CSS pixels to check the two-pixel head minimum through a resize at device scale factor two, then check ordinary scaling when the minimum is disabled. The expanded view gets a separate check for its normal pin radius. These tests check rendering behavior and call patterns. Frame rate depends on the device. [Angle, recovery, and sizing tests](../../src/hosts/Atlas.Web/tests/globe-webgl.spec.ts#L63)
+
 ## Lifecycle, compatibility and limitations
 
 `getContext('webgl2')` can fail even in a browser that implements WebGL 2. Hardware, drivers and browser policy matter. This feature does not explicitly require a discrete graphics card; compatible integrated graphics can run WebGL. Actual smoothness needs testing on target devices.
