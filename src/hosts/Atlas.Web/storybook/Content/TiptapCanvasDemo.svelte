@@ -148,15 +148,32 @@
       }];
     },
     renderHTML({ node }) {
-      return ['figure', {
+      const src = publicUrl(String(node.attrs.src ?? '')) || '';
+      const figureAttrs = {
         'data-atlas-image': 'true',
         'data-atlas-key': node.attrs.key,
         'data-src': node.attrs.src,
         'data-alt': node.attrs.alt,
         'data-caption': node.attrs.caption,
         class: 'atlas-story-figure',
-      }, ['img', { src: publicUrl(String(node.attrs.src ?? '')) || '', alt: node.attrs.alt }],
-      ['figcaption', {}, node.attrs.caption || '']];
+      };
+      const editButton = ['button', {
+        type: 'button', contenteditable: 'false', draggable: 'false',
+        'data-atlas-edit-image': 'true', class: 'atlas-story-image-action',
+        'aria-label': src ? 'Edit image details' : 'Add image details',
+      }, src ? 'Edit image' : 'Add image details'];
+      // A new image has a real, in-flow placeholder at its intended position.
+      // Its editor panel is anchored inside this reserved image slot.
+      if (!src) return ['figure', figureAttrs,
+        ['div', { class: 'atlas-story-image-placeholder', 'aria-label': 'Unfinished image block' },
+          'Image details will appear here'],
+        editButton,
+      ];
+      return ['figure', figureAttrs,
+        ['img', { src, alt: node.attrs.alt }],
+        ['figcaption', {}, node.attrs.caption || ''],
+        editButton,
+      ];
     },
   });
 
@@ -528,6 +545,22 @@
           class: 'atlas-story-rich-document',
           'aria-label': 'Node content: editable rich-text document',
         },
+        handleDOMEvents: {
+          pointerdown: (view, event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return false;
+            const action = target.closest('[data-atlas-edit-image]');
+            const figure = action?.closest('figure[data-atlas-key]');
+            const key = figure?.getAttribute('data-atlas-key');
+            if (!key) return false;
+            event.preventDefault();
+            const block = findBlock(key);
+            if (!block) return true;
+            view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, block.from)));
+            openImageForm('existing');
+            return true;
+          },
+        },
       },
       onFocus: ({ editor }) => {
         editorFocused = true;
@@ -820,7 +853,25 @@
   :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }
   :global(.atlas-story-rich-document a) { color: var(--atlas-accent); text-decoration: underline; }
   :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }
-  :global(.atlas-story-figure) { margin: 1rem 0; padding: .15rem; width: fit-content; max-width: 100%; }
+  :global(.atlas-story-figure) {
+    position: relative; margin: 1rem 0; padding: .15rem;
+    width: fit-content; max-width: 100%;
+  }
+  :global(.atlas-story-image-placeholder) {
+    width: min(28rem, 100%); min-height: 27rem; box-sizing: border-box;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 1rem; border: 1px dashed var(--atlas-border);
+    border-radius: var(--atlas-radius); color: var(--atlas-muted);
+    font-size: .85rem;
+  }
+  :global(.atlas-story-image-action) {
+    position: absolute; top: .5rem; right: .5rem; z-index: 2;
+    border: 1px solid var(--atlas-border); border-radius: .45rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    padding: .35rem .6rem; cursor: pointer; font: 500 .8rem/1.3 system-ui, sans-serif;
+    box-shadow: 0 2px 9px #0002;
+  }
+  :global(.atlas-story-image-action:hover) { border-color: var(--atlas-accent); }
   :global(.atlas-story-figure.ProseMirror-selectednode) {
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
