@@ -883,56 +883,54 @@
   .document-shell {
     position: relative; min-width: 0; background: transparent; border: 0;
   }
-  .gutter-position {
-    position: absolute; left: calc(.2rem - var(--editor-card-inset, 1.25rem));
-    width: 2.8rem; z-index: 2;
-    display: flex; flex-direction: column; align-items: center; gap: .2rem;
-  }
-  .move-controls { display: flex; align-items: center; gap: .12rem; }
-  .move-controls button {
-    width: 1.25rem; height: 1.55rem; padding: 0;
-    display: grid; place-items: center;
-    color: var(--atlas-text); background: var(--atlas-surface);
-    border: 1px solid var(--atlas-border); border-radius: .35rem;
-    cursor: pointer; font: 600 .95rem/1 system-ui, sans-serif;
-  }
-  .move-controls button:disabled { opacity: .3; cursor: default; }
-  .delete-trigger {
-    border: 1px solid var(--atlas-border); border-radius: .35rem;
-    background: var(--atlas-surface); color: var(--atlas-text);
-    width: 1.7rem; height: 1.6rem; display: grid; place-items: center;
-    padding: 0; font: 600 1.1rem/1 system-ui, sans-serif; cursor: pointer;
-  }
-  .delete-trigger:hover { color: #b32318; border-color: #b32318; }
-  .insert-trigger {
-    width: 2.15rem; height: 2.15rem; border: 1px solid var(--atlas-border);
-    border-radius: 50%; background: var(--atlas-surface); color: var(--atlas-text);
+  /* Overlaid at the *selected block's boundaries*, never a permanent gutter.
+     The content retains the exact same width whether focused or not. */
+  .boundary-add {
+    position: absolute; z-index: 18; transform: translate(-50%, -50%);
     display: grid; place-items: center; box-sizing: border-box;
-    padding: 0; line-height: 1; font: 600 1.4rem/1 system-ui, sans-serif;
-    cursor: pointer;
+    width: 1.85rem; height: 1.85rem; padding: 0; border-radius: 50%;
+    border: 1px solid var(--atlas-border);
+    background: var(--atlas-surface); color: var(--atlas-text);
+    font: 600 1.2rem/1 system-ui, sans-serif; cursor: pointer;
+    box-shadow: 0 2px 8px #0001;
   }
-  .insert-trigger:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
-  /* The insert popover grows directly from the + control; unlike the rail,
-     this user-opened panel is allowed to cover the document temporarily. */
+  .boundary-add:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
+  .block-corner-controls {
+    position: absolute; z-index: 20; transform: translateY(-50%);
+    display: flex; align-items: center; gap: .12rem;
+    padding: .2rem; border: 1px solid var(--atlas-border);
+    border-radius: .55rem; background: var(--atlas-surface);
+    color: var(--atlas-text); box-shadow: 0 2px 9px #0002;
+  }
+  .block-corner-controls button {
+    display: grid; place-items: center; box-sizing: border-box;
+    width: 1.75rem; height: 1.75rem; padding: 0;
+    border: 0; border-radius: .35rem; background: transparent;
+    color: inherit; cursor: pointer; font: 600 1.05rem/1 system-ui, sans-serif;
+  }
+  .block-corner-controls button:hover { background: var(--atlas-bg); }
+  .block-corner-controls button:disabled { opacity: .3; cursor: default; }
+  .block-corner-controls .corner-delete:hover { color: #b32318; }
+  /* Insert menu opens directly from the clicked above/below button. */
   .insert-choices {
-    position: absolute; left: calc(100% + .25rem); top: 0;
-    z-index: 15; width: max-content; max-width: min(21rem, 85vw);
-    display: grid; gap: .5rem; align-items: start;
-    padding: .65rem; border: 1px solid var(--atlas-border);
-    border-radius: .65rem; background: var(--atlas-surface);
-    color: var(--atlas-text); box-shadow: 0 7px 28px #0002;
-    font-size: .86rem; text-align: left;
+    position: absolute; z-index: 30;
+    width: min(18rem, 95%); max-width: 95%; box-sizing: border-box;
+    display: grid; gap: .55rem; padding: .75rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    box-shadow: 0 8px 26px #0002; font-size: .86rem;
   }
-  .insert-position, .insert-types { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
-  .insert-position span { color: var(--atlas-muted); margin-right: .25rem; }
+  .insert-label { font-weight: 600; color: var(--atlas-muted); padding-right: 1.5rem; }
+  .insert-types { display: flex; flex-wrap: wrap; gap: .3rem; }
   .insert-choices button, .block-context button, .form-actions button {
     cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .4rem;
     background: var(--atlas-surface); color: var(--atlas-text);
     padding: .45rem .65rem; font: inherit; font-size: .85rem;
   }
-  .insert-choices button.selected { border-color: var(--atlas-accent); font-weight: 700; }
-  .insert-choices .close-insert { position: absolute; top: .15rem; right: .25rem; padding: .1rem .4rem; border: 0; }
-  .insert-choices .insert-position { padding-right: 1.6rem; }
+  .insert-choices .close-insert {
+    position: absolute; top: .22rem; right: .25rem;
+    padding: .15rem .42rem; border: 0;
+  }
   .selection-bubble {
     position: absolute; z-index: 25; display: flex; align-items: center;
     width: max-content; max-width: 100%; gap: .15rem; padding: .25rem;
@@ -945,31 +943,28 @@
     padding: .38rem .55rem; font: inherit; font-size: .85rem;
   }
   .selection-bubble button:hover { background: var(--atlas-bg); }
-  .editor-canvas { padding: .3rem 0 1rem; min-height: 11rem; }
+  .editor-canvas { padding: 1.3rem 0 1.5rem; min-height: 11rem; }
   .editorial .editor-canvas { font-family: Georgia, 'Times New Roman', serif; font-size: 1.14rem; line-height: 1.8; }
   :global(.atlas-story-rich-document) {
     min-height: 10rem; outline: none; overflow-wrap: anywhere; line-height: 1.7;
   }
   :global(.atlas-story-rich-document:focus-visible) { outline: none; }
-  :global(.atlas-story-rich-document > *:first-child) { margin-top: 0; }
+  :global(.atlas-story-rich-document > [data-atlas-key]) {
+    margin-block: 1.2rem;
+  }
   :global(.atlas-story-rich-document > .atlas-story-active-block) {
-    box-sizing: border-box;
-    position: relative;
-    isolation: isolate;
-    /* Keep the text's existing horizontal position. Only the noninteractive
-       highlight extends into the space between the rail and text. */
-    margin-left: calc(3.45rem - var(--editor-card-inset, 1.25rem));
+    box-sizing: border-box; position: relative; isolation: isolate;
+    /* Identical styling for Markdown and image blocks, with no indentation
+       or change to text position. The image itself keeps its original size. */
+    margin-left: 0;
   }
   :global(.atlas-story-rich-document > .atlas-story-active-block::before) {
-    content: '';
-    position: absolute;
-    pointer-events: none;
-    z-index: -1;
-    inset: -.25rem -.3rem -.25rem -.225rem;
+    content: ''; position: absolute; pointer-events: none; z-index: -1;
+    inset: -.28rem -.28rem;
     background: color-mix(in srgb, var(--atlas-accent) 5%, var(--atlas-surface));
-    border-left: 3px solid color-mix(in srgb, var(--atlas-accent) 60%, transparent);
-    border-radius: .35rem;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--atlas-accent) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
+    border-left-width: 3px;
+    border-radius: .45rem;
   }
   :global(.atlas-story-text) { min-width: 0; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
@@ -980,7 +975,7 @@
   :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }
   :global(.atlas-story-figure) {
     position: relative; margin: 1rem 0; padding: .15rem;
-    width: fit-content; max-width: 100%;
+    box-sizing: border-box; width: 100%; max-width: 100%;
   }
   :global(.atlas-story-image-placeholder) {
     width: min(28rem, 100%); min-height: 27rem; box-sizing: border-box;
@@ -990,7 +985,7 @@
     font-size: .85rem;
   }
   :global(.atlas-story-image-action) {
-    position: absolute; top: .5rem; right: .5rem; z-index: 2;
+    position: absolute; bottom: .5rem; right: .5rem; z-index: 2;
     border: 1px solid var(--atlas-border); border-radius: .45rem;
     background: var(--atlas-surface); color: var(--atlas-text);
     padding: .35rem .6rem; cursor: pointer; font: 500 .8rem/1.3 system-ui, sans-serif;
@@ -998,7 +993,8 @@
   }
   :global(.atlas-story-image-action:hover) { border-color: var(--atlas-accent); }
   :global(.atlas-story-figure.ProseMirror-selectednode) {
-    outline: 2px solid var(--atlas-focus); outline-offset: 2px;
+    /* Avoid default ProseMirror outline competing with the Atlas highlight. */
+    outline: none;
   }
   :global(.atlas-story-figure img) {
     display: block; max-width: 100%; max-height: 24rem; border-radius: var(--atlas-radius);
@@ -1055,10 +1051,9 @@
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
   @container (max-width: 430px) {
-    .gutter-position { left: calc(.2rem - var(--editor-card-inset, .7rem)); }
-    .insert-trigger { width: 2rem; height: 2rem; }
-    .move-controls button { width: 1.2rem; }
-    .block-context { margin-left: 2.7rem; }
+    .boundary-add { width: 1.85rem; height: 1.85rem; }
+    .block-corner-controls { gap: 0; padding: .1rem; }
+    .block-corner-controls button { width: 1.75rem; height: 1.9rem; }
     .format-toolbar { gap: .1rem; }
     .format-toolbar button { min-height: 2.5rem; padding: .4rem .65rem; }
   }
