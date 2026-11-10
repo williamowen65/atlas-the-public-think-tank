@@ -375,10 +375,6 @@
     mobileOptionsOpen = false;
   }
 
-  function moveSelectedImage(direction: -1 | 1) {
-    moveCurrentBlock(direction);
-  }
-
   function saveImage() {
     const editor = currentEditor();
     if (!editor) return;
