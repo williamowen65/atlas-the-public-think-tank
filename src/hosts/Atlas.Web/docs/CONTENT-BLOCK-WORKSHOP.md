@@ -40,3 +40,64 @@ The model should allow future plugin-like block renderers with a full-node view,
 - On 320px and normal desktop widths, verify preview text/image stays within a bounded space around the voting dial, and the card's Read more action remains unobstructed.
 - Confirm moderation hiding cannot leak original media or text to anonymous feed users.
 - Test partial write failure, private draft restore, CSRF rejection, URL validation and old browser draft compatibility.
+
+## Editor UX research prototype (November 9: Medium-style Tiptap)
+
+A follow-up discussion raised whether the content-block *interface* should feel more
+like Medium's continuous rich-text authoring canvas. This is not a decision to
+replace the established API block model. Blocks are a persistence/content model;
+WYSIWYG is one possible user-facing authoring interaction.
+
+The branch now includes a **Storybook-only comparison** at
+`Content / Editor workbench (experimental) / Compare editors`.
+The story is also available via the Storybook iframe ID
+`content-editor-workbench-experimental--compare-editors`.
+
+Use the controls to compare:
+
+- **Existing block forms**: the original `BlockComposer.svelte` unchanged.
+- **Tiptap canvas**: an actual Tiptap 3 / ProseMirror editing engine, not a
+  nonfunctional visual imitation. It displays a document rather than block forms,
+  with a selected-text bubble menu (bold, italic, link), plus menu on an empty
+  paragraph (image, heading, section break), and a touch-friendly toolbar when
+  the component container is narrow. An image is a custom atomic Tiptap node
+  with URL, required alt text and optional caption.
+- **Visual styles**: Atlas design tokens versus a quieter, editorial/serif canvas.
+  The editing engine does not dictate Atlas's typography or controls.
+- **Preview**: switch from Edit to a *conceptual* bounded feed-content preview or
+  the full-node content rendering using `ContentBlocks.svelte`. Preview does not
+  save or publish. The feed concept is not a pixel-for-pixel reproduction of the
+  live ribbon-corner card; check the real card/dial after design selection.
+- **Device exploration**: simulate a phone-width container in Storybook, and
+  independently test the actual Storybook viewport at narrow/mobile sizes.
+- **Scenarios**: text-first, image-first, blank node, block forms, editorial canvas,
+  and phone width are separate stories.
+
+To try it after pulling the branch:
+
+```sh
+cd src/hosts/Atlas.Web
+npm ci
+npm run storybook
+```
+
+Select `Content / Editor workbench (experimental)` in the Storybook sidebar.
+
+The workbench keeps each editor's draft independent, by design; switching
+modes does not promise lossless conversion. The small Storybook-only bridge
+(`storybook/Content/tiptapBlocks.ts`) maps common rich text and images to the
+existing preview renderer, but it deliberately does **not** implement production
+block ID preservation, all Markdown syntax, multi-user editing, upload storage,
+advanced embeds, block recovery, or persistence. A production WYSIWYG decision
+must include a robust, versioned block-to-document mapping and migration tests.
+
+Research questions for review: Does direct typing feel easier than the forms?
+Is the plus button discoverable? Do users understand where a new block begins?
+Are image editing and alt text intuitive? Does mobile selection and keyboard
+behavior work well on real iOS/Android devices? Is the feed/full preview easy
+to find? Should Atlas have a separate explicit full-preview mode when the
+canvas itself is WYSIWYG? Are additional controls needed for long, mixed
+content? Do embedded blocks require custom node views?
+
+**Do not ship or wire this Tiptap prototype into live node creation/editing
+without a separate design decision, security review, and full persistence tests.**
