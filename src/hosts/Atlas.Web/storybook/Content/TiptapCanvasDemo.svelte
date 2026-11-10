@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import { Editor, Node } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
+  import { NodeSelection, TextSelection } from '@tiptap/pm/state';
   import { publicUrl } from '../../src/lib/api/nodePage';
   import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import { blocksToTiptapHtml, tiptapDocumentToBlocks } from './tiptapBlocks';
@@ -131,6 +132,8 @@
   let canvasEl: HTMLDivElement;
   let shellEl: HTMLDivElement;
   let gutterTop = $state(8);
+  let activeIndex = $state(0);
+  let blockCount = $state(initialBlocks.length);
   let linkFormOpen = $state(false);
   let linkHref = $state('');
   let linkText = $state('');
@@ -180,15 +183,48 @@
     else editor.chain().focus().toggleBulletList().run();
   }
 
+  // Keep the editor at full width. Only the currently selected top-level
+  // Atlas block receives a left margin to clear the compact control rail.
+  // Position the rail at that block's top rather than tracking individual
+  // paragraph lines (Enter must not change the indentation of other blocks).
   function repositionGutter(editor: Editor) {
     if (!shellEl || !editor.view?.dom?.isConnected) return;
-    try {
-      const caret = editor.view.coordsAtPos(editor.state.selection.from);
-      const shell = shellEl.getBoundingClientRect();
-      if (Number.isFinite(caret.top)) gutterTop = Math.max(6, Math.round(caret.top - shell.top - 3));
-    } catch {
-      // During an editor remount the DOM selection may not exist yet.
+    const root = editor.view.dom;
+    const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
+    activeIndex = Math.max(0, index);
+    blockCount = editor.state.doc.childCount;
+    for (const [i, element] of Array.from(root.children).entries())
+      element.classList.toggle('atlas-story-active-block', i === activeIndex);
+    const active = root.children.item(activeIndex);
+    if (active) {
+      const top = active.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
+      if (Number.isFinite(top)) gutterTop = Math.max(0, Math.round(top));
     }
+  }
+
+  // Reorder an entire top-level Atlas section (not one paragraph inside it).
+  // The selection follows the moved section so the rail stays beside it.
+  function moveCurrentBlock(direction: -1 | 1) {
+    const editor = currentEditor();
+    if (!editor) return;
+    const { state } = editor;
+    const index = state.selection.$from.index(0);
+    const other = index + direction;
+    if (other < 0 || other >= state.doc.childCount) return;
+    const node = state.doc.child(index);
+    const neighbor = state.doc.child(other);
+    let from = 0;
+    for (let i = 0; i < index; i++) from += state.doc.child(i).nodeSize;
+    const destination = direction === -1 ? from - neighbor.nodeSize : from + neighbor.nodeSize;
+    const transaction = state.tr.delete(from, from + node.nodeSize).insert(destination, node);
+    if (node.type.name === 'atlasImage') {
+      transaction.setSelection(NodeSelection.create(transaction.doc, destination));
+    } else {
+      transaction.setSelection(TextSelection.near(transaction.doc.resolve(destination + 1)));
+    }
+    editor.view.dispatch(transaction);
+    editor.commands.focus();
+    repositionGutter(editor);
   }
 
   // An in-page link form is safer than window.prompt in the Storybook iframe.
@@ -290,21 +326,7 @@
   }
 
   function moveSelectedImage(direction: -1 | 1) {
-    const editor = currentEditor();
-    if (!editor || !editor.isActive('atlasImage')) return;
-    const { state } = editor;
-    const index = state.selection.$from.index(0);
-    const doc = state.doc;
-    const next = index + direction;
-    if (next < 0 || next >= doc.childCount || doc.child(index).type.name !== 'atlasImage') return;
-    const image = doc.child(index);
-    let from = 0;
-    for (let i = 0; i < index; i++) from += doc.child(i).nodeSize;
-    const beforeOrAfter = direction === -1 ? from - doc.child(next).nodeSize : from + doc.child(next).nodeSize;
-    const tr = state.tr.delete(from, from + image.nodeSize);
-    // After removing the image, the next sibling begins at the former image position.
-    tr.insert(beforeOrAfter, image);
-    editor.view.dispatch(tr);
+    moveCurrentBlock(direction);
   }
 
   function saveImage() {
@@ -421,12 +443,21 @@
     </div>
   {/if}
 
-  <!-- Reserve an actual gutter: the plus never covers the writing surface.
-       Its vertical position follows the current selection without floating-ui. -->
+  <!-- The editor remains full width. Only the currently active top-level Atlas
+       block is indented, leaving room for plus and reordering controls. -->
   <div class="document-shell" bind:this={shellEl}>
-    <div class="gutter-position" style:top={gutterTop + 'px'}>
+    <div class="gutter-position" style:top={gutterTop + 'px'} role="group" aria-label="Current block controls">
       <button type="button" class="insert-trigger" aria-label="Add a content block"
-        aria-expanded={floatingOptionsOpen} onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
+        aria-expanded={floatingOptionsOpen} onpointerdown={(event) => event.preventDefault()}
+        onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
+      <div class="move-controls">
+        <button type="button" aria-label="Move current block up" title="Move section up"
+          disabled={activeIndex === 0} onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(-1)}>↑</button>
+        <button type="button" aria-label="Move current block down" title="Move section down"
+          disabled={activeIndex >= blockCount - 1} onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(1)}>↓</button>
+      </div>
     </div>
     <div class="editor-canvas" bind:this={canvasEl}></div>
   </div>
@@ -466,7 +497,7 @@
     </form>
   {/if}
 
-  <p class="editor-note">The + follows the cursor in the left gutter. Enter creates a paragraph inside the current Atlas text block. Use + → Text to create a separate block. The final empty text block remains as a place to type.</p>
+  <p class="editor-note">Only the selected section makes space for the + and ↑ ↓ controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
 </div>
 
 <style>
@@ -489,14 +520,21 @@
   .format-toolbar button:hover { background: var(--atlas-bg); }
   .toolbar-separator { height: 1.35rem; border-left: 1px solid var(--atlas-border); margin-inline: .2rem; }
   .document-shell {
-    position: relative; min-width: 0; background: transparent;
-    padding-left: 3.15rem; border: 0;
+    position: relative; min-width: 0; background: transparent; border: 0;
   }
-  .document-shell:focus-within { box-shadow: inset 2px 0 0 var(--atlas-focus); }
   .gutter-position {
-    position: absolute; left: .2rem; width: 2.5rem; z-index: 2;
-    display: flex; justify-content: center;
+    position: absolute; left: .1rem; width: 2.8rem; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: .2rem;
   }
+  .move-controls { display: flex; align-items: center; gap: .12rem; }
+  .move-controls button {
+    width: 1.25rem; height: 1.55rem; padding: 0;
+    display: grid; place-items: center;
+    color: var(--atlas-text); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: .35rem;
+    cursor: pointer; font: 600 .95rem/1 system-ui, sans-serif;
+  }
+  .move-controls button:disabled { opacity: .3; cursor: default; }
   .insert-trigger {
     width: 2.15rem; height: 2.15rem; border: 1px solid var(--atlas-border);
     border-radius: 50%; background: var(--atlas-surface); color: var(--atlas-text);
@@ -524,6 +562,9 @@
   }
   :global(.atlas-story-rich-document:focus-visible) { outline: none; }
   :global(.atlas-story-rich-document > *:first-child) { margin-top: 0; }
+  :global(.atlas-story-rich-document > .atlas-story-active-block) {
+    margin-left: 3.15rem; min-height: 4.7rem;
+  }
   :global(.atlas-story-text) { min-width: 0; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
@@ -570,9 +611,12 @@
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
   @container (max-width: 430px) {
-    .document-shell { padding-left: 2.7rem; }
+    :global(.atlas-story-rich-document > .atlas-story-active-block) {
+      margin-left: 2.8rem;
+    }
     .gutter-position { left: 0; }
     .insert-trigger { width: 2rem; height: 2rem; }
+    .move-controls button { width: 1.2rem; }
     .block-context { margin-left: 2.7rem; }
     .format-toolbar { gap: .1rem; }
     .format-toolbar button { min-height: 2.5rem; padding: .4rem .65rem; }
