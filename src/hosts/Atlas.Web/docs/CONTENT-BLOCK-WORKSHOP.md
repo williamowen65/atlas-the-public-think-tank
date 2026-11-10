@@ -41,63 +41,77 @@ The model should allow future plugin-like block renderers with a full-node view,
 - Confirm moderation hiding cannot leak original media or text to anonymous feed users.
 - Test partial write failure, private draft restore, CSRF rejection, URL validation and old browser draft compatibility.
 
-## Editor UX research prototype (November 9: Medium-style Tiptap)
+## Editor UX research prototype (November 9–10: Tiptap mapping workspace)
 
-A follow-up discussion raised whether the content-block *interface* should feel more
-like Medium's continuous rich-text authoring canvas. This is not a decision to
-replace the established API block model. Blocks are a persistence/content model;
-WYSIWYG is one possible user-facing authoring interaction.
+The editor UX exploration remains **Storybook-only** and does not alter node
+creation, node editing, APIs, storage or the production Atlas card. Ordered
+content blocks remain the persistence model; Tiptap is an experimental input
+surface over that same model.
 
-The branch now includes a **Storybook-only comparison** at
-`Content / Editor workbench (experimental) / Compare editors`.
-The story is also available via the Storybook iframe ID
-`content-editor-workbench-experimental--compare-editors`.
+Open Storybook:
+- Content / Editor workbench (experimental) / Compare editors
+- Other useful cases: Image first, Phone width, Blank node.
+- The standalone Content / Block composer stories remain for testing that
+  individual form component. Redundant editor/style preset stories were removed;
+  compare the editors and toggle Atlas/editorial text styles in the main workspace.
 
-Use the controls to compare:
+Run from src/hosts/Atlas.Web after pulling the feature branch:
 
-- **Existing block forms**: the original `BlockComposer.svelte` unchanged.
-- **Tiptap canvas**: an actual Tiptap 3 / ProseMirror editing engine, not a
-  nonfunctional visual imitation. It displays a document rather than block forms,
-  with a selected-text bubble menu (bold, italic, link), plus menu on an empty
-  paragraph (image, heading, section break), and a touch-friendly toolbar when
-  the component container is narrow. An image is a custom atomic Tiptap node
-  with URL, required alt text and optional caption.
-- **Visual styles**: Atlas design tokens versus a quieter, editorial/serif canvas.
-  The editing engine does not dictate Atlas's typography or controls.
-- **Preview**: switch from Edit to a *conceptual* bounded feed-content preview or
-  the full-node content rendering using `ContentBlocks.svelte`. Preview does not
-  save or publish. The feed concept is not a pixel-for-pixel reproduction of the
-  live ribbon-corner card; check the real card/dial after design selection.
-- **Device exploration**: simulate a phone-width container in Storybook, and
-  independently test the actual Storybook viewport at narrow/mobile sizes.
-- **Scenarios**: text-first, image-first, blank node, block forms, editorial canvas,
-  and phone width are separate stories.
+    npm ci
+    npm run storybook
 
-To try it after pulling the branch:
+### One shared model, two views
 
-```sh
-cd src/hosts/Atlas.Web
-npm ci
-npm run storybook
-```
+In the Compare editors story, **Existing block forms and Tiptap canvas now
+read and modify the same AuthorBlock[] state**. Edit either editor, switch to
+the other, and verify the same text, image order, captions and keys. Opening
+the inspector beneath the framed node reveals the ordered kind, key/ID and
+content summary. No API calls or persistence occur.
 
-Select `Content / Editor workbench (experimental)` in the Storybook sidebar.
+The Storybook-only mapping in tiptapBlocks.ts is now intentionally designed
+around Atlas block identity rather than treating every paragraph as a brand
+new block:
+- Each Markdown block becomes one custom atlasText container holding its
+  paragraphs, headings, lists, etc., with a stable data-atlas-key.
+- Images become atomic, draggable atlasImage nodes with their own key, URL,
+  alternative text and caption; a selected image also has move up/down controls.
+  Image drops cannot nest inside an atlasText container, so images remain
+  separate persisted blocks.
+- Unimplemented block kinds appear as protected placeholders, with their
+  original data looked up from the shared AuthorBlock[] when converting back.
+- Conversion back to AuthorBlock[] preserves an existing block's ID and
+  original payload by matching its key; changes to order don't regenerate IDs.
+  New text and image blocks get newly generated keys.
+- Common rich text (bold, italic, basic links, headings, lists and paragraphs)
+  is converted to Atlas Markdown. This is not a fully lossless Markdown codec:
+  nested/advanced syntax, mark ordering, paste cases and future embedded types
+  still require design and broader tests.
 
-The workbench keeps each editor's draft independent, by design; switching
-modes does not promise lossless conversion. The small Storybook-only bridge
-(`storybook/Content/tiptapBlocks.ts`) maps common rich text and images to the
-existing preview renderer, but it deliberately does **not** implement production
-block ID preservation, all Markdown syntax, multi-user editing, upload storage,
-advanced embeds, block recovery, or persistence. A production WYSIWYG decision
-must include a robust, versioned block-to-document mapping and migration tests.
+The main editor has the same conceptual **expanded Atlas node frame** as the
+full view: optional ancestor breadcrumb, node type, editable title, byline,
+community chooser and content area. It deliberately omits a voting dial during
+authoring. Edit / Feed / Full node operate on the same content. The feed preview
+is still an illustrative bounded content panel, **not a pixel-perfect live
+feed card**. The Tiptap document itself no longer has a second nested paper
+border; the enclosing Atlas node is the frame.
 
-Research questions for review: Does direct typing feel easier than the forms?
-Is the plus button discoverable? Do users understand where a new block begins?
-Are image editing and alt text intuitive? Does mobile selection and keyboard
-behavior work well on real iOS/Android devices? Is the feed/full preview easy
-to find? Should Atlas have a separate explicit full-preview mode when the
-canvas itself is WYSIWYG? Are additional controls needed for long, mixed
-content? Do embedded blocks require custom node views?
+### Research questions and validation
 
-**Do not ship or wire this Tiptap prototype into live node creation/editing
-without a separate design decision, security review, and full persistence tests.**
+Compare copy, formatting and image movement in both directions, then inspect
+the key list. Try image-first, blank, long multi-paragraph text, and real
+320px-ish screens including mobile touch editing.
+
+Tests: tests/editor-workbench.spec.ts (interactive Storybook round trips and
+previews) and tests/tiptap-bridge.spec.ts (stable keys/IDs, reordered images,
+multi-paragraph Markdown, unsupported block preservation). Run npm run check,
+npm run build-storybook and those Playwright tests before considering this
+validated; reported test execution status is separate from the implementation.
+
+Remaining: polished image editing, arbitrary caret insertion within long
+Markdown groups, full lossless Markdown conversion and paste handling,
+preserving unknown blocks against deliberate deletion, real card pixel parity,
+true mobile keyboard testing, and production-grade persistence integration.
+These are questions to evaluate, **not** commitments or shipping readiness.
+
+Do not wire the Tiptap prototype to live node creation/editing without a
+separate design decision, security review and backend round-trip tests.
