@@ -49,8 +49,8 @@ test('narrow Tiptap editor can insert a captioned image with required alt text',
   const editor = page.locator('.atlas-story-rich-document');
   await editor.click();
   await editor.press('ControlOrMeta+End');
-  await page.getByRole('button', { name: '+ Insert' }).click();
-  await page.getByRole('button', { name: 'Image', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Image', exact: true }).click();
   await page.getByLabel('Image URL', { exact: true }).fill('https://example.org/new-park.png');
   await page.getByLabel('Alternative text').fill('A walkway beside a tree');
   await page.getByLabel('Caption').fill('An accessible new park');
@@ -105,4 +105,69 @@ test('node card framing and draft metadata are consistent in Edit and Full node 
   await expect(preview.getByRole('navigation', { name: 'Node ancestry' })).toContainText('Better streets');
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Node title' })).toHaveValue('Redesign our green spaces');
+});
+
+test('formatting controls stay visible and the plus stays completely left of writing', async ({ page }) => {
+  await page.goto(storyUrl);
+  const toolbar = page.getByRole('toolbar', { name: 'Text formatting' });
+  const plus = page.getByRole('button', { name: 'Add a content block' });
+  await expect(toolbar.getByRole('button', { name: 'Bold selected text' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: 'Add or edit link' })).toBeVisible();
+  await expect(plus).toBeVisible();
+
+  const first = page.locator('.atlas-story-text p').first();
+  await first.click();
+  await first.press('End');
+  await expect(toolbar).toBeVisible();
+  await plus.click();
+  await expect(page.getByLabel('Insert a content block')).toBeVisible();
+  const geometry = await page.evaluate(() => {
+    const button = document.querySelector('.gutter-position .insert-trigger');
+    const canvas = document.querySelector('.editor-canvas');
+    if (!button || !canvas) return null;
+    return { buttonRight: button.getBoundingClientRect().right, canvasLeft: canvas.getBoundingClientRect().left };
+  });
+  expect(geometry).not.toBeNull();
+  expect(geometry!.buttonRight).toBeLessThanOrEqual(geometry!.canvasLeft);
+  await expect(toolbar).toBeVisible();
+});
+
+test('link form creates a real linked text span and maps back to Atlas Markdown', async ({ page }) => {
+  await page.goto(storyUrl);
+  const p = page.locator('.atlas-story-text[data-atlas-key="intro"] p').first();
+  await p.click();
+  await p.press('Home');
+  await p.press('ControlOrMeta+Shift+ArrowRight');
+  await page.getByRole('button', { name: 'Add or edit link' }).click();
+  const form = page.getByRole('form', { name: 'Insert or edit link' });
+  await expect(form).toBeVisible();
+  await form.getByLabel('Link URL').fill('https://example.org/walkability');
+  await form.getByRole('button', { name: 'Apply link' }).click();
+  await expect(page.locator('.atlas-story-rich-document a[href="https://example.org/walkability"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.getByLabel('Text (Markdown)').first()).toHaveValue(/\]\(https:\/\/example\.org\/walkability\)/);
+});
+
+test('Backspace in the final empty paragraph does not create phantom Atlas blocks', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-editor-workbench-experimental--blank-node&viewMode=story');
+  const editor = page.locator('.atlas-story-rich-document');
+  await expect(editor).toBeVisible();
+  await editor.locator('.atlas-story-text p').last().click();
+  await editor.press('Enter');
+  await editor.press('Backspace');
+  await editor.press('Backspace');
+  await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.locator('.block-composer .content-block')).toHaveCount(1);
+});
+
+test('an extra empty text block can be removed without deleting the final writing area', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Text', exact: true }).click();
+  await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(3);
+  await page.locator('.atlas-story-rich-document > .atlas-story-text p').last().click();
+  await expect(page.getByRole('button', { name: 'Remove empty text block' })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove empty text block' }).click();
+  await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(2);
 });
