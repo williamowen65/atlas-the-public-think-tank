@@ -662,8 +662,13 @@
       onclick={() => format('bulletList')}>List</button>
   </div>
 
+
+  <!-- The editor remains full width. Only the currently active top-level Atlas
+       block is indented, leaving room for plus and reordering controls. -->
+  <div class="document-shell" bind:this={shellEl}>
   {#if linkFormOpen}
     <form class="link-form" aria-label="Insert or edit link"
+      style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}
       onsubmit={(event) => { event.preventDefault(); saveLink(); }}>
       <label for="story-link-url">Link URL</label>
       <input id="story-link-url" type="url" required bind:value={linkHref}
@@ -682,9 +687,6 @@
   {/if}
 
 
-  <!-- The editor remains full width. Only the currently active top-level Atlas
-       block is indented, leaving room for plus and reordering controls. -->
-  <div class="document-shell" bind:this={shellEl}>
     {#if selectionPopup && controlsVisible}
       <div class="selection-bubble" role="toolbar" aria-label="Selected text formatting"
         style:left={selectionPopup.left + 'px'} style:top={selectionPopup.top + 'px'}>
@@ -744,14 +746,28 @@
       </div>
     {/if}
     <div class="editor-canvas" bind:this={canvasEl}></div>
-  </div>
-
-  {#if editorState.editor?.isActive('atlasImage')}
-    <div class="block-context">
-      <span>Image selected</span>
-      <button type="button" onclick={openImageForm}>Edit image, caption &amp; alt text</button>
-    </div>
+  {#if imageFormOpen}
+    <form class="image-form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
+      style:top={imageFormPosition.top + 'px'} style:left={imageFormPosition.left + 'px'}
+      onsubmit={(event) => { event.preventDefault(); saveImage(); }}>
+      <h3>{editingExisting ? 'Edit image' : 'Insert an image'}</h3>
+      <label for="story-image-url">Image URL</label>
+      <input id="story-image-url" type="url" required bind:value={imageDraft.url}
+        placeholder="https://example.org/photo.jpg"/>
+      <label for="story-image-alt">Alternative text <span>(required)</span></label>
+      <textarea id="story-image-alt" rows="2" required bind:value={imageDraft.alt}
+        placeholder="Describe the photograph for someone who cannot see it"></textarea>
+      <label for="story-image-caption">Caption <span>(optional)</span></label>
+      <input id="story-image-caption" bind:value={imageDraft.caption} placeholder="Optional caption"/>
+      {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
+      <div class="form-actions">
+        <button type="button" onclick={cancelImageForm}>Cancel</button>
+        <button type="submit" class="primary">Apply image</button>
+      </div>
+    </form>
   {/if}
+
+  </div>
 
   {#if deleteTarget}
     <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
@@ -765,25 +781,6 @@
     </div>
   {/if}
 
-  {#if imageFormOpen}
-    <form class="image-form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
-      onsubmit={(event) => { event.preventDefault(); saveImage(); }}>
-      <h3>{editingExisting ? 'Edit image' : 'Insert an image'}</h3>
-      <label for="story-image-url">Image URL</label>
-      <input id="story-image-url" type="url" required bind:value={imageDraft.url}
-        placeholder="https://example.org/photo.jpg"/>
-      <label for="story-image-alt">Alternative text <span>(required)</span></label>
-      <textarea id="story-image-alt" rows="2" required bind:value={imageDraft.alt}
-        placeholder="Describe the photograph for someone who cannot see it"></textarea>
-      <label for="story-image-caption">Caption <span>(optional)</span></label>
-      <input id="story-image-caption" bind:value={imageDraft.caption} placeholder="Optional caption"/>
-      {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
-      <div class="form-actions">
-        <button type="button" onclick={() => { imageFormOpen = false; imageError = ''; }}>Cancel</button>
-        <button type="submit" class="primary">Apply image</button>
-      </div>
-    </form>
-  {/if}
 
   <p class="editor-note">Only the selected section makes space for the +, ↑ ↓, and delete controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
 </div>
@@ -931,6 +928,12 @@
     border: 1px solid var(--atlas-border); border-radius: .6rem;
     background: var(--atlas-surface);
   }
+  .link-form, .image-form {
+    position: absolute; z-index: 35; width: min(21rem, 100%);
+    max-width: 100%; box-sizing: border-box; margin: 0;
+    box-shadow: 0 9px 30px #0003;
+  }
+  .image-form { width: min(22rem, 100%); }
   .delete-confirm { margin: 1rem 0; }
   .delete-confirm p { margin: .1rem 0; color: var(--atlas-muted); overflow-wrap: anywhere; }
   .form-actions .destructive { color: #b32318; border-color: #b32318; }
