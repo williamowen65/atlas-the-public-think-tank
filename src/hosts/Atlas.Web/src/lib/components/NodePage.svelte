@@ -336,9 +336,8 @@
           disabled
         />{/if}
     </aside>{/if}
-    <p class="description">{node.description}</p>
+    <div class="description"><ContentBlocks {blocks} /></div>
     </div>
-    <ContentBlocks {blocks} />
   </div>
   {#if !inspectionOnly}
   {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
