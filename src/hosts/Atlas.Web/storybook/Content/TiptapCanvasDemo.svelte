@@ -526,8 +526,10 @@
     <button type="button" aria-label="Add or edit link"
       onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
     <span class="toolbar-separator" aria-hidden="true"></span>
-    <button type="button" aria-label="Toggle heading" onclick={() => format('heading')}>H2</button>
-    <button type="button" aria-label="Toggle bulleted list" onclick={() => format('bulletList')}>List</button>
+    <button type="button" aria-label="Toggle heading" onpointerdown={(event) => event.preventDefault()}
+      onclick={() => format('heading')}>H2</button>
+    <button type="button" aria-label="Toggle bulleted list" onpointerdown={(event) => event.preventDefault()}
+      onclick={() => format('bulletList')}>List</button>
   </div>
 
   {#if linkFormOpen}
