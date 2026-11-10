@@ -22,6 +22,62 @@
     styleMode?: 'atlas' | 'editorial';
   } = $props();
 
+  // A Markdown block stays one Atlas block even when it contains multiple
+  // paragraphs/headings. This wrapper carries its stable key through editing,
+  // reordering and conversion back into the existing AuthorBlock[] model.
+  const AtlasText = Node.create({
+    name: 'atlasText',
+    group: 'block',
+    content: 'block+',
+    defining: true,
+    addAttributes() {
+      return { key: { default: '' } };
+    },
+    parseHTML() {
+      return [{
+        tag: 'div[data-atlas-text]',
+        getAttrs: element => typeof element === 'string' ? false :
+          { key: element.getAttribute('data-atlas-key') || '' },
+      }];
+    },
+    renderHTML({ node }) {
+      return ['div', {
+        'data-atlas-text': 'true',
+        'data-atlas-key': node.attrs.key,
+        class: 'atlas-story-text',
+      }, 0];
+    },
+  });
+
+  // Preserve future/unsupported block kinds without pretending to edit them.
+  const AtlasUnsupported = Node.create({
+    name: 'atlasUnsupported',
+    group: 'block',
+    atom: true,
+    selectable: false,
+    addAttributes() {
+      return { key: { default: '' }, kind: { default: 'unknown' } };
+    },
+    parseHTML() {
+      return [{
+        tag: 'div[data-atlas-unsupported]',
+        getAttrs: element => typeof element === 'string' ? false : {
+          key: element.getAttribute('data-atlas-key') || '',
+          kind: element.getAttribute('data-atlas-kind') || 'unknown',
+        },
+      }];
+    },
+    renderHTML({ node }) {
+      return ['div', {
+        'data-atlas-unsupported': 'true',
+        'data-atlas-key': node.attrs.key,
+        'data-atlas-kind': node.attrs.kind,
+        class: 'atlas-story-unsupported',
+        contenteditable: 'false',
+      }, 'Unsupported ' + node.attrs.kind + ' block (preserved)'];
+    },
+  });
+
   // A purpose-built image atom is closer to our server-side image block than
   // Tiptap's default inline <img>. It also keeps alt text and caption together.
   const AtlasImage = Node.create({
@@ -76,6 +132,30 @@
   let editingExisting = $state(false);
   let insertionPosition = $state<number | null>(null);
   let imageDraft = $state({ url: '', alt: '', caption: '' });
+  let latestBlocks: AuthorBlock[] = initialBlocks;
+
+  // Insert specialized blocks as siblings of Atlas text blocks, not inside
+  // their Markdown content. This keeps a draggable image a real Atlas block.
+  function afterCurrentBlock(editor: Editor): number {
+    const index = editor.state.selection.$from.index(0);
+    let pos = 0;
+    for (let i = 0; i <= index && i < editor.state.doc.childCount; i++)
+      pos += editor.state.doc.child(i).nodeSize;
+    return pos;
+  }
+
+  function insertTextBlock() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const position = afterCurrentBlock(editor);
+    editor.chain().focus().insertContentAt(position, {
+      type: 'atlasText',
+      attrs: { key: crypto.randomUUID() },
+      content: [{ type: 'paragraph' }],
+    }).run();
+    floatingOptionsOpen = false;
+    mobileOptionsOpen = false;
+  }
 
   function currentEditor(): Editor | null { return editorState.editor; }
 
@@ -119,7 +199,7 @@
       alt: String(attrs.alt ?? ''),
       caption: String(attrs.caption ?? ''),
     };
-    insertionPosition = editor.state.selection.from;
+    insertionPosition = afterCurrentBlock(editor);
     imageError = '';
     imageFormOpen = true;
     floatingOptionsOpen = false;
@@ -145,9 +225,9 @@
     if (editingExisting) {
       editor.chain().focus().updateAttributes('atlasImage', attrs).run();
     } else {
-      editor.chain().focus().insertContentAt(insertionPosition ?? editor.state.selection.from, [
+      editor.chain().focus().insertContentAt(insertionPosition ?? afterCurrentBlock(editor), [
         { type: 'atlasImage', attrs: { ...attrs, key: crypto.randomUUID() } },
-        { type: 'paragraph' },
+        { type: 'atlasText', attrs: { key: crypto.randomUUID() }, content: [{ type: 'paragraph' }] },
       ]).run();
     }
     imageFormOpen = false;
@@ -159,7 +239,9 @@
       element: canvasEl,
       extensions: [
         StarterKit,
+        AtlasText,
         AtlasImage,
+        AtlasUnsupported,
         BubbleMenu.configure({ element: bubbleEl }),
         FloatingMenu.configure({ element: floatingEl }),
       ],
@@ -171,7 +253,11 @@
         },
       },
       onTransaction: ({ editor }) => { editorState = { editor }; },
-      onUpdate: ({ editor }) => onChange?.(tiptapDocumentToBlocks(editor.getJSON())),
+      onUpdate: ({ editor }) => {
+        const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks);
+        latestBlocks = next;
+        onChange?.(next);
+      },
     });
     editorState = { editor };
     return () => { editor.destroy(); };
@@ -195,6 +281,7 @@
     <button type="button" class="insert-trigger" aria-label="Add a content block" aria-expanded={floatingOptionsOpen} onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
     {#if floatingOptionsOpen}
       <div class="insert-choices">
+        <button type="button" onclick={insertTextBlock}>Text</button>
         <button type="button" onclick={openImageForm}>Image</button>
         <button type="button" onclick={() => { format('heading'); floatingOptionsOpen = false; }}>Heading</button>
         <button type="button" onclick={insertDivider}>Section break</button>
@@ -240,6 +327,7 @@
   </div>
   {#if mobileOptionsOpen}
     <div class="touch-insert-options" aria-label="Mobile insert options">
+      <button type="button" onclick={insertTextBlock}>Text</button>
       <button type="button" onclick={openImageForm}>Image</button>
       <button type="button" onclick={insertDivider}>Section break</button>
       <button type="button" onclick={() => { format('bulletList'); mobileOptionsOpen = false; }}>Bulleted list</button>
@@ -250,12 +338,14 @@
 <style>
   .tiptap-prototype { color: var(--atlas-text); container-type: inline-size; }
   .editor-hint { display: flex; justify-content: space-between; gap: .4rem 1rem; flex-wrap: wrap; padding: .55rem 0 .8rem; font-size: .82rem; color: var(--atlas-muted); }
-  .document-shell { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); overflow: visible; }
-  .editor-canvas { min-height: 18rem; padding: 1.2rem 1.5rem 2.5rem; }
-  .editorial .document-shell { border-color: transparent; border-bottom-color: var(--atlas-border); border-radius: 0; }
+  .document-shell { border: 0; background: transparent; overflow: visible; }
+  .editor-canvas { min-height: 12rem; padding: .4rem 0 1.25rem; }
+  .editorial .document-shell { border-color: transparent; }
   .editorial .editor-canvas { font-family: Georgia, 'Times New Roman', serif; font-size: 1.14rem; line-height: 1.8; }
   .editorial .editor-hint { font-family: system-ui, sans-serif; }
-  :global(.atlas-story-rich-document) { min-height: 12rem; outline: none; overflow-wrap: anywhere; line-height: 1.7; }
+  :global(.atlas-story-rich-document) { min-height: 10rem; outline: none; overflow-wrap: anywhere; line-height: 1.7; }
+  :global(.atlas-story-text) { min-width: 0; }
+  :global(.atlas-story-unsupported) { border: 1px dashed var(--atlas-border); border-radius: .4rem; color: var(--atlas-muted); padding: .7rem; margin-block: .7rem; font-size: .85rem; }
   :global(.atlas-story-rich-document:focus-visible) { outline: 2px solid var(--atlas-focus); outline-offset: .5rem; border-radius: 2px; }
   :global(.atlas-story-rich-document > *:first-child) { margin-top: 0; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .9rem; }
