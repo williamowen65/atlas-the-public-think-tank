@@ -45,6 +45,15 @@ export function blocksToTiptapHtml(blocks: AuthorBlock[]): string {
 }
 
 function inlineMarkdown(node: JSONContent): string {
+  // Storybook-only Markdown images remain inside ONE Atlas text block and
+  // round-trip through Tiptap as inline atoms. Production policy still
+  // disables Markdown images until an explicit security/product decision.
+  if (node.type === 'atlasInlineImage') {
+    const url = publicUrl(String(node.attrs?.src ?? ''));
+    if (!url) return '';
+    const alt = String(node.attrs?.alt ?? '').replace(/([\\\[\]])/g, '\\$1');
+    return '![' + alt + '](' + url.replace(/\)/g, '%29') + ')';
+  }
   if (node.type === 'hardBreak') return '  \n';
   if (node.type === 'text') {
     let value = node.text ?? '';
