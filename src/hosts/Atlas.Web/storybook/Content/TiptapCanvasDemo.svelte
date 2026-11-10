@@ -629,6 +629,9 @@
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     return () => {
+      // Switching editor modes must not leak a staged, invalid image into the
+      // canonical block-form draft when its inline settings were never applied.
+      if (provisionalImageKey) cancelImageForm();
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', reposition, true);
       cancelAnimationFrame(railFrame);
