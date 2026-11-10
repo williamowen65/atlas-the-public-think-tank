@@ -42,3 +42,19 @@ test('phone-width toggle exposes a narrow canvas while preserving editor mode sw
   await page.getByRole('button', { name: 'Tiptap canvas' }).click();
   await expect(page.locator('.atlas-story-rich-document')).toBeVisible();
 });
+
+test('narrow Tiptap editor can insert a captioned image with required alt text', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Simulate phone width' }).click();
+  const editor = page.locator('.atlas-story-rich-document');
+  await editor.click();
+  await editor.press('ControlOrMeta+End');
+  await page.getByRole('button', { name: '+ Insert' }).click();
+  await page.getByRole('button', { name: 'Image', exact: true }).last().click();
+  await page.getByLabel('Image URL', { exact: true }).fill('https://example.org/new-park.png');
+  await page.getByLabel('Alternative text').fill('A walkway beside a tree');
+  await page.getByLabel('Caption').fill('An accessible new park');
+  await page.getByRole('button', { name: 'Apply image' }).click();
+  await expect(page.locator('.atlas-story-figure').last()).toContainText('An accessible new park');
+  await expect(page.locator('.atlas-story-figure').last().locator('img')).toHaveAttribute('alt', 'A walkway beside a tree');
+});
