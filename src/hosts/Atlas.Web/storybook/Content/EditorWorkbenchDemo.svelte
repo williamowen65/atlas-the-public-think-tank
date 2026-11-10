@@ -3,8 +3,7 @@
   import ContentBlocks from '../../src/lib/components/ContentBlocks.svelte';
   import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
-  import MediaGalleryDemo from './MediaGalleryDemo.svelte';
-  import type { CarouselChild, CarouselFrame } from './carouselPrototype';
+  import FeedNodeCarousel from './FeedNodeCarousel.svelte';
 
   let {
     initialBlocks,
@@ -13,7 +12,6 @@
     initialStyle = 'atlas',
     initialNarrow = false,
     initialBreadcrumb = true,
-    galleryExperiment = false,
   }: {
     initialBlocks: AuthorBlock[];
     title?: string;
@@ -21,7 +19,6 @@
     initialStyle?: 'atlas' | 'editorial';
     initialNarrow?: boolean;
     initialBreadcrumb?: boolean;
-    galleryExperiment?: boolean;
   } = $props();
 
   // The SAME Atlas block array is read and written by both editors.
@@ -38,29 +35,15 @@
   let narrow = $state(initialNarrow);
   let previewBlocks = $derived(contentForPreview(blocks));
 
-  // This gallery is intentionally separate Storybook-only research state.
-  // A gallery is NOT an existing persisted AuthorBlock kind, and pretending
-  // otherwise would hide real backend and Tiptap schema work we still need.
-  let galleryItems = $state<CarouselChild[]>([
-    { key: 'gallery-portrait', type: 'image',
-      url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1000',
-      alt: 'Tall city buildings framing a downtown street',
-      caption: 'Portrait street scene' },
-    { key: 'gallery-landscape', type: 'image',
-      url: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=1200',
-      alt: 'Architectural structures and open space',
-      caption: 'Landscape perspective' },
-    { key: 'gallery-video', type: 'video',
-      url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-      poster: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1000',
-      alt: 'Short sample video of flowers',
-      caption: 'A sample playable video slide' },
-    { key: 'gallery-poll', type: 'poll', url: '', alt: '', caption: 'Choose how the square should evolve',
-      question: 'What would make this public square more welcoming?',
-      options: ['More shade and trees', 'Safer walking paths', 'Outdoor community events'] },
-  ]);
-  let galleryFrame = $state<CarouselFrame>('portrait');
-  let galleryIndex = $state(0);
+  // Feed is only a VIEW over the SAME flat Atlas node content blocks.
+  // It does not add a carousel kind, nested blocks, media data or API writes.
+  // Track selected feed slide by block ID, so reordering preserves the target.
+  let feedBlockKey = $state<string | null>(null);
+  let feedIndex = $derived(Math.max(0, previewBlocks.findIndex(
+    block => block.id === feedBlockKey
+  )));
+  let feedFrame = $state<'portrait' | 'landscape'>('landscape');
+
 </script>
 
 <div class="workbench" class:phone-width={narrow}>
@@ -91,6 +74,19 @@
         <button type="button" aria-pressed={view === 'full'} class:chosen={view === 'full'} onclick={() => view = 'full'}>Full node</button>
       </div>
     </div>
+    {#if view === 'feed'}
+      <div class="control-group">
+        <strong>Feed preview shape · research only</strong>
+        <div class="switcher" role="group" aria-label="Feed slide framing">
+          <button type="button" class:chosen={feedFrame === 'landscape'}
+            aria-pressed={feedFrame === 'landscape'}
+            onclick={() => feedFrame = 'landscape'}>Landscape</button>
+          <button type="button" class:chosen={feedFrame === 'portrait'}
+            aria-pressed={feedFrame === 'portrait'}
+            onclick={() => feedFrame = 'portrait'}>Portrait</button>
+        </div>
+      </div>
+    {/if}
     {#if mode === 'tiptap'}
       <div class="control-group">
         <strong>Text style</strong>
@@ -163,37 +159,25 @@
             <TiptapCanvasDemo initialBlocks={blocks} {styleMode} onChange={(next) => blocks = next}/>
           {/if}
         {:else if view === 'feed'}
-          <div class="feed-content"><ContentBlocks blocks={previewBlocks}/></div>
+          <!-- Feed slides are derived DIRECTLY from the editable node blocks.
+               No separately authored gallery and no inner carousel in Full Node. -->
+          <FeedNodeCarousel blocks={previewBlocks} index={feedIndex} frame={feedFrame}
+            onIndexChange={(next) => feedBlockKey = previewBlocks[next]?.id ?? null}
+            onOpenFull={() => view = 'full'} />
         {:else}
           <ContentBlocks blocks={previewBlocks}/>
-        {/if}
-        {#if galleryExperiment}
-          <MediaGalleryDemo
-            items={galleryItems} frame={galleryFrame} index={galleryIndex} mode={view}
-            onChange={(next) => galleryItems = next}
-            onFrameChange={(next) => galleryFrame = next}
-            onIndexChange={(next) => galleryIndex = next}
-          />
-          {#if view === 'feed'}
-            <p class="preview-note">The feed uses a compact 16:9 teaser; Edit and Full Node retain the same uncropped gallery frame.</p>
-          {/if}
-        {/if}
-        {#if view === 'feed'}
-          <p class="read-more">Read more</p>
         {/if}
       </div>
     </article>
     {#if view === 'feed'}
-      <p class="preview-note">Feed content concept: bounded height and an illustrative card frame, not a pixel-exact reproduction of the voting dial and current production layout.</p>
+      <p class="preview-note">Feed research: one bounded slide per real node block. Read more opens the normal full-node preview; this is not the production feed layout.</p>
     {/if}
   </div>
 
   <details class="model-inspector">
     <summary>Inspect Atlas blocks ({blocks.length}) · shared by both editors</summary>
     <p>This is the ordered AuthorBlock array. Each item retains its key and any existing server block ID, including when you move an image above text in the Tiptap canvas.</p>
-    {#if galleryExperiment}
-      <p><strong>Gallery research:</strong> {galleryItems.length} media items ({galleryItems.filter(item => item.type === 'image').length} images, {galleryItems.filter(item => item.type === 'video').length} videos, {galleryItems.filter(item => item.type === 'poll').length} mock polls), {galleryFrame} frame. This separate prototype is not yet stored in AuthorBlock[] or the Atlas database. Poll choices are local-only; no voting request is sent.</p>
-    {/if}
+    <p><strong>Feed carousel:</strong> {blocks.length} slides, exactly one per existing Atlas content block. The feed previews blocks without creating a carousel block or modifying their storage. Potential multi-image blocks remain a future model/design idea.</p>
     <ol>
       {#each blocks as block (block.key)}
         <li>
@@ -257,12 +241,6 @@
     max-width: 100%; max-height: 24rem; width: auto; height: auto;
     object-fit: contain; border-radius: var(--atlas-radius);
   }
-  :global(.node-frame.feed-frame .node-content .content-blocks figure img) {
-    width: 100%; max-height: 10rem; object-fit: cover;
-  }
-  .feed-content { max-height: 11.5rem; overflow: hidden; position: relative; }
-  .feed-content::after { content: ''; position: absolute; pointer-events: none; left: 0; right: 0; bottom: 0; height: 1.6rem; background: linear-gradient(transparent, var(--atlas-surface)); }
-  .read-more { margin: 0; text-align: right; color: var(--atlas-accent); font-size: .85rem; }
   .preview-note { color: var(--atlas-muted); font-size: .8rem; margin-top: .5rem; }
   .model-inspector { max-width: 48rem; margin: .7rem auto 1.2rem; border: 1px dashed var(--atlas-border); border-radius: .6rem; padding: .75rem 1rem; font-size: .82rem; }
   .model-inspector summary { cursor: pointer; font-weight: 700; }
