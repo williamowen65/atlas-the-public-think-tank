@@ -639,7 +639,7 @@
             // The browser updates ProseMirror's caret as the click finishes.
             // Pin the rail to that location; future scrolling never moves it.
             requestAnimationFrame(() => {
-              if (!editor.isDestroyed && editorFocused) repositionGutter(editor, true);
+              if (!editor.isDestroyed && editorFocused) repositionGutter(editor);
             });
             return false;
           },
@@ -663,7 +663,7 @@
         editorFocused = true;
         controlsVisible = true;
         editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', true));
-        repositionGutter(editor, true);
+        repositionGutter(editor);
       },
       onBlur: ({ editor }) => {
         editorFocused = false;
