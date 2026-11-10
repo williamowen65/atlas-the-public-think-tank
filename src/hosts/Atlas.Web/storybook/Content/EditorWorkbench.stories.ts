@@ -54,11 +54,15 @@ export const FeedBlockCarouselConcept: Story = {
   args: {
     title: 'A richer view of our city',
     initialBlocks: [
-      text('opening', 'What if a public square felt more welcoming? We could create a place to meet, **walk**, and enjoy more trees.'),
+      text('opening', [
+        'What if our public square made more room to **walk** and meet?',
+        '![Street framed by tall buildings](https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1000)',
+        'A little greenery could change how this space feels.',
+      ].join('\n\n')),
       image('first-photo'),
       text('long-section', [
         'The same neighborhood can tell a much bigger story when its details are included.',
-        'A single Markdown section may hold several paragraphs. The feed should only show a bounded preview of it.',
+        'A single Markdown section may hold several paragraphs. The feed should only show a bounded preview of it, even when text contains an inline image.',
         'The complete block remains available when the reader opens the full node.',
         'We could test benches, safer crosswalks, more shade, and community events.',
         'Residents could share what worked before the next set of improvements.',
