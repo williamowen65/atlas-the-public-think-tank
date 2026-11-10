@@ -44,14 +44,27 @@
       return [new Plugin({
         props: {
           decorations(state) {
-            if (!editorFocused) return DecorationSet.empty;
-            const index = state.selection.$from.index(0);
+            if (!editorFocused && !deleteTarget) return DecorationSet.empty;
+            // Keep the exact block highlighted while its delete confirmation
+            // owns keyboard focus. ProseMirror retains the block's stable key.
+            let index = state.selection.$from.index(0);
+            if (deleteTarget) {
+              index = -1;
+              for (let i = 0; i < state.doc.childCount; i++) {
+                if (String(state.doc.child(i).attrs.key) === deleteTarget.key) {
+                  index = i;
+                  break;
+                }
+              }
+            }
             if (index < 0 || index >= state.doc.childCount) return DecorationSet.empty;
             let from = 0;
             for (let i = 0; i < index; i++) from += state.doc.child(i).nodeSize;
             return DecorationSet.create(state.doc, [
               Decoration.node(from, from + state.doc.child(index).nodeSize, {
-                class: 'atlas-story-active-block',
+                class: deleteTarget
+                  ? 'atlas-story-active-block atlas-story-pending-delete'
+                  : 'atlas-story-active-block',
               }),
             ]);
           },
@@ -183,6 +196,7 @@
   let activeIndex = $state(0);
   let blockCount = $state(initialBlocks.length);
   let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
+  let deleteConfirmPosition = $state({ top: 0, left: 0 });
   let railFrame = 0;
   let linkFormOpen = $state(false);
   let linkHref = $state('');
@@ -235,6 +249,21 @@
             Math.round((start.left + end.right) / 2 - shell.left - 160))),
         };
       } catch { /* Keep last valid position during a document remount. */ }
+    }
+
+    if (deleteTarget) {
+      const block = Array.from(editor.view.dom.children)
+        .find(element => element.getAttribute('data-atlas-key') === deleteTarget?.key);
+      if (block) {
+        const rect = block.getBoundingClientRect();
+        // Align to the selected block (not to the entire document's bottom).
+        // Clamp horizontally so the confirmation also fits on phone width.
+        const maxLeft = Math.max(0, shellEl.clientWidth - 310);
+        deleteConfirmPosition = {
+          top: Math.max(0, Math.round(rect.top - shell.top + 5)),
+          left: Math.max(0, Math.min(maxLeft, Math.round(rect.left - shell.left + 10))),
+        };
+      }
     }
 
     if (imageFormOpen && imageFormAnchorKey) {
@@ -437,6 +466,18 @@
         node.textContent.slice(0, 90) || '(empty block)',
     };
     floatingOptionsOpen = false;
+    // Refresh decorations even if the selection itself did not change.
+    editor.view.dispatch(editor.state.tr.setMeta('atlasDeleteDialog', 'open'));
+    requestAnimationFrame(positionAnchoredForms);
+  }
+
+  function cancelDeleteBlock() {
+    deleteTarget = null;
+    const editor = currentEditor();
+    if (editor && !editor.isDestroyed) {
+      editor.chain().focus().run();
+      editor.view.dispatch(editor.state.tr.setMeta('atlasDeleteDialog', 'cancel'));
+    }
   }
 
   function confirmDeleteBlock() {
@@ -669,6 +710,23 @@
   <!-- The editor remains full width. Only the currently active top-level Atlas
        block is indented, leaving room for plus and reordering controls. -->
   <div class="document-shell" bind:this={shellEl}>
+    {#if deleteTarget}
+      <!-- Positioned relative to the exact Atlas block key. The block keeps
+           its pending-selection decoration while this dialog takes focus. -->
+      <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
+        aria-describedby="story-delete-description"
+        style:top={deleteConfirmPosition.top + 'px'}
+        style:left={deleteConfirmPosition.left + 'px'}>
+        <strong>Delete this {deleteTarget.kind} block?</strong>
+        <p id="story-delete-description">
+          This removes the entire block from this Storybook draft: {deleteTarget.summary}
+        </p>
+        <div class="form-actions">
+          <button type="button" onclick={cancelDeleteBlock}>Cancel</button>
+          <button type="button" class="destructive" onclick={confirmDeleteBlock}>Delete block</button>
+        </div>
+      </div>
+    {/if}
   {#if linkFormOpen}
     <form class="link-form" aria-label="Insert or edit link"
       style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}
@@ -772,17 +830,7 @@
 
   </div>
 
-  {#if deleteTarget}
-    <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
-      aria-describedby="story-delete-description">
-      <strong>Delete this {deleteTarget.kind} block?</strong>
-      <p id="story-delete-description">This removes the entire block from this Storybook draft: {deleteTarget.summary}</p>
-      <div class="form-actions">
-        <button type="button" onclick={() => deleteTarget = null}>Cancel</button>
-        <button type="button" class="destructive" onclick={confirmDeleteBlock}>Delete block</button>
-      </div>
-    </div>
-  {/if}
+
 
 
   <p class="editor-note">Only the selected section makes space for the +, ↑ ↓, and delete controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
@@ -937,7 +985,18 @@
     box-shadow: 0 9px 30px #0003;
   }
   .image-form { width: min(22rem, 100%); }
-  .delete-confirm { margin: 1rem 0; }
+  .delete-confirm {
+    position: absolute; z-index: 45;
+    width: min(19rem, 100%); max-width: 100%;
+    box-sizing: border-box; margin: 0;
+    box-shadow: 0 9px 30px #0003;
+    border-color: var(--atlas-focus);
+  }
+  :global(.atlas-story-rich-document > .atlas-story-pending-delete) {
+    outline: 2px solid var(--atlas-focus);
+    outline-offset: 2px;
+    border-radius: .3rem;
+  }
   .delete-confirm p { margin: .1rem 0; color: var(--atlas-muted); overflow-wrap: anywhere; }
   .form-actions .destructive { color: #b32318; border-color: #b32318; }
   .image-form h3 { margin: 0 0 .25rem; }
