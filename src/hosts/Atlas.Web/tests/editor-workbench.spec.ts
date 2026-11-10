@@ -490,3 +490,17 @@ test('existing image details open on the image itself, not below the full node',
   await form.getByRole('button', { name: 'Apply image' }).click();
   await expect(image.locator('figcaption')).toContainText('Caption updated near the image');
 });
+
+
+test('switching to block forms discards an image whose inline editor was never applied', async ({ page }) => {
+  await page.goto(storyUrl);
+  const editor = page.locator('.atlas-story-rich-document');
+  await editor.locator(':scope > .atlas-story-text p').first().click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('group', { name: 'Insert a content block' })
+    .getByRole('button', { name: 'Image', exact: true }).click();
+  await expect(page.getByRole('form', { name: 'Insert image' })).toBeVisible();
+  await expect(editor.locator(':scope > .atlas-story-figure[data-src=""]')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.locator('.block-composer .content-block')).toHaveCount(3);
+});
