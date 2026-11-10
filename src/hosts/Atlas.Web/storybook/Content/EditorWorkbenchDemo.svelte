@@ -3,6 +3,12 @@
   import ContentBlocks from '../../src/lib/components/ContentBlocks.svelte';
   import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
+  import MediaGalleryDemo from './MediaGalleryDemo.svelte';
+
+  type GalleryItem = {
+    key: string; type: 'image' | 'video'; url: string;
+    alt: string; caption: string; poster?: string;
+  };
 
   let {
     initialBlocks,
@@ -11,6 +17,7 @@
     initialStyle = 'atlas',
     initialNarrow = false,
     initialBreadcrumb = true,
+    galleryExperiment = false,
   }: {
     initialBlocks: AuthorBlock[];
     title?: string;
@@ -18,6 +25,7 @@
     initialStyle?: 'atlas' | 'editorial';
     initialNarrow?: boolean;
     initialBreadcrumb?: boolean;
+    galleryExperiment?: boolean;
   } = $props();
 
   // The SAME Atlas block array is read and written by both editors.
@@ -33,6 +41,27 @@
   let view = $state<'edit' | 'feed' | 'full'>('edit');
   let narrow = $state(initialNarrow);
   let previewBlocks = $derived(contentForPreview(blocks));
+
+  // This gallery is intentionally separate Storybook-only research state.
+  // A gallery is NOT an existing persisted AuthorBlock kind, and pretending
+  // otherwise would hide real backend and Tiptap schema work we still need.
+  let galleryItems = $state<GalleryItem[]>([
+    { key: 'gallery-portrait', type: 'image',
+      url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1000',
+      alt: 'Tall city buildings framing a downtown street',
+      caption: 'Portrait street scene' },
+    { key: 'gallery-landscape', type: 'image',
+      url: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=1200',
+      alt: 'Architectural structures and open space',
+      caption: 'Landscape perspective' },
+    { key: 'gallery-video', type: 'video',
+      url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      poster: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1000',
+      alt: 'Short sample video of flowers',
+      caption: 'A sample playable video slide' },
+  ]);
+  let galleryFrame = $state<'portrait' | 'landscape'>('portrait');
+  let galleryIndex = $state(0);
 </script>
 
 <div class="workbench" class:phone-width={narrow}>
@@ -140,6 +169,17 @@
         {:else}
           <ContentBlocks blocks={previewBlocks}/>
         {/if}
+        {#if galleryExperiment}
+          <MediaGalleryDemo
+            items={galleryItems} frame={galleryFrame} index={galleryIndex} mode={view}
+            onChange={(next) => galleryItems = next}
+            onFrameChange={(next) => galleryFrame = next}
+            onIndexChange={(next) => galleryIndex = next}
+          />
+          {#if view === 'feed'}
+            <p class="preview-note">The feed uses a compact 16:9 teaser; Edit and Full Node retain the same uncropped gallery frame.</p>
+          {/if}
+        {/if}
       </div>
     </article>
     {#if view === 'feed'}
@@ -150,6 +190,9 @@
   <details class="model-inspector">
     <summary>Inspect Atlas blocks ({blocks.length}) · shared by both editors</summary>
     <p>This is the ordered AuthorBlock array. Each item retains its key and any existing server block ID, including when you move an image above text in the Tiptap canvas.</p>
+    {#if galleryExperiment}
+      <p><strong>Gallery research:</strong> {galleryItems.length} media items ({galleryItems.filter(item => item.type === 'image').length} images, {galleryItems.filter(item => item.type === 'video').length} videos), {galleryFrame} frame. This separate prototype is not yet stored in AuthorBlock[] or the Atlas database.</p>
+    {/if}
     <ol>
       {#each blocks as block (block.key)}
         <li>
@@ -207,6 +250,15 @@
   .breadcrumb-toggle { display: flex; align-items: center; gap: .2rem; cursor: pointer; margin-left: auto; }
   .node-content { --editor-card-inset: 1.25rem; padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
   .feed-frame .node-content { min-height: 0; }
+  /* Storybook-only WYSIWYG size parity: the existing single-image renderer
+     otherwise expands portraits to a different size in Full Node. */
+  :global(.node-frame:not(.feed-frame) .node-content .content-blocks figure img) {
+    max-width: 100%; max-height: 24rem; width: auto; height: auto;
+    object-fit: contain; border-radius: var(--atlas-radius);
+  }
+  :global(.node-frame.feed-frame .node-content .content-blocks figure img) {
+    width: 100%; max-height: 10rem; object-fit: cover;
+  }
   .feed-content { max-height: 11.5rem; overflow: hidden; position: relative; }
   .feed-content::after { content: ''; position: absolute; pointer-events: none; left: 0; right: 0; bottom: 0; height: 1.6rem; background: linear-gradient(transparent, var(--atlas-surface)); }
   .read-more { margin: 0; text-align: right; color: var(--atlas-accent); font-size: .85rem; }
