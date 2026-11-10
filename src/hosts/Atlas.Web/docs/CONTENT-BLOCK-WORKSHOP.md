@@ -182,3 +182,34 @@ touch-device usability remains to be reviewed. No production components changed.
 Browser coverage checks both the rail geometry (not covering the active block)
 and full-width alignment of inactive content, and verifies up/down reorder
 the same canonical block data visible in the form-based editor.
+
+
+### November 10: block rail consistency and deletion confirmation
+
+After testing the selected-section rail with real text and images, a bug
+remained: Markdown paragraphs could continue underneath the controls while
+images indented properly. The previous implementation manually toggled a
+CSS class in Tiptap's transaction callback. ProseMirror replaces text-node
+DOM while editing, which could remove that manually applied class.
+
+The Storybook editor now uses a **ProseMirror node-decoration plugin** to
+apply the active section class as part of its render process. Only the active
+top-level Atlas block—text or image—indents; other blocks remain aligned with
+the card content. The rail is anchored against the **left edge of the Atlas
+node card**, accounting for card padding at desktop and phone widths. The
+control rail is deliberately narrow and contains the insert (+), whole-block
+up/down arrows, and a small delete (×) control underneath.
+
+Deletion works for selected text, images, and protected unsupported blocks
+through the same confirmation. A small alert dialog names the block and
+shows a content summary; Cancel leaves the shared authoring state unchanged.
+Confirm removes only the target key, and the form-based editor sees the
+updated blocks. If it was the last block, a fresh empty text block replaces
+it so the document remains editable. An image still has an Edit image metadata
+action, but its duplicate move/remove buttons below the document are gone.
+
+Additional Storybook regression checks cover text indentation after typing,
+unused block width, the control rail position relative to the *card border*,
+cancel/confirm deletion, and preservation of an editable final text block.
+These changes remain experimental and do **not** affect production creation,
+editing, or persistence.
