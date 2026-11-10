@@ -1,3 +1,5 @@
+import type { AuthorBlock } from '../api/contentAuthoring';
+
 /** Editable node-creation values shared by the form and device-local draft storage. */
 
 export interface NodeDraft {
@@ -9,6 +11,9 @@ export interface NodeDraft {
 
   /** Markdown source for the node’s main content block. */
   markdown: string;
+
+  /** Ordered typed content. Old browser drafts without blocks are migrated from markdown. */
+  blocks?: AuthorBlock[];
 
   /** Selected catalog type ID, or null when no existing type is selected. */
   typeId: string | null;
