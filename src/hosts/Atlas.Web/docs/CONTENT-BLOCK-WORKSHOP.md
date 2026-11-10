@@ -409,3 +409,29 @@ as **one** Atlas block. The previous rail-position and indentation tests
 were removed because they describe the superseded experiment.
 
 **No production editor, API, storage, schema, or node card was changed.**
+
+
+### November 10: selection-border-attached move/delete controls
+
+Follow-up visual feedback found that the floating ↑ / ↓ / × controls at the
+upper-right could cover the first line of a selected text section. The
+Storybook-only prototype now uses a compact **border-attached tab**:
+- Its bottom edge joins the selected block's thin, uniform border at the
+  **top-right**, like Atlas's node Edit affordance. It sits outside the text
+  content area, with a matching 1px border and no text overlap.
+- **Only unusually tall text/Markdown sections** (at least 640 CSS pixels
+  high, such as a large multi-paragraph or code section) also show a
+  corresponding tab connected at the **bottom-right** of that same block.
+  Both sets move/delete the same complete block. Normal-sized text and image
+  blocks only have the upper tab. This 640px cutoff is a research default
+  to evaluate, not a committed production requirement.
+- An image block's inline **Edit Image** button is hidden unless that image
+  is the currently selected block. The editor applies the same selection
+  decoration to images and text, so the affordance follows focus rather than
+  appearing permanently on every image.
+- The two + insert buttons above and below each selected block stay as
+  separate, unchanged controls, and delete still requires confirmation.
+
+This is only a change to the experimental Storybook authoring surface,
+its Playwright checks and documentation. No production node UI or storage
+behavior changed.
