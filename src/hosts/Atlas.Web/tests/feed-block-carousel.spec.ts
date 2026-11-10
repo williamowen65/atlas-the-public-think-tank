@@ -221,3 +221,18 @@ test('feed slide visually belongs to node card without inner border or block-typ
   expect(metrics!.nextRight).toBeLessThan(4);
   expect(metrics!.arrowWidth).toBeLessThan(27);
 });
+
+
+test('research Markdown renderer refuses data URLs and raw HTML in feed content', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await page.getByLabel('Text (Markdown)').first().fill(
+    'Safe text. ![Untrusted](data:image/png;base64,AAAA)\n\n<img src="https://example.org/injected.jpg" onerror="alert(1)">'
+  );
+  await page.getByRole('button', { name: 'Feed', exact: true }).click();
+  const feed = carousel(page);
+  await expect(feed).toContainText('Safe text.');
+  await expect(feed.locator('.story-markdown img')).toHaveCount(0);
+  await expect(feed.locator('.story-markdown')).toContainText('img src=');
+  await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
+});
