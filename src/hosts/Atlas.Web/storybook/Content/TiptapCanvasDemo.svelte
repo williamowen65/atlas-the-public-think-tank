@@ -192,7 +192,8 @@
 
   let canvasEl: HTMLDivElement;
   let shellEl: HTMLDivElement;
-  let gutterTop = $state(8);
+  let blockLayout = $state({ top: 0, bottom: 0, right: 0, center: 0 });
+  let insertMenuLayout = $state({ top: 0, left: 0 });
   let activeIndex = $state(0);
   let blockCount = $state(initialBlocks.length);
   let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
@@ -297,15 +298,22 @@
     return insertSide === 'before' ? from : from + children.child(index).nodeSize;
   }
 
-  function openInsertChoices() {
+  function openInsertChoices(side: 'before' | 'after') {
     const editor = currentEditor();
     if (!editor) return;
-    if (floatingOptionsOpen) {
+    const anchorKey = String(editor.state.doc.child(activeIndex)?.attrs.key || '');
+    if (floatingOptionsOpen && insertSide === side && insertAnchorKey === anchorKey) {
       floatingOptionsOpen = false;
       return;
     }
-    insertAnchorKey = String(editor.state.doc.child(activeIndex)?.attrs.key || '');
-    insertSide = 'after';
+    insertAnchorKey = anchorKey;
+    insertSide = side;
+    // The menu opens from the chosen plus and can cover the document by design.
+    const offset = side === 'before' ? blockLayout.top : blockLayout.bottom;
+    insertMenuLayout = {
+      top: offset + 8,
+      left: Math.max(0, Math.min(shellEl.clientWidth - 282, blockLayout.center - 18)),
+    };
     selectionPopup = null;
     floatingOptionsOpen = true;
   }
@@ -335,14 +343,12 @@
     else editor.chain().focus().toggleBulletList().run();
   }
 
-  // The rail belongs to ONE Atlas block, even when it contains many paragraphs.
-  // Anchor it at the latest click/keyboard position in DOCUMENT coordinates;
-  // never chase the viewport when the user scrolls. It naturally scrolls
-  // offscreen with that point and returns when scrolling back.
-  function repositionGutter(editor: Editor, moveRail = false) {
+  // Controls are anchored to the actual top/bottom/right of the selected
+  // Atlas block. No gutter, caret tracking, or scroll chasing. Both images and
+  // Markdown receive the identical selected decoration and actions.
+  function repositionGutter(editor: Editor) {
     if (!shellEl || !editor.view?.dom?.isConnected) return;
     const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
-    const changedBlock = index !== activeIndex;
     activeIndex = Math.max(0, index);
     blockCount = editor.state.doc.childCount;
 
@@ -354,26 +360,16 @@
 
     railFrame = requestAnimationFrame(() => {
       if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected || !editorFocused) return;
-      const shellBounds = shellEl.getBoundingClientRect();
-      const selectedIndex = editor.state.selection.$from.index(0);
-      const active = editor.view.dom.children.item(selectedIndex);
+      const active = editor.view.dom.children.item(editor.state.selection.$from.index(0));
       if (!active) return;
-
-      if (moveRail || changedBlock) {
-        const bounds = active.getBoundingClientRect();
-        let wantedY = bounds.top + 5;
-        try {
-          if (active.matches('.atlas-story-text')) {
-            const caret = editor.view.coordsAtPos(editor.state.selection.head);
-            if (Number.isFinite(caret.top)) wantedY = caret.top;
-          }
-        } catch {
-          // Use the active block top during a ProseMirror DOM remount.
-        }
-        // This value is document-relative, not viewport-relative. Scrolling
-        // does not modify gutterTop or the rail's position within the document.
-        gutterTop = Math.round(Math.max(bounds.top + 3, Math.min(bounds.bottom - 3, wantedY)) - shellBounds.top);
-      }
+      const bounds = active.getBoundingClientRect();
+      const shell = shellEl.getBoundingClientRect();
+      blockLayout = {
+        top: Math.round(bounds.top - shell.top),
+        bottom: Math.round(bounds.bottom - shell.top),
+        right: Math.round(bounds.right - shell.left),
+        center: Math.round((bounds.left + bounds.right) / 2 - shell.left),
+      };
 
       const selection = editor.state.selection;
       if (selection instanceof TextSelection && !selection.empty && !linkFormOpen) {
@@ -382,8 +378,8 @@
           const end = editor.view.coordsAtPos(selection.to);
           selectionPopup = {
             left: Math.max(0, Math.min(shellEl.clientWidth - 285,
-              (start.left + end.right) / 2 - shellBounds.left - 137)),
-            top: Math.max(-42, Math.min(start.top, end.top) - shellBounds.top - 48),
+              (start.left + end.right) / 2 - shell.left - 137)),
+            top: Math.max(-42, Math.min(start.top, end.top) - shell.top - 48),
           };
         } catch {
           selectionPopup = null;
@@ -734,12 +730,10 @@
   </div>
 
 
-  <!-- The editor remains full width. Only the currently active top-level Atlas
-       block is indented, leaving room for plus and reordering controls. -->
+  <!-- Controls are overlays tied to the whole selected block. They never
+       indent, resize, or change the text/image content layout. -->
   <div class="document-shell" bind:this={shellEl}>
     {#if deleteTarget}
-      <!-- Positioned relative to the exact Atlas block key. The block keeps
-           its pending-selection decoration while this dialog takes focus. -->
       <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
         aria-describedby="story-delete-description"
         style:top={deleteConfirmPosition.top + 'px'}
@@ -754,26 +748,25 @@
         </div>
       </div>
     {/if}
-  {#if linkFormOpen}
-    <form class="link-form" aria-label="Insert or edit link"
-      style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}
-      onsubmit={(event) => { event.preventDefault(); saveLink(); }}>
-      <label for="story-link-url">Link URL</label>
-      <input id="story-link-url" type="url" required bind:value={linkHref}
-        placeholder="https://example.org/article" />
-      {#if linkSelection?.from === linkSelection?.to}
-        <label for="story-link-text">Link text (optional)</label>
-        <input id="story-link-text" bind:value={linkText} placeholder="Text to insert" />
-      {/if}
-      {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
-      <div class="form-actions">
-        <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
-        <button type="button" onclick={unlink}>Remove link</button>
-        <button type="submit" class="primary">Apply link</button>
-      </div>
-    </form>
-  {/if}
-
+    {#if linkFormOpen}
+      <form class="link-form" aria-label="Insert or edit link"
+        style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}
+        onsubmit={(event) => { event.preventDefault(); saveLink(); }}>
+        <label for="story-link-url">Link URL</label>
+        <input id="story-link-url" type="url" required bind:value={linkHref}
+          placeholder="https://example.org/article" />
+        {#if linkSelection?.from === linkSelection?.to}
+          <label for="story-link-text">Link text (optional)</label>
+          <input id="story-link-text" bind:value={linkText} placeholder="Text to insert" />
+        {/if}
+        {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
+        <div class="form-actions">
+          <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
+          <button type="button" onclick={unlink}>Remove link</button>
+          <button type="submit" class="primary">Apply link</button>
+        </div>
+      </form>
+    {/if}
 
     {#if selectionPopup && controlsVisible}
       <div class="selection-bubble" role="toolbar" aria-label="Selected text formatting"
@@ -791,22 +784,39 @@
           onpointerdown={(event) => event.preventDefault()} onclick={() => format('bulletList')}>List</button>
       </div>
     {/if}
+
     {#if controlsVisible}
-      <div class="gutter-position" style:top={gutterTop + 'px'} role="group" aria-label="Current block controls">
-      <button type="button" class="insert-trigger" aria-label="Add a content block"
-        aria-expanded={floatingOptionsOpen} onpointerdown={(event) => event.preventDefault()}
-        onclick={openInsertChoices}>+</button>
+      <button type="button" class="boundary-add before" aria-label="Insert block before"
+        style:top={blockLayout.top + 'px'} style:left={blockLayout.center + 'px'}
+        aria-expanded={floatingOptionsOpen && insertSide === 'before'}
+        onpointerdown={(event) => event.preventDefault()}
+        onclick={() => openInsertChoices('before')}>+</button>
+
+      <div class="block-corner-controls" role="group" aria-label="Selected block actions"
+        style:top={blockLayout.top + 'px'} style:right={Math.max(0, shellEl.clientWidth - blockLayout.right) + 'px'}>
+        <button type="button" aria-label="Move current block up" title="Move block up"
+          disabled={activeIndex === 0}
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(-1)}>↑</button>
+        <button type="button" aria-label="Move current block down" title="Move block down"
+          disabled={activeIndex >= blockCount - 1}
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(1)}>↓</button>
+        <button type="button" class="corner-delete" aria-label="Delete current block" title="Delete block"
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={requestDeleteBlock}>×</button>
+      </div>
+
+      <button type="button" class="boundary-add after" aria-label="Insert block after"
+        style:top={blockLayout.bottom + 'px'} style:left={blockLayout.center + 'px'}
+        aria-expanded={floatingOptionsOpen && insertSide === 'after'}
+        onpointerdown={(event) => event.preventDefault()}
+        onclick={() => openInsertChoices('after')}>+</button>
+
       {#if floatingOptionsOpen}
-        <div class="insert-choices" role="group" aria-label="Insert a content block">
-          <div class="insert-position">
-            <span>Insert</span>
-            <button type="button" aria-pressed={insertSide === 'before'}
-              class:selected={insertSide === 'before'}
-              onpointerdown={(event) => event.preventDefault()} onclick={() => insertSide = 'before'}>Before</button>
-            <button type="button" aria-pressed={insertSide === 'after'}
-              class:selected={insertSide === 'after'}
-              onpointerdown={(event) => event.preventDefault()} onclick={() => insertSide = 'after'}>After</button>
-          </div>
+        <div class="insert-choices" role="group" aria-label="Insert a content block"
+          style:top={insertMenuLayout.top + 'px'} style:left={insertMenuLayout.left + 'px'}>
+          <span class="insert-label">Insert {insertSide} this block</span>
           <div class="insert-types">
             <button type="button" onpointerdown={(event) => event.preventDefault()}
               onclick={insertTextBlock}>Text block</button>
@@ -820,18 +830,6 @@
             onclick={() => floatingOptionsOpen = false}>×</button>
         </div>
       {/if}
-      <div class="move-controls">
-        <button type="button" aria-label="Move current block up" title="Move section up"
-          disabled={activeIndex === 0} onpointerdown={(event) => event.preventDefault()}
-          onclick={() => moveCurrentBlock(-1)}>↑</button>
-        <button type="button" aria-label="Move current block down" title="Move section down"
-          disabled={activeIndex >= blockCount - 1} onpointerdown={(event) => event.preventDefault()}
-          onclick={() => moveCurrentBlock(1)}>↓</button>
-      </div>
-      <button type="button" class="delete-trigger" aria-label="Delete current block"
-        title="Delete section" onpointerdown={(event) => event.preventDefault()}
-        onclick={requestDeleteBlock}>×</button>
-      </div>
     {/if}
     <div class="editor-canvas" bind:this={canvasEl}></div>
   {#if imageFormOpen}
@@ -860,7 +858,7 @@
 
 
 
-  <p class="editor-note">Only the selected section makes space for the +, ↑ ↓, and delete controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
+  <p class="editor-note">Select a text or image block to reveal its top-right move/delete controls and + buttons before and after it. Enter adds a paragraph inside the same text block. Editing stays inside this Storybook draft.</p>
 </div>
 
 <style>
