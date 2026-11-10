@@ -81,13 +81,13 @@ test('image movement in Tiptap updates the form order and keeps the image key', 
   const image = root.locator(':scope > .atlas-story-figure').first();
   await image.click();
   await page.getByRole('button', { name: 'Move image up' }).click();
-  await expect(root.locator(':scope > .atlas-story-figure').first()).toHaveAttribute('data-atlas-key', 'public-square');
+  await expect(root.locator(':scope > *').first()).toHaveAttribute('data-atlas-key', 'public-square');
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.locator('.block-composer .content-block').first()).toContainText('Block 1 · Image');
   await expect(page.locator('.block-composer .content-block').first().locator('input[type="url"]'))
     .toHaveValue(/images\.unsplash\.com/);
   await page.getByRole('button', { name: 'Tiptap canvas' }).click();
-  await expect(page.locator('.atlas-story-rich-document > .atlas-story-figure').first())
+  await expect(page.locator('.atlas-story-rich-document > *').first())
     .toHaveAttribute('data-atlas-key', 'public-square');
 });
 
