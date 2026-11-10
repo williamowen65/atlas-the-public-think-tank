@@ -307,7 +307,8 @@ test('deleting the final content block replaces it with one blank editable text 
   await page.getByRole('button', { name: 'Delete current block' }).click();
   await page.getByRole('button', { name: 'Delete block', exact: true }).click();
   await expect(root.locator(':scope > .atlas-story-text')).toHaveCount(1);
-  await root.locator(':scope > .atlas-story-text p').fill('Able to continue writing');
+  await root.locator(':scope > .atlas-story-text p').click();
+  await page.keyboard.type('Able to continue writing');
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.getByLabel('Text (Markdown)').first()).toHaveValue('Able to continue writing');
 });
