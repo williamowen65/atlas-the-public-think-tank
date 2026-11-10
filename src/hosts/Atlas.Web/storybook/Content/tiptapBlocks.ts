@@ -31,7 +31,7 @@ export function blocksToTiptapHtml(blocks: AuthorBlock[]): string {
     if (block.kind === 'image') {
       const src = publicUrl(block.url) || '';
       return '<figure data-atlas-image="true" data-atlas-key="' + key +
-        '" data-src="' + escapeAttribute(src) +
+        '" data-src="' + escapeAttribute(block.url) +
         '" data-alt="' + escapeAttribute(block.text) +
         '" data-caption="' + escapeAttribute(block.caption) +
         '"><img src="' + escapeAttribute(src) + '" alt="' + escapeAttribute(block.text) +
@@ -101,7 +101,7 @@ export function tiptapDocumentToBlocks(doc: JSONContent, previous: AuthorBlock[]
       const url = String(node.attrs?.src ?? '');
       output.push({
         ...(original?.kind === 'image' ? original : {}),
-        key, kind: 'image', url: publicUrl(url) || '',
+        key, kind: 'image', url,
         text: String(node.attrs?.alt ?? ''),
         caption: String(node.attrs?.caption ?? ''),
       });
