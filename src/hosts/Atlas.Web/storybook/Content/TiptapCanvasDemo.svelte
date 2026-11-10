@@ -254,8 +254,16 @@
     const editor = currentEditor();
     if (!editor || !editor.isActive('atlasImage')) return;
     // Keep one empty text block if this was the last node in the document.
-    if (editor.state.doc.childCount === 1) insertTextBlock();
-    editor.chain().focus().deleteSelection().run();
+    if (editor.state.doc.childCount === 1) {
+      editor.chain().focus().insertContentAt(editor.state.doc.content.size, {
+        type: 'atlasText',
+        attrs: { key: crypto.randomUUID() },
+        content: [{ type: 'paragraph' }],
+      }).run();
+      editor.chain().focus().setNodeSelection(0).deleteSelection().run();
+    } else {
+      editor.chain().focus().deleteSelection().run();
+    }
   }
 
   function insertDivider() {
