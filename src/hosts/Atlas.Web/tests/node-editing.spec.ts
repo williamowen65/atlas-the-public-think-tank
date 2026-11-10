@@ -12,7 +12,8 @@ async function setup(page: Page, participant: string | null = author) {
   let shortDescription = 'Original introduction';
   let fail = false;
   let blocks = [{ id: originalBlock, kind: 'markdown', content: { markdown: 'Original Markdown' } }] as {
-    id: string; kind: string; content: Record<string, string>;
+    id: string; kind: string;
+    content: { markdown?: string; url?: string; altText?: string; caption?: string };
   }[];
   const writes: { path: string; method: string; body: Record<string, unknown> }[] = [];
   await page.route('**/atlas-public-api/**', (route) => {
