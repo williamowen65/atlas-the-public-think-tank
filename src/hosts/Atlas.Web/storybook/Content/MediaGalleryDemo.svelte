@@ -5,7 +5,7 @@
 <script lang="ts">
   import { publicUrl } from '../../src/lib/api/nodePage';
 
-  export type GalleryItem = {
+  type GalleryItem = {
     key: string;
     type: 'image' | 'video';
     url: string;
@@ -13,7 +13,7 @@
     caption: string;
     poster?: string;
   };
-  export type GalleryFrame = 'portrait' | 'landscape';
+  type GalleryFrame = 'portrait' | 'landscape';
 
   let {
     items,
