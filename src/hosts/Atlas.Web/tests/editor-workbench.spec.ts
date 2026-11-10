@@ -611,13 +611,12 @@ test('image deletion confirmation also follows the image block and cancel preser
 });
 
 
-test('long Markdown section keeps one visible action rail near the caret as the page scrolls', async ({ page }) => {
+test('long Markdown section pins its action rail at the clicked line rather than following scroll', async ({ page }) => {
   await page.goto(storyUrl);
-  // Build one very tall Atlas Markdown block through the other editor. Its
-  // many paragraphs must never become separate Tiptap/Atlas blocks.
+  // Even with 80 paragraphs, this remains ONE Atlas Markdown block.
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   const longMarkdown = Array.from({ length: 80 }, (_, index) =>
-    'Paragraph ' + (index + 1) + ': This is still the same Atlas content block, even after scrolling.'
+    'Paragraph ' + (index + 1) + ': This is still the same Atlas content block.'
   ).join('\n\n');
   await page.getByLabel('Text (Markdown)').last().fill(longMarkdown);
   await page.getByRole('button', { name: 'Tiptap canvas' }).click();
@@ -635,45 +634,71 @@ test('long Markdown section keeps one visible action rail near the caret as the 
     const paragraph = document.querySelectorAll('.atlas-story-text[data-atlas-key="details"] p')[18];
     const controls = document.querySelector('.gutter-position');
     if (!paragraph || !controls) return null;
-    return { caretLine: paragraph.getBoundingClientRect().top,
-      railTop: controls.getBoundingClientRect().top };
+    return {
+      caretLine: paragraph.getBoundingClientRect().top,
+      railTop: controls.getBoundingClientRect().top,
+      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
+    };
   });
   expect(initial).not.toBeNull();
   expect(Math.abs(initial!.railTop - initial!.caretLine)).toBeLessThan(80);
 
+  // Scrolling alone must not change the rail's document position or create
+  // additional blocks. It can scroll naturally offscreen with its paragraph.
+  const previousScrollY = await page.evaluate(() => window.scrollY);
   await page.evaluate(() => window.scrollBy(0, 600));
-  // Scroll is not a blur: the same highlighted section retains its rail,
-  // now clamped to the visible portion instead of disappearing above the page.
-  await expect.poll(async () => page.evaluate(() => {
-    const active = document.querySelector('.atlas-story-text[data-atlas-key="details"]');
-    const rail = document.querySelector('.gutter-position');
-    if (!active || !rail) return false;
-    const block = active.getBoundingClientRect();
-    const rect = rail.getBoundingClientRect();
-    return block.bottom > 10 && block.top < window.innerHeight &&
-      rect.top >= 10 && rect.bottom <= window.innerHeight - 10 &&
-      rect.top >= Math.max(10, block.top - 1) &&
-      rect.bottom <= block.bottom + 1;
-  })).toBe(true);
+  const scrolled = await page.evaluate(() => {
+    const controls = document.querySelector('.gutter-position');
+    if (!controls) return null;
+    return {
+      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
+      scrollY: window.scrollY,
+    };
+  });
+  expect(scrolled).not.toBeNull();
+  expect(scrolled!.scrollY).toBeGreaterThan(previousScrollY + 100);
+  expect(Math.abs(scrolled!.railDocumentTop - initial!.railDocumentTop)).toBeLessThan(3);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
-  await expect(page.locator('.atlas-story-rich-document > .atlas-story-text[data-atlas-key="intro"]'))
-    .not.toHaveClass(/atlas-story-active-block/);
+  await expect(section.locator('p')).toHaveCount(80);
 
-  // The entire long section (not only one paragraph) has focused styling.
-  const highlight = await section.evaluate(element => getComputedStyle(element).boxShadow);
-  expect(highlight).not.toBe('none');
-
+  // A click elsewhere within that SAME block relocates the rail there.
   await section.locator('p').nth(48).click();
   await expect(rail).toBeVisible();
   const moved = await page.evaluate(() => {
     const paragraph = document.querySelectorAll('.atlas-story-text[data-atlas-key="details"] p')[48];
-    const rail = document.querySelector('.gutter-position');
-    if (!paragraph || !rail) return null;
-    return { paragraphTop: paragraph.getBoundingClientRect().top,
-      railTop: rail.getBoundingClientRect().top };
+    const controls = document.querySelector('.gutter-position');
+    if (!paragraph || !controls) return null;
+    return {
+      paragraphTop: paragraph.getBoundingClientRect().top,
+      railTop: controls.getBoundingClientRect().top,
+      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
+    };
   });
   expect(moved).not.toBeNull();
   expect(Math.abs(moved!.railTop - moved!.paragraphTop)).toBeLessThan(80);
+  expect(Math.abs(moved!.railDocumentTop - initial!.railDocumentTop)).toBeGreaterThan(100);
+
+  // Highlight edge occupies the CENTER of the space between rail and text
+  // without changing the text block's original horizontal position.
+  const spacing = await page.evaluate(() => {
+    const controls = document.querySelector('.gutter-position');
+    const section = document.querySelector('.atlas-story-text[data-atlas-key="details"]');
+    const root = document.querySelector('.atlas-story-rich-document');
+    if (!controls || !section || !root) return null;
+    const blockLeft = section.getBoundingClientRect().left;
+    const edge = blockLeft + parseFloat(getComputedStyle(section, '::before').left);
+    return {
+      railToEdge: edge - controls.getBoundingClientRect().right,
+      edgeToText: blockLeft - edge,
+      highlightBackground: getComputedStyle(section, '::before').backgroundColor,
+      activeCount: root.querySelectorAll(':scope > .atlas-story-active-block').length,
+    };
+  });
+  expect(spacing).not.toBeNull();
+  expect(Math.abs(spacing!.railToEdge - spacing!.edgeToText)).toBeLessThan(3);
+  expect(spacing!.highlightBackground).not.toBe('transparent');
+  expect(spacing!.activeCount).toBe(1);
+
   await page.getByRole('textbox', { name: 'Node title' }).click();
   await expect(rail).toHaveCount(0);
   await expect(section).not.toHaveClass(/atlas-story-active-block/);
