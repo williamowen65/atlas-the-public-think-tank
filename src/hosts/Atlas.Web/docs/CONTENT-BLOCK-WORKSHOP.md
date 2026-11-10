@@ -612,3 +612,52 @@ real block identity/order, long text truncation and full-node continuation,
 live edits reflected in the feed, frame variation, phone swipe/keyboard/dots,
 and compatibility with the existing Compare Editors story. No production
 component, database or API was changed.
+
+
+### November 10: Markdown images and a card-native feed carousel
+
+Further Storybook feedback clarified two aspects of the **feed as short-description
+replacement** concept:
+
+1. **The introductory text is the actual first Markdown content block**,
+   not a second label or feed-specific short-description field. The carousel
+   must feel like part of the original Atlas node card, not a framed widget
+   nested inside it. The Storybook feed preview therefore removes
+   "Explore this node" and visible "Text block"/"Image block" headings,
+   removes the inner border/background/frame, and keeps only subtle slide
+   progress beneath the content. Left/right arrows move into narrow, light
+   gutters beside the content. The feed node card keeps its own outer border.
+   The content inset is much smaller than the earlier 2.75rem-per-side slide.
+2. **An Atlas Markdown block should be able to include an image among text.**
+   The Storybook Feed Block Carousel Concept now contains an introductory
+   Markdown block with both text and a Markdown image. That whole section is
+   still **one block and one feed slide**. There are also separate image
+   blocks, so we can compare combined and stand-alone media presentation.
+
+**Important current policy:** Production \`renderMarkdown.ts\` explicitly
+disables Markdown images for security/content-model reasons. This experiment
+**does not weaken that policy or change production rendering**. Instead:
+- \`StorybookMarkdownPreview.svelte\` uses a separate HTML-disabled MarkdownIt
+  instance, with protocol validation and absolute HTTP(S) URL checks for
+  image sources. It will not render arbitrary embedded HTML, data URLs,
+  JavaScript URLs or non-HTTP(S) images.
+- \`StorybookContentBlocks.svelte\` renders these safe Markdown images in the
+  Storybook Full Node and Feed previews, preserving existing node block
+  identity, ordering and separate image-block behavior.
+- The experimental Tiptap canvas now understands an \`atlasInlineImage\` node
+  **inside** \`atlasText\`. On parsing Markdown, it displays the image; on
+  serializing, it preserves \`![alt](https://...)\` in the *same* Markdown
+  \`AuthorBlock\`. Authors can also use the **Image in text** toolbar action
+  to add one via a URL + required alt-text form attached to the caret.
+  The block-form editor can edit the underlying Markdown syntax directly.
+- No extra carousel slide is created for an embedded Markdown image. Full
+  Node retains all content. Feed clips overflowing text/media and offers
+  Read more.
+
+The browser tests in \`tests/feed-block-carousel.spec.ts\` check a Markdown
+image alongside text in Feed and Full Node, insertion with Tiptap and
+round-tripping to block forms, editing via Markdown source, no extra block
+creation, and the borderless card-native feed gutters. This remains a
+**research UX** until a separate design/security/persistence review decides
+whether production Markdown images should be enabled and how sizing or
+optional text-wrapping will be supported. Related research is in PTT-183.
