@@ -553,3 +553,59 @@ test('node type picker replaces title prefix beside title on desktop and stacks 
   await expect(page.locator('.node-header h2')).toContainText('Question:');
   await expect(page.locator('.node-type-select')).toHaveCount(0);
 });
+
+
+test('text deletion confirmation appears beside the target block instead of below the node', async ({ page }) => {
+  await page.goto(storyUrl);
+  const block = page.locator('.atlas-story-rich-document > .atlas-story-text[data-atlas-key="details"]');
+  await block.locator('p').first().click();
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+
+  const dialog = page.getByRole('alertdialog', { name: 'Confirm delete block' });
+  await expect(dialog).toContainText('Delete this text block?');
+  await expect(page.locator('.document-shell > .delete-confirm')).toBeVisible();
+  await expect(block).toHaveClass(/atlas-story-pending-delete/);
+  const geometry = await page.evaluate(() => {
+    const block = document.querySelector('.atlas-story-text[data-atlas-key="details"]');
+    const dialog = document.querySelector('.document-shell > .delete-confirm');
+    const shell = document.querySelector('.document-shell');
+    if (!block || !dialog || !shell) return null;
+    return {
+      blockTop: block.getBoundingClientRect().top,
+      dialogTop: dialog.getBoundingClientRect().top,
+      shellLeft: shell.getBoundingClientRect().left,
+      dialogLeft: dialog.getBoundingClientRect().left,
+      dialogRight: dialog.getBoundingClientRect().right,
+      shellRight: shell.getBoundingClientRect().right,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  expect(Math.abs(geometry!.dialogTop - geometry!.blockTop)).toBeLessThan(35);
+  expect(geometry!.dialogLeft).toBeGreaterThanOrEqual(geometry!.shellLeft);
+  expect(geometry!.dialogRight).toBeLessThanOrEqual(geometry!.shellRight + 2);
+
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(block).toBeVisible();
+  await expect(block).not.toHaveClass(/atlas-story-pending-delete/);
+});
+
+test('image deletion confirmation also follows the image block and cancel preserves it', async ({ page }) => {
+  await page.goto(storyUrl);
+  const image = page.locator('.atlas-story-rich-document > .atlas-story-figure[data-atlas-key="public-square"]');
+  await image.click();
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirm delete block' });
+  await expect(dialog).toContainText('Delete this image block?');
+  await expect(image).toHaveClass(/atlas-story-pending-delete/);
+  const positions = await page.evaluate(() => {
+    const image = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const dialog = document.querySelector('.document-shell > .delete-confirm');
+    if (!image || !dialog) return null;
+    return { imageTop: image.getBoundingClientRect().top, dialogTop: dialog.getBoundingClientRect().top };
+  });
+  expect(positions).not.toBeNull();
+  expect(Math.abs(positions!.imageTop - positions!.dialogTop)).toBeLessThan(35);
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(image).toBeVisible();
+});
