@@ -723,7 +723,7 @@
             <button type="button" onpointerdown={(event) => event.preventDefault()}
               onclick={insertTextBlock}>Text block</button>
             <button type="button" onpointerdown={(event) => event.preventDefault()}
-              onclick={openImageForm}>Image</button>
+              onclick={() => openImageForm('new')}>Image</button>
             <button type="button" onpointerdown={(event) => event.preventDefault()}
               onclick={insertDivider}>Section break</button>
           </div>
