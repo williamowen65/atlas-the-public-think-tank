@@ -184,8 +184,8 @@ test('an extra empty text block can be removed without deleting the final writin
 test('only the active block is indented, with move controls in its side rail', async ({ page }) => {
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
-  const original = root.locator('> .atlas-story-text[data-atlas-key="intro"]');
-  const image = root.locator('> .atlas-story-figure[data-atlas-key="public-square"]');
+  const original = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
+  const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
 
   await original.locator('p').first().click();
   await expect(original).toHaveClass(/atlas-story-active-block/);
@@ -212,7 +212,7 @@ test('only the active block is indented, with move controls in its side rail', a
   expect(layout!.railRight).toBeLessThanOrEqual(layout!.firstLeft);
 
   await page.getByRole('button', { name: 'Move current block down' }).click();
-  await expect(root.locator('> *').first()).toHaveAttribute('data-atlas-key', 'public-square');
+  await expect(root.locator(':scope > *').first()).toHaveAttribute('data-atlas-key', 'public-square');
   await expect(original).toHaveClass(/atlas-story-active-block/);
   await expect(image).not.toHaveClass(/atlas-story-active-block/);
   await page.getByRole('button', { name: 'Existing block forms' }).click();
@@ -223,8 +223,8 @@ test('only one section indents in narrow phone-sized workbench', async ({ page }
   await page.goto(storyUrl);
   await page.getByRole('button', { name: 'Simulate phone width' }).click();
   const root = page.locator('.atlas-story-rich-document');
-  const first = root.locator('> .atlas-story-text[data-atlas-key="intro"]');
-  const image = root.locator('> .atlas-story-figure[data-atlas-key="public-square"]');
+  const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
+  const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
   await image.click();
   await expect(image).toHaveClass(/atlas-story-active-block/);
   await expect(first).not.toHaveClass(/atlas-story-active-block/);
