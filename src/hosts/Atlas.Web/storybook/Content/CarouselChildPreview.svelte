@@ -18,7 +18,7 @@
 
 {#if item.type === 'image'}
   {#if publicUrl(item.url)}
-    <img class="carousel-media" src={publicUrl(item.url)}
+    <img class="carousel-media" class:feed={mode === 'feed'} src={publicUrl(item.url)}
       alt={item.alt || 'Gallery image; alternative text needed'} loading="lazy"/>
   {:else}
     <div class="placeholder">
@@ -28,7 +28,7 @@
   {/if}
 {:else if item.type === 'video'}
   {#if publicUrl(item.url)}
-    <video class="carousel-media" controls playsinline preload="metadata"
+    <video class="carousel-media" class:feed={mode === 'feed'} controls playsinline preload="metadata"
       poster={publicUrl(item.poster)} aria-label={item.alt || 'Gallery video'}
       src={publicUrl(item.url)}>
       Your browser does not support this video.
@@ -64,6 +64,7 @@
   .carousel-media {
     display: block; width: 100%; height: 100%; object-fit: contain;
   }
+  .carousel-media.feed { object-fit: cover; }
   .placeholder {
     display: grid; gap: .4rem; align-content: center; justify-items: center;
     width: 100%; height: 100%; padding: .8rem; box-sizing: border-box;
