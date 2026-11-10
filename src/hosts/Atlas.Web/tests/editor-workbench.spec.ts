@@ -603,95 +603,72 @@ test('image deletion confirmation also follows the image block and cancel preser
 });
 
 
-test('long Markdown section pins its action rail at the clicked line rather than following scroll', async ({ page }) => {
+test('long Markdown block stays one selected section with fixed boundary controls', async ({ page }) => {
   await page.goto(storyUrl);
-  // Even with 80 paragraphs, this remains ONE Atlas Markdown block.
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   const longMarkdown = Array.from({ length: 80 }, (_, index) =>
-    'Paragraph ' + (index + 1) + ': This is still the same Atlas content block.'
+    'Paragraph ' + (index + 1) + ': This is one Atlas content block.'
   ).join('\n\n');
   await page.getByLabel('Text (Markdown)').last().fill(longMarkdown);
   await page.getByRole('button', { name: 'Tiptap canvas' }).click();
-
   const root = page.locator('.atlas-story-rich-document');
   const section = root.locator(':scope > .atlas-story-text[data-atlas-key="details"]');
   await expect(section.locator('p')).toHaveCount(80);
   await section.locator('p').nth(18).click();
-  const rail = page.getByRole('group', { name: 'Current block controls' });
-  await expect(rail).toBeVisible();
   await expect(section).toHaveClass(/atlas-story-active-block/);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
 
-  const initial = await page.evaluate(() => {
-    const paragraph = document.querySelectorAll('.atlas-story-text[data-atlas-key="details"] p')[18];
-    const controls = document.querySelector('.gutter-position');
-    if (!paragraph || !controls) return null;
+  const bounds = async () => page.evaluate(() => {
+    const block = document.querySelector('.atlas-story-text[data-atlas-key="details"]');
+    const root = document.querySelector('.atlas-story-rich-document');
+    const before = document.querySelector('.boundary-add.before');
+    const after = document.querySelector('.boundary-add.after');
+    const actions = document.querySelector('.block-corner-controls');
+    if (!block || !root || !before || !after || !actions) return null;
+    const b = block.getBoundingClientRect(), a = actions.getBoundingClientRect();
+    const t = before.getBoundingClientRect(), d = after.getBoundingClientRect();
     return {
-      caretLine: paragraph.getBoundingClientRect().top,
-      railTop: controls.getBoundingClientRect().top,
-      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
+      rootLeft: root.getBoundingClientRect().left, blockLeft: b.left,
+      blockTopDoc: b.top + window.scrollY,
+      blockBottomDoc: b.bottom + window.scrollY,
+      beforeDoc: t.top + t.height / 2 + window.scrollY,
+      afterDoc: d.top + d.height / 2 + window.scrollY,
+      actionsDoc: a.top + window.scrollY,
+      actionRight: a.right, blockRight: b.right,
+      marker: getComputedStyle(block, '::before').borderLeftStyle,
     };
   });
+  const initial = await bounds();
   expect(initial).not.toBeNull();
-  expect(Math.abs(initial!.railTop - initial!.caretLine)).toBeLessThan(80);
+  expect(Math.abs(initial!.blockLeft - initial!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(initial!.beforeDoc - initial!.blockTopDoc)).toBeLessThan(5);
+  expect(Math.abs(initial!.afterDoc - initial!.blockBottomDoc)).toBeLessThan(5);
+  expect(Math.abs(initial!.actionRight - initial!.blockRight)).toBeLessThanOrEqual(4);
+  expect(initial!.marker).toBe('solid');
 
-  // Scrolling alone must not change the rail's document position or create
-  // additional blocks. It can scroll naturally offscreen with its paragraph.
-  const previousScrollY = await page.evaluate(() => window.scrollY);
+  const beforeScroll = await page.evaluate(() => window.scrollY);
   await page.evaluate(() => window.scrollBy(0, 600));
-  const scrolled = await page.evaluate(() => {
-    const controls = document.querySelector('.gutter-position');
-    if (!controls) return null;
-    return {
-      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
-      scrollY: window.scrollY,
-    };
-  });
+  const afterScroll = await page.evaluate(() => window.scrollY);
+  expect(afterScroll).toBeGreaterThan(beforeScroll + 100);
+  const scrolled = await bounds();
   expect(scrolled).not.toBeNull();
-  expect(scrolled!.scrollY).toBeGreaterThan(previousScrollY + 100);
-  expect(Math.abs(scrolled!.railDocumentTop - initial!.railDocumentTop)).toBeLessThan(3);
-  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
+  expect(Math.abs(scrolled!.actionsDoc - initial!.actionsDoc)).toBeLessThan(4);
+  expect(Math.abs(scrolled!.beforeDoc - initial!.beforeDoc)).toBeLessThan(4);
+  expect(Math.abs(scrolled!.afterDoc - initial!.afterDoc)).toBeLessThan(4);
   await expect(section.locator('p')).toHaveCount(80);
 
-  // A click elsewhere within that SAME block relocates the rail there.
+  // A second click inside the same block must not split it into many blocks
+  // or move its top-right and above/below controls to another paragraph.
   await section.locator('p').nth(48).click();
-  await expect(rail).toBeVisible();
-  const moved = await page.evaluate(() => {
-    const paragraph = document.querySelectorAll('.atlas-story-text[data-atlas-key="details"] p')[48];
-    const controls = document.querySelector('.gutter-position');
-    if (!paragraph || !controls) return null;
-    return {
-      paragraphTop: paragraph.getBoundingClientRect().top,
-      railTop: controls.getBoundingClientRect().top,
-      railDocumentTop: controls.getBoundingClientRect().top + window.scrollY,
-    };
-  });
-  expect(moved).not.toBeNull();
-  expect(Math.abs(moved!.railTop - moved!.paragraphTop)).toBeLessThan(80);
-  expect(Math.abs(moved!.railDocumentTop - initial!.railDocumentTop)).toBeGreaterThan(100);
-
-  // Highlight edge occupies the CENTER of the space between rail and text
-  // without changing the text block's original horizontal position.
-  const spacing = await page.evaluate(() => {
-    const controls = document.querySelector('.gutter-position');
-    const section = document.querySelector('.atlas-story-text[data-atlas-key="details"]');
-    const root = document.querySelector('.atlas-story-rich-document');
-    if (!controls || !section || !root) return null;
-    const blockLeft = section.getBoundingClientRect().left;
-    const edge = blockLeft + parseFloat(getComputedStyle(section, '::before').left);
-    return {
-      railToEdge: edge - controls.getBoundingClientRect().right,
-      edgeToText: blockLeft - edge,
-      highlightBackground: getComputedStyle(section, '::before').backgroundColor,
-      activeCount: root.querySelectorAll(':scope > .atlas-story-active-block').length,
-    };
-  });
-  expect(spacing).not.toBeNull();
-  expect(Math.abs(spacing!.railToEdge - spacing!.edgeToText)).toBeLessThan(3);
-  expect(spacing!.highlightBackground).not.toBe('transparent');
-  expect(spacing!.activeCount).toBe(1);
+  const clickedAgain = await bounds();
+  expect(clickedAgain).not.toBeNull();
+  expect(Math.abs(clickedAgain!.actionsDoc - initial!.actionsDoc)).toBeLessThan(4);
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
 
   await page.getByRole('textbox', { name: 'Node title' }).click();
-  await expect(rail).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Selected block actions' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Insert block before' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Insert block after' })).toHaveCount(0);
   await expect(section).not.toHaveClass(/atlas-story-active-block/);
 });
+
