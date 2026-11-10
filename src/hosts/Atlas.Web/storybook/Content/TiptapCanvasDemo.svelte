@@ -116,7 +116,7 @@
         'data-alt': node.attrs.alt,
         'data-caption': node.attrs.caption,
         class: 'atlas-story-figure',
-      }, ['img', { src: node.attrs.src, alt: node.attrs.alt }],
+      }, ['img', { src: publicUrl(String(node.attrs.src ?? '')) || '', alt: node.attrs.alt }],
       ['figcaption', {}, node.attrs.caption || '']];
     },
   });
@@ -204,6 +204,24 @@
     imageFormOpen = true;
     floatingOptionsOpen = false;
     mobileOptionsOpen = false;
+  }
+
+  function moveSelectedImage(direction: -1 | 1) {
+    const editor = currentEditor();
+    if (!editor || !editor.isActive('atlasImage')) return;
+    const { state } = editor;
+    const index = state.selection.$from.index(0);
+    const doc = state.doc;
+    const next = index + direction;
+    if (next < 0 || next >= doc.childCount || doc.child(index).type.name !== 'atlasImage') return;
+    const image = doc.child(index);
+    let from = 0;
+    for (let i = 0; i < index; i++) from += doc.child(i).nodeSize;
+    const beforeOrAfter = direction === -1 ? from - doc.child(next).nodeSize : from + doc.child(next).nodeSize;
+    const tr = state.tr.delete(from, from + image.nodeSize);
+    // After removing the image, the next sibling begins at the former image position.
+    tr.insert(direction === -1 ? beforeOrAfter : beforeOrAfter, image);
+    editor.view.dispatch(tr);
   }
 
   function saveImage() {
@@ -296,6 +314,8 @@
   {#if editorState.editor?.isActive('atlasImage')}
     <div class="image-context">
       <span>Image block selected</span>
+      <button type="button" onclick={() => moveSelectedImage(-1)}>Move image up</button>
+      <button type="button" onclick={() => moveSelectedImage(1)}>Move image down</button>
       <button type="button" onclick={openImageForm}>Edit image, caption &amp; alt text</button>
     </div>
   {/if}
