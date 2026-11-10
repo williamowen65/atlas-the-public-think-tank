@@ -248,3 +248,39 @@ selection-popup visibility and formatting, no separate Heading block option,
 and rail/indent dismissal when clicking other node controls or the page
 background. These are research UI interactions in Storybook, **not a
 production editor or a replacement for node API persistence**.
+
+
+### November 10: attach configuration to the actual content (Storybook only)
+
+A long-node review revealed that the existing **Link URL** form appeared far
+above the selected text, and the **Image URL / alt text / caption** form was
+rendered at the very end of the node, even if the image was inserted in the
+middle. These forms need to belong visually to the content they configure.
+
+The experimental workspace now uses **document-relative, anchored forms**:
+- Selecting text and choosing Link opens the URL form beside that selection
+  inside the writing area. It captures the ProseMirror selection range before
+  inputs take focus, and its position is refreshed on transactions and scroll.
+- Choosing + → Image (Before/After) creates a **provisional image node at the
+  actual insertion location**, with a visible placeholder reserving the
+  configuration space. Its image settings form overlays that placeholder,
+  rather than appearing at the document footer.
+- **Cancel** removes a new provisional image without adding a permanent block.
+  **Apply** validates URL and required alt text, then updates that exact image
+  by its stable Atlas key. The shared block-form editor sees the result.
+- Every existing image renders an **Edit image** affordance on the image
+  itself. Editing displays the form near/over that image; saving updates the
+  targeted key and caption without depending on where the caret moved.
+- Both forms remain associated with the same content when the page scrolls.
+  Their behavior is confined to Storybook; no production node editor, API,
+  persistence or upload workflow was changed.
+
+The current prototype deliberately uses URL images, not file uploads.
+A provisional empty image is temporarily represented in the Storybook
+AuthorBlock[] draft until confirmed or cancelled; this is **not** a proposal
+to persist incomplete images in production. Future blocks should reuse this
+principle: configuration belongs visibly to the relevant content block.
+
+Playwright regression checks cover a link form deep in the document,
+provisional insertion before an existing image, Cancel rollback, and editing
+image metadata from the image's own control.
