@@ -79,7 +79,7 @@
   const AtlasText = Node.create({
     name: 'atlasText',
     group: 'block',
-    // Do not allow an image to be dropped INSIDE Markdown; images are sibling Atlas blocks.
+    // Top-level image blocks remain siblings; inline images are allowed in a Markdown paragraph.
     content: '(paragraph | heading | bulletList | orderedList | blockquote | codeBlock | horizontalRule)+',
     defining: true,
     addAttributes() {
