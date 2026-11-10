@@ -115,3 +115,49 @@ These are questions to evaluate, **not** commitments or shipping readiness.
 
 Do not wire the Tiptap prototype to live node creation/editing without a
 separate design decision, security review and backend round-trip tests.
+
+
+## November 10 editor feedback: persistent controls and empty block behavior
+
+Screenshots of the Storybook Tiptap editor revealed that the Tiptap BubbleMenu
+and FloatingMenu were moving/reshaping unexpectedly: a giant B/I/Link strip,
+a plus symbol sometimes filling its menu region and sometimes covering text,
+and a full outer editor focus rectangle competing with image selection.
+Using the existing floating-menu extensions was convenient, but this control
+placement was not suitable for the Atlas node frame.
+
+The **Storybook-only** prototype now uses:
+
+- A **permanent, Atlas-styled formatting toolbar** above the writing area.
+  It does not disappear on blur or selection changes.
+- A **left gutter reserved outside the text column**. A consistently sized,
+  centered, circular + follows the active paragraph or image. Choosing +
+  opens a non-overlapping insert-choices row above the document. The menu
+  can add a separate Text or Image block or a heading/section break.
+- An in-page, accessible link form (HTTP(S) validation) that captures the
+  highlighted range before focusing the URL input; no dependence on
+  window.prompt inside a Storybook iframe.
+- No big editor-wide focus outline. Keyboard focus is indicated unobtrusively
+  along the gutter, while a selected image retains its own selection outline.
+- A custom Tiptap root document schema that only permits Atlas text, image,
+  or protected unsupported blocks at the top level. This avoids the default
+  ProseMirror recovery paragraph becoming an anonymous extra Atlas block
+  after Backspace.
+- The final empty text block remains intentionally as an editable landing
+  place (rather than bouncing between blank blocks). Additional empty text
+  blocks expose a **Remove empty text block** action; selected images expose
+  **Remove image** alongside move and edit actions.
+- Continued support for Enter creating a paragraph *within* the current
+  Atlas text block. + → Text creates a distinct Atlas block. This distinction
+  is part of the ongoing UX research and may be simplified later.
+
+The separate breadcrumb/ancestry UX question was recorded in
+[PTT-182](https://thepublicthinktank.atlassian.net/browse/PTT-182):
+explore a clearer way to reveal and navigate the full node lineage, potentially
+with an affordance on the far left. **No breadcrumb redesign was applied.**
+
+Regression browser checks were added for always-visible formatting controls,
+the non-overlapping gutter, links mapping back to Markdown, and stable
+Backspace behavior in the last empty text block. These checks need to pass
+in CI and be tried manually on real mobile devices. No production editor,
+backend, schema, or live Atlas route was touched in this follow-up.
