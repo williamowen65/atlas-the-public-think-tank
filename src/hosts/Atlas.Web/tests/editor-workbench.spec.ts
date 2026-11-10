@@ -80,7 +80,7 @@ test('image movement in Tiptap updates the form order and keeps the image key', 
   await expect(root.locator(':scope > .atlas-story-text').first()).toHaveAttribute('data-atlas-key', 'intro');
   const image = root.locator(':scope > .atlas-story-figure').first();
   await image.click();
-  await page.getByRole('button', { name: 'Move image up' }).click();
+  await page.getByRole('button', { name: 'Move current block up' }).click();
   await expect(root.locator(':scope > *').first()).toHaveAttribute('data-atlas-key', 'public-square');
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.locator('.block-composer .content-block').first()).toContainText('Block 1 · Image');
@@ -175,8 +175,9 @@ test('an extra empty text block can be removed without deleting the final writin
   await page.getByRole('button', { name: 'Text', exact: true }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(3);
   await page.locator('.atlas-story-rich-document > .atlas-story-text').nth(1).locator('p').click();
-  await expect(page.getByRole('button', { name: 'Remove empty text block' })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove empty text block' }).click();
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+  await expect(page.getByRole('alertdialog', { name: 'Confirm delete block' })).toContainText('Delete this text block?');
+  await page.getByRole('button', { name: 'Delete block', exact: true }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(2);
 });
 
@@ -245,4 +246,68 @@ test('only one section indents in narrow phone-sized workbench', async ({ page }
   expect(Math.abs(layout!.firstLeft - layout!.rootLeft)).toBeLessThanOrEqual(3);
   expect(layout!.imageLeft).toBeGreaterThan(layout!.rootLeft + 25);
   expect(layout!.railRight).toBeLessThanOrEqual(layout!.imageLeft);
+});
+
+
+test('selected Markdown section indents even after typing while inactive blocks remain full width', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
+  const second = root.locator(':scope > .atlas-story-text[data-atlas-key="details"]');
+  await first.locator('p').click();
+  await first.locator('p').press('End');
+  await first.locator('p').pressSequentially(' more words');
+  await expect(first).toHaveClass(/atlas-story-active-block/);
+  await expect(second).not.toHaveClass(/atlas-story-active-block/);
+  const geometry = await page.evaluate(() => {
+    const card = document.querySelector('.node-frame');
+    const root = document.querySelector('.atlas-story-rich-document');
+    const active = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
+    const inactive = root?.querySelector('.atlas-story-text[data-atlas-key="details"]');
+    const rail = document.querySelector('.gutter-position');
+    if (!card || !root || !active || !inactive || !rail) return null;
+    return {
+      cardLeft: card.getBoundingClientRect().left,
+      rootLeft: root.getBoundingClientRect().left,
+      activeLeft: active.getBoundingClientRect().left,
+      inactiveLeft: inactive.getBoundingClientRect().left,
+      railLeft: rail.getBoundingClientRect().left,
+      railRight: rail.getBoundingClientRect().right,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  expect(geometry!.railLeft - geometry!.cardLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry!.railLeft - geometry!.cardLeft).toBeLessThan(10);
+  expect(geometry!.railRight).toBeLessThanOrEqual(geometry!.activeLeft);
+  expect(Math.abs(geometry!.inactiveLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
+});
+
+test('deleting any selected block requires confirmation; cancelling preserves data', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
+  await image.click();
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Confirm delete block' });
+  await expect(dialog).toContainText('Delete this image block?');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(image).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+  await page.getByRole('button', { name: 'Delete block', exact: true }).click();
+  await expect(root.locator(':scope > .atlas-story-figure')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.locator('.block-composer .content-block')).toHaveCount(2);
+});
+
+test('deleting the final content block replaces it with one blank editable text block', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-editor-workbench-experimental--blank-node&viewMode=story');
+  const root = page.locator('.atlas-story-rich-document');
+  await root.locator(':scope > .atlas-story-text p').click();
+  await page.getByRole('button', { name: 'Delete current block' }).click();
+  await page.getByRole('button', { name: 'Delete block', exact: true }).click();
+  await expect(root.locator(':scope > .atlas-story-text')).toHaveCount(1);
+  await root.locator(':scope > .atlas-story-text p').fill('Able to continue writing');
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.getByLabel('Text (Markdown)').first()).toHaveValue('Able to continue writing');
 });
