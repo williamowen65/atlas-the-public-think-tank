@@ -1,6 +1,6 @@
 <script lang="ts">
   import BlockComposer from '../../src/lib/components/BlockComposer.svelte';
-  import ContentBlocks from '../../src/lib/components/ContentBlocks.svelte';
+  import StorybookContentBlocks from './StorybookContentBlocks.svelte';
   import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
   import FeedNodeCarousel from './FeedNodeCarousel.svelte';
@@ -165,7 +165,7 @@
             onIndexChange={(next) => feedBlockKey = previewBlocks[next]?.id ?? null}
             onOpenFull={() => view = 'full'} />
         {:else}
-          <ContentBlocks blocks={previewBlocks}/>
+          <StorybookContentBlocks blocks={previewBlocks}/>
         {/if}
       </div>
     </article>
@@ -234,7 +234,7 @@
   .card-fields { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .6rem; color: var(--atlas-muted); font-size: .81rem; padding-bottom: .65rem; }
   .breadcrumb-toggle { display: flex; align-items: center; gap: .2rem; cursor: pointer; margin-left: auto; }
   .node-content { --editor-card-inset: 1.25rem; padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
-  .feed-frame .node-content { min-height: 0; }
+  .feed-frame .node-content { min-height: 0; padding: .35rem .35rem .9rem; }
   /* Storybook-only WYSIWYG size parity: the existing single-image renderer
      otherwise expands portraits to a different size in Full Node. */
   :global(.node-frame:not(.feed-frame) .node-content .content-blocks figure img) {
