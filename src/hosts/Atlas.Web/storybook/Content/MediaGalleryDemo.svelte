@@ -3,17 +3,8 @@
   content-block schema or a production media uploader/player.
 -->
 <script lang="ts">
-  import { publicUrl } from '../../src/lib/api/nodePage';
-
-  type GalleryItem = {
-    key: string;
-    type: 'image' | 'video';
-    url: string;
-    alt: string;
-    caption: string;
-    poster?: string;
-  };
-  type GalleryFrame = 'portrait' | 'landscape';
+  import CarouselChildPreview from './CarouselChildPreview.svelte';
+  import type { CarouselChild, CarouselFrame } from './carouselPrototype';
 
   let {
     items,
@@ -24,16 +15,18 @@
     onFrameChange,
     onIndexChange,
   }: {
-    items: GalleryItem[];
-    frame: GalleryFrame;
+    items: CarouselChild[];
+    frame: CarouselFrame;
     index: number;
     mode?: 'edit' | 'full' | 'feed';
-    onChange?: (items: GalleryItem[]) => void;
-    onFrameChange?: (frame: GalleryFrame) => void;
+    onChange?: (items: CarouselChild[]) => void;
+    onFrameChange?: (frame: CarouselFrame) => void;
     onIndexChange?: (index: number) => void;
   } = $props();
 
   let touchStartX: number | null = null;
+  // Local sample poll choices only: never submit a real vote or API request.
+  let demoPollChoices = $state<Record<string, number>>({});
   let current = $derived(items[Math.max(0, Math.min(items.length - 1, index))]);
 
   function go(next: number) {
@@ -41,14 +34,17 @@
     onIndexChange?.((next + items.length) % items.length);
   }
 
-  function updateCurrent(changes: Partial<GalleryItem>) {
+  function updateCurrent(changes: Partial<CarouselChild>) {
     if (!current) return;
     onChange?.(items.map(item => item.key === current.key ? { ...item, ...changes } : item));
   }
 
-  function add(type: 'image' | 'video') {
+  function add(type: CarouselChild['type']) {
     const key = crypto.randomUUID();
-    onChange?.([...items, { key, type, url: '', alt: '', caption: '', poster: '' }]);
+    onChange?.([...items, {
+      key, type, url: '', alt: '', caption: '', poster: '',
+      ...(type === 'poll' ? { question: 'A question for the community', options: ['Option 1', 'Option 2'] } : {}),
+    }]);
     onIndexChange?.(items.length);
   }
 
@@ -68,6 +64,14 @@
     onIndexChange?.(Math.max(0, Math.min(index, remaining.length - 1)));
   }
 
+  function handleTouchStart(event: TouchEvent) {
+    // Don't steal touches from native video controls or simulated poll votes.
+    const target = event.target;
+    touchStartX = target instanceof Element &&
+      target.closest('button, input, select, video, textarea')
+      ? null : (event.touches[0]?.clientX ?? null);
+  }
+
   function handleTouchEnd(event: TouchEvent) {
     if (touchStartX === null || !event.changedTouches.length) return;
     const delta = event.changedTouches[0].clientX - touchStartX;
@@ -79,14 +83,14 @@
 <section class="gallery-demo" class:feed={mode === 'feed'} aria-label="Experimental mixed-media gallery">
   <div class="gallery-heading">
     <div>
-      <strong>Gallery block</strong>
-      <span class="research-label">Storybook concept · not yet an Atlas block type</span>
+      <strong>Carousel / collection concept</strong>
+      <span class="research-label">Storybook only · typed image, video and mock poll children</span>
     </div>
     {#if mode === 'edit'}
       <label class="frame-setting">
         Frame
         <select aria-label="Gallery frame" value={frame}
-          onchange={(event) => onFrameChange?.(event.currentTarget.value as GalleryFrame)}>
+          onchange={(event) => onFrameChange?.(event.currentTarget.value as CarouselFrame)}>
           <option value="portrait">Portrait 4:5</option>
           <option value="landscape">Landscape 16:9</option>
         </select>
@@ -98,37 +102,22 @@
     role="region" aria-roledescription="carousel" aria-label="Gallery media, swipe or use arrows"
     tabindex="0"
     onkeydown={(event) => {
+      if (event.target !== event.currentTarget) return;
       if (event.key === 'ArrowLeft') { event.preventDefault(); go(index - 1); }
       if (event.key === 'ArrowRight') { event.preventDefault(); go(index + 1); }
     }}
-    ontouchstart={(event) => { touchStartX = event.touches[0]?.clientX ?? null; }}
+    ontouchstart={handleTouchStart}
     ontouchend={handleTouchEnd}
     ontouchcancel={() => { touchStartX = null; }}>
     {#if current}
       {#key current.key}
         <div class="slide" role="group" aria-roledescription="slide"
           aria-label={'Slide ' + (index + 1) + ' of ' + items.length}>
-          {#if current.type === 'image'}
-            {#if publicUrl(current.url)}
-              <img src={publicUrl(current.url)} alt={current.alt || 'Gallery image; alternative text needed'}
-                loading={index === 0 ? 'eager' : 'lazy'} />
-            {:else}
-              <div class="empty-slide">
-                <span>Image #{index + 1}</span>
-                <span>Enter an image URL in the editor below.</span>
-              </div>
-            {/if}
-          {:else if publicUrl(current.url)}
-            <video controls playsinline preload="metadata" poster={publicUrl(current.poster)}
-              aria-label={current.alt || 'Gallery video'} src={publicUrl(current.url)}>
-              Your browser does not support this video.
-            </video>
-          {:else}
-            <div class="empty-slide">
-              <span>Video #{index + 1}</span>
-              <span>Enter a video URL in the editor below.</span>
-            </div>
-          {/if}
+          <CarouselChildPreview item={current} {mode}
+            pollChoice={demoPollChoices[current.key] ?? null}
+            onPollChoice={(key, choice) => {
+              demoPollChoices = { ...demoPollChoices, [key]: choice };
+            }} />
         </div>
       {/key}
     {:else}
@@ -139,7 +128,7 @@
         onclick={() => go(index - 1)}>‹</button>
       <button type="button" class="nav next" aria-label="Next gallery item"
         onclick={() => go(index + 1)}>›</button>
-      <div class="count">{index + 1} / {items.length}</div>
+      <div class="count">{index + 1} / {items.length} · {current?.type ?? 'Empty'}</div>
     {/if}
   </div>
 
@@ -148,7 +137,7 @@
       {#if current?.caption}
         <span>{current.caption}</span>
       {:else if current}
-        <span>{current.type === 'video' ? 'Video' : 'Image'} {index + 1}</span>
+        <span>{current.type} {index + 1}</span>
       {/if}
     </div>
     {#if items.length > 1}
@@ -163,15 +152,16 @@
     {/if}
   </div>
   {#if items.length > 1}
-    <p class="swipe-hint">Swipe left or right on touch screens, or use the arrows to browse all {items.length} items.</p>
+    <p class="swipe-hint">{mode === 'feed' ? 'Swipe to explore more content in this node.' : 'Swipe left or right on touch screens, or use the arrows to browse all ' + items.length + ' items.'}</p>
   {/if}
 
   {#if mode === 'edit'}
     <div class="gallery-editor">
       <div class="editor-actions">
-        <span>Media in this block: {items.length}</span>
+        <span>Child blocks in carousel: {items.length}</span>
         <button type="button" onclick={() => add('image')}>Add image to gallery</button>
         <button type="button" onclick={() => add('video')}>Add video to gallery</button>
+        <button type="button" onclick={() => add('poll')}>Add mock poll to gallery</button>
       </div>
       {#if current}
         <div class="slide-editor">
@@ -181,22 +171,38 @@
             <button type="button" disabled={index === items.length - 1} onclick={() => move(1)}>Move slide right</button>
             <button type="button" onclick={removeCurrent}>Remove slide</button>
           </div>
-          <label>
-            {current.type === 'image' ? 'Image URL' : 'Video URL'}
-            <input type="url" value={current.url} placeholder="https://example.org/media"
-              oninput={(event) => updateCurrent({ url: event.currentTarget.value })} />
-          </label>
-          <label>
-            {current.type === 'image' ? 'Alternative text' : 'Video description'}
-            <input value={current.alt} placeholder="Describe this media accessibly"
-              oninput={(event) => updateCurrent({ alt: event.currentTarget.value })} />
-          </label>
-          {#if current.type === 'video'}
+          {#if current.type === 'poll'}
             <label>
-              Poster image URL (optional)
-              <input type="url" value={current.poster || ''} placeholder="https://example.org/poster.jpg"
-                oninput={(event) => updateCurrent({ poster: event.currentTarget.value })} />
+              Poll question
+              <input value={current.question ?? ''}
+                oninput={(event) => updateCurrent({ question: event.currentTarget.value })} />
             </label>
+            <label>
+              Poll options (one per line)
+              <textarea rows="3" value={(current.options ?? []).join('\n')}
+                oninput={(event) => updateCurrent({
+                  options: event.currentTarget.value.split(/\r?\n/).filter(Boolean),
+                })}></textarea>
+            </label>
+            <p class="poll-warning">Mock choices only. No poll record or vote is persisted.</p>
+          {:else}
+            <label>
+              {current.type === 'image' ? 'Image URL' : 'Video URL'}
+              <input type="url" value={current.url} placeholder="https://example.org/media"
+                oninput={(event) => updateCurrent({ url: event.currentTarget.value })} />
+            </label>
+            <label>
+              {current.type === 'image' ? 'Alternative text' : 'Video description'}
+              <input value={current.alt} placeholder="Describe this media accessibly"
+                oninput={(event) => updateCurrent({ alt: event.currentTarget.value })} />
+            </label>
+            {#if current.type === 'video'}
+              <label>
+                Poster image URL (optional)
+                <input type="url" value={current.poster || ''} placeholder="https://example.org/poster.jpg"
+                  oninput={(event) => updateCurrent({ poster: event.currentTarget.value })} />
+              </label>
+            {/if}
           {/if}
           <label>
             Caption
@@ -227,9 +233,6 @@
   .gallery-viewport.landscape { aspect-ratio: 16 / 9; max-width: 100%; }
   .gallery-demo.feed .gallery-viewport { aspect-ratio: 16 / 9; max-width: 100%; max-height: 11rem; }
   .slide { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-  .slide img, .slide video { display: block; width: 100%; height: 100%; object-fit: contain; }
-  /* Feed is intentionally an editorial crop; Edit and Full Node never crop. */
-  .gallery-demo.feed .slide img, .gallery-demo.feed .slide video { object-fit: cover; }
   .empty-slide { width: 100%; height: 100%; display: grid; align-content: center; justify-items: center; gap: .4rem; padding: 1rem; color: white; background: #263442; text-align: center; box-sizing: border-box; }
   .nav {
     position: absolute; top: 50%; transform: translateY(-50%);
@@ -254,6 +257,7 @@
   .slide-editor { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--atlas-border); border-radius: .6rem; }
   .slide-editor h3 { margin: 0; font-size: .88rem; }
   .slide-editor label { display: grid; gap: .2rem; font-size: .82rem; }
-  .slide-editor input { min-width: 0; box-sizing: border-box; width: 100%; border: 1px solid var(--atlas-border); border-radius: .4rem; padding: .5rem; font: inherit; background: var(--atlas-surface); color: var(--atlas-text); }
+  .slide-editor input, .slide-editor textarea { min-width: 0; box-sizing: border-box; width: 100%; border: 1px solid var(--atlas-border); border-radius: .4rem; padding: .5rem; font: inherit; background: var(--atlas-surface); color: var(--atlas-text); }
+  .poll-warning { color: var(--atlas-muted); font-size: .75rem; margin: 0; }
   button:focus-visible, select:focus-visible, input:focus-visible, .gallery-viewport:focus-visible { outline: 2px solid var(--atlas-focus); outline-offset: 2px; }
 </style>
