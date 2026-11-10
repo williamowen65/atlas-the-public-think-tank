@@ -194,7 +194,7 @@
   .byline { display: flex; flex-wrap: wrap; gap: 0 .3rem; margin: .3rem 0 .75rem; color: var(--atlas-muted); font-size: .81rem; line-height: 1.5; }
   .card-fields { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .6rem; color: var(--atlas-muted); font-size: .81rem; padding-bottom: .65rem; }
   .breadcrumb-toggle { display: flex; align-items: center; gap: .2rem; cursor: pointer; margin-left: auto; }
-  .node-content { padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
+  .node-content { --editor-card-inset: 1.25rem; padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
   .feed-frame .node-content { min-height: 0; }
   .feed-content { max-height: 11.5rem; overflow: hidden; position: relative; }
   .feed-content::after { content: ''; position: absolute; pointer-events: none; left: 0; right: 0; bottom: 0; height: 1.6rem; background: linear-gradient(transparent, var(--atlas-surface)); }
@@ -215,7 +215,7 @@
   .phone-width .node-area { margin: .8rem auto; }
   .phone-width .node-header { padding: .7rem .7rem .2rem; }
   .phone-width .node-frame .breadcrumb { padding: .55rem .7rem; }
-  .phone-width .node-content { padding: .35rem .7rem .8rem; }
+  .phone-width .node-content { --editor-card-inset: .7rem; padding: .35rem .7rem .8rem; }
   .phone-width .editable-title input { flex-basis: 100%; }
   .phone-width .breadcrumb-toggle { margin-left: 0; }
   @media (max-width: 650px) {
@@ -223,6 +223,6 @@
     .node-area { margin: .8rem auto; }
     .node-header { padding: .8rem .75rem .25rem; }
     .node-frame .breadcrumb { padding: .6rem .75rem; }
-    .node-content { padding: .35rem .75rem 1rem; }
+    .node-content { --editor-card-inset: .75rem; padding: .35rem .75rem 1rem; }
   }
 </style>
