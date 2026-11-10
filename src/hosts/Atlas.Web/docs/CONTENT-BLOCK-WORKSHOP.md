@@ -161,3 +161,24 @@ the non-overlapping gutter, links mapping back to Markdown, and stable
 Backspace behavior in the last empty text block. These checks need to pass
 in CI and be tried manually on real mobile devices. No production editor,
 backend, schema, or live Atlas route was touched in this follow-up.
+
+
+### Small active-block gutter refinement (Nov 10)
+
+For a more compact authoring canvas, the shared Storybook experiment now
+keeps **the ProseMirror document at its normal full node-card width**. It does
+*not* indent the entire document for a permanent left column. Instead,
+only the currently selected top-level Atlas text/image block gets a temporary
+left margin to accommodate the adjacent controls. Other text and images remain
+full width and left-aligned with the Atlas node content.
+
+The control rail contains **+**, **move section up**, and **move section down**.
+The arrows reorder the *whole Atlas content block*, not an individual paragraph
+within the Markdown block; their disabled state reflects the first/last position.
+Selecting a different block transfers the indentation and rail to that block.
+This behavior is the same in Storybook's phone-width simulation, though real
+touch-device usability remains to be reviewed. No production components changed.
+
+Browser coverage checks both the rail geometry (not covering the active block)
+and full-width alignment of inactive content, and verifies up/down reorder
+the same canonical block data visible in the form-based editor.
