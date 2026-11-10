@@ -336,7 +336,16 @@
           disabled
         />{/if}
     </aside>{/if}
-    <div class="description"><ContentBlocks {blocks} /></div>
+    <div class="description">
+      {#if blocks.some((block) => block.kind !== 'markdown' || !!block.content.markdown?.trim())}
+        <ContentBlocks {blocks} />
+      {:else if node.description}
+        <!-- Compatibility for older nodes whose Content document is blank. -->
+        <p>{node.description}</p>
+      {:else}
+        <ContentBlocks {blocks} />
+      {/if}
+    </div>
     </div>
   </div>
   {#if !inspectionOnly}
