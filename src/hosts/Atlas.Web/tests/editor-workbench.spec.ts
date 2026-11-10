@@ -504,3 +504,18 @@ test('switching to block forms discards an image whose inline editor was never a
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.locator('.block-composer .content-block')).toHaveCount(3);
 });
+
+test('community picker occupies the byline instead of a duplicate editor field', async ({ page }) => {
+  await page.goto(storyUrl);
+  const byline = page.locator('.node-header .byline');
+  const picker = byline.getByRole('combobox', { name: 'Community' });
+  await expect(picker).toBeVisible();
+  await expect(picker).toHaveValue('Urban Design');
+  await expect(page.locator('.card-fields #workbench-community')).toHaveCount(0);
+  await expect(page.locator('#workbench-community')).toHaveCount(1);
+  await picker.selectOption('Public Spaces');
+  await expect(picker).toHaveValue('Public Spaces');
+  await page.getByRole('button', { name: 'Full node', exact: true }).click();
+  await expect(page.locator('.node-header .byline')).toContainText('Community: Public Spaces');
+  await expect(page.locator('#workbench-community')).toHaveCount(0);
+});
