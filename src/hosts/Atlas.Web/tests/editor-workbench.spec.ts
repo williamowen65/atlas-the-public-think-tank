@@ -133,14 +133,23 @@ test('formatting toolbar stays visible and the two plus buttons belong to the se
     return {
       rootLeft: root.getBoundingClientRect().left, blockLeft: r.left,
       blockTop: r.top, blockBottom: r.bottom,
-      beforeY: before.getBoundingClientRect().top + before.getBoundingClientRect().height / 2,
-      afterY: after.getBoundingClientRect().top + after.getBoundingClientRect().height / 2,
+      beforeBottom: before.getBoundingClientRect().bottom,
+      afterTop: after.getBoundingClientRect().top,
+      beforeCenterX: before.getBoundingClientRect().left + before.getBoundingClientRect().width / 2,
+      afterCenterX: after.getBoundingClientRect().left + after.getBoundingClientRect().width / 2,
+      blockCenterX: r.left + r.width / 2,
     };
   });
   expect(geometry).not.toBeNull();
   expect(Math.abs(geometry!.blockLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(Math.abs(geometry!.beforeY - geometry!.blockTop)).toBeLessThan(5);
-  expect(Math.abs(geometry!.afterY - geometry!.blockBottom)).toBeLessThan(5);
+  // The circles are centered horizontally but completely OUTSIDE the block.
+  // Their nearest edges align with the attached corner tabs.
+  expect(geometry!.beforeBottom).toBeLessThan(geometry!.blockTop);
+  expect(geometry!.afterTop).toBeGreaterThan(geometry!.blockBottom);
+  expect(Math.abs(geometry!.blockTop - geometry!.beforeBottom - 5)).toBeLessThan(2);
+  expect(Math.abs(geometry!.afterTop - geometry!.blockBottom - 5)).toBeLessThan(2);
+  expect(Math.abs(geometry!.beforeCenterX - geometry!.blockCenterX)).toBeLessThan(3);
+  expect(Math.abs(geometry!.afterCenterX - geometry!.blockCenterX)).toBeLessThan(3);
   await before.click();
   await expect(page.getByRole('group', { name: 'Insert a content block' })).toContainText('Insert before this block');
   await expect(toolbar).toBeVisible();
@@ -640,8 +649,8 @@ test('long Markdown block stays one selected section with fixed boundary control
       rootLeft: root.getBoundingClientRect().left, blockLeft: b.left,
       blockTopDoc: b.top + window.scrollY,
       blockBottomDoc: b.bottom + window.scrollY,
-      beforeDoc: t.top + t.height / 2 + window.scrollY,
-      afterDoc: d.top + d.height / 2 + window.scrollY,
+      beforeDoc: t.bottom + window.scrollY,
+      afterDoc: d.top + window.scrollY,
       actionsDoc: a.top + window.scrollY, actionBottomDoc: a.bottom + window.scrollY,
       bottomActionsDoc: ba.top + window.scrollY,
       actionRight: a.right, blockRight: b.right,
@@ -651,8 +660,10 @@ test('long Markdown block stays one selected section with fixed boundary control
   const initial = await bounds();
   expect(initial).not.toBeNull();
   expect(Math.abs(initial!.blockLeft - initial!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(Math.abs(initial!.beforeDoc - initial!.blockTopDoc)).toBeLessThan(5);
-  expect(Math.abs(initial!.afterDoc - initial!.blockBottomDoc)).toBeLessThan(5);
+  expect(initial!.beforeDoc).toBeLessThan(initial!.blockTopDoc);
+  expect(initial!.afterDoc).toBeGreaterThan(initial!.blockBottomDoc);
+  expect(Math.abs(initial!.blockTopDoc - initial!.beforeDoc - 5)).toBeLessThan(2);
+  expect(Math.abs(initial!.afterDoc - initial!.blockBottomDoc - 5)).toBeLessThan(2);
   expect(Math.abs(initial!.actionRight - initial!.blockRight)).toBeLessThanOrEqual(8);
   expect(initial!.actionBottomDoc).toBeLessThan(initial!.blockTopDoc);
   expect(initial!.bottomActionsDoc).toBeGreaterThan(initial!.blockBottomDoc);
@@ -728,4 +739,33 @@ test('border-attached top controls do not overlap neighboring text when selectin
   expect(positions!.dockTop).toBeGreaterThanOrEqual(positions!.priorBottom);
   expect(positions!.dockBottom).toBeLessThan(positions!.selectedTop);
   await expect(intro).not.toHaveClass(/atlas-story-active-block/);
+});
+
+
+test('selected image insert buttons stay outside its borders at phone width', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Simulate phone width' }).click();
+  const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
+  await image.click();
+  const rects = await page.evaluate(() => {
+    const figure = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const before = document.querySelector('.boundary-add.before');
+    const after = document.querySelector('.boundary-add.after');
+    if (!figure || !before || !after) return null;
+    const block = figure.getBoundingClientRect();
+    const top = before.getBoundingClientRect();
+    const bottom = after.getBoundingClientRect();
+    return {
+      blockTop: block.top, blockBottom: block.bottom,
+      blockCenterX: block.left + block.width / 2,
+      topButtonBottom: top.bottom, bottomButtonTop: bottom.top,
+      topButtonCenterX: top.left + top.width / 2,
+      bottomButtonCenterX: bottom.left + bottom.width / 2,
+    };
+  });
+  expect(rects).not.toBeNull();
+  expect(rects!.topButtonBottom).toBeLessThan(rects!.blockTop);
+  expect(rects!.bottomButtonTop).toBeGreaterThan(rects!.blockBottom);
+  expect(Math.abs(rects!.topButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
+  expect(Math.abs(rects!.bottomButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
 });
