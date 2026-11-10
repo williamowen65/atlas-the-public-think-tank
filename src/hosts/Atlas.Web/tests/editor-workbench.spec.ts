@@ -118,7 +118,7 @@ test('formatting controls stay visible and the plus stays completely left of wri
   const first = page.locator('.atlas-story-text p').first();
   await first.click();
   await expect(plus).toBeVisible();
-  await first.press('End');
+  await page.keyboard.press('End');
   await expect(toolbar).toBeVisible();
   await plus.click();
   await expect(page.getByLabel('Insert a content block')).toBeVisible();
@@ -257,8 +257,8 @@ test('selected Markdown section indents even after typing while inactive blocks 
   const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
   const second = root.locator(':scope > .atlas-story-text[data-atlas-key="details"]');
   await first.locator('p').click();
-  await first.locator('p').press('End');
-  await first.locator('p').pressSequentially(' more words');
+  await page.keyboard.press('End');
+  await page.keyboard.insertText(' more words');
   await expect(first).toHaveClass(/atlas-story-active-block/);
   await expect(second).not.toHaveClass(/atlas-story-active-block/);
   const geometry = await page.evaluate(() => {
@@ -343,8 +343,8 @@ test('selecting text shows a formatting bubble; clearing the selection hides it'
   await page.goto(storyUrl);
   const p = page.locator('.atlas-story-text[data-atlas-key="intro"] p').first();
   await p.click();
-  await p.press('Home');
-  await p.press('Shift+ArrowRight');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+ArrowRight');
   const pop = page.getByRole('toolbar', { name: 'Selected text formatting' });
   await expect(pop).toBeVisible();
   await expect(pop.getByRole('button', { name: 'Bold highlighted text' })).toBeVisible();
