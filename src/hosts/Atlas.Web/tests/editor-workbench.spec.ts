@@ -113,10 +113,11 @@ test('formatting controls stay visible and the plus stays completely left of wri
   const plus = page.getByRole('button', { name: 'Add a content block' });
   await expect(toolbar.getByRole('button', { name: 'Bold selected text' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Add or edit link' })).toBeVisible();
-  await expect(plus).toBeVisible();
+  await expect(plus).toHaveCount(0);
 
   const first = page.locator('.atlas-story-text p').first();
   await first.click();
+  await expect(plus).toBeVisible();
   await first.press('End');
   await expect(toolbar).toBeVisible();
   await plus.click();
@@ -171,8 +172,9 @@ test('Backspace in the final empty paragraph does not create phantom Atlas block
 
 test('an extra empty text block can be removed without deleting the final writing area', async ({ page }) => {
   await page.goto(storyUrl);
+  await page.locator('.atlas-story-rich-document > .atlas-story-text p').first().click();
   await page.getByRole('button', { name: 'Add a content block' }).click();
-  await page.getByRole('button', { name: 'Text', exact: true }).click();
+  await page.getByRole('button', { name: 'Text block' }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(3);
   await page.locator('.atlas-story-rich-document > .atlas-story-text').nth(1).locator('p').click();
   await page.getByRole('button', { name: 'Delete current block' }).click();
@@ -311,4 +313,71 @@ test('deleting the final content block replaces it with one blank editable text 
   await page.keyboard.type('Able to continue writing');
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.getByLabel('Text (Markdown)').first()).toHaveValue('Able to continue writing');
+});
+
+
+test('plus menu opens beside active block and inserts before or after without a Heading option', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
+  await image.click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  const menu = page.getByRole('group', { name: 'Insert a content block' });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('button', { name: 'Before' })).toHaveAttribute('aria-pressed', 'false');
+  await expect(menu.getByRole('button', { name: 'After' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(menu.getByRole('button', { name: 'Heading' })).toHaveCount(0);
+  await menu.getByRole('button', { name: 'Before' }).click();
+  await menu.getByRole('button', { name: 'Text block' }).click();
+  await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
+
+  await image.click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await menu.getByRole('button', { name: 'After' }).click();
+  await menu.getByRole('button', { name: 'Section break' }).click();
+  await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
+  await expect(root.locator(':scope > *').nth(3).locator('hr')).toBeVisible();
+});
+
+test('selecting text shows a formatting bubble; clearing the selection hides it', async ({ page }) => {
+  await page.goto(storyUrl);
+  const p = page.locator('.atlas-story-text[data-atlas-key="intro"] p').first();
+  await p.click();
+  await p.press('Home');
+  await p.press('Shift+ArrowRight');
+  const pop = page.getByRole('toolbar', { name: 'Selected text formatting' });
+  await expect(pop).toBeVisible();
+  await expect(pop.getByRole('button', { name: 'Bold highlighted text' })).toBeVisible();
+  await expect(pop.getByRole('button', { name: 'Italicize highlighted text' })).toBeVisible();
+  await expect(pop.getByRole('button', { name: 'Link highlighted text' })).toBeVisible();
+  await expect(pop.getByRole('button', { name: 'Heading for highlighted text' })).toBeVisible();
+  await expect(pop.getByRole('button', { name: 'List for highlighted text' })).toBeVisible();
+  await pop.getByRole('button', { name: 'Bold highlighted text' }).click();
+  await expect(p.locator('strong').first()).toBeVisible();
+  await p.press('ArrowRight');
+  await expect(pop).toHaveCount(0);
+  await expect(page.getByRole('toolbar', { name: 'Text formatting' })).toBeVisible();
+});
+
+test('clicking outside the editable document hides block controls and restores full width', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const p = root.locator('.atlas-story-text[data-atlas-key="intro"] p').first();
+  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
+  await p.click();
+  await expect(page.getByRole('group', { name: 'Current block controls' })).toBeVisible();
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await expect(page.getByRole('group', { name: 'Insert a content block' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Node title' }).click();
+  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Insert a content block' })).toHaveCount(0);
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
+
+  await p.click();
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
+  await page.locator('.workbench-header').click();
+  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
 });
