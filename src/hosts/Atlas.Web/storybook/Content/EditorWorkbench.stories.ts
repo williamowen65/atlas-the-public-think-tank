@@ -35,7 +35,7 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. Each editor maintains its own experimental draft.',
+        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
       },
     },
   },
@@ -43,10 +43,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Keep the workbench focused: editor and typography styles already switch in-place.
+// The separate Block composer stories remain available for isolated form testing.
 export const CompareEditors: Story = {};
-export const MediumInspired: Story = { args: { initialStyle: 'editorial' } };
-export const AtlasCanvas: Story = { args: { initialStyle: 'atlas' } };
-export const ExistingBlockEditor: Story = { args: { initialMode: 'blocks' } };
 export const ImageFirst: Story = { args: { initialBlocks: imageFirst } };
 export const PhoneWidth: Story = { args: { initialNarrow: true } };
-export const BlankNode: Story = { args: { title: '', initialBlocks: [text('empty', '')] } };
+export const BlankNode: Story = { args: { title: '', initialBreadcrumb: false, initialBlocks: [text('empty', '')] } };
