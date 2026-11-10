@@ -198,7 +198,6 @@
   let imageFormOpen = $state(false);
   let imageError = $state('');
   let editingExisting = $state(false);
-  let insertionPosition = $state<number | null>(null);
   let imageDraft = $state({ url: '', alt: '', caption: '' });
   let imageFormAnchorKey = $state<string | null>(null);
   let provisionalImageKey: string | null = null;
@@ -484,25 +483,66 @@
     floatingOptionsOpen = false;
   }
 
-  function openImageForm() {
+  // A new image is staged as an actual Atlas image node at the chosen
+  // Before/After position. The placeholder reserves space for its editor.
+  // Cancel removes this temporary node; Apply fills its metadata by stable key.
+  function openImageForm(mode: 'new' | 'existing' = 'new') {
     const editor = currentEditor();
     if (!editor) return;
-    editingExisting = editor.isActive('atlasImage');
-    const attrs = editingExisting ? editor.getAttributes('atlasImage') : {};
-    imageDraft = {
-      url: String(attrs.src ?? ''),
-      alt: String(attrs.alt ?? ''),
-      caption: String(attrs.caption ?? ''),
-    };
-    insertionPosition = editingExisting ? null : insertionPoint(editor);
+    if (imageFormOpen) cancelImageForm();
+    editingExisting = mode === 'existing';
     imageError = '';
+    const existing = editingExisting
+      ? editor.state.doc.maybeChild(editor.state.selection.$from.index(0))
+      : null;
+    if (editingExisting && existing?.type.name !== 'atlasImage') return;
+
+    if (existing) {
+      imageFormAnchorKey = String(existing.attrs.key);
+      imageDraft = {
+        url: String(existing.attrs.src ?? ''),
+        alt: String(existing.attrs.alt ?? ''),
+        caption: String(existing.attrs.caption ?? ''),
+      };
+    } else {
+      const key = crypto.randomUUID();
+      const position = insertionPoint(editor);
+      provisionalImageKey = key;
+      imageFormAnchorKey = key;
+      imageDraft = { url: '', alt: '', caption: '' };
+      editor.chain().focus().insertContentAt(position, {
+        type: 'atlasImage',
+        attrs: { key, src: '', alt: '', caption: '' },
+      }).setNodeSelection(position).run();
+    }
     imageFormOpen = true;
     floatingOptionsOpen = false;
+    requestAnimationFrame(positionAnchoredForms);
+  }
+
+  function cancelImageForm() {
+    const editor = currentEditor();
+    const key = provisionalImageKey;
+    provisionalImageKey = null;
+    imageFormOpen = false;
+    imageFormAnchorKey = null;
+    imageError = '';
+    if (!editor || !key) return;
+    const block = findBlock(key);
+    if (!block) return;
+    const { state } = editor;
+    if (state.doc.childCount > 1) {
+      editor.view.dispatch(state.tr.delete(block.from, block.from + block.nodeSize));
+    } else {
+      editor.view.dispatch(state.tr.replaceWith(block.from, block.from + block.nodeSize,
+        state.schema.nodes.atlasText.create({ key: crypto.randomUUID() },
+          state.schema.nodes.paragraph.create())));
+    }
   }
 
   function saveImage() {
     const editor = currentEditor();
-    if (!editor) return;
+    if (!editor || !imageFormAnchorKey) return;
     if (!publicUrl(imageDraft.url)) {
       imageError = 'Enter a complete HTTP(S) image URL.';
       return;
@@ -511,20 +551,17 @@
       imageError = 'Alternative text is required.';
       return;
     }
-    const attrs = {
-      src: imageDraft.url.trim(),
-      alt: imageDraft.alt.trim(),
-      caption: imageDraft.caption.trim(),
-    };
-    if (editingExisting) {
-      editor.chain().focus().updateAttributes('atlasImage', attrs).run();
-    } else {
-      const position = insertionPosition ?? insertionPoint(editor);
-      editor.chain().focus().insertContentAt(position, {
-        type: 'atlasImage', attrs: { ...attrs, key: crypto.randomUUID() },
-      }).setNodeSelection(position).run();
+    const block = findBlock(imageFormAnchorKey);
+    if (!block) {
+      imageError = 'This image block is no longer present.';
+      return;
     }
+    editor.chain().focus().setNodeSelection(block.from).updateAttributes('atlasImage', {
+      src: imageDraft.url.trim(), alt: imageDraft.alt.trim(), caption: imageDraft.caption.trim(),
+    }).run();
+    provisionalImageKey = null;
     imageFormOpen = false;
+    imageFormAnchorKey = null;
     imageError = '';
   }
 
