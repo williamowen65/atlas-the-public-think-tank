@@ -305,24 +305,24 @@ test('deleting the final content block replaces it with one blank editable text 
 });
 
 
-test('plus menu opens beside active block and inserts before or after without a Heading option', async ({ page }) => {
+test('top and bottom plus controls insert before or after the selected block without direction toggles', async ({ page }) => {
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
   await image.click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
   const menu = page.getByRole('group', { name: 'Insert a content block' });
+  await page.getByRole('button', { name: 'Insert block before' }).click();
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole('button', { name: 'Before' })).toHaveAttribute('aria-pressed', 'false');
-  await expect(menu.getByRole('button', { name: 'After' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(menu).toContainText('Insert before this block');
   await expect(menu.getByRole('button', { name: 'Heading' })).toHaveCount(0);
-  await menu.getByRole('button', { name: 'Before' }).click();
+  await expect(menu.getByRole('button', { name: 'Before' })).toHaveCount(0);
+  await expect(menu.getByRole('button', { name: 'After' })).toHaveCount(0);
   await menu.getByRole('button', { name: 'Text block' }).click();
   await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
 
   await image.click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
-  await menu.getByRole('button', { name: 'After' }).click();
+  await page.getByRole('button', { name: 'Insert block after' }).click();
+  await expect(menu).toContainText('Insert after this block');
   await menu.getByRole('button', { name: 'Section break' }).click();
   await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
   await expect(root.locator(':scope > *').nth(3).locator('hr')).toBeVisible();
@@ -348,29 +348,34 @@ test('selecting text shows a formatting bubble; clearing the selection hides it'
   await expect(page.getByRole('toolbar', { name: 'Text formatting' })).toBeVisible();
 });
 
-test('clicking outside the editable document hides block controls and restores full width', async ({ page }) => {
+test('clicking outside content dismisses block corner and boundary controls', async ({ page }) => {
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   const p = root.locator('.atlas-story-text[data-atlas-key="intro"] p').first();
-  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  const actions = page.getByRole('group', { name: 'Selected block actions' });
+  const before = page.getByRole('button', { name: 'Insert block before' });
+  const after = page.getByRole('button', { name: 'Insert block after' });
+  await expect(actions).toHaveCount(0);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
   await p.click();
-  await expect(page.getByRole('group', { name: 'Current block controls' })).toBeVisible();
+  await expect(actions).toBeVisible();
+  await expect(before).toBeVisible();
+  await expect(after).toBeVisible();
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await after.click();
   await expect(page.getByRole('group', { name: 'Insert a content block' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Node title' }).click();
-  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  await expect(actions).toHaveCount(0);
+  await expect(before).toHaveCount(0);
+  await expect(after).toHaveCount(0);
   await expect(page.getByRole('group', { name: 'Insert a content block' })).toHaveCount(0);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
-
   await p.click();
-  await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(1);
+  await expect(actions).toBeVisible();
   await page.locator('.workbench-header').click();
-  await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
+  await expect(actions).toHaveCount(0);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
 });
-
 
 test('the URL editor stays anchored to highlighted text far below the node header', async ({ page }) => {
   await page.goto(storyUrl);
@@ -407,9 +412,7 @@ test('inserting an image before another image opens its settings in that exact c
   const root = page.locator('.atlas-story-rich-document');
   const existing = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
   await existing.click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
-  await page.getByRole('group', { name: 'Insert a content block' })
-    .getByRole('button', { name: 'Before' }).click();
+  await page.getByRole('button', { name: 'Insert block before' }).click();
   await page.getByRole('group', { name: 'Insert a content block' })
     .getByRole('button', { name: 'Image', exact: true }).click();
 
@@ -448,7 +451,7 @@ test('cancelling an unfinished image removes the staged placeholder', async ({ p
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   await root.locator(':scope > .atlas-story-text p').first().click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Insert block after' }).click();
   await page.getByRole('group', { name: 'Insert a content block' })
     .getByRole('button', { name: 'Image', exact: true }).click();
   await expect(root.locator(':scope > .atlas-story-figure[data-src=""]')).toHaveCount(1);
@@ -485,7 +488,7 @@ test('switching to block forms discards an image whose inline editor was never a
   await page.goto(storyUrl);
   const editor = page.locator('.atlas-story-rich-document');
   await editor.locator(':scope > .atlas-story-text p').first().click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Insert block after' }).click();
   await page.getByRole('group', { name: 'Insert a content block' })
     .getByRole('button', { name: 'Image', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Insert image' })).toBeVisible();
