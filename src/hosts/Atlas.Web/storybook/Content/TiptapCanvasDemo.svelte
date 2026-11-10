@@ -172,6 +172,7 @@
   let linkText = $state('');
   let linkError = $state('');
   let linkSelection = $state<{ from: number; to: number } | null>(null);
+  let linkFormPosition = $state({ top: 0, left: 0 });
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
   let floatingOptionsOpen = $state(false);
   let insertSide = $state<'before' | 'after'>('after');
@@ -182,7 +183,56 @@
   let editingExisting = $state(false);
   let insertionPosition = $state<number | null>(null);
   let imageDraft = $state({ url: '', alt: '', caption: '' });
+  let imageFormAnchorKey = $state<string | null>(null);
+  let provisionalImageKey: string | null = null;
+  let imageFormPosition = $state({ top: 0, left: 0 });
   let latestBlocks: AuthorBlock[] = initialBlocks;
+
+  // The forms are positioned against the document, not the full node footer.
+  // The node and forms therefore scroll together, including on long nodes.
+  function findBlock(key: string): { from: number; nodeSize: number; attrs: Record<string, unknown> } | null {
+    const editor = currentEditor();
+    if (!editor) return null;
+    let from = 0;
+    for (let i = 0; i < editor.state.doc.childCount; i++) {
+      const node = editor.state.doc.child(i);
+      if (String(node.attrs.key) === key)
+        return { from, nodeSize: node.nodeSize, attrs: node.attrs };
+      from += node.nodeSize;
+    }
+    return null;
+  }
+
+  function positionAnchoredForms() {
+    const editor = currentEditor();
+    if (!shellEl || !editor || editor.isDestroyed) return;
+    const shell = shellEl.getBoundingClientRect();
+    const leftBound = Math.max(0, shellEl.clientWidth - 350);
+
+    if (linkFormOpen && linkSelection) {
+      try {
+        const start = editor.view.coordsAtPos(linkSelection.from);
+        const end = editor.view.coordsAtPos(linkSelection.to);
+        linkFormPosition = {
+          top: Math.max(0, Math.round(Math.max(start.bottom, end.bottom) - shell.top + 9)),
+          left: Math.max(0, Math.min(leftBound,
+            Math.round((start.left + end.right) / 2 - shell.left - 160))),
+        };
+      } catch { /* Keep last valid position during a document remount. */ }
+    }
+
+    if (imageFormOpen && imageFormAnchorKey) {
+      const figure = Array.from(shellEl.querySelectorAll('figure[data-atlas-image]'))
+        .find(element => element.getAttribute('data-atlas-key') === imageFormAnchorKey);
+      if (figure) {
+        const rect = figure.getBoundingClientRect();
+        imageFormPosition = {
+          top: Math.max(0, Math.round(rect.top - shell.top + 2)),
+          left: Math.max(0, Math.min(leftBound, Math.round(rect.left - shell.left + 4))),
+        };
+      }
+    }
+  }
 
   // The popover remembers the selected Atlas block's key. Changing the
   // Before/After choice or focusing the image form must not move the anchor.
@@ -321,6 +371,7 @@
     linkError = '';
     linkFormOpen = true;
     selectionPopup = null;
+    positionAnchoredForms();
   }
 
   function saveLink() {
@@ -494,6 +545,7 @@
       onTransaction: ({ editor }) => {
         editorState = { editor };
         repositionGutter(editor);
+        requestAnimationFrame(positionAnchoredForms);
       },
       onUpdate: ({ editor }) => {
         const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks);
@@ -503,7 +555,15 @@
     });
     editorState = { editor };
     repositionGutter(editor);
-    return () => { cancelAnimationFrame(railFrame); editor.destroy(); };
+    const reposition = () => requestAnimationFrame(positionAnchoredForms);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+      cancelAnimationFrame(railFrame);
+      editor.destroy();
+    };
   });
 </script>
 
