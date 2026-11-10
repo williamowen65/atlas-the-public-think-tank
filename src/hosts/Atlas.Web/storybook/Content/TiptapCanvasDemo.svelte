@@ -4,9 +4,10 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Editor, Node } from '@tiptap/core';
+  import { Editor, Extension, Node } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
-  import { NodeSelection, TextSelection } from '@tiptap/pm/state';
+  import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
+  import { Decoration, DecorationSet } from '@tiptap/pm/view';
   import { publicUrl } from '../../src/lib/api/nodePage';
   import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import { blocksToTiptapHtml, tiptapDocumentToBlocks } from './tiptapBlocks';
@@ -27,6 +28,30 @@
     name: 'doc',
     topNode: true,
     content: '(atlasText | atlasImage | atlasUnsupported)+',
+  });
+
+  // Render the active block class through ProseMirror's decoration system.
+  // DOM classList edits done in onTransaction are overwritten when a text node
+  // rerenders, which made the rail overlap active Markdown while images worked.
+  const ActiveBlockDecoration = Extension.create({
+    name: 'atlasActiveBlockDecoration',
+    addProseMirrorPlugins() {
+      return [new Plugin({
+        props: {
+          decorations(state) {
+            const index = state.selection.$from.index(0);
+            if (index < 0 || index >= state.doc.childCount) return DecorationSet.empty;
+            let from = 0;
+            for (let i = 0; i < index; i++) from += state.doc.child(i).nodeSize;
+            return DecorationSet.create(state.doc, [
+              Decoration.node(from, from + state.doc.child(index).nodeSize, {
+                class: 'atlas-story-active-block',
+              }),
+            ]);
+          },
+        },
+      })];
+    },
   });
 
   // A Markdown block stays one Atlas block even when it contains multiple
@@ -62,7 +87,7 @@
     name: 'atlasUnsupported',
     group: 'block',
     atom: true,
-    selectable: false,
+    selectable: true,
     addAttributes() {
       return { key: { default: '' }, kind: { default: 'unknown' } };
     },
@@ -134,6 +159,8 @@
   let gutterTop = $state(8);
   let activeIndex = $state(0);
   let blockCount = $state(initialBlocks.length);
+  let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
+  let railFrame = 0;
   let linkFormOpen = $state(false);
   let linkHref = $state('');
   let linkText = $state('');
@@ -189,17 +216,21 @@
   // paragraph lines (Enter must not change the indentation of other blocks).
   function repositionGutter(editor: Editor) {
     if (!shellEl || !editor.view?.dom?.isConnected) return;
-    const root = editor.view.dom;
     const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
     activeIndex = Math.max(0, index);
     blockCount = editor.state.doc.childCount;
-    for (const [i, element] of Array.from(root.children).entries())
-      element.classList.toggle('atlas-story-active-block', i === activeIndex);
-    const active = root.children.item(activeIndex);
-    if (active) {
-      const top = active.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
+
+    // ProseMirror may replace a text-block DOM node after onTransaction. Measure
+    // on the next animation frame, after its decorations and layout have updated.
+    cancelAnimationFrame(railFrame);
+    railFrame = requestAnimationFrame(() => {
+      if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected) return;
+      const current = editor.state.selection.$from.index(0);
+      const block = editor.view.dom.children.item(current);
+      if (!block) return;
+      const top = block.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
       if (Number.isFinite(top)) gutterTop = Math.max(0, Math.round(top));
-    }
+    });
   }
 
   // Reorder an entire top-level Atlas section (not one paragraph inside it).
@@ -270,36 +301,55 @@
     linkSelection = null;
   }
 
-  function selectedEmptyTextBlock(editor: Editor): boolean {
+  // Capture the selected block's stable key before the confirmation takes
+  // keyboard focus. Confirmation is required for text AND images.
+  function requestDeleteBlock() {
+    const editor = currentEditor();
+    if (!editor) return;
     const index = editor.state.selection.$from.index(0);
     const node = editor.state.doc.maybeChild(index);
-    return editor.state.doc.childCount > 1 && node?.type.name === 'atlasText' && !node.textContent.trim();
+    if (!node) return;
+    const kind = node.type.name === 'atlasImage' ? 'image' :
+      node.type.name === 'atlasText' ? 'text' : 'unsupported';
+    deleteTarget = {
+      key: String(node.attrs.key),
+      kind,
+      summary: kind === 'image' ? String(node.attrs.caption || node.attrs.alt || 'image') :
+        node.textContent.slice(0, 90) || '(empty block)',
+    };
+    floatingOptionsOpen = false;
   }
 
-  function removeEmptyTextBlock() {
+  function confirmDeleteBlock() {
     const editor = currentEditor();
-    if (!editor || !selectedEmptyTextBlock(editor)) return;
-    const index = editor.state.selection.$from.index(0);
+    const target = deleteTarget;
+    if (!editor || !target) return;
+    const { state } = editor;
     let from = 0;
-    for (let i = 0; i < index; i++) from += editor.state.doc.child(i).nodeSize;
-    const to = from + editor.state.doc.child(index).nodeSize;
-    editor.chain().focus().deleteRange({ from, to }).run();
-  }
-
-  function removeSelectedImage() {
-    const editor = currentEditor();
-    if (!editor || !editor.isActive('atlasImage')) return;
-    // Keep one empty text block if this was the last node in the document.
-    if (editor.state.doc.childCount === 1) {
-      editor.chain().focus().insertContentAt(editor.state.doc.content.size, {
-        type: 'atlasText',
-        attrs: { key: crypto.randomUUID() },
-        content: [{ type: 'paragraph' }],
-      }).run();
-      editor.chain().focus().setNodeSelection(0).deleteSelection().run();
-    } else {
-      editor.chain().focus().deleteSelection().run();
+    for (let index = 0; index < state.doc.childCount; index++) {
+      const node = state.doc.child(index);
+      if (String(node.attrs.key) === target.key) {
+        const transaction = state.tr;
+        if (state.doc.childCount === 1) {
+          // The custom document schema requires at least one Atlas block.
+          // Replace the final section with a new empty text landing place.
+          const empty = state.schema.nodes.atlasText.create(
+            { key: crypto.randomUUID() }, state.schema.nodes.paragraph.create(),
+          );
+          transaction.replaceWith(from, from + node.nodeSize, empty);
+        } else {
+          transaction.delete(from, from + node.nodeSize);
+        }
+        transaction.setSelection(TextSelection.near(transaction.doc.resolve(
+          Math.min(from, transaction.doc.content.size),
+        )));
+        editor.view.dispatch(transaction);
+        editor.commands.focus();
+        break;
+      }
+      from += node.nodeSize;
     }
+    deleteTarget = null;
   }
 
   function insertDivider() {
@@ -366,6 +416,7 @@
         AtlasText,
         AtlasImage,
         AtlasUnsupported,
+        ActiveBlockDecoration,
       ],
       content: blocksToTiptapHtml(initialBlocks),
       editorProps: {
@@ -386,7 +437,7 @@
     });
     editorState = { editor };
     repositionGutter(editor);
-    return () => { editor.destroy(); };
+    return () => { cancelAnimationFrame(railFrame); editor.destroy(); };
   });
 </script>
 
@@ -458,6 +509,9 @@
           disabled={activeIndex >= blockCount - 1} onpointerdown={(event) => event.preventDefault()}
           onclick={() => moveCurrentBlock(1)}>↓</button>
       </div>
+      <button type="button" class="delete-trigger" aria-label="Delete current block"
+        title="Delete section" onpointerdown={(event) => event.preventDefault()}
+        onclick={requestDeleteBlock}>×</button>
     </div>
     <div class="editor-canvas" bind:this={canvasEl}></div>
   </div>
@@ -465,15 +519,19 @@
   {#if editorState.editor?.isActive('atlasImage')}
     <div class="block-context">
       <span>Image selected</span>
-      <button type="button" onclick={() => moveSelectedImage(-1)}>Move image up</button>
-      <button type="button" onclick={() => moveSelectedImage(1)}>Move image down</button>
       <button type="button" onclick={openImageForm}>Edit image, caption &amp; alt text</button>
-      <button type="button" onclick={removeSelectedImage}>Remove image</button>
     </div>
-  {:else if editorState.editor && selectedEmptyTextBlock(editorState.editor)}
-    <div class="block-context">
-      <span>Empty text block</span>
-      <button type="button" onclick={removeEmptyTextBlock}>Remove empty text block</button>
+  {/if}
+
+  {#if deleteTarget}
+    <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
+      aria-describedby="story-delete-description">
+      <strong>Delete this {deleteTarget.kind} block?</strong>
+      <p id="story-delete-description">This removes the entire block from this Storybook draft: {deleteTarget.summary}</p>
+      <div class="form-actions">
+        <button type="button" onclick={() => deleteTarget = null}>Cancel</button>
+        <button type="button" class="destructive" onclick={confirmDeleteBlock}>Delete block</button>
+      </div>
     </div>
   {/if}
 
@@ -497,7 +555,7 @@
     </form>
   {/if}
 
-  <p class="editor-note">Only the selected section makes space for the + and ↑ ↓ controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
+  <p class="editor-note">Only the selected section makes space for the +, ↑ ↓, and delete controls. Enter creates a paragraph inside that section; + → Text creates a separate Atlas block. The final empty text block remains as a place to type.</p>
 </div>
 
 <style>
@@ -523,7 +581,8 @@
     position: relative; min-width: 0; background: transparent; border: 0;
   }
   .gutter-position {
-    position: absolute; left: .1rem; width: 2.8rem; z-index: 2;
+    position: absolute; left: calc(.2rem - var(--editor-card-inset, 1.25rem));
+    width: 2.8rem; z-index: 2;
     display: flex; flex-direction: column; align-items: center; gap: .2rem;
   }
   .move-controls { display: flex; align-items: center; gap: .12rem; }
@@ -535,6 +594,13 @@
     cursor: pointer; font: 600 .95rem/1 system-ui, sans-serif;
   }
   .move-controls button:disabled { opacity: .3; cursor: default; }
+  .delete-trigger {
+    border: 1px solid var(--atlas-border); border-radius: .35rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    width: 1.7rem; height: 1.6rem; display: grid; place-items: center;
+    padding: 0; font: 600 1.1rem/1 system-ui, sans-serif; cursor: pointer;
+  }
+  .delete-trigger:hover { color: #b32318; border-color: #b32318; }
   .insert-trigger {
     width: 2.15rem; height: 2.15rem; border: 1px solid var(--atlas-border);
     border-radius: 50%; background: var(--atlas-surface); color: var(--atlas-text);
@@ -563,7 +629,8 @@
   :global(.atlas-story-rich-document:focus-visible) { outline: none; }
   :global(.atlas-story-rich-document > *:first-child) { margin-top: 0; }
   :global(.atlas-story-rich-document > .atlas-story-active-block) {
-    margin-left: 3.15rem; min-height: 4.7rem;
+    box-sizing: border-box;
+    margin-left: calc(3.45rem - var(--editor-card-inset, 1.25rem));
   }
   :global(.atlas-story-text) { min-width: 0; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
@@ -572,7 +639,7 @@
   :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }
   :global(.atlas-story-rich-document a) { color: var(--atlas-accent); text-decoration: underline; }
   :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }
-  :global(.atlas-story-figure) { margin: 1rem 0; padding: .15rem; max-width: 100%; }
+  :global(.atlas-story-figure) { margin: 1rem 0; padding: .15rem; width: fit-content; max-width: 100%; }
   :global(.atlas-story-figure.ProseMirror-selectednode) {
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
@@ -590,11 +657,14 @@
     margin: .6rem 0 0 3.15rem; display: flex; flex-wrap: wrap;
     align-items: center; gap: .45rem; color: var(--atlas-muted); font-size: .82rem;
   }
-  .image-form, .link-form {
+  .image-form, .link-form, .delete-confirm {
     display: grid; gap: .45rem; padding: .8rem; margin: .5rem 0 1rem;
     border: 1px solid var(--atlas-border); border-radius: .6rem;
     background: var(--atlas-surface);
   }
+  .delete-confirm { margin: 1rem 0; }
+  .delete-confirm p { margin: .1rem 0; color: var(--atlas-muted); overflow-wrap: anywhere; }
+  .form-actions .destructive { color: #b32318; border-color: #b32318; }
   .image-form h3 { margin: 0 0 .25rem; }
   .image-form label, .link-form label { font-size: .85rem; font-weight: 600; }
   .image-form label span { font-weight: 400; color: var(--atlas-muted); }
@@ -611,10 +681,7 @@
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
   @container (max-width: 430px) {
-    :global(.atlas-story-rich-document > .atlas-story-active-block) {
-      margin-left: 2.8rem;
-    }
-    .gutter-position { left: 0; }
+    .gutter-position { left: calc(.2rem - var(--editor-card-inset, .7rem)); }
     .insert-trigger { width: 2rem; height: 2rem; }
     .move-controls button { width: 1.2rem; }
     .block-context { margin-left: 2.7rem; }
