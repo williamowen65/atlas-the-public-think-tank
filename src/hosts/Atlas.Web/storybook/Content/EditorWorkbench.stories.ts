@@ -35,7 +35,7 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Media Gallery Concept story additionally prototypes a mixed photo/video gallery with responsive swiping and parity between edit/full views; its slides are not yet Atlas blocks. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
+        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Media Gallery Concept story now explores a carousel of typed image, video and mock poll children, with feed swiping and edit/full framing parity. Child rendering is experimental; child blocks are not persisted Atlas blocks and the poll never submits votes. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
       },
     },
   },
@@ -55,9 +55,9 @@ export const MediaGalleryConcept: Story = {
     title: 'A richer view of our city',
     galleryExperiment: true,
     initialBlocks: [
-      text('opening', 'A single image can still be its own block, but what if a **gallery** could combine portrait and landscape photos with playable video?'),
+      text('opening', 'A single image can be its own block, but what if a **carousel** could contain image, video and poll blocks that readers can explore by swiping?'),
       image('standalone-photo'),
-      text('after-media', 'Try the gallery below, change its frame, then switch between Edit, Full node and Feed. These slides are experimental data, not persisted Atlas blocks.'),
+      text('after-media', 'Try the carousel below: swipe between photos, a video and a demo poll in Feed. You can change its frame in Edit, then compare Full Node. These child blocks are not yet stored in the Atlas API.'),
     ],
   },
 };
