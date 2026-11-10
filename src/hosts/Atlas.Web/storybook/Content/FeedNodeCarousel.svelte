@@ -4,7 +4,7 @@
   nested content, storage, voting or API calls.
 -->
 <script lang="ts">
-  import ContentBlocks from '../../src/lib/components/ContentBlocks.svelte';
+  import StorybookContentBlocks from './StorybookContentBlocks.svelte';
   import type { ContentBlock } from '../../src/lib/api/nodePage';
 
   let {
@@ -45,13 +45,6 @@
 </script>
 
 <section class="feed-block-carousel" aria-label="Feed preview of node content blocks">
-  <div class="summary-row">
-    <span>Explore this node</span>
-    <span class="progress" aria-live="polite">
-      {blocks.length ? safeIndex + 1 : 0} of {blocks.length} blocks
-    </span>
-  </div>
-
   <div class="viewport" class:portrait={frame === 'portrait'} class:landscape={frame === 'landscape'}
     role="region" aria-label="Node content carousel, swipe or use arrows"
     aria-roledescription="carousel" tabindex="0"
@@ -67,11 +60,9 @@
       <div class="feed-block-slide" role="group" aria-roledescription="slide"
         aria-label={'Block ' + (safeIndex + 1) + ' of ' + blocks.length}
         data-block-id={active.id} data-block-kind={active.kind}>
-        <div class="block-kind">{active.kind.toLowerCase().includes('markdown') ? 'Text' :
-          active.kind.toLowerCase().includes('image') ? 'Image' : active.kind} block</div>
         <div class="block-preview">
           {#key active.id}
-            <ContentBlocks blocks={[active]} />
+            <StorybookContentBlocks blocks={[active]} />
           {/key}
         </div>
       </div>
@@ -89,6 +80,7 @@
   </div>
 
   <div class="carousel-bottom">
+    <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
     {#if hasMore}
       <div class="dots" role="group" aria-label="Content block pages">
         {#each blocks as block, i (block.id)}
@@ -108,20 +100,16 @@
 
 <style>
   .feed-block-carousel { width: 100%; min-width: 0; color: var(--atlas-text); }
-  .summary-row { display: flex; align-items: center; justify-content: space-between;
-    gap: .5rem; padding: 0 0 .4rem; font-size: .75rem; color: var(--atlas-muted); }
-  .summary-row > span:first-child { font-weight: 600; }
+  /* No nested card/border: the slide IS the old short-description area
+     of the Atlas node card. Only the outer node border should remain visible. */
   .viewport { position: relative; width: 100%; box-sizing: border-box;
-    overflow: hidden; border: 1px solid var(--atlas-border);
-    border-radius: var(--atlas-radius); background: var(--atlas-surface);
+    overflow: hidden; border: 0; border-radius: 0; background: transparent;
     touch-action: pan-y;
   }
   .viewport.landscape { height: min(12rem, 50vw); min-height: 8rem; }
   .viewport.portrait { height: min(17rem, 77vw); min-height: 11rem; }
   .feed-block-slide { box-sizing: border-box; display: flex; flex-direction: column;
-    width: 100%; height: 100%; padding: .65rem 2.75rem; overflow: hidden; }
-  .block-kind { font-size: .69rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .025em; color: var(--atlas-muted); flex: 0 0 auto; margin-bottom: .35rem; }
+    width: 100%; height: 100%; padding: .25rem 1.7rem; overflow: hidden; }
   .block-preview { min-height: 0; flex: 1 1 auto; overflow: hidden; position: relative; }
   /* Use the existing Atlas block renderer; only constrain its FEED viewport.
      A long Markdown section is still one slide and one original content block. */
@@ -132,9 +120,16 @@
     margin: 0; height: 100%; min-height: 0;
     display: flex; flex-direction: column; gap: .25rem;
   }
-  :global(.feed-block-slide .content-blocks img) {
+  :global(.feed-block-slide .content-blocks figure img) {
     display: block; flex: 1 1 auto; min-height: 0;
     max-width: 100%; width: 100%; height: 100%;
+    object-fit: contain;
+  }
+  /* Embedded Markdown images are part of the text slide, not a separate
+     full-height image block. Text remains visible in the same card. */
+  :global(.feed-block-slide .story-markdown img) {
+    max-height: 8rem;
+    width: auto;
     object-fit: contain;
   }
   :global(.feed-block-slide .content-blocks figcaption) {
@@ -145,15 +140,17 @@
   .fade { position: absolute; bottom: 0; left: 0; right: 0; height: 1.7rem;
     background: linear-gradient(transparent, var(--atlas-surface));
     pointer-events: none; }
+  /* Slim arrows live in the pale node-card gutters, not on the writing. */
   .nav { position: absolute; z-index: 3; top: 50%; transform: translateY(-50%);
-    display: grid; place-items: center; width: 2rem; height: 2.5rem;
-    padding: 0; border: 0; border-radius: .3rem;
-    background: color-mix(in srgb, var(--atlas-surface) 92%, transparent);
-    color: var(--atlas-text); cursor: pointer; font: 1.6rem/1 system-ui, sans-serif;
+    display: grid; place-items: center; width: 1.45rem; height: 2.5rem;
+    padding: 0; border: 0; border-radius: .25rem;
+    background: color-mix(in srgb, var(--atlas-bg) 55%, var(--atlas-surface));
+    color: var(--atlas-text); cursor: pointer; font: 1.65rem/1 system-ui, sans-serif;
   }
-  .previous { left: .25rem; } .next { right: .25rem; }
+  .previous { left: 0; } .next { right: 0; }
   .carousel-bottom { display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: .35rem .6rem; padding: .5rem 0 .05rem; }
+  .progress { font-size: .73rem; color: var(--atlas-muted); font-variant-numeric: tabular-nums; }
   .dots { display: flex; gap: .33rem; flex-wrap: wrap; align-items: center; }
   .dots button { width: .65rem; height: .65rem; border: 1px solid var(--atlas-muted);
     padding: 0; border-radius: 50%; background: transparent; cursor: pointer; }
@@ -162,7 +159,7 @@
   .read-more { margin-left: auto; border: 0; padding: .2rem 0;
     font: inherit; font-size: .85rem; font-weight: 600;
     background: transparent; color: var(--atlas-accent); cursor: pointer; }
-  .empty { padding: 1.5rem 2.75rem; color: var(--atlas-muted); font-size: .83rem; }
+  .empty { padding: 1.5rem 1.7rem; color: var(--atlas-muted); font-size: .83rem; }
   button:focus-visible, .viewport:focus-visible {
     outline: 2px solid var(--atlas-focus); outline-offset: 2px;
   }
