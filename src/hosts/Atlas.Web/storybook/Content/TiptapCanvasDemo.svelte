@@ -135,7 +135,7 @@
   let linkHref = $state('');
   let linkText = $state('');
   let linkError = $state('');
-  let linkSelection: { from: number; to: number } | null = null;
+  let linkSelection = $state<{ from: number; to: number } | null>(null);
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
   let floatingOptionsOpen = $state(false);
   let mobileOptionsOpen = $state(false);
