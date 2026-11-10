@@ -162,7 +162,7 @@ test('Markdown image inserted in Tiptap survives switching to block forms, Feed 
   await expect(intro.getByRole('img', { name: 'New garden at a downtown plaza' })).toBeVisible();
   await page.getByRole('button', { name: 'Existing block forms' }).click();
   await expect(page.getByLabel('Text (Markdown)').first())
-    .toContainText('![New garden at a downtown plaza](https://example.org/another-garden.jpg)');
+    .toHaveValue(/!\[New garden at a downtown plaza\]\(https:\/\/example\.org\/another-garden\.jpg\)/);
   await page.getByRole('button', { name: 'Feed', exact: true }).click();
   await expect(carousel(page).getByRole('img', { name: 'New garden at a downtown plaza' })).toBeVisible();
   await page.getByRole('button', { name: 'Full node', exact: true }).click();
