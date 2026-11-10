@@ -790,7 +790,7 @@
 
     {#if controlsVisible}
       <button type="button" class="boundary-add before" aria-label="Insert block before"
-        style:top={blockLayout.top + 'px'} style:left={blockLayout.center + 'px'}
+        style:top={blockLayout.top - 5 + 'px'} style:left={blockLayout.center + 'px'}
         aria-expanded={floatingOptionsOpen && insertSide === 'before'}
         onpointerdown={(event) => event.preventDefault()}
         onclick={() => openInsertChoices('before')}>+</button>
@@ -830,7 +830,7 @@
       {/if}
 
       <button type="button" class="boundary-add after" aria-label="Insert block after"
-        style:top={blockLayout.bottom + 'px'} style:left={blockLayout.center + 'px'}
+        style:top={blockLayout.bottom + 5 + 'px'} style:left={blockLayout.center + 'px'}
         aria-expanded={floatingOptionsOpen && insertSide === 'after'}
         onpointerdown={(event) => event.preventDefault()}
         onclick={() => openInsertChoices('after')}>+</button>
@@ -908,7 +908,7 @@
   /* Overlaid at the *selected block's boundaries*, never a permanent gutter.
      The content retains the exact same width whether focused or not. */
   .boundary-add {
-    position: absolute; z-index: 18; transform: translate(-50%, -50%);
+    position: absolute; z-index: 18;
     display: grid; place-items: center; box-sizing: border-box;
     width: 1.85rem; height: 1.85rem; padding: 0; border-radius: 50%;
     border: 1px solid var(--atlas-border);
@@ -916,6 +916,11 @@
     font: 600 1.2rem/1 system-ui, sans-serif; cursor: pointer;
     box-shadow: 0 2px 8px #0001;
   }
+  /* The circles sit completely OUTSIDE the selected border, vertically
+     aligned with the attached top-right/bottom-right action tabs.
+     Keep their horizontal center at the middle of the selected block. */
+  .boundary-add.before { transform: translate(-50%, -100%); }
+  .boundary-add.after { transform: translate(-50%, 0); }
   .boundary-add:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
   .block-corner-controls {
     position: absolute; z-index: 20;
