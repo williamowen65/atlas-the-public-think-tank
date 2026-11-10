@@ -101,20 +101,27 @@
           <h2><span class="type-prefix">{nodeType}:</span> {titleDraft || 'Untitled node'}</h2>
         {/if}
 
-        <p class="byline">
-          By You <span aria-hidden="true">·</span> Draft
-          {#if community}<span aria-hidden="true">·</span> Community: {community}{/if}
-        </p>
-
-        {#if view === 'edit'}
-          <div class="card-fields">
-            <label for="workbench-community">Community</label>
-            <select id="workbench-community" bind:value={community}>
+        <div class="byline">
+          <span>By You</span>
+          <span aria-hidden="true">·</span>
+          <span>Draft</span>
+          {#if view === 'edit'}
+            <span aria-hidden="true">·</span>
+            <label for="workbench-community">Community:</label>
+            <select id="workbench-community" aria-label="Community" bind:value={community}>
               <option value="">No community selected</option>
               <option>Urban Design</option>
               <option>Neighborhood Planning</option>
               <option>Public Spaces</option>
             </select>
+          {:else if community}
+            <span aria-hidden="true">·</span>
+            <span>Community: {community}</span>
+          {/if}
+        </div>
+
+        {#if view === 'edit'}
+          <div class="card-fields">
             <label class="breadcrumb-toggle">
               <input type="checkbox" bind:checked={showBreadcrumb}/>
               Show parent breadcrumb
@@ -191,7 +198,9 @@
   .type-controls select, .card-fields select { border: 1px solid var(--atlas-border); border-radius: .35rem; padding: .25rem .4rem; color: var(--atlas-text); background: var(--atlas-surface); }
   .editable-title input { display: block; flex: 1 1 15rem; min-width: 0; width: 100%; border: 0; border-bottom: 1px solid transparent; padding: .05rem 0; color: var(--atlas-text); background: transparent; font: inherit; font-weight: inherit; line-height: inherit; }
   .editable-title input:hover, .editable-title input:focus { border-color: var(--atlas-border); }
-  .byline { display: flex; flex-wrap: wrap; gap: 0 .3rem; margin: .3rem 0 .75rem; color: var(--atlas-muted); font-size: .81rem; line-height: 1.5; }
+  .byline { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .4rem; margin: .3rem 0 .75rem; color: var(--atlas-muted); font-size: .81rem; line-height: 1.5; }
+  .byline select { min-width: 10rem; max-width: 100%; padding: .25rem .4rem; border: 1px solid var(--atlas-border); border-radius: .35rem; color: var(--atlas-text); background: var(--atlas-surface); }
+  .byline label { white-space: nowrap; }
   .card-fields { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .6rem; color: var(--atlas-muted); font-size: .81rem; padding-bottom: .65rem; }
   .breadcrumb-toggle { display: flex; align-items: center; gap: .2rem; cursor: pointer; margin-left: auto; }
   .node-content { --editor-card-inset: 1.25rem; padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
