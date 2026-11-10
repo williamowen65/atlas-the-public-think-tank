@@ -47,7 +47,7 @@
       if (started) return;
       started = true;
       try {
-        const result = await readJson<ContentBlock[]> (apiBase, `nodes/${nodeId}/description`, controller.signal);
+        const result = await readJson<ContentBlock[]>(apiBase, `nodes/${nodeId}/description`, controller.signal);
         if (!controller.signal.aborted && Array.isArray(result)) {
           blocks = result;
           loaded = true;
@@ -69,7 +69,7 @@
   });
 </script>
 
-<span class="feed-block-preview" class:image-first={display.kind === 'image'} bind:this={host}
+<span class={display.kind === 'image' ? 'feed-block-preview image-first' : 'feed-block-preview'} bind:this={host}
   aria-label="Content preview">
   {#if display.image && publicUrl(display.image.content.url)}
     <img class="thumbnail" src={publicUrl(display.image.content.url)}
