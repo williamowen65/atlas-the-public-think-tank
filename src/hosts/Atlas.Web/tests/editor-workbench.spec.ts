@@ -519,3 +519,37 @@ test('community picker occupies the byline instead of a duplicate editor field',
   await expect(page.locator('.node-header .byline')).toContainText('Community: Public Spaces');
   await expect(page.locator('#workbench-community')).toHaveCount(0);
 });
+
+
+test('node type picker replaces title prefix beside title on desktop and stacks above on mobile', async ({ page }) => {
+  await page.goto(storyUrl);
+  const select = page.getByRole('combobox', { name: 'Node type' });
+  const title = page.getByRole('textbox', { name: 'Node title' });
+  await expect(select).toHaveCount(1);
+  await expect(select).toHaveValue('Idea');
+  await expect(page.locator('.type-controls')).toHaveCount(0);
+  await expect(page.locator('.editable-title .type-prefix')).toHaveCount(0);
+  const desktop = await page.evaluate(() => {
+    const select = document.querySelector('.node-type-select');
+    const title = document.querySelector('.editable-title input');
+    if (!select || !title) return null;
+    return { type: select.getBoundingClientRect().toJSON(), title: title.getBoundingClientRect().toJSON() };
+  });
+  expect(desktop).not.toBeNull();
+  expect(desktop!.type.right).toBeLessThan(desktop!.title.left);
+  expect(Math.abs(desktop!.type.top - desktop!.title.top)).toBeLessThan(25);
+
+  await page.getByRole('button', { name: 'Simulate phone width' }).click();
+  const mobile = await page.evaluate(() => {
+    const select = document.querySelector('.node-type-select');
+    const title = document.querySelector('.editable-title input');
+    if (!select || !title) return null;
+    return { type: select.getBoundingClientRect().toJSON(), title: title.getBoundingClientRect().toJSON() };
+  });
+  expect(mobile).not.toBeNull();
+  expect(mobile!.type.bottom).toBeLessThan(mobile!.title.top);
+  await select.selectOption('Question');
+  await page.getByRole('button', { name: 'Full node', exact: true }).click();
+  await expect(page.locator('.node-header h2')).toContainText('Question:');
+  await expect(page.locator('.node-type-select')).toHaveCount(0);
+});
