@@ -12,7 +12,7 @@ test('the feed has exactly one slide per authored Atlas block and keeps their or
   await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
   await page.getByRole('button', { name: 'Feed', exact: true }).click();
   const feed = carousel(page);
-  await expect(feed).toContainText('1 of 4 blocks');
+  await expect(feed).toContainText('1 of 4');
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'opening');
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-kind', 'markdown');
   await feed.getByRole('button', { name: 'Next node content block' }).click();
@@ -22,7 +22,7 @@ test('the feed has exactly one slide per authored Atlas block and keeps their or
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'long-section');
   await feed.getByRole('button', { name: 'Next node content block' }).click();
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'second-photo');
-  await expect(feed).toContainText('4 of 4 blocks');
+  await expect(feed).toContainText('4 of 4');
   await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
 });
 
@@ -93,7 +93,7 @@ test('phone-width feed supports swipe, dots, arrows and keyboard without opening
   await page.getByRole('button', { name: 'Feed', exact: true }).click();
   const feed = carousel(page);
   const viewport = feed.getByRole('region', { name: 'Node content carousel, swipe or use arrows' });
-  await expect(feed).toContainText('1 of 4 blocks');
+  await expect(feed).toContainText('1 of 4');
   await viewport.evaluate(element => {
     const first = new Touch({ identifier: 1, target: element, clientX: 230, clientY: 120 });
     const end = new Touch({ identifier: 1, target: element, clientX: 60, clientY: 120 });
@@ -104,7 +104,7 @@ test('phone-width feed supports swipe, dots, arrows and keyboard without opening
       bubbles: true, touches: [], changedTouches: [end], targetTouches: [],
     }));
   });
-  await expect(feed).toContainText('2 of 4 blocks');
+  await expect(feed).toContainText('2 of 4');
   await feed.getByRole('button', { name: 'Show node block 4' }).click();
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'second-photo');
   await viewport.focus();
@@ -118,11 +118,106 @@ test('standard editor stories also derive feed previews from their current flat 
   await page.goto('http://127.0.0.1:6006/iframe.html?id=content-editor-workbench-experimental--compare-editors&viewMode=story');
   await page.getByRole('button', { name: 'Feed', exact: true }).click();
   const feed = carousel(page);
-  await expect(feed).toContainText('1 of 3 blocks');
+  await expect(feed).toContainText('1 of 3');
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'intro');
   await feed.getByRole('button', { name: 'Show node block 2' }).click();
   await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'public-square');
   await feed.getByRole('button', { name: 'Read more' }).click();
   await expect(page.getByRole('article', { name: 'Full node preview' })).toBeVisible();
   await expect(carousel(page)).toHaveCount(0);
+});
+
+
+test('Markdown intro includes an embedded image in the same feed slide as its text', async ({ page }) => {
+  await page.goto(storyUrl);
+  // This is one original Markdown block; the image must not create extra slides.
+  await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
+  const editorText = page.locator('.atlas-story-text[data-atlas-key="opening"]');
+  await expect(editorText.getByRole('img', { name: 'Street framed by tall buildings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Feed', exact: true }).click();
+  const feed = carousel(page);
+  await expect(feed.locator('.feed-block-slide')).toHaveAttribute('data-block-id', 'opening');
+  await expect(feed).toContainText('What if our public square made more room');
+  await expect(feed.getByRole('img', { name: 'Street framed by tall buildings' })).toBeVisible();
+  await expect(feed).toContainText('1 of 4');
+  await expect(feed.locator('.feed-block-slide')).toHaveCount(1);
+  await feed.getByRole('button', { name: 'Read more' }).click();
+  await expect(page.getByRole('article', { name: 'Full node preview' }))
+    .toContainText('A little greenery could change how this space feels');
+  await expect(page.getByRole('article', { name: 'Full node preview' })
+    .getByRole('img', { name: 'Street framed by tall buildings' })).toBeVisible();
+  await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
+});
+
+test('Markdown image inserted in Tiptap survives switching to block forms, Feed and Full Node', async ({ page }) => {
+  await page.goto(storyUrl);
+  const intro = page.locator('.atlas-story-text[data-atlas-key="opening"]');
+  await intro.locator('p').first().click();
+  await page.getByRole('button', { name: 'Insert image within text' }).click();
+  const form = page.getByRole('form', { name: 'Insert image into Markdown' });
+  await expect(form).toBeVisible();
+  await form.getByLabel('Inline image URL').fill('https://example.org/another-garden.jpg');
+  await form.getByLabel('Inline image alternative text').fill('New garden at a downtown plaza');
+  await form.getByRole('button', { name: 'Insert image', exact: true }).click();
+  await expect(intro.getByRole('img', { name: 'New garden at a downtown plaza' })).toBeVisible();
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.getByLabel('Text (Markdown)').first())
+    .toContainText('![New garden at a downtown plaza](https://example.org/another-garden.jpg)');
+  await page.getByRole('button', { name: 'Feed', exact: true }).click();
+  await expect(carousel(page).getByRole('img', { name: 'New garden at a downtown plaza' })).toBeVisible();
+  await page.getByRole('button', { name: 'Full node', exact: true }).click();
+  await expect(page.getByRole('article', { name: 'Full node preview' })
+    .getByRole('img', { name: 'New garden at a downtown plaza' })).toBeVisible();
+  await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
+});
+
+test('editing Markdown image syntax in block forms shows text and image together without adding a slide', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  const markdown = page.getByLabel('Text (Markdown)').first();
+  await markdown.fill('A tiny garden photo in Markdown.\n\n![A shady public square](https://example.org/square.jpg)\n\nMore detail below.');
+  await page.getByRole('button', { name: 'Feed', exact: true }).click();
+  const feed = carousel(page);
+  await expect(feed).toContainText('A tiny garden photo in Markdown.');
+  await expect(feed.getByRole('img', { name: 'A shady public square' })).toBeVisible();
+  await expect(feed).toContainText('1 of 4');
+  await feed.getByRole('button', { name: 'Read more' }).click();
+  await expect(page.getByRole('article', { name: 'Full node preview' }))
+    .toContainText('More detail below.');
+  await expect(page.locator('.model-inspector ol > li')).toHaveCount(4);
+});
+
+test('feed slide visually belongs to node card without inner border or block-type labels', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Feed', exact: true }).click();
+  const feed = carousel(page);
+  await expect(feed.getByText('Explore this node')).toHaveCount(0);
+  await expect(feed.getByText('Text block')).toHaveCount(0);
+  await expect(feed.getByText('Image block')).toHaveCount(0);
+  const metrics = await feed.evaluate(root => {
+    const viewport = root.querySelector('.viewport');
+    const slide = root.querySelector('.feed-block-slide');
+    const text = root.querySelector('.block-preview');
+    const previous = root.querySelector('.nav.previous');
+    const next = root.querySelector('.nav.next');
+    if (!viewport || !slide || !text || !previous || !next) return null;
+    const v = viewport.getBoundingClientRect();
+    const s = slide.getBoundingClientRect();
+    const t = text.getBoundingClientRect();
+    const p = previous.getBoundingClientRect();
+    const n = next.getBoundingClientRect();
+    return {
+      border: getComputedStyle(viewport).borderTopWidth,
+      slideInset: t.left - s.left,
+      previousLeft: p.left - v.left,
+      nextRight: v.right - n.right,
+      arrowWidth: p.width,
+    };
+  });
+  expect(metrics).not.toBeNull();
+  expect(metrics!.border).toBe('0px');
+  expect(metrics!.slideInset).toBeLessThan(30);
+  expect(metrics!.previousLeft).toBeLessThan(4);
+  expect(metrics!.nextRight).toBeLessThan(4);
+  expect(metrics!.arrowWidth).toBeLessThan(27);
 });
