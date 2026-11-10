@@ -4,11 +4,7 @@
   import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
   import MediaGalleryDemo from './MediaGalleryDemo.svelte';
-
-  type GalleryItem = {
-    key: string; type: 'image' | 'video'; url: string;
-    alt: string; caption: string; poster?: string;
-  };
+  import type { CarouselChild, CarouselFrame } from './carouselPrototype';
 
   let {
     initialBlocks,
@@ -45,7 +41,7 @@
   // This gallery is intentionally separate Storybook-only research state.
   // A gallery is NOT an existing persisted AuthorBlock kind, and pretending
   // otherwise would hide real backend and Tiptap schema work we still need.
-  let galleryItems = $state<GalleryItem[]>([
+  let galleryItems = $state<CarouselChild[]>([
     { key: 'gallery-portrait', type: 'image',
       url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1000',
       alt: 'Tall city buildings framing a downtown street',
@@ -59,8 +55,11 @@
       poster: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1000',
       alt: 'Short sample video of flowers',
       caption: 'A sample playable video slide' },
+    { key: 'gallery-poll', type: 'poll', url: '', alt: '', caption: 'Choose how the square should evolve',
+      question: 'What would make this public square more welcoming?',
+      options: ['More shade and trees', 'Safer walking paths', 'Outdoor community events'] },
   ]);
-  let galleryFrame = $state<'portrait' | 'landscape'>('portrait');
+  let galleryFrame = $state<CarouselFrame>('portrait');
   let galleryIndex = $state(0);
 </script>
 
@@ -193,7 +192,7 @@
     <summary>Inspect Atlas blocks ({blocks.length}) · shared by both editors</summary>
     <p>This is the ordered AuthorBlock array. Each item retains its key and any existing server block ID, including when you move an image above text in the Tiptap canvas.</p>
     {#if galleryExperiment}
-      <p><strong>Gallery research:</strong> {galleryItems.length} media items ({galleryItems.filter(item => item.type === 'image').length} images, {galleryItems.filter(item => item.type === 'video').length} videos), {galleryFrame} frame. This separate prototype is not yet stored in AuthorBlock[] or the Atlas database.</p>
+      <p><strong>Gallery research:</strong> {galleryItems.length} media items ({galleryItems.filter(item => item.type === 'image').length} images, {galleryItems.filter(item => item.type === 'video').length} videos, {galleryItems.filter(item => item.type === 'poll').length} mock polls), {galleryFrame} frame. This separate prototype is not yet stored in AuthorBlock[] or the Atlas database. Poll choices are local-only; no voting request is sent.</p>
     {/if}
     <ol>
       {#each blocks as block (block.key)}
