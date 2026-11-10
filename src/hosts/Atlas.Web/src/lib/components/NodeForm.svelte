@@ -83,7 +83,7 @@
    */
   let title = $state(startingDraft?.title ?? '');
   /**
-   * Working plain-text introduction shown on cards.
+   * Ordered editor blocks are the node body; no separately authored introduction.
    */
   let blocks = $state<AuthorBlock[]>(
     startingDraft?.blocks?.length
@@ -158,7 +158,7 @@
 </script>
 
 <!--
-  Layout: Optional parent context leads into type/title, introduction and Markdown editing;
+  Layout: Optional parent context leads into type/title and sequential block editing;
   preview and contribution requests precede the submit actions.
 -->
 
@@ -280,7 +280,6 @@
     --atlas-breadcrumb-bottom-space: 0px;
   }
   header,
-  .intro,
   .content-editor,
   footer,
   .actions {
