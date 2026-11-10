@@ -35,7 +35,7 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Feed Block Carousel Concept presents one slide for each existing Atlas node content block, only in the Feed view. Edit and Full Node show the same blocks normally, and Read more opens the continuous node preview. This is a Storybook-only view experiment requiring no gallery block or persistence changes. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
+        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Feed Block Carousel Concept presents one slide for each existing Atlas node content block, only in the Feed view. Edit and Full Node show the same blocks normally, and Read more opens the continuous node preview. This is a Storybook-only view experiment requiring no gallery block or persistence changes. The story also tests an image embedded in Markdown: unlike production's intentionally image-disabled Markdown renderer, the prototype safely previews HTTP(S) Markdown images in both Feed and Full Node and supports insertion in Tiptap. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
       },
     },
   },
