@@ -520,3 +520,46 @@ Running the suite and testing on a physical phone remain necessary.
 Research task: https://thepublicthinktank.atlassian.net/browse/PTT-183.
 No production editor, API, database, migrations or persisted block kind
 was changed.
+
+
+### November 10: carousel as a container for reusable child blocks (PTT-183 follow-up)
+
+The Storybook **Media Gallery Concept** now explores the broader idea of a
+**Carousel / Collection block** composed of ordered child block types, rather
+than a single-purpose gallery that owns unrelated image/video fields.
+
+For this research iteration:
+
+- A Storybook-only \`CarouselChild\` type allowlists \`image\`, \`video\`
+  and \`poll\` children. The carousel's parent component owns item order,
+  active index, navigation arrows, page dots, keyboard arrows, touch swipe,
+  and portrait/landscape framing. The separate
+  \`CarouselChildPreview.svelte\` component decides how to render a child.
+- Edit/Full Node/Feed share the same local carousel data. The **Feed can
+  reveal more parts of the node by swiping**, including a photo, a video
+  or a sample poll, without requiring the full node to open. Clear item
+  counts and pagination prevent the extra content being invisible.
+- A **demo poll** is visible on the fourth slide. Clicking a choice only
+  records a local in-memory selection and displays a clear **no vote
+  submitted** message. It does not call voting APIs or change poll
+  participation, and the sample question/options can be edited in Storybook.
+- Carousel keyboard left/right navigation works when the viewport itself
+  owns focus but **doesn't capture arrow keys used by a focused child
+  control**. Touch swipe starts outside native video controls and poll
+  buttons, so it should not hijack these interactions.
+- The parent still keeps its own image/video presentation constraints; Feed
+  uses compact frames and intentional cropping, whereas Edit/Full Node use
+  the same \`contain\` treatment. This provides more information within a
+  feed card while preserving predictable media dimensions.
+
+**Limits:** This is a proof of *rendering composition*, **not yet reuse of
+the actual production Image/Poll components**. The existing \`AuthorBlock[]\`
+mapping is flat, and neither current \`ContentBlock\` nor the API schema can
+persist child blocks in a carousel. Future production work needs stable
+child IDs, parent ownership, validation of permitted child types, moderation,
+poll permissions/participation rules, and a versioned migration. Avoid
+unbounded recursive nesting. This is tracked in PTT-183.
+
+New Playwright coverage checks Feed navigation to the mock poll, editable
+poll child metadata, local-only selection (no API requests), slide ordering,
+and keeping child controls independent of carousel arrow navigation.
