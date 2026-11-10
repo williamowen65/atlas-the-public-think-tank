@@ -101,6 +101,46 @@
     },
   });
 
+  // Storybook research: an image may also live INSIDE a Markdown paragraph.
+  // It is not a sibling image block, and the Atlas text block's key remains
+  // unchanged. This only changes the experimental Tiptap schema.
+  const AtlasInlineImage = Node.create({
+    name: 'atlasInlineImage',
+    group: 'inline',
+    inline: true,
+    atom: true,
+    draggable: true,
+    selectable: true,
+    addAttributes() {
+      return {
+        src: { default: '' },
+        alt: { default: '' },
+      };
+    },
+    parseHTML() {
+      return [{
+        tag: 'img:not([data-atlas-image])',
+        getAttrs: element => {
+          if (typeof element === 'string') return false;
+          return {
+            src: element.getAttribute('src') || '',
+            alt: element.getAttribute('alt') || '',
+          };
+        },
+      }];
+    },
+    renderHTML({ node }) {
+      const src = publicUrl(String(node.attrs.src ?? '')) || '';
+      return ['img', {
+        src,
+        alt: String(node.attrs.alt ?? ''),
+        class: 'atlas-story-inline-image',
+        'data-atlas-inline-image': 'true',
+        draggable: 'true',
+      }];
+    },
+  });
+
   // Preserve future/unsupported block kinds without pretending to edit them.
   const AtlasUnsupported = Node.create({
     name: 'atlasUnsupported',
@@ -627,6 +667,7 @@
         StarterKit.configure({ document: false }),
         AtlasDocument,
         AtlasText,
+        AtlasInlineImage,
         AtlasImage,
         AtlasUnsupported,
         ActiveBlockDecoration,
@@ -1006,6 +1047,11 @@
     border-radius: .45rem;
   }
   :global(.atlas-story-text) { min-width: 0; }
+  :global(.atlas-story-inline-image) {
+    display: block; width: auto; height: auto;
+    max-width: 100%; max-height: 17rem; object-fit: contain;
+    margin: .45rem 0 .7rem; border-radius: .35rem;
+  }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
