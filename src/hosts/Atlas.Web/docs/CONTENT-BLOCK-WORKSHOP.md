@@ -339,3 +339,37 @@ Playwright checks cover geometry, highlighted pending state and cancel
 for both text and image blocks.
 
 Only Storybook prototype, its tests and research documentation were changed.
+
+
+### November 10: long Markdown sections — follow the caret and keep controls in view
+
+A Storybook review tested a *single* Markdown block containing many screens
+of paragraphs. The content remains **one Atlas block** (same key, one action
+rail, one reorder/delete target), even though authors may click and type at
+different locations inside it.
+
+The side rail now uses the latest ProseMirror caret position as its desired
+vertical anchor rather than always returning to the first line of the block.
+While the user scrolls, the rail position is recalculated and clamped into
+the viewport and, for sufficiently tall sections, the **visible part of the
+currently focused block**. The rail therefore stays useful while moving
+through one tall section instead of being left at the top. If the selected
+block is entirely offscreen, its rail disappears until the block returns;
+it does not float beside unrelated content.
+
+Only the active top-level Atlas content block is visually emphasized with
+a **subtle tint and left edge marker** covering its entire section. Inactive
+blocks stay full width, without that treatment. Clicking elsewhere in the
+node or page hides the controls and removes the focus treatment, preserving
+the existing focus-only behavior. This is responsive within the node card
+and applies in phone-width Storybook previews, though actual touch testing
+remains necessary.
+
+The Storybook Playwright long-section scenario creates 80 paragraphs in
+**one** Atlas Markdown block, checks block count and focus styling, tests
+caret-based rail placement at different paragraphs, scrolls while focused
+and verifies the controls remain onscreen within the same block, then
+verifies clicking the node title clears controls and tint.
+
+Only the experimental Storybook component, tests, and notes were updated.
+The production editor and Atlas persistence were not changed.
