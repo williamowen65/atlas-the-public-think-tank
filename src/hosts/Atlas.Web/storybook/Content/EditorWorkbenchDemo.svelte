@@ -165,7 +165,6 @@
           {/if}
         {:else if view === 'feed'}
           <div class="feed-content"><ContentBlocks blocks={previewBlocks}/></div>
-          <p class="read-more">Read more</p>
         {:else}
           <ContentBlocks blocks={previewBlocks}/>
         {/if}
@@ -179,6 +178,9 @@
           {#if view === 'feed'}
             <p class="preview-note">The feed uses a compact 16:9 teaser; Edit and Full Node retain the same uncropped gallery frame.</p>
           {/if}
+        {/if}
+        {#if view === 'feed'}
+          <p class="read-more">Read more</p>
         {/if}
       </div>
     </article>
