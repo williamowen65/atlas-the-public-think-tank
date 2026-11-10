@@ -193,6 +193,7 @@
   let canvasEl: HTMLDivElement;
   let shellEl: HTMLDivElement;
   let gutterTop = $state(8);
+  let railInView = $state(true);
   let activeIndex = $state(0);
   let blockCount = $state(initialBlocks.length);
   let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
@@ -335,40 +336,83 @@
     else editor.chain().focus().toggleBulletList().run();
   }
 
-  // Keep the editor at full width. Only the currently selected top-level
-  // Atlas block receives a left margin to clear the compact control rail.
-  // Position the rail at that block's top rather than tracking individual
-  // paragraph lines (Enter must not change the indentation of other blocks).
+  // The rail belongs to ONE Atlas block, even when it contains dozens of
+  // paragraphs. Use the caret's most recent position, not the block's start.
+  // While scrolling, keep the rail in the visible part of that SAME block,
+  // rather than leaving the controls far above the reader.
   function repositionGutter(editor: Editor) {
     if (!shellEl || !editor.view?.dom?.isConnected) return;
     const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
     activeIndex = Math.max(0, index);
     blockCount = editor.state.doc.childCount;
 
-    // ProseMirror may replace a text-block DOM node after onTransaction. Measure
-    // on the next animation frame, after its decorations and layout have updated.
     cancelAnimationFrame(railFrame);
     if (!editorFocused) {
       selectionPopup = null;
+      railInView = false;
       return;
     }
+
     railFrame = requestAnimationFrame(() => {
       if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected || !editorFocused) return;
-      const current = editor.state.selection.$from.index(0);
-      const block = editor.view.dom.children.item(current);
-      if (block) {
-        const top = block.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
-        if (Number.isFinite(top)) gutterTop = Math.max(0, Math.round(top));
+
+      const selectedIndex = editor.state.selection.$from.index(0);
+      const active = editor.view.dom.children.item(selectedIndex);
+      if (!active) return;
+
+      const bounds = active.getBoundingClientRect();
+      const shellBounds = shellEl.getBoundingClientRect();
+      const viewportTop = 12;
+      const viewportBottom = window.innerHeight - 12;
+
+      // A focused block that is no longer on screen should not leave an
+      // orphaned rail floating beside an unrelated block.
+      railInView = bounds.bottom > viewportTop && bounds.top < viewportBottom;
+      if (railInView) {
+        const rail = shellEl.querySelector('.gutter-position');
+        const railHeight = rail?.getBoundingClientRect().height || 111;
+        let wantedY = bounds.top + 5;
+        try {
+          // The caret moves with clicks and keyboard navigation. Its viewport
+          // coordinates may be offscreen after scrolling; clamping below keeps
+          // the block's controls visible.
+          if (active.matches('.atlas-story-text')) {
+            const caret = editor.view.coordsAtPos(editor.state.selection.head);
+            if (Number.isFinite(caret.top)) wantedY = caret.top;
+          }
+        } catch {
+          // Keep the block-top fallback during a ProseMirror DOM remount.
+        }
+        const viewMin = viewportTop + 8;
+        const viewMax = Math.max(viewMin, viewportBottom - railHeight - 8);
+        let minY = viewMin;
+        let maxY = viewMax;
+        // For a long block, the rail must stay inside its visible portion.
+        // A short block still gets its full controls, even if taller than
+        // the paragraph itself.
+        if (bounds.height >= railHeight + 16) {
+          minY = Math.max(viewMin, bounds.top + 4);
+          maxY = Math.min(viewMax, bounds.bottom - railHeight - 4);
+        }
+        if (maxY < minY) {
+          // The visible sliver is too small to show the entire rail. Keep
+          // the controls in the viewport until this block leaves the screen.
+          minY = viewMin;
+          maxY = viewMax;
+        }
+        const top = Math.max(minY, Math.min(maxY, wantedY));
+        gutterTop = Math.round(top - shellBounds.top);
       }
+
       const selection = editor.state.selection;
       if (selection instanceof TextSelection && !selection.empty && !linkFormOpen) {
         try {
           const start = editor.view.coordsAtPos(selection.from);
           const end = editor.view.coordsAtPos(selection.to);
-          const shell = shellEl.getBoundingClientRect();
           selectionPopup = {
-            left: Math.max(0, Math.min(shellEl.clientWidth - 285, (start.left + end.right) / 2 - shell.left - 137)),
-            top: Math.max(-42, Math.min(start.top, end.top) - shell.top - 48),
+            left: Math.max(0, Math.min(shellEl.clientWidth - 285,
+              (start.left + end.right) / 2 - shellBounds.left - 137)),
+            top: Math.max(-42, Math.min(start.top, end.top) - shellBounds.top - 48),
           };
         } catch {
           selectionPopup = null;
@@ -666,7 +710,12 @@
     });
     editorState = { editor };
     repositionGutter(editor);
-    const reposition = () => requestAnimationFrame(positionAnchoredForms);
+    const reposition = () => {
+      // Scrolls must reposition the rail as well as the contextual forms.
+      // The active block keeps its single identity even over many screens.
+      repositionGutter(editor);
+      requestAnimationFrame(positionAnchoredForms);
+    };
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     return () => {
@@ -764,7 +813,7 @@
           onpointerdown={(event) => event.preventDefault()} onclick={() => format('bulletList')}>List</button>
       </div>
     {/if}
-    {#if controlsVisible}
+    {#if controlsVisible && railInView}
       <div class="gutter-position" style:top={gutterTop + 'px'} role="group" aria-label="Current block controls">
       <button type="button" class="insert-trigger" aria-label="Add a content block"
         aria-expanded={floatingOptionsOpen} onpointerdown={(event) => event.preventDefault()}
@@ -930,6 +979,12 @@
   :global(.atlas-story-rich-document > .atlas-story-active-block) {
     box-sizing: border-box;
     margin-left: calc(3.45rem - var(--editor-card-inset, 1.25rem));
+    /* Lightly tint the entire section, including all of its paragraphs, so
+       the owner of the floating rail remains clear during a long scroll. */
+    background: color-mix(in srgb, var(--atlas-accent) 5%, var(--atlas-surface));
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--atlas-accent) 60%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--atlas-accent) 18%, transparent);
+    border-radius: .35rem;
   }
   :global(.atlas-story-text) { min-width: 0; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
