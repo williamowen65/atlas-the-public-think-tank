@@ -1,7 +1,7 @@
 <script lang="ts">
   import BlockComposer from '../../src/lib/components/BlockComposer.svelte';
   import ContentBlocks from '../../src/lib/components/ContentBlocks.svelte';
-  import { contentForPreview, derivedExcerpt, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
+  import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
 
   let {
@@ -10,39 +10,42 @@
     initialMode = 'tiptap',
     initialStyle = 'atlas',
     initialNarrow = false,
+    initialBreadcrumb = true,
   }: {
     initialBlocks: AuthorBlock[];
     title?: string;
     initialMode?: 'blocks' | 'tiptap';
     initialStyle?: 'atlas' | 'editorial';
     initialNarrow?: boolean;
+    initialBreadcrumb?: boolean;
   } = $props();
 
-  // Separate scratchpads are intentional: this story compares authoring patterns.
-  // Switching between them does not imply that a live Tiptap JSON document can
-  // be converted losslessly to Atlas's current Markdown/image block records.
-  const copyBlocks = () => initialBlocks.map(block => ({ ...block }));
+  // The SAME Atlas block array is read and written by both editors.
+  // Switching editors remounts Tiptap from this canonical source of truth.
+  // We are testing whether keys, order and content survive the round trip.
+  let blocks = $state<AuthorBlock[]>(initialBlocks.map(block => ({ ...block })));
   let titleDraft = $state(title);
+  let nodeType = $state('Idea');
+  let community = $state('Urban Design');
+  let showBreadcrumb = $state(initialBreadcrumb);
   let mode = $state<'blocks' | 'tiptap'>(initialMode);
   let styleMode = $state<'atlas' | 'editorial'>(initialStyle);
   let view = $state<'edit' | 'feed' | 'full'>('edit');
   let narrow = $state(initialNarrow);
-  let formBlocks = $state<AuthorBlock[]>(copyBlocks());
-  let richBlocks = $state<AuthorBlock[]>(copyBlocks());
-  let activeBlocks = $derived(mode === 'blocks' ? formBlocks : richBlocks);
-  let previewBlocks = $derived(contentForPreview(activeBlocks));
-  let fallback = $derived(derivedExcerpt(activeBlocks, titleDraft));
+  let previewBlocks = $derived(contentForPreview(blocks));
 </script>
 
 <div class="workbench" class:phone-width={narrow}>
-  <header class="workbench-header">
+  <div class="workbench-header">
     <div>
-      <p class="eyebrow">Atlas · Storybook research</p>
+      <p class="eyebrow">Atlas · Storybook-only workspace</p>
       <h1>Node authoring workbench</h1>
-      <p>Try the same starting content in two editors. Nothing here is saved to an API.</p>
+      <p>One shared block document. Change either editor, then switch to see the result.</p>
     </div>
-    <button type="button" class="width-toggle" aria-pressed={narrow} onclick={() => narrow = !narrow}>{narrow ? 'Expand to desktop' : 'Simulate phone width'}</button>
-  </header>
+    <button type="button" class="width-toggle" aria-pressed={narrow} onclick={() => narrow = !narrow}>
+      {narrow ? 'Expand to desktop' : 'Simulate phone width'}
+    </button>
+  </div>
 
   <div class="workbench-controls" aria-label="Prototype controls">
     <div class="control-group">
@@ -62,7 +65,7 @@
     </div>
     {#if mode === 'tiptap'}
       <div class="control-group">
-        <strong>Canvas style</strong>
+        <strong>Text style</strong>
         <div class="switcher" role="group" aria-label="Tiptap visual design">
           <button type="button" aria-pressed={styleMode === 'atlas'} class:chosen={styleMode === 'atlas'} onclick={() => styleMode = 'atlas'}>Atlas</button>
           <button type="button" aria-pressed={styleMode === 'editorial'} class:chosen={styleMode === 'editorial'} onclick={() => styleMode = 'editorial'}>Editorial</button>
@@ -72,90 +75,154 @@
   </div>
 
   <div class="node-area">
-    {#if view === 'edit'}
-      <div class="title-control">
-        <label for="workbench-node-title">Node title</label>
-        <input id="workbench-node-title" bind:value={titleDraft} maxlength="200"/>
-      </div>
-    {/if}
-
-    {#if mode === 'blocks'}
-      {#if view === 'edit'}
-        <div class="forms-area">
-          <BlockComposer blocks={formBlocks} onChange={(next) => formBlocks = next}/>
-        </div>
+    <article class="node-frame" class:feed-frame={view === 'feed'} aria-label={view === 'edit' ? 'Node editing card' : view === 'feed' ? 'Compact feed preview' : 'Full node preview'}>
+      {#if showBreadcrumb}
+        <nav class="breadcrumb" aria-label="Node ancestry">
+          <span>Neighborhood ideas</span>
+          <span aria-hidden="true">›</span>
+          <span>Better streets</span>
+        </nav>
       {/if}
-    {:else}
-      <!-- Keep the editor mounted across preview toggles to preserve cursor and undo. -->
-      <div class:hidden={view !== 'edit'}>
-        <TiptapCanvasDemo {initialBlocks} {styleMode} onChange={(next) => richBlocks = next}/>
-      </div>
-    {/if}
 
+      <header class="node-header">
+        {#if view === 'edit'}
+          <div class="type-controls">
+            <label for="workbench-type">Node type</label>
+            <select id="workbench-type" bind:value={nodeType}>
+              <option>Idea</option>
+              <option>Question</option>
+              <option>Evidence</option>
+            </select>
+          </div>
+          <h2 class="editable-title"><span class="type-prefix">{nodeType}:</span>
+            <input aria-label="Node title" bind:value={titleDraft} placeholder="Give your node a title" maxlength="200"/>
+          </h2>
+        {:else}
+          <h2><span class="type-prefix">{nodeType}:</span> {titleDraft || 'Untitled node'}</h2>
+        {/if}
+
+        <p class="byline">
+          By You <span aria-hidden="true">·</span> Draft
+          {#if community}<span aria-hidden="true">·</span> Community: {community}{/if}
+        </p>
+
+        {#if view === 'edit'}
+          <div class="card-fields">
+            <label for="workbench-community">Community</label>
+            <select id="workbench-community" bind:value={community}>
+              <option value="">No community selected</option>
+              <option>Urban Design</option>
+              <option>Neighborhood Planning</option>
+              <option>Public Spaces</option>
+            </select>
+            <label class="breadcrumb-toggle">
+              <input type="checkbox" bind:checked={showBreadcrumb}/>
+              Show parent breadcrumb
+            </label>
+          </div>
+        {/if}
+      </header>
+
+      <div class="node-content">
+        {#if view === 'edit'}
+          {#if mode === 'blocks'}
+            <div class="forms-area"><BlockComposer {blocks} onChange={(next) => blocks = next}/></div>
+          {:else}
+            <TiptapCanvasDemo initialBlocks={blocks} {styleMode} onChange={(next) => blocks = next}/>
+          {/if}
+        {:else if view === 'feed'}
+          <div class="feed-content"><ContentBlocks blocks={previewBlocks}/></div>
+          <p class="read-more">Read more</p>
+        {:else}
+          <ContentBlocks blocks={previewBlocks}/>
+        {/if}
+      </div>
+    </article>
     {#if view === 'feed'}
-      <div class="preview-label">Compact feed-content concept · height constrained, not a pixel-exact live Atlas card</div>
-      <article class="feed-preview" aria-label="Compact feed preview">
-        <p class="node-type">Idea</p>
-        <h2>{titleDraft || 'Untitled node'}</h2>
-        <p class="byline">By Example Author · A community node</p>
-        <div class="feed-content"><ContentBlocks blocks={previewBlocks}/></div>
-        <p class="preview-foot">Read more</p>
-      </article>
-      <p class="preview-note">Legacy short-description fallback: “{fallback}”</p>
-    {:else if view === 'full'}
-      <div class="preview-label">Full node content concept · editing controls hidden</div>
-      <article class="full-preview" aria-label="Full node preview">
-        <p class="node-type">Idea</p>
-        <h2>{titleDraft || 'Untitled node'}</h2>
-        <p class="byline">By Example Author</p>
-        <ContentBlocks blocks={previewBlocks}/>
-      </article>
+      <p class="preview-note">Feed content concept: bounded height and an illustrative card frame, not a pixel-exact reproduction of the voting dial and current production layout.</p>
     {/if}
   </div>
 
-  <footer>
-    <strong>Compare the experience:</strong> Select text for formatting, press Enter and find the + menu on a blank line, insert an image, then try phone width and both previews.
-    <span>Research only: independent editor drafts, approximate feed preview, no uploads or publishing, and no lossless conversion guarantee.</span>
+  <details class="model-inspector">
+    <summary>Inspect Atlas blocks ({blocks.length}) · shared by both editors</summary>
+    <p>This is the ordered AuthorBlock array. Each item retains its key and any existing server block ID, including when you move an image above text in the Tiptap canvas.</p>
+    <ol>
+      {#each blocks as block (block.key)}
+        <li>
+          <div class="model-entry">
+            <strong>{block.kind === 'markdown' ? 'Text' : block.kind === 'image' ? 'Image' : block.kind}</strong>
+            <code>{block.id || block.key}</code>
+            <span>{block.kind === 'image' ? (block.caption || block.text || 'Untitled image') : block.text.slice(0, 150) || '(empty text)'}</span>
+          </div>
+        </li>
+      {/each}
+    </ol>
+    <p>Research note: this round trip covers ordered text and image blocks. It does not yet preserve all possible Markdown syntax or implement production persistence.</p>
+  </details>
+
+  <footer class="workbench-foot">
+    <strong>Try this:</strong> move an image or change a paragraph in Tiptap, switch to Existing block forms, and inspect the same content and order. Then change it in the forms and switch back.
+    <span>Preview-only: no database writes, uploads, publishing, or voting.</span>
   </footer>
 </div>
 
 <style>
-  .workbench { max-width: 65rem; margin: 0 auto; padding: 1.5rem; color: var(--atlas-text); box-sizing: border-box; }
-  .workbench-header { display: flex; gap: .8rem 1.5rem; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
-  .workbench-header h1 { margin: .15rem 0 .3rem; line-height: 1.2; font-size: clamp(1.45rem, 3vw, 2rem); }
+  .workbench { max-width: 65rem; margin: 0 auto; padding: 1.5rem; box-sizing: border-box; color: var(--atlas-text); }
+  .workbench-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+  .workbench-header h1 { margin: .15rem 0 .3rem; font-size: clamp(1.4rem, 3vw, 1.95rem); line-height: 1.2; }
   .workbench-header p { margin: 0; color: var(--atlas-muted); }
-  .workbench-header .eyebrow { text-transform: uppercase; letter-spacing: .07em; font-size: .7rem; color: var(--atlas-accent); font-weight: 700; }
-  .width-toggle, .switcher button { border: 1px solid var(--atlas-border); border-radius: .45rem; color: var(--atlas-text); background: var(--atlas-surface); padding: .45rem .7rem; font: inherit; font-size: .85rem; cursor: pointer; }
-  .width-toggle { margin-top: .4rem; }
-  .workbench-controls { display: flex; gap: .85rem 1.3rem; flex-wrap: wrap; padding: .9rem 0; border-top: 1px solid var(--atlas-border); border-bottom: 1px solid var(--atlas-border); }
+  .workbench-header .eyebrow { text-transform: uppercase; letter-spacing: .07em; font-size: .72rem; color: var(--atlas-accent); font-weight: 700; }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  .width-toggle, .switcher button { border: 1px solid var(--atlas-border); border-radius: .4rem; color: var(--atlas-text); background: var(--atlas-surface); padding: .45rem .7rem; font-size: .85rem; }
+  .workbench-controls { display: flex; flex-wrap: wrap; gap: .85rem 1.35rem; padding: .85rem 0; border-top: 1px solid var(--atlas-border); border-bottom: 1px solid var(--atlas-border); }
   .control-group { display: grid; gap: .35rem; }
   .control-group > strong { font-size: .72rem; color: var(--atlas-muted); text-transform: uppercase; letter-spacing: .04em; }
   .switcher { display: flex; flex-wrap: wrap; gap: .25rem; }
-  .switcher .chosen { border-color: var(--atlas-accent); box-shadow: 0 0 0 1px var(--atlas-accent); font-weight: 700; }
-  .node-area { max-width: 48rem; margin: 1.5rem auto; min-height: 14rem; }
-  .title-control { display: grid; gap: .35rem; margin-bottom: .75rem; }
-  .title-control label { color: var(--atlas-muted); font-size: .8rem; }
-  .title-control input { box-sizing: border-box; width: 100%; padding: .65rem .5rem; color: var(--atlas-text); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: .35rem; font: inherit; font-size: 1.4rem; font-weight: 700; }
-  .preview-label { margin: .65rem 0; color: var(--atlas-muted); font-size: .75rem; font-weight: 700; }
-  .feed-preview, .full-preview { padding: 1.25rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); overflow-wrap: anywhere; }
-  .node-type { color: var(--atlas-accent); font-weight: 700; font-size: .8rem; margin: 0 0 .25rem; }
-  .feed-preview h2, .full-preview h2 { margin: .2rem 0 .35rem; line-height: 1.2; }
-  .byline { color: var(--atlas-muted); font-size: .82rem; margin: .25rem 0 1rem; }
-  .feed-content { max-height: 12rem; overflow: hidden; position: relative; }
-  .feed-content::after { content: ''; pointer-events: none; position: absolute; bottom: 0; left: 0; right: 0; height: 1.5rem; background: linear-gradient(transparent, var(--atlas-surface)); }
-  .preview-foot { color: var(--atlas-accent); text-align: right; font-size: .82rem; margin: 0; }
-  .preview-note { font-size: .8rem; color: var(--atlas-muted); overflow-wrap: anywhere; }
-  footer { display: grid; gap: .35rem; padding-top: 1rem; border-top: 1px solid var(--atlas-border); font-size: .83rem; color: var(--atlas-muted); }
-  footer strong { color: var(--atlas-text); }
-  button:focus-visible, input:focus-visible { outline: 2px solid var(--atlas-focus); outline-offset: 2px; }
-  .hidden { display: none; }
-  .phone-width { max-width: 390px; padding: .75rem; border-left: 1px dashed var(--atlas-border); border-right: 1px dashed var(--atlas-border); }
-  .phone-width .workbench-header { display: grid; }
+  .switcher .chosen { border-color: var(--atlas-accent); box-shadow: inset 0 0 0 1px var(--atlas-accent); font-weight: 700; }
+
+  .node-area { max-width: 48rem; margin: 1.3rem auto; }
+  .node-frame { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: var(--atlas-text); overflow-wrap: anywhere; min-width: 0; }
+  .node-frame .breadcrumb { display: flex; align-items: center; gap: .5rem; padding: .7rem 1.25rem; border-bottom: 1px solid var(--atlas-border); color: var(--atlas-muted); font-size: .83rem; }
+  .node-header { padding: 1.1rem 1.25rem .3rem; }
+  .node-header h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem; margin: .35rem 0 .4rem; font-size: clamp(1.25rem, 3.5vw, 1.75rem); line-height: 1.25; }
+  .type-prefix { color: var(--atlas-accent); }
+  .type-controls { display: flex; gap: .5rem; align-items: center; font-size: .82rem; color: var(--atlas-muted); }
+  .type-controls select, .card-fields select { border: 1px solid var(--atlas-border); border-radius: .35rem; padding: .25rem .4rem; color: var(--atlas-text); background: var(--atlas-surface); }
+  .editable-title input { display: block; flex: 1 1 15rem; min-width: 0; width: 100%; border: 0; border-bottom: 1px solid transparent; padding: .05rem 0; color: var(--atlas-text); background: transparent; font: inherit; font-weight: inherit; line-height: inherit; }
+  .editable-title input:hover, .editable-title input:focus { border-color: var(--atlas-border); }
+  .byline { display: flex; flex-wrap: wrap; gap: 0 .3rem; margin: .3rem 0 .75rem; color: var(--atlas-muted); font-size: .81rem; line-height: 1.5; }
+  .card-fields { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .6rem; color: var(--atlas-muted); font-size: .81rem; padding-bottom: .65rem; }
+  .breadcrumb-toggle { display: flex; align-items: center; gap: .2rem; cursor: pointer; margin-left: auto; }
+  .node-content { padding: .4rem 1.25rem 1.2rem; min-height: 10rem; }
+  .feed-frame .node-content { min-height: 0; }
+  .feed-content { max-height: 11.5rem; overflow: hidden; position: relative; }
+  .feed-content::after { content: ''; position: absolute; pointer-events: none; left: 0; right: 0; bottom: 0; height: 1.6rem; background: linear-gradient(transparent, var(--atlas-surface)); }
+  .read-more { margin: 0; text-align: right; color: var(--atlas-accent); font-size: .85rem; }
+  .preview-note { color: var(--atlas-muted); font-size: .8rem; margin-top: .5rem; }
+  .model-inspector { max-width: 48rem; margin: .7rem auto 1.2rem; border: 1px dashed var(--atlas-border); border-radius: .6rem; padding: .75rem 1rem; font-size: .82rem; }
+  .model-inspector summary { cursor: pointer; font-weight: 700; }
+  .model-inspector p { color: var(--atlas-muted); line-height: 1.5; }
+  .model-inspector ol { display: grid; gap: .4rem; padding-left: 1.45rem; }
+  .model-entry { display: grid; gap: .12rem; }
+  .model-entry code { overflow-wrap: anywhere; font-size: .77rem; color: var(--atlas-muted); }
+  .model-entry span { overflow-wrap: anywhere; }
+  .workbench-foot { display: grid; gap: .35rem; padding-top: 1rem; border-top: 1px solid var(--atlas-border); font-size: .83rem; color: var(--atlas-muted); }
+  .workbench-foot strong { color: var(--atlas-text); }
+  button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--atlas-focus); outline-offset: 2px; }
+  .phone-width { max-width: 390px; padding: .7rem; border-inline: 1px dashed var(--atlas-border); }
   .phone-width .workbench-controls { display: grid; }
-  .phone-width .node-area { margin: .7rem auto; }
-  .phone-width .feed-preview, .phone-width .full-preview { padding: .75rem; }
+  .phone-width .node-area { margin: .8rem auto; }
+  .phone-width .node-header { padding: .7rem .7rem .2rem; }
+  .phone-width .node-frame .breadcrumb { padding: .55rem .7rem; }
+  .phone-width .node-content { padding: .35rem .7rem .8rem; }
+  .phone-width .editable-title input { flex-basis: 100%; }
+  .phone-width .breadcrumb-toggle { margin-left: 0; }
   @media (max-width: 650px) {
     .workbench { padding: .8rem; }
-    .node-area { margin: .85rem auto; }
+    .node-area { margin: .8rem auto; }
+    .node-header { padding: .8rem .75rem .25rem; }
+    .node-frame .breadcrumb { padding: .6rem .75rem; }
+    .node-content { padding: .35rem .75rem 1rem; }
   }
 </style>
