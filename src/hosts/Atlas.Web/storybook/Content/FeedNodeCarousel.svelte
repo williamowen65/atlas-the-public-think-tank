@@ -90,9 +90,6 @@
             onclick={() => onIndexChange?.(i)}></button>
         {/each}
       </div>
-      <span class="hint">Swipe to explore this node</span>
-    {:else}
-      <span class="hint">Preview of this node</span>
     {/if}
     <button type="button" class="read-more" onclick={onOpenFull}>Read more</button>
   </div>
@@ -155,7 +152,6 @@
   .dots button { width: .65rem; height: .65rem; border: 1px solid var(--atlas-muted);
     padding: 0; border-radius: 50%; background: transparent; cursor: pointer; }
   .dots button.active { background: var(--atlas-accent); border-color: var(--atlas-accent); }
-  .hint { color: var(--atlas-muted); font-size: .73rem; margin-right: auto; }
   .read-more { margin-left: auto; border: 0; padding: .2rem 0;
     font: inherit; font-size: .85rem; font-weight: 600;
     background: transparent; color: var(--atlas-accent); cursor: pointer; }
