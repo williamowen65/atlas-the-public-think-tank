@@ -370,3 +370,42 @@ has balanced rail/marker/text spacing, and disappears on editor blur.
 
 Only Storybook, its tests, and this research note changed. The production
 node editor and persistence remain untouched.
+
+
+### November 10: new Storybook interaction alternative — in-block controls
+
+The next authoring UX comparison deliberately **replaces** the prior active
+block indentation and side-rail controls. This is an experimental design
+choice for the **Storybook Tiptap workbench**, not a production decision.
+
+- Selecting any top-level Atlas block (Markdown section, image, or protected
+  block type) adds the **same subtle background tint and outline** around the
+  entire block, with a small left-edge accent. The default ProseMirror image
+  selection outline no longer conflicts with the Atlas selection treatment.
+  The selected content stays at its natural full node-card width, with **no
+  horizontal indentation**. Unselected blocks stay visually unchanged.
+- A compact, three-button **↑ / ↓ / ×** control group appears at the block's
+  **top-right corner**, visually attached to that block. Move actions reorder
+  the complete Atlas block, not an individual Markdown paragraph. Delete
+  still requires a confirmation anchored to the block.
+- Two discrete **+ buttons** appear at the selected block's **top and bottom
+  boundaries**. The first inserts before, the second after, so the temporary
+  popup no longer needs a Before/After toggle. The popup still offers Text
+  block, Image and Section break, and never treats Heading as a separate
+  persisted Atlas block.
+- Controls are present only while the editor owns focus. Their position is
+  based on the selected **block boundaries**, not a caret line or viewport;
+  scrolling naturally moves them with that block. On smaller screens the
+  controls remain overlaid instead of reserving a separate content gutter.
+- An image's existing Edit Image action remains attached to its image block
+  (now at its bottom-right to avoid overlapping the block-wide move/delete
+  group), while image metadata entry and link entry still use their existing
+  contextual panels.
+
+Browser checks were updated to test full-width text and image selection,
+responsive positioning, whole-block reordering, top/bottom insertion order,
+focus dismissal, confirmation, and long Markdown sections that still count
+as **one** Atlas block. The previous rail-position and indentation tests
+were removed because they describe the superseded experiment.
+
+**No production editor, API, storage, schema, or node card was changed.**
