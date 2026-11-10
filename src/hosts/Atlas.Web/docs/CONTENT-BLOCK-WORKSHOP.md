@@ -435,3 +435,20 @@ Storybook-only prototype now uses a compact **border-attached tab**:
 This is only a change to the experimental Storybook authoring surface,
 its Playwright checks and documentation. No production node UI or storage
 behavior changed.
+
+
+### November 10: insertion circles sit fully outside the selected block
+
+The centered + controls should **not straddle the selected block's outline**.
+They now sit wholly above or below the selected block with a small 5px gap
+from the content boundary, matching the vertical alignment of the docked
+top-right and optional bottom-right move/delete tabs. Their horizontal
+position stays centered on the block; they remain round and keep their
+existing **Insert Before / Insert After** behavior. This applies to text and
+image blocks at both desktop and phone widths. Neither block width nor
+internal text/image position changes.
+
+Storybook Playwright geometry tests now check that both circles are outside
+the block, remain horizontally centered, and keep their vertical clearance
+on desktop/long-text and simulated-phone/image cases. Production remains
+unchanged.
