@@ -213,3 +213,38 @@ unused block width, the control rail position relative to the *card border*,
 cancel/confirm deletion, and preservation of an editable final text block.
 These changes remain experimental and do **not** affect production creation,
 editing, or persistence.
+
+
+### November 10: contextual insertion and focus-driven editing controls
+
+The selected-section rail is only visible **while the Tiptap content editor
+actually has focus**, not simply whenever ProseMirror remembers its last
+selection. Clicking the node header, title/community, other node chrome or
+page background hides the rail, closes the insert popup and removes the active
+block's indentation. Clicking back into the document restores the controls on
+the focused block.
+
+The compact + now expands **from its own position** into a contextual panel.
+The panel is a deliberate exception to the non-overlap requirement: it may
+temporarily cover writing content while open. Authors can explicitly select
+**Before** or **After** the current Atlas block, then add Text, Image or
+Section Break. The menu captures the active block's stable key so that
+switching insertion direction or opening the image form doesn't change the
+target. The Section Break is represented as a new Markdown content block
+containing a horizontal rule, not an unsupported top-level document node.
+
+**Heading is a formatting action within a text section**, not an insertable
+top-level content block. A Markdown section can have its own heading plus
+multiple paragraphs, and the full section moves together. H2 remains on the
+persistent toolbar.
+
+When the author *selects text*, a compact contextual formatting toolbar
+appears near the selection for Bold, Italic, Link, H2, and List. The
+persistent toolbar above the node body stays available too. Both formatting
+surfaces apply Tiptap commands to the same underlying selection.
+
+Browser regressions cover before/after ordering around an image,
+selection-popup visibility and formatting, no separate Heading block option,
+and rail/indent dismissal when clicking other node controls or the page
+background. These are research UI interactions in Storybook, **not a
+production editor or a replacement for node API persistence**.
