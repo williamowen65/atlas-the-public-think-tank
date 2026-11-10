@@ -168,7 +168,9 @@
   let linkSelection = $state<{ from: number; to: number } | null>(null);
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
   let floatingOptionsOpen = $state(false);
-  let mobileOptionsOpen = $state(false);
+  let insertSide = $state<'before' | 'after'>('after');
+  let insertAnchorKey = $state('');
+  let selectionPopup = $state<{ left: number; top: number } | null>(null);
   let imageFormOpen = $state(false);
   let imageError = $state('');
   let editingExisting = $state(false);
@@ -176,28 +178,50 @@
   let imageDraft = $state({ url: '', alt: '', caption: '' });
   let latestBlocks: AuthorBlock[] = initialBlocks;
 
-  // Insert specialized blocks as siblings of Atlas text blocks, not inside
-  // their Markdown content. This keeps a draggable image a real Atlas block.
-  function afterCurrentBlock(editor: Editor): number {
-    const index = editor.state.selection.$from.index(0);
-    let pos = 0;
-    for (let i = 0; i <= index && i < editor.state.doc.childCount; i++)
-      pos += editor.state.doc.child(i).nodeSize;
-    return pos;
+  // The popover remembers the selected Atlas block's key. Changing the
+  // Before/After choice or focusing the image form must not move the anchor.
+  function insertionPoint(editor: Editor): number {
+    let from = 0;
+    const children = editor.state.doc;
+    for (let i = 0; i < children.childCount; i++) {
+      const node = children.child(i);
+      if (String(node.attrs.key) === insertAnchorKey)
+        return insertSide === 'before' ? from : from + node.nodeSize;
+      from += node.nodeSize;
+    }
+    // Selection is the fallback when a block has been removed while a menu is open.
+    const index = Math.min(editor.state.selection.$from.index(0), children.childCount - 1);
+    from = 0;
+    for (let i = 0; i < index; i++) from += children.child(i).nodeSize;
+    return insertSide === 'before' ? from : from + children.child(index).nodeSize;
+  }
+
+  function openInsertChoices() {
+    const editor = currentEditor();
+    if (!editor) return;
+    if (floatingOptionsOpen) {
+      floatingOptionsOpen = false;
+      return;
+    }
+    insertAnchorKey = String(editor.state.doc.child(activeIndex)?.attrs.key || '');
+    insertSide = 'after';
+    selectionPopup = null;
+    floatingOptionsOpen = true;
   }
 
   function insertTextBlock() {
     const editor = currentEditor();
     if (!editor) return;
-    const position = afterCurrentBlock(editor);
+    const position = insertionPoint(editor);
+    const key = crypto.randomUUID();
     editor.chain().focus().insertContentAt(position, {
       type: 'atlasText',
-      attrs: { key: crypto.randomUUID() },
+      attrs: { key },
       content: [{ type: 'paragraph' }],
-    }).run();
+    }).setTextSelection(position + 2).run();
     floatingOptionsOpen = false;
-    mobileOptionsOpen = false;
   }
+
 
   function currentEditor(): Editor | null { return editorState.editor; }
 
@@ -353,9 +377,15 @@
   }
 
   function insertDivider() {
-    currentEditor()?.chain().focus().setHorizontalRule().run();
+    const editor = currentEditor();
+    if (!editor) return;
+    const position = insertionPoint(editor);
+    editor.chain().focus().insertContentAt(position, {
+      type: 'atlasText',
+      attrs: { key: crypto.randomUUID() },
+      content: [{ type: 'horizontalRule' }, { type: 'paragraph' }],
+    }).run();
     floatingOptionsOpen = false;
-    mobileOptionsOpen = false;
   }
 
   function openImageForm() {
@@ -368,11 +398,10 @@
       alt: String(attrs.alt ?? ''),
       caption: String(attrs.caption ?? ''),
     };
-    insertionPosition = afterCurrentBlock(editor);
+    insertionPosition = editingExisting ? null : insertionPoint(editor);
     imageError = '';
     imageFormOpen = true;
     floatingOptionsOpen = false;
-    mobileOptionsOpen = false;
   }
 
   function saveImage() {
@@ -394,10 +423,10 @@
     if (editingExisting) {
       editor.chain().focus().updateAttributes('atlasImage', attrs).run();
     } else {
-      editor.chain().focus().insertContentAt(insertionPosition ?? afterCurrentBlock(editor), [
-        { type: 'atlasImage', attrs: { ...attrs, key: crypto.randomUUID() } },
-        { type: 'atlasText', attrs: { key: crypto.randomUUID() }, content: [{ type: 'paragraph' }] },
-      ]).run();
+      const position = insertionPosition ?? insertionPoint(editor);
+      editor.chain().focus().insertContentAt(position, {
+        type: 'atlasImage', attrs: { ...attrs, key: crypto.randomUUID() },
+      }).setNodeSelection(position).run();
     }
     imageFormOpen = false;
     imageError = '';
