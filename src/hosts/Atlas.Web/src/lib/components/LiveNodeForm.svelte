@@ -124,6 +124,7 @@
   // If block composition fails after node creation, retry the same node, never create a duplicate.
   let pendingNodeId = $state('');
   let seedBlockId = '';
+  let seedRemoved = false;
   let publishedBlocks: Record<number, string> = {};
   /**
    * Saved custom-type ID plus its input key, reused on unchanged retries after node
@@ -295,7 +296,7 @@
         pendingNodeId = result.id;
       }
       const contentPath = `nodes/${pendingNodeId}/description`;
-      if (!seedBlockId) {
+      if (!seedBlockId && !seedRemoved) {
         const seed = await readJson<ContentBlock[]>(apiBase, contentPath, signal());
         if (!seed[0]?.id) throw new Error('Could not load the initial content block.');
         seedBlockId = seed[0].id;
@@ -315,9 +316,13 @@
       if (seedBlockId) {
         await apiRequest(sessionBase, `${contentPath}/blocks/${seedBlockId}`, 'DELETE', undefined, signal());
         seedBlockId = '';
+        seedRemoved = true;
       }
       createdId = pendingNodeId;
-      if (participantId && ownerDraftId) deleteDraft(participantId, ownerDraftId);
+      if (participantId && ownerDraftId) {
+        try { deleteDraft(participantId, ownerDraftId); }
+        catch { /* Private draft cleanup is best-effort after successful publication. */ }
+      }
     } catch (cause) {
       if (!controller.signal.aborted) {
         saveError = cause instanceof Error ? cause.message : 'Could not publish node.';
