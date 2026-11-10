@@ -125,13 +125,17 @@
   .block-preview { min-height: 0; flex: 1 1 auto; overflow: hidden; position: relative; }
   /* Use the existing Atlas block renderer; only constrain its FEED viewport.
      A long Markdown section is still one slide and one original content block. */
-  :global(.feed-block-slide .content-blocks) { max-width: 100%; min-width: 0; }
+  :global(.feed-block-slide .content-blocks) {
+    max-width: 100%; min-width: 0; width: 100%; height: 100%; overflow: hidden;
+  }
   :global(.feed-block-slide .content-blocks figure) {
-    margin: 0; height: 100%; display: flex; flex-direction: column; gap: .25rem;
+    margin: 0; height: 100%; min-height: 0;
+    display: flex; flex-direction: column; gap: .25rem;
   }
   :global(.feed-block-slide .content-blocks img) {
-    display: block; max-width: 100%; width: 100%; height: auto;
-    max-height: 100%; min-height: 0; object-fit: contain;
+    display: block; flex: 1 1 auto; min-height: 0;
+    max-width: 100%; width: 100%; height: 100%;
+    object-fit: contain;
   }
   :global(.feed-block-slide .content-blocks figcaption) {
     font-size: .76rem; color: var(--atlas-muted);
