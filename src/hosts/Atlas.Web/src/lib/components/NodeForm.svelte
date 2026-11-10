@@ -30,7 +30,8 @@
   import type { NodeDraft } from './nodeDraft.types';
   import { untrack } from 'svelte';
   import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
-  import MarkdownContent from './MarkdownContent.svelte';
+  import BlockComposer from './BlockComposer.svelte';
+  import { derivedExcerpt, newAuthorBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import type { NodeType } from '../api/nodePage';
   let {
     initialDraft,
@@ -84,11 +85,12 @@
   /**
    * Working plain-text introduction shown on cards.
    */
-  let shortDescription = $state(startingDraft?.shortDescription ?? '');
-  /**
-   * Working Markdown source used by the content preview and submission snapshot.
-   */
-  let markdown = $state(startingDraft?.markdown ?? '');
+  let blocks = $state<AuthorBlock[]>(
+    startingDraft?.blocks?.length
+      ? startingDraft.blocks
+      : [newAuthorBlock('markdown', startingDraft?.markdown ?? '')],
+  );
+  let blockError = $state('');
   /**
    * Selected catalog type ID, or new for custom-type creation.
    */
@@ -139,8 +141,9 @@
   function draft(): NodeDraft {
     return {
       title: title.trim(),
-      shortDescription: shortDescription.trim(),
-      markdown,
+      shortDescription: derivedExcerpt(blocks, title),
+      markdown: blocks.find((block) => block.kind === 'markdown')?.text ?? derivedExcerpt(blocks, title),
+      blocks,
       typeId: typeId === 'new' ? null : typeId,
       requestedTypeIds,
       parentId,
@@ -164,6 +167,8 @@
   aria-label={parentId ? 'Create child node' : 'Create root node'}
   onsubmit={(event) => {
     event.preventDefault();
+    blockError = validateAuthorBlocks(blocks) ?? '';
+    if (blockError) return;
     onSubmit(draft());
   }}
 >
@@ -206,30 +211,12 @@
         >
       </fieldset>{/if}
   </header>
-  <!-- Groups the short introduction separately from the full Markdown editor and preview. -->
-  <div class="intro">
-    <div class="summary">
-      <label for={`${instance}-short`}>Short description</label><textarea
-        id={`${instance}-short`}
-        bind:value={shortDescription}
-        placeholder="Introduce your idea…"
-        required
-        maxlength="280"
-        rows="5"
-        aria-describedby={`${instance}-remaining`}></textarea><small id={`${instance}-remaining`}
-        >{shortDescription.length}/280 characters</small
-      >
-    </div>
-  </div>
+  <!-- One ordered content document replaces the former separate introduction + textarea. -->
   <div class="content-editor">
-    <label for={`${instance}-content`}>Content (Markdown)</label><textarea
-      id={`${instance}-content`}
-      bind:value={markdown}
-      placeholder="Develop your node here…"
-      required
-      maxlength="32000"
-      rows="6"></textarea>
-    <section aria-label="Content preview"><MarkdownContent text={markdown} /></section>
+    <h3>Content blocks</h3>
+    <p class="note">Add text and images in any order. The feed will show a compact preview.</p>
+    <BlockComposer {blocks} onChange={(updated) => { blocks = updated; blockError = ''; }} />
+    {#if blockError}<p role="alert">{blockError}</p>{/if}
   </div>
   <!--
     Contribution requests describe desired child types; they are separate from this node’s own
