@@ -381,3 +381,112 @@ test('clicking outside the editable document hides block controls and restores f
   await expect(page.getByRole('group', { name: 'Current block controls' })).toHaveCount(0);
   await expect(root.locator(':scope > .atlas-story-active-block')).toHaveCount(0);
 });
+
+
+test('the URL editor stays anchored to highlighted text far below the node header', async ({ page }) => {
+  await page.goto(storyUrl);
+  const paragraph = page.locator('.atlas-story-text[data-atlas-key="details"] p').first();
+  await paragraph.click();
+  await paragraph.press('Home');
+  await paragraph.press('Shift+ArrowRight');
+  await page.getByRole('button', { name: 'Add or edit link' }).click();
+
+  const form = page.getByRole('form', { name: 'Insert or edit link' });
+  await expect(form).toBeVisible();
+  await expect(page.locator('.document-shell > .link-form')).toHaveCount(1);
+  const geometry = await page.evaluate(() => {
+    const header = document.querySelector('.node-header');
+    const p = document.querySelector('.atlas-story-text[data-atlas-key="details"] p');
+    const form = document.querySelector('.document-shell > .link-form');
+    if (!header || !p || !form) return null;
+    return {
+      headerBottom: header.getBoundingClientRect().bottom,
+      paragraphBottom: p.getBoundingClientRect().bottom,
+      formTop: form.getBoundingClientRect().top,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  expect(geometry!.formTop).toBeGreaterThan(geometry!.headerBottom);
+  expect(Math.abs(geometry!.formTop - geometry!.paragraphBottom)).toBeLessThan(65);
+  await form.getByLabel('Link URL').fill('https://example.org/lineage');
+  await form.getByRole('button', { name: 'Apply link' }).click();
+  await expect(paragraph.locator('a[href="https://example.org/lineage"]')).toBeVisible();
+});
+
+test('inserting an image before another image opens its settings in that exact content slot', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const existing = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
+  await existing.click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('group', { name: 'Insert a content block' })
+    .getByRole('button', { name: 'Before' }).click();
+  await page.getByRole('group', { name: 'Insert a content block' })
+    .getByRole('button', { name: 'Image', exact: true }).click();
+
+  const form = page.getByRole('form', { name: 'Insert image' });
+  await expect(form).toBeVisible();
+  const placeholder = root.locator(':scope > .atlas-story-figure[data-src=""]');
+  await expect(placeholder).toHaveCount(1);
+  await expect(root.locator(':scope > *').nth(1)).toHaveAttribute('data-src', '');
+  await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
+  const geometry = await page.evaluate(() => {
+    const placeholder = document.querySelector('.atlas-story-figure[data-src=""]');
+    const form = document.querySelector('.document-shell > .image-form');
+    if (!placeholder || !form) return null;
+    return {
+      imageTop: placeholder.getBoundingClientRect().top,
+      formTop: form.getBoundingClientRect().top,
+      imageBottom: placeholder.getBoundingClientRect().bottom,
+      formBottom: form.getBoundingClientRect().bottom,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  expect(Math.abs(geometry!.formTop - geometry!.imageTop)).toBeLessThan(40);
+  expect(geometry!.formBottom).toBeLessThanOrEqual(geometry!.imageBottom + 25);
+
+  await form.getByLabel('Image URL').fill('https://example.org/alternate-image.jpg');
+  await form.getByLabel('Alternative text').fill('Tree-lined accessible plaza');
+  await form.getByLabel('Caption').fill('A new plaza image');
+  await form.getByRole('button', { name: 'Apply image' }).click();
+  await expect(root.locator(':scope > .atlas-story-figure').nth(0))
+    .toHaveAttribute('data-src', 'https://example.org/alternate-image.jpg');
+  await expect(root.locator(':scope > .atlas-story-figure').nth(1))
+    .toHaveAttribute('data-atlas-key', 'public-square');
+});
+
+test('cancelling an unfinished image removes the staged placeholder', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  await root.locator(':scope > .atlas-story-text p').first().click();
+  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('group', { name: 'Insert a content block' })
+    .getByRole('button', { name: 'Image', exact: true }).click();
+  await expect(root.locator(':scope > .atlas-story-figure[data-src=""]')).toHaveCount(1);
+  await page.getByRole('form', { name: 'Insert image' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(root.locator(':scope > .atlas-story-figure[data-src=""]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.locator('.block-composer .content-block')).toHaveCount(3);
+});
+
+test('existing image details open on the image itself, not below the full node', async ({ page }) => {
+  await page.goto(storyUrl);
+  const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
+  const edit = image.getByRole('button', { name: 'Edit image details' });
+  await expect(edit).toBeVisible();
+  await edit.click();
+  const form = page.getByRole('form', { name: 'Edit image' });
+  await expect(form).toBeVisible();
+  await expect(form.getByLabel('Image URL')).toHaveValue(/images\.unsplash\.com/);
+  const geometry = await page.evaluate(() => {
+    const image = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const form = document.querySelector('.document-shell > .image-form');
+    if (!image || !form) return null;
+    return { imageTop: image.getBoundingClientRect().top, formTop: form.getBoundingClientRect().top };
+  });
+  expect(geometry).not.toBeNull();
+  expect(Math.abs(geometry!.imageTop - geometry!.formTop)).toBeLessThan(40);
+  await form.getByLabel('Caption').fill('Caption updated near the image');
+  await form.getByRole('button', { name: 'Apply image' }).click();
+  await expect(image.locator('figcaption')).toContainText('Caption updated near the image');
+});
