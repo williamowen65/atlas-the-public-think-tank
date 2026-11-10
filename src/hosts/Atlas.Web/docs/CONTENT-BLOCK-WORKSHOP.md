@@ -563,3 +563,52 @@ unbounded recursive nesting. This is tracked in PTT-183.
 New Playwright coverage checks Feed navigation to the mock poll, editable
 poll child metadata, local-only selection (no API requests), slide ordering,
 and keeping child controls independent of carousel arrow navigation.
+
+
+### November 10: revised direction — feed carousel previews the real node's blocks
+
+**This supersedes the earlier Media Gallery / nested Carousel Block Storybook
+experiments described above.** The author clarified that the carousel itself
+should **not be an authored block inside the node**. Instead, it is a
+**presentation mode for a node in the feed**:
+
+- Authors edit the ordinary, flat \`AuthorBlock[]\` document using Tiptap or
+  existing block forms. Each top-level content block gets one feed slide,
+  **in exactly the same order**. No duplicate gallery data is authored.
+- The **Full Node** preview still shows all those blocks together in the
+  normal continuous document. There is no inner carousel there.
+- The **Feed** preview uses the new Storybook-only \`FeedNodeCarousel.svelte\`
+  component, with one slide for each actual \`ContentBlock\`. It delegates
+  each slide to the **existing production \`ContentBlocks.svelte\` renderer**
+  and bounds its displayed height rather than copying the original content
+  into a separate item schema.
+- A very long Markdown section **remains one slide**, with visible overflow
+  clipped and faded in the feed. **Read more** switches the Storybook demo
+  to Full Node to display the whole section, including anything hidden.
+- The feed offers arrows, pagination dots, **block position / total count**,
+  keyboard and touch-swipe navigation. It retains a bounded, consistent
+  card height and keeps portrait/landscape preview options as Storybook
+  presentation-only controls. These settings do not alter the node.
+- The active feed slide is tracked by the source block's stable ID/key,
+  which helps preserve its identity after editing or reordering.
+- This behavior applies to **all** stories in the Editor workbench, not only
+  a special gallery story. The focused experimental story is now
+  **Feed Block Carousel Concept**. The obsolete Media Gallery Concept,
+  nested child renderer, mock poll data, associated carousel item model
+  and old gallery-specific tests were removed to avoid confusion.
+
+**Future possibility, not implemented:** An eventual **multi-image Images
+block** could own more than one photo while remaining a *single top-level
+node block and a single feed slide*. That slide would choose an effective
+bounded summary of its contents; opening the node would display the complete
+multi-image block. Likewise, actual Video/Poll blocks could become slides
+when Atlas supports them as ordinary node blocks. This needs no additional
+"carousel-of-blocks" persistence type. PTT-183 remains the place to research
+the multi-image block schema, image framing, uploads and other media kinds.
+The current database and API still support individual Markdown/Image blocks.
+
+Playwright regression tests in \`tests/feed-block-carousel.spec.ts\` now cover
+real block identity/order, long text truncation and full-node continuation,
+live edits reflected in the feed, frame variation, phone swipe/keyboard/dots,
+and compatibility with the existing Compare Editors story. No production
+component, database or API was changed.
