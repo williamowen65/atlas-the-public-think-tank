@@ -703,3 +703,29 @@ test('image settings appear only on the selected image block and disappear on bl
   await page.locator('.atlas-story-text[data-atlas-key="intro"] p').first().click();
   await expect(edit).toBeHidden();
 });
+
+
+test('border-attached top controls do not overlap neighboring text when selecting an image', async ({ page }) => {
+  await page.goto(storyUrl);
+  const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
+  const intro = page.locator('.atlas-story-text[data-atlas-key="intro"]');
+  await image.click();
+  const dock = page.locator('.block-corner-controls.top');
+  await expect(dock).toBeVisible();
+  const positions = await page.evaluate(() => {
+    const earlier = document.querySelector('.atlas-story-text[data-atlas-key="intro"]');
+    const image = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const dock = document.querySelector('.block-corner-controls.top');
+    if (!earlier || !image || !dock) return null;
+    return {
+      priorBottom: earlier.getBoundingClientRect().bottom,
+      dockTop: dock.getBoundingClientRect().top,
+      dockBottom: dock.getBoundingClientRect().bottom,
+      selectedTop: image.getBoundingClientRect().top,
+    };
+  });
+  expect(positions).not.toBeNull();
+  expect(positions!.dockTop).toBeGreaterThanOrEqual(positions!.priorBottom);
+  expect(positions!.dockBottom).toBeLessThan(positions!.selectedTop);
+  await expect(intro).not.toHaveClass(/atlas-story-active-block/);
+});
