@@ -452,3 +452,71 @@ Storybook Playwright geometry tests now check that both circles are outside
 the block, remain horizontally centered, and keep their vertical clearance
 on desktop/long-text and simulated-phone/image cases. Production remains
 unchanged.
+
+
+### November 10: mixed-media gallery concept (PTT-183)
+
+The current \`AuthorBlock\` and \`ContentBlock\` models have Markdown and
+single-image blocks; they **do not have a persisted gallery with multiple
+items or video slide metadata**. The first gallery research prototype is
+therefore intentionally confined to Storybook and held in separate local
+state. It is **not** part of the Tiptap ↔ AuthorBlock[] round trip and must
+not be mistaken for working API persistence.
+
+Open **Content / Editor workbench (experimental) / Media Gallery Concept**.
+The story uses the normal Atlas node editing frame plus a Storybook-only
+gallery prototype containing two still images and one sample playable video.
+It is deliberately an additional focused research story rather than
+duplicating the entire editor comparison.
+
+**Interactions to evaluate:**
+
+- Switch Edit / Full Node / Feed. Edit and Full Node use the same gallery
+  frame and object-fit **contain** treatment so media dimensions are
+  predictable. Select **portrait 4:5** or **landscape 16:9** in Edit and
+  verify the same framing in Full Node. Feed intentionally uses a compact
+  16:9 cropped teaser; this difference is explicitly labeled.
+- Use left/right arrows, keyboard ArrowLeft/ArrowRight, dot pagination, and
+  mobile touch swipe. Show **current slide / total slides** and a "swipe"
+  instruction to make offscreen content discoverable. Video slides have
+  native play/pause/seek controls, \`playsinline\`, and no autoplay.
+- In Edit, add images/videos, set media URLs, alternative text or video
+  descriptions, poster URL and captions, and reorder/remove gallery items.
+  The item order and frame are shared across Edit/Full/Feed views in this
+  Storybook story; they are **not saved to the API**.
+- A **single image block** in Edit and Full Node now has matching 24rem
+  maximum height and \`contain\` sizing in the **Storybook wrapper only**.
+  This addresses the visual surprise where the editor's portrait image
+  looked small but the Full Node portrait expanded much larger. The actual
+  production ContentBlocks renderer was not modified.
+
+**Open design decisions (not implemented):**
+
+1. **Inline media in text:** Evaluate adding a single image inside the
+   Markdown/Tiptap text section, with line-breaking versus optional text
+   wrap, size choices, float behavior and mobile fallback. This will need
+   a deliberate serializer/schema decision; the current \`atlasText\`
+   ProseMirror content specification excludes nested image nodes.
+2. **Mixed gallery block model:** A possible future \`media-gallery\`
+   block would own an ordered array of items with stable item IDs, media
+   type, URL/upload reference, alt text/description, caption, video poster
+   and frame policy. Consider references to a reusable media record rather
+   than duplicating upload data. No database change has been made.
+3. **Frame policy:** Compare portrait 4:5, landscape 16:9, and intrinsic
+   aspect ratio in responsive layouts. The experiment uses \`contain\` in
+   Edit/Full to avoid unexpected cropping, and \`cover\` only for the small
+   feed teaser. Validate letterboxing and content aesthetics.
+4. **Content safety and accessibility:** Restrict accepted source types,
+   sanitize URLs, use captions and alt text, do not autoplay video, keep
+   touch swipe from blocking vertical scroll, provide keyboard navigation,
+   review upload/transcoding costs and moderation, and coordinate with
+   PTT-167 (media upload work).
+
+**Validation:** \`tests/media-gallery-workbench.spec.ts\` covers frame
+parity, mixed photo/video navigation, editable gallery draft state,
+responsive swipe, feed teaser behavior and matching single-image sizing.
+Running the suite and testing on a physical phone remain necessary.
+
+Research task: https://thepublicthinktank.atlassian.net/browse/PTT-183.
+No production editor, API, database, migrations or persisted block kind
+was changed.
