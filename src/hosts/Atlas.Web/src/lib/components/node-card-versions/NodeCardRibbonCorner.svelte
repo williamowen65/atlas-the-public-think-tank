@@ -40,6 +40,7 @@
   import { relativeDate } from '../../format/relativeDate';
   import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import NodeEditControl from '../NodeEditControl.svelte';
+  import FeedBlockPreview from '../FeedBlockPreview.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -156,15 +157,15 @@
           onChange={onVote}
         />{/if}
     </aside>
-    <p class="description" id={`${instance}-description`} use:bottomCornerAction>
+    <div class="description" id={`${instance}-description`} use:bottomCornerAction>
       <span class="read-more"
         ><ActionButton
           label="Read more"
           disabled={!onReadMore}
           onActivate={() => onReadMore?.(node.id)}
         /></span
-      >{node.description}
-    </p>
+      >{#if node.isHidden}{node.description}{:else}<FeedBlockPreview nodeId={node.id} fallback={node.description} {apiBase}/>{/if}
+    </div>
     {#if node.requestedTypes.length}
       <p class="invitation">
         Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
