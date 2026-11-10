@@ -245,6 +245,12 @@
   let linkError = $state('');
   let linkSelection = $state<{ from: number; to: number } | null>(null);
   let linkFormPosition = $state({ top: 0, left: 0 });
+  let inlineImageOpen = $state(false);
+  let inlineImageAt: number | null = null;
+  let inlineImageUrl = $state('');
+  let inlineImageAlt = $state('');
+  let inlineImageError = $state('');
+  let inlineImageFormPosition = $state({ top: 0, left: 0 });
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
   let floatingOptionsOpen = $state(false);
   let insertSide = $state<'before' | 'after'>('after');
@@ -290,6 +296,16 @@
             Math.round((start.left + end.right) / 2 - shell.left - 160))),
         };
       } catch { /* Keep last valid position during a document remount. */ }
+    }
+
+    if (inlineImageOpen && inlineImageAt !== null) {
+      try {
+        const caret = editor.view.coordsAtPos(inlineImageAt);
+        inlineImageFormPosition = {
+          top: Math.max(0, Math.round(caret.bottom - shell.top + 9)),
+          left: Math.max(0, Math.min(leftBound, Math.round(caret.left - shell.left - 18))),
+        };
+      } catch { /* Retain the last position if the document remounts. */ }
     }
 
     if (deleteTarget) {
@@ -501,6 +517,40 @@
       editor.chain().focus().setTextSelection(linkSelection).unsetLink().run();
     linkFormOpen = false;
     linkSelection = null;
+  }
+
+  function openInlineImageForm() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const block = editor.state.doc.child(editor.state.selection.$from.index(0));
+    // Inline media only belongs inside a Markdown section, not an image block.
+    if (block.type.name !== 'atlasText') return;
+    inlineImageAt = editor.state.selection.from;
+    inlineImageUrl = '';
+    inlineImageAlt = '';
+    inlineImageError = '';
+    inlineImageOpen = true;
+    positionAnchoredForms();
+  }
+
+  function applyInlineImage() {
+    const editor = currentEditor();
+    if (!editor || inlineImageAt === null) return;
+    const safe = publicUrl(inlineImageUrl.trim());
+    if (!safe) {
+      inlineImageError = 'Enter an absolute HTTP(S) image URL.';
+      return;
+    }
+    if (!inlineImageAlt.trim()) {
+      inlineImageError = 'Describe the image for screen readers.';
+      return;
+    }
+    editor.chain().focus().insertContentAt(inlineImageAt, {
+      type: 'atlasInlineImage',
+      attrs: { src: safe, alt: inlineImageAlt.trim() },
+    }).run();
+    inlineImageOpen = false;
+    inlineImageAt = null;
   }
 
   // Capture the selected block's stable key before the confirmation takes
@@ -766,6 +816,8 @@
     </button>
     <button type="button" aria-label="Add or edit link"
       onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
+    <button type="button" aria-label="Insert image within text" title="Inline image within this Markdown section"
+      onpointerdown={(event) => event.preventDefault()} onclick={openInlineImageForm}>Image in text</button>
     <span class="toolbar-separator" aria-hidden="true"></span>
     <button type="button" aria-label="Toggle heading" onpointerdown={(event) => event.preventDefault()}
       onclick={() => format('heading')}>H2</button>
@@ -808,6 +860,25 @@
           <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
           <button type="button" onclick={unlink}>Remove link</button>
           <button type="submit" class="primary">Apply link</button>
+        </div>
+      </form>
+    {/if}
+
+    {#if inlineImageOpen}
+      <form class="inline-image-form" aria-label="Insert image into Markdown"
+        style:top={inlineImageFormPosition.top + 'px'}
+        style:left={inlineImageFormPosition.left + 'px'}
+        onsubmit={(event) => { event.preventDefault(); applyInlineImage(); }}>
+        <label for="story-inline-image-url">Inline image URL</label>
+        <input id="story-inline-image-url" type="url" required bind:value={inlineImageUrl}
+          placeholder="https://example.org/photo.jpg"/>
+        <label for="story-inline-image-alt">Inline image alternative text</label>
+        <input id="story-inline-image-alt" required bind:value={inlineImageAlt}
+          placeholder="Describe the image"/>
+        {#if inlineImageError}<p class="input-error" role="alert">{inlineImageError}</p>{/if}
+        <div class="form-actions">
+          <button type="button" onclick={() => { inlineImageOpen = false; inlineImageAt = null; }}>Cancel</button>
+          <button type="submit" class="primary">Insert image</button>
         </div>
       </form>
     {/if}
@@ -1103,12 +1174,12 @@
     margin: .6rem 0 0 3.15rem; display: flex; flex-wrap: wrap;
     align-items: center; gap: .45rem; color: var(--atlas-muted); font-size: .82rem;
   }
-  .image-form, .link-form, .delete-confirm {
+  .image-form, .link-form, .inline-image-form, .delete-confirm {
     display: grid; gap: .45rem; padding: .8rem; margin: .5rem 0 1rem;
     border: 1px solid var(--atlas-border); border-radius: .6rem;
     background: var(--atlas-surface);
   }
-  .link-form, .image-form {
+  .link-form, .image-form, .inline-image-form {
     position: absolute; z-index: 35; width: min(21rem, 100%);
     max-width: 100%; box-sizing: border-box; margin: 0;
     box-shadow: 0 9px 30px #0003;
@@ -1129,9 +1200,9 @@
   .delete-confirm p { margin: .1rem 0; color: var(--atlas-muted); overflow-wrap: anywhere; }
   .form-actions .destructive { color: #b32318; border-color: #b32318; }
   .image-form h3 { margin: 0 0 .25rem; }
-  .image-form label, .link-form label { font-size: .85rem; font-weight: 600; }
+  .image-form label, .link-form label, .inline-image-form label { font-size: .85rem; font-weight: 600; }
   .image-form label span { font-weight: 400; color: var(--atlas-muted); }
-  .image-form input, .image-form textarea, .link-form input {
+  .image-form input, .image-form textarea, .link-form input, .inline-image-form input {
     box-sizing: border-box; width: 100%; padding: .6rem;
     border-radius: .4rem; border: 1px solid var(--atlas-border);
     background: var(--atlas-bg); color: var(--atlas-text); font: inherit;
