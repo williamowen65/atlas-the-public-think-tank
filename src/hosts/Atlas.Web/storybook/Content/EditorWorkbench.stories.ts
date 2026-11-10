@@ -35,7 +35,7 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Media Gallery Concept story now explores a carousel of typed image, video and mock poll children, with feed swiping and edit/full framing parity. Child rendering is experimental; child blocks are not persisted Atlas blocks and the poll never submits votes. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
+        component: 'Research-only comparison of the existing block forms with an actual Tiptap editing canvas. Switch editors, preview the compact feed and full node, and compare Atlas and editorial styles. No API calls, saving, image upload, or production migrations. The Feed Block Carousel Concept presents one slide for each existing Atlas node content block, only in the Feed view. Edit and Full Node show the same blocks normally, and Read more opens the continuous node preview. This is a Storybook-only view experiment requiring no gallery block or persistence changes. Both editors use one shared ordered Atlas block array; test text, images and identity by switching modes.',
       },
     },
   },
@@ -50,14 +50,26 @@ export const ImageFirst: Story = { args: { initialBlocks: imageFirst } };
 export const PhoneWidth: Story = { args: { initialNarrow: true } };
 export const BlankNode: Story = { args: { title: '', initialBreadcrumb: false, initialBlocks: [text('empty', '')] } };
 
-export const MediaGalleryConcept: Story = {
+export const FeedBlockCarouselConcept: Story = {
   args: {
     title: 'A richer view of our city',
-    galleryExperiment: true,
     initialBlocks: [
-      text('opening', 'A single image can be its own block, but what if a **carousel** could contain image, video and poll blocks that readers can explore by swiping?'),
-      image('standalone-photo'),
-      text('after-media', 'Try the carousel below: swipe between photos, a video and a demo poll in Feed. You can change its frame in Edit, then compare Full Node. These child blocks are not yet stored in the Atlas API.'),
+      text('opening', 'What if a public square felt more welcoming? We could create a place to meet, **walk**, and enjoy more trees.'),
+      image('first-photo'),
+      text('long-section', [
+        'The same neighborhood can tell a much bigger story when its details are included.',
+        'A single Markdown section may hold several paragraphs. The feed should only show a bounded preview of it.',
+        'The complete block remains available when the reader opens the full node.',
+        'We could test benches, safer crosswalks, more shade, and community events.',
+        'Residents could share what worked before the next set of improvements.',
+        'This final paragraph is intentionally farther down: it should not stretch the feed card.',
+      ].join('\n\n')),
+      {
+        ...image('second-photo'),
+        url: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=1200',
+        text: 'Urban architectural structures and open space',
+        caption: 'Another angle on a shared public place',
+      },
     ],
   },
 };
