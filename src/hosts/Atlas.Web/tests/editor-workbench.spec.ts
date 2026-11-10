@@ -49,7 +49,7 @@ test('narrow Tiptap editor can insert a captioned image with required alt text',
   const editor = page.locator('.atlas-story-rich-document');
   await editor.click();
   await editor.press('ControlOrMeta+End');
-  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Insert block after' }).click();
   await page.getByRole('button', { name: 'Image', exact: true }).click();
   await page.getByLabel('Image URL', { exact: true }).fill('https://example.org/new-park.png');
   await page.getByLabel('Alternative text').fill('A walkway beside a tree');
@@ -107,37 +107,42 @@ test('node card framing and draft metadata are consistent in Edit and Full node 
   await expect(page.getByRole('textbox', { name: 'Node title' })).toHaveValue('Redesign our green spaces');
 });
 
-test('formatting controls stay visible and the plus stays completely left of writing', async ({ page }) => {
+test('formatting toolbar stays visible and the two plus buttons belong to the selected block', async ({ page }) => {
   await page.goto(storyUrl);
   const toolbar = page.getByRole('toolbar', { name: 'Text formatting' });
-  const plus = page.getByRole('button', { name: 'Add a content block' });
   await expect(toolbar.getByRole('button', { name: 'Bold selected text' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Add or edit link' })).toBeVisible();
-  await expect(plus).toHaveCount(0);
+  const before = page.getByRole('button', { name: 'Insert block before' });
+  const after = page.getByRole('button', { name: 'Insert block after' });
+  await expect(before).toHaveCount(0);
+  await expect(after).toHaveCount(0);
 
-  const first = page.locator('.atlas-story-text p').first();
-  await first.click();
-  await expect(plus).toBeVisible();
-  await page.keyboard.press('End');
-  await expect(toolbar).toBeVisible();
-  await plus.click();
-  await expect(page.getByLabel('Insert a content block')).toBeVisible();
+  const root = page.locator('.atlas-story-rich-document');
+  const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
+  await first.locator('p').first().click();
+  await expect(before).toBeVisible();
+  await expect(after).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Selected block actions' })).toBeVisible();
   const geometry = await page.evaluate(() => {
-    const button = document.querySelector('.gutter-position .insert-trigger');
-    const active = document.querySelector('.atlas-story-rich-document > .atlas-story-active-block');
+    const block = document.querySelector('.atlas-story-text[data-atlas-key="intro"]');
+    const before = document.querySelector('.boundary-add.before');
+    const after = document.querySelector('.boundary-add.after');
     const root = document.querySelector('.atlas-story-rich-document');
-    const inactive = Array.from(root?.children ?? []).find(element => element !== active);
-    if (!button || !active || !inactive || !root) return null;
+    if (!block || !before || !after || !root) return null;
+    const r = block.getBoundingClientRect();
     return {
-      buttonRight: button.getBoundingClientRect().right,
-      activeLeft: active.getBoundingClientRect().left,
-      inactiveLeft: inactive.getBoundingClientRect().left,
-      editorLeft: root.getBoundingClientRect().left,
+      rootLeft: root.getBoundingClientRect().left, blockLeft: r.left,
+      blockTop: r.top, blockBottom: r.bottom,
+      beforeY: before.getBoundingClientRect().top + before.getBoundingClientRect().height / 2,
+      afterY: after.getBoundingClientRect().top + after.getBoundingClientRect().height / 2,
     };
   });
   expect(geometry).not.toBeNull();
-  expect(geometry!.buttonRight).toBeLessThanOrEqual(geometry!.activeLeft);
-  expect(Math.abs(geometry!.inactiveLeft - geometry!.editorLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(geometry!.blockLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(geometry!.beforeY - geometry!.blockTop)).toBeLessThan(5);
+  expect(Math.abs(geometry!.afterY - geometry!.blockBottom)).toBeLessThan(5);
+  await before.click();
+  await expect(page.getByRole('group', { name: 'Insert a content block' })).toContainText('Insert before this block');
   await expect(toolbar).toBeVisible();
 });
 
@@ -173,7 +178,7 @@ test('Backspace in the final empty paragraph does not create phantom Atlas block
 test('an extra empty text block can be removed without deleting the final writing area', async ({ page }) => {
   await page.goto(storyUrl);
   await page.locator('.atlas-story-rich-document > .atlas-story-text p').first().click();
-  await page.getByRole('button', { name: 'Add a content block' }).click();
+  await page.getByRole('button', { name: 'Insert block after' }).click();
   await page.getByRole('button', { name: 'Text block' }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(3);
   await page.locator('.atlas-story-rich-document > .atlas-story-text').nth(1).locator('p').click();
@@ -184,37 +189,34 @@ test('an extra empty text block can be removed without deleting the final writin
 });
 
 
-test('only the active block is indented, with move controls in its side rail', async ({ page }) => {
+test('selected text block uses corner actions and stays full width through reordering', async ({ page }) => {
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   const original = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
   const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
-
   await original.locator('p').first().click();
   await expect(original).toHaveClass(/atlas-story-active-block/);
   await expect(image).not.toHaveClass(/atlas-story-active-block/);
-  await expect(page.getByRole('button', { name: 'Move current block up' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Move current block down' })).toBeEnabled();
-
-  const layout = await page.evaluate(() => {
+  const actions = page.getByRole('group', { name: 'Selected block actions' });
+  await expect(actions).toBeVisible();
+  await expect(actions.getByRole('button', { name: 'Move current block up' })).toBeDisabled();
+  await expect(actions.getByRole('button', { name: 'Move current block down' })).toBeEnabled();
+  await expect(actions.getByRole('button', { name: 'Delete current block' })).toBeVisible();
+  const geometry = await page.evaluate(() => {
+    const block = document.querySelector('.atlas-story-text[data-atlas-key="intro"]');
     const root = document.querySelector('.atlas-story-rich-document');
-    const first = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
-    const image = root?.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
-    const rail = document.querySelector('.gutter-position');
-    if (!root || !first || !image || !rail) return null;
-    return {
-      rootLeft: root.getBoundingClientRect().left,
-      firstLeft: first.getBoundingClientRect().left,
-      imageLeft: image.getBoundingClientRect().left,
-      railRight: rail.getBoundingClientRect().right,
-    };
+    const actions = document.querySelector('.block-corner-controls');
+    if (!block || !root || !actions) return null;
+    const r = block.getBoundingClientRect(), a = actions.getBoundingClientRect();
+    return { blockLeft: r.left, rootLeft: root.getBoundingClientRect().left,
+      blockRight: r.right, actionRight: a.right, actionTop: a.top, blockTop: r.top };
   });
-  expect(layout).not.toBeNull();
-  expect(layout!.firstLeft).toBeGreaterThan(layout!.rootLeft + 25);
-  expect(Math.abs(layout!.imageLeft - layout!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(layout!.railRight).toBeLessThanOrEqual(layout!.firstLeft);
+  expect(geometry).not.toBeNull();
+  expect(Math.abs(geometry!.blockLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(geometry!.actionRight - geometry!.blockRight)).toBeLessThanOrEqual(4);
+  expect(Math.abs(geometry!.actionTop - geometry!.blockTop)).toBeLessThan(20);
 
-  await page.getByRole('button', { name: 'Move current block down' }).click();
+  await actions.getByRole('button', { name: 'Move current block down' }).click();
   await expect(root.locator(':scope > *').first()).toHaveAttribute('data-atlas-key', 'public-square');
   await expect(original).toHaveClass(/atlas-story-active-block/);
   await expect(image).not.toHaveClass(/atlas-story-active-block/);
@@ -222,7 +224,7 @@ test('only the active block is indented, with move controls in its side rail', a
   await expect(page.locator('.block-composer .content-block').first()).toContainText('Block 1 · Image');
 });
 
-test('only one section indents in narrow phone-sized workbench', async ({ page }) => {
+test('phone-width selected image and text use the same full-width highlight', async ({ page }) => {
   await page.goto(storyUrl);
   await page.getByRole('button', { name: 'Simulate phone width' }).click();
   const root = page.locator('.atlas-story-rich-document');
@@ -231,57 +233,44 @@ test('only one section indents in narrow phone-sized workbench', async ({ page }
   await image.click();
   await expect(image).toHaveClass(/atlas-story-active-block/);
   await expect(first).not.toHaveClass(/atlas-story-active-block/);
-  const layout = await page.evaluate(() => {
+  const geometry = await page.evaluate(() => {
     const root = document.querySelector('.atlas-story-rich-document');
-    const first = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
-    const image = root?.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
-    const rail = document.querySelector('.gutter-position');
-    if (!root || !first || !image || !rail) return null;
+    const block = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const actions = document.querySelector('.block-corner-controls');
+    if (!root || !block || !actions) return null;
     return {
       rootLeft: root.getBoundingClientRect().left,
-      firstLeft: first.getBoundingClientRect().left,
-      imageLeft: image.getBoundingClientRect().left,
-      railRight: rail.getBoundingClientRect().right,
+      imageLeft: block.getBoundingClientRect().left,
+      imageRight: block.getBoundingClientRect().right,
+      actionRight: actions.getBoundingClientRect().right,
+      marker: getComputedStyle(block, '::before').borderLeftStyle,
     };
   });
-  expect(layout).not.toBeNull();
-  expect(Math.abs(layout!.firstLeft - layout!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(layout!.imageLeft).toBeGreaterThan(layout!.rootLeft + 25);
-  expect(layout!.railRight).toBeLessThanOrEqual(layout!.imageLeft);
+  expect(geometry).not.toBeNull();
+  expect(Math.abs(geometry!.imageLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(geometry!.imageRight - geometry!.actionRight)).toBeLessThanOrEqual(4);
+  expect(geometry!.marker).toBe('solid');
+  await first.locator('p').first().click();
+  await expect(first).toHaveClass(/atlas-story-active-block/);
+  await expect(image).not.toHaveClass(/atlas-story-active-block/);
+  const textMarker = await first.evaluate(element => getComputedStyle(element, '::before').borderLeftStyle);
+  expect(textMarker).toBe('solid');
 });
 
-
-test('selected Markdown section indents even after typing while inactive blocks remain full width', async ({ page }) => {
+test('editing a selected Markdown block never changes its horizontal alignment', async ({ page }) => {
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
   const second = root.locator(':scope > .atlas-story-text[data-atlas-key="details"]');
+  const before = await first.evaluate(element => element.getBoundingClientRect().left);
   await first.locator('p').click();
   await page.keyboard.press('End');
   await page.keyboard.insertText(' more words');
   await expect(first).toHaveClass(/atlas-story-active-block/);
   await expect(second).not.toHaveClass(/atlas-story-active-block/);
-  const geometry = await page.evaluate(() => {
-    const card = document.querySelector('.node-frame');
-    const root = document.querySelector('.atlas-story-rich-document');
-    const active = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
-    const inactive = root?.querySelector('.atlas-story-text[data-atlas-key="details"]');
-    const rail = document.querySelector('.gutter-position');
-    if (!card || !root || !active || !inactive || !rail) return null;
-    return {
-      cardLeft: card.getBoundingClientRect().left,
-      rootLeft: root.getBoundingClientRect().left,
-      activeLeft: active.getBoundingClientRect().left,
-      inactiveLeft: inactive.getBoundingClientRect().left,
-      railLeft: rail.getBoundingClientRect().left,
-      railRight: rail.getBoundingClientRect().right,
-    };
-  });
-  expect(geometry).not.toBeNull();
-  expect(geometry!.railLeft - geometry!.cardLeft).toBeGreaterThanOrEqual(0);
-  expect(geometry!.railLeft - geometry!.cardLeft).toBeLessThan(10);
-  expect(geometry!.railRight).toBeLessThanOrEqual(geometry!.activeLeft);
-  expect(Math.abs(geometry!.inactiveLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
+  const after = await first.evaluate(element => element.getBoundingClientRect().left);
+  expect(Math.abs(after - before)).toBeLessThanOrEqual(3);
+  await expect(page.getByRole('group', { name: 'Selected block actions' })).toBeVisible();
 });
 
 test('deleting any selected block requires confirmation; cancelling preserves data', async ({ page }) => {
