@@ -28,7 +28,8 @@
   const AtlasText = Node.create({
     name: 'atlasText',
     group: 'block',
-    content: 'block+',
+    // Do not allow an image to be dropped INSIDE Markdown; images are sibling Atlas blocks.
+    content: '(paragraph | heading | bulletList | orderedList | blockquote | codeBlock | horizontalRule)+',
     defining: true,
     addAttributes() {
       return { key: { default: '' } };
@@ -220,7 +221,7 @@
     const beforeOrAfter = direction === -1 ? from - doc.child(next).nodeSize : from + doc.child(next).nodeSize;
     const tr = state.tr.delete(from, from + image.nodeSize);
     // After removing the image, the next sibling begins at the former image position.
-    tr.insert(direction === -1 ? beforeOrAfter : beforeOrAfter, image);
+    tr.insert(beforeOrAfter, image);
     editor.view.dispatch(tr);
   }
 
