@@ -963,7 +963,6 @@
     inset: -.28rem -.28rem;
     background: color-mix(in srgb, var(--atlas-accent) 5%, var(--atlas-surface));
     border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
-    border-left-width: 3px;
     border-radius: .45rem;
   }
   :global(.atlas-story-text) { min-width: 0; }
