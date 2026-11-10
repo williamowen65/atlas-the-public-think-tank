@@ -3,7 +3,7 @@
   import { editorSession } from '../api/editorSession';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readJson, type NodeDetail, type ContentBlock } from '../api/nodePage';
-  import { authorBlock, blockRequest, contentForPreview, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
+  import { authorBlock, blockRequest, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import BlockComposer from './BlockComposer.svelte';
 
   let { nodeId, authorId, apiBase = '/atlas-public-api', onSaved, corner = false }: {
