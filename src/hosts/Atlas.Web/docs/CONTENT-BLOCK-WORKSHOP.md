@@ -319,3 +319,23 @@ Layout intentionally follows the existing Atlas responsive pattern:
 The community selection is also inline with the byline, with the possibility
 of multi-community selection left open for future UX and model discussion.
 No production Svelte component, API or database code was changed.
+
+
+### November 10: deletion confirmation stays with its block
+
+When deleting a text or image section in the Storybook Tiptap editor, the
+confirmation should **not** appear below a potentially long node. It now
+renders inside the editor's relatively positioned document shell, anchored
+to the selected Atlas block's stable key and upper edge. The dialog stays
+near that block during scrolling and document layout updates, and its
+horizontal position is bounded by the editor width for narrow/mobile
+layouts.
+
+While the dialog has keyboard focus, a ProseMirror decoration keeps that
+specific block visibly marked as pending deletion. **Cancel** returns to
+editing without removing the block; **Delete block** still deletes by the
+captured stable key, preserving the existing confirmation requirement.
+Playwright checks cover geometry, highlighted pending state and cancel
+for both text and image blocks.
+
+Only Storybook prototype, its tests and research documentation were changed.
