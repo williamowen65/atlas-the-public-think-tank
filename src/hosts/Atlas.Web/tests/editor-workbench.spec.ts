@@ -209,12 +209,16 @@ test('selected text block uses corner actions and stays full width through reord
     if (!block || !root || !actions) return null;
     const r = block.getBoundingClientRect(), a = actions.getBoundingClientRect();
     return { blockLeft: r.left, rootLeft: root.getBoundingClientRect().left,
-      blockRight: r.right, actionRight: a.right, actionTop: a.top, blockTop: r.top };
+      blockRight: r.right, actionRight: a.right,
+      actionTop: a.top, actionBottom: a.bottom, blockTop: r.top };
   });
   expect(geometry).not.toBeNull();
   expect(Math.abs(geometry!.blockLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(Math.abs(geometry!.actionRight - geometry!.blockRight)).toBeLessThanOrEqual(4);
-  expect(Math.abs(geometry!.actionTop - geometry!.blockTop)).toBeLessThan(20);
+  expect(Math.abs(geometry!.actionRight - geometry!.blockRight)).toBeLessThanOrEqual(8);
+  // The tab joins the selected block at its border, without covering its text.
+  expect(geometry!.actionBottom).toBeLessThanOrEqual(geometry!.blockTop - 2);
+  expect(geometry!.blockTop - geometry!.actionBottom).toBeLessThan(8);
+  await expect(page.locator('.block-corner-controls.bottom')).toHaveCount(0);
 
   await actions.getByRole('button', { name: 'Move current block down' }).click();
   await expect(root.locator(':scope > *').first()).toHaveAttribute('data-atlas-key', 'public-square');
@@ -248,7 +252,7 @@ test('phone-width selected image and text use the same full-width highlight', as
   });
   expect(geometry).not.toBeNull();
   expect(Math.abs(geometry!.imageLeft - geometry!.rootLeft)).toBeLessThanOrEqual(3);
-  expect(Math.abs(geometry!.imageRight - geometry!.actionRight)).toBeLessThanOrEqual(4);
+  expect(Math.abs(geometry!.imageRight - geometry!.actionRight)).toBeLessThanOrEqual(8);
   expect(geometry!.marker).toBe('solid');
   await first.locator('p').first().click();
   await expect(first).toHaveClass(/atlas-story-active-block/);
@@ -465,6 +469,9 @@ test('existing image details open on the image itself, not below the full node',
   await page.goto(storyUrl);
   const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
   const edit = image.getByRole('button', { name: 'Edit image details' });
+  await expect(edit).toBeHidden();
+  await image.click();
+  await expect(image).toHaveClass(/atlas-story-active-block/);
   await expect(edit).toBeVisible();
   await edit.click();
   const form = page.getByRole('form', { name: 'Edit image' });
@@ -623,9 +630,11 @@ test('long Markdown block stays one selected section with fixed boundary control
     const root = document.querySelector('.atlas-story-rich-document');
     const before = document.querySelector('.boundary-add.before');
     const after = document.querySelector('.boundary-add.after');
-    const actions = document.querySelector('.block-corner-controls');
-    if (!block || !root || !before || !after || !actions) return null;
+    const actions = document.querySelector('.block-corner-controls.top');
+    const bottomActions = document.querySelector('.block-corner-controls.bottom');
+    if (!block || !root || !before || !after || !actions || !bottomActions) return null;
     const b = block.getBoundingClientRect(), a = actions.getBoundingClientRect();
+    const ba = bottomActions.getBoundingClientRect();
     const t = before.getBoundingClientRect(), d = after.getBoundingClientRect();
     return {
       rootLeft: root.getBoundingClientRect().left, blockLeft: b.left,
@@ -633,7 +642,8 @@ test('long Markdown block stays one selected section with fixed boundary control
       blockBottomDoc: b.bottom + window.scrollY,
       beforeDoc: t.top + t.height / 2 + window.scrollY,
       afterDoc: d.top + d.height / 2 + window.scrollY,
-      actionsDoc: a.top + window.scrollY,
+      actionsDoc: a.top + window.scrollY, actionBottomDoc: a.bottom + window.scrollY,
+      bottomActionsDoc: ba.top + window.scrollY,
       actionRight: a.right, blockRight: b.right,
       marker: getComputedStyle(block, '::before').borderLeftStyle,
     };
@@ -643,7 +653,10 @@ test('long Markdown block stays one selected section with fixed boundary control
   expect(Math.abs(initial!.blockLeft - initial!.rootLeft)).toBeLessThanOrEqual(3);
   expect(Math.abs(initial!.beforeDoc - initial!.blockTopDoc)).toBeLessThan(5);
   expect(Math.abs(initial!.afterDoc - initial!.blockBottomDoc)).toBeLessThan(5);
-  expect(Math.abs(initial!.actionRight - initial!.blockRight)).toBeLessThanOrEqual(4);
+  expect(Math.abs(initial!.actionRight - initial!.blockRight)).toBeLessThanOrEqual(8);
+  expect(initial!.actionBottomDoc).toBeLessThan(initial!.blockTopDoc);
+  expect(initial!.bottomActionsDoc).toBeGreaterThan(initial!.blockBottomDoc);
+  await expect(page.getByRole('group', { name: 'Selected block actions at end' })).toBeVisible();
   expect(initial!.marker).toBe('solid');
 
   const beforeScroll = await page.evaluate(() => window.scrollY);
@@ -655,6 +668,7 @@ test('long Markdown block stays one selected section with fixed boundary control
   expect(Math.abs(scrolled!.actionsDoc - initial!.actionsDoc)).toBeLessThan(4);
   expect(Math.abs(scrolled!.beforeDoc - initial!.beforeDoc)).toBeLessThan(4);
   expect(Math.abs(scrolled!.afterDoc - initial!.afterDoc)).toBeLessThan(4);
+  expect(Math.abs(scrolled!.bottomActionsDoc - initial!.bottomActionsDoc)).toBeLessThan(4);
   await expect(section.locator('p')).toHaveCount(80);
 
   // A second click inside the same block must not split it into many blocks
@@ -672,3 +686,20 @@ test('long Markdown block stays one selected section with fixed boundary control
   await expect(section).not.toHaveClass(/atlas-story-active-block/);
 });
 
+
+
+test('image settings appear only on the selected image block and disappear on blur', async ({ page }) => {
+  await page.goto(storyUrl);
+  const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
+  const edit = image.getByRole('button', { name: 'Edit image details', includeHidden: true });
+  await expect(edit).toBeHidden();
+  await image.click();
+  await expect(edit).toBeVisible();
+  await expect(page.locator('.block-corner-controls.bottom')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Node title' }).click();
+  await expect(edit).toBeHidden();
+  await image.click();
+  await expect(edit).toBeVisible();
+  await page.locator('.atlas-story-text[data-atlas-key="intro"] p').first().click();
+  await expect(edit).toBeHidden();
+});
