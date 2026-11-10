@@ -983,7 +983,9 @@
   }
   :global(.atlas-story-rich-document:focus-visible) { outline: none; }
   :global(.atlas-story-rich-document > [data-atlas-key]) {
-    margin-block: 1.2rem;
+    /* Space for the border-attached tabs between neighboring blocks.
+       Text and image widths are unchanged and controls never cover text. */
+    margin-block: 1.2rem 2.4rem;
   }
   :global(.atlas-story-rich-document > .atlas-story-active-block) {
     box-sizing: border-box; position: relative; isolation: isolate;
