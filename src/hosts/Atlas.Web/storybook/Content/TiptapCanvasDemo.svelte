@@ -549,24 +549,55 @@
     </form>
   {/if}
 
-  {#if floatingOptionsOpen}
-    <div class="insert-choices" aria-label="Insert a content block">
-      <span class="insert-label">Insert after current block:</span>
-      <button type="button" onclick={insertTextBlock}>Text</button>
-      <button type="button" onclick={openImageForm}>Image</button>
-      <button type="button" onclick={() => { format('heading'); floatingOptionsOpen = false; }}>Heading</button>
-      <button type="button" onclick={insertDivider}>Section break</button>
-      <button type="button" onclick={() => floatingOptionsOpen = false} aria-label="Close insert choices">Close</button>
-    </div>
-  {/if}
 
   <!-- The editor remains full width. Only the currently active top-level Atlas
        block is indented, leaving room for plus and reordering controls. -->
   <div class="document-shell" bind:this={shellEl}>
-    <div class="gutter-position" style:top={gutterTop + 'px'} role="group" aria-label="Current block controls">
+    {#if selectionPopup && controlsVisible}
+      <div class="selection-bubble" role="toolbar" aria-label="Selected text formatting"
+        style:left={selectionPopup.left + 'px'} style:top={selectionPopup.top + 'px'}>
+        <button type="button" aria-label="Bold highlighted text" title="Bold"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('bold')}><strong>B</strong></button>
+        <button type="button" aria-label="Italicize highlighted text" title="Italic"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('italic')}><em>I</em></button>
+        <button type="button" aria-label="Link highlighted text" title="Link"
+          onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
+        <span class="toolbar-separator" aria-hidden="true"></span>
+        <button type="button" aria-label="Heading for highlighted text" title="Heading 2"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('heading')}>H2</button>
+        <button type="button" aria-label="List for highlighted text" title="Bulleted list"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('bulletList')}>List</button>
+      </div>
+    {/if}
+    {#if controlsVisible}
+      <div class="gutter-position" style:top={gutterTop + 'px'} role="group" aria-label="Current block controls">
       <button type="button" class="insert-trigger" aria-label="Add a content block"
         aria-expanded={floatingOptionsOpen} onpointerdown={(event) => event.preventDefault()}
-        onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
+        onclick={openInsertChoices}>+</button>
+      {#if floatingOptionsOpen}
+        <div class="insert-choices" role="group" aria-label="Insert a content block">
+          <div class="insert-position">
+            <span>Insert</span>
+            <button type="button" aria-pressed={insertSide === 'before'}
+              class:selected={insertSide === 'before'}
+              onpointerdown={(event) => event.preventDefault()} onclick={() => insertSide = 'before'}>Before</button>
+            <button type="button" aria-pressed={insertSide === 'after'}
+              class:selected={insertSide === 'after'}
+              onpointerdown={(event) => event.preventDefault()} onclick={() => insertSide = 'after'}>After</button>
+          </div>
+          <div class="insert-types">
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={insertTextBlock}>Text block</button>
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={openImageForm}>Image</button>
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={insertDivider}>Section break</button>
+          </div>
+          <button type="button" class="close-insert" aria-label="Close insert choices"
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => floatingOptionsOpen = false}>×</button>
+        </div>
+      {/if}
       <div class="move-controls">
         <button type="button" aria-label="Move current block up" title="Move section up"
           disabled={activeIndex === 0} onpointerdown={(event) => event.preventDefault()}
@@ -578,7 +609,8 @@
       <button type="button" class="delete-trigger" aria-label="Delete current block"
         title="Delete section" onpointerdown={(event) => event.preventDefault()}
         onclick={requestDeleteBlock}>×</button>
-    </div>
+      </div>
+    {/if}
     <div class="editor-canvas" bind:this={canvasEl}></div>
   </div>
 
@@ -675,18 +707,39 @@
     cursor: pointer;
   }
   .insert-trigger:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
+  /* The insert popover grows directly from the + control; unlike the rail,
+     this user-opened panel is allowed to cover the document temporarily. */
   .insert-choices {
-    display: flex; flex-wrap: wrap; align-items: center; gap: .35rem;
-    padding: .55rem; border: 1px solid var(--atlas-border);
-    border-radius: .55rem; margin: -.4rem 0 1rem; background: var(--atlas-surface);
+    position: absolute; left: calc(100% + .25rem); top: 0;
+    z-index: 15; width: max-content; max-width: min(21rem, 85vw);
+    display: grid; gap: .5rem; align-items: start;
+    padding: .65rem; border: 1px solid var(--atlas-border);
+    border-radius: .65rem; background: var(--atlas-surface);
+    color: var(--atlas-text); box-shadow: 0 7px 28px #0002;
+    font-size: .86rem; text-align: left;
   }
-  .insert-label { font-size: .78rem; color: var(--atlas-muted); margin-right: .3rem; }
-  .insert-choices button,
-  .block-context button, .form-actions button {
+  .insert-position, .insert-types { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
+  .insert-position span { color: var(--atlas-muted); margin-right: .25rem; }
+  .insert-choices button, .block-context button, .form-actions button {
     cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .4rem;
     background: var(--atlas-surface); color: var(--atlas-text);
     padding: .45rem .65rem; font: inherit; font-size: .85rem;
   }
+  .insert-choices button.selected { border-color: var(--atlas-accent); font-weight: 700; }
+  .insert-choices .close-insert { position: absolute; top: .15rem; right: .25rem; padding: .1rem .4rem; border: 0; }
+  .insert-choices .insert-position { padding-right: 1.6rem; }
+  .selection-bubble {
+    position: absolute; z-index: 25; display: flex; align-items: center;
+    width: max-content; max-width: 100%; gap: .15rem; padding: .25rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface); box-shadow: 0 7px 26px #0002;
+  }
+  .selection-bubble button {
+    cursor: pointer; background: transparent; border: 0;
+    color: var(--atlas-text); border-radius: .3rem;
+    padding: .38rem .55rem; font: inherit; font-size: .85rem;
+  }
+  .selection-bubble button:hover { background: var(--atlas-bg); }
   .editor-canvas { padding: .3rem 0 1rem; min-height: 11rem; }
   .editorial .editor-canvas { font-family: Georgia, 'Times New Roman', serif; font-size: 1.14rem; line-height: 1.8; }
   :global(.atlas-story-rich-document) {
