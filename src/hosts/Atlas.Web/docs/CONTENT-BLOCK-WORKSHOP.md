@@ -341,35 +341,32 @@ for both text and image blocks.
 Only Storybook prototype, its tests and research documentation were changed.
 
 
-### November 10: long Markdown sections — follow the caret and keep controls in view
+### November 10: long Markdown sections — pin the rail to the click, not scrolling
 
 A Storybook review tested a *single* Markdown block containing many screens
-of paragraphs. The content remains **one Atlas block** (same key, one action
-rail, one reorder/delete target), even though authors may click and type at
-different locations inside it.
+of paragraphs. The section remains **one Atlas block** (same stable key, one
+reorder/delete target), even when authors click and edit far down in it.
 
-The side rail now uses the latest ProseMirror caret position as its desired
-vertical anchor rather than always returning to the first line of the block.
-While the user scrolls, the rail position is recalculated and clamped into
-the viewport and, for sufficiently tall sections, the **visible part of the
-currently focused block**. The rail therefore stays useful while moving
-through one tall section instead of being left at the top. If the selected
-block is entirely offscreen, its rail disappears until the block returns;
-it does not float beside unrelated content.
+**Final research preference:** the control rail (+, up/down, delete) appears
+along the left side of the section near the most recently *clicked* caret
+position. It is **pinned to that document position**: scrolling does not
+move or clamp the rail into the viewport, nor does the rail chase the
+reader. It naturally scrolls offscreen with that location and reappears if
+the user scrolls back. Clicking a different paragraph within that same
+section reanchors the rail there. Typing in place does not repeatedly
+reposition it. Clicking out of the editor hides the rail and focus styling.
 
-Only the active top-level Atlas content block is visually emphasized with
-a **subtle tint and left edge marker** covering its entire section. Inactive
-blocks stay full width, without that treatment. Clicking elsewhere in the
-node or page hides the controls and removes the focus treatment, preserving
-the existing focus-only behavior. This is responsive within the node card
-and applies in phone-width Storybook previews, though actual touch testing
-remains necessary.
+A subtle selected-section tint and left-edge marker distinguish the entire
+long block from surrounding blocks. For more even spacing, the marker is
+drawn **halfway through the gap between the rail and the text**. The tinted
+background extends slightly into the available gap and around the content
+using a decorative pseudoelement; **the text's horizontal position does not
+move any farther**. Inactive blocks keep their normal full-width alignment.
 
 The Storybook Playwright long-section scenario creates 80 paragraphs in
-**one** Atlas Markdown block, checks block count and focus styling, tests
-caret-based rail placement at different paragraphs, scrolls while focused
-and verifies the controls remain onscreen within the same block, then
-verifies clicking the node title clears controls and tint.
+**one** Markdown block and verifies the rail anchors at the clicked line,
+retains its document position while scrolling, moves only after another click,
+has balanced rail/marker/text spacing, and disappears on editor blur.
 
-Only the experimental Storybook component, tests, and notes were updated.
-The production editor and Atlas persistence were not changed.
+Only Storybook, its tests, and this research note changed. The production
+node editor and persistence remain untouched.
