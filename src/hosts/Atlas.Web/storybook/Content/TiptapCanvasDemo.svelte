@@ -192,7 +192,7 @@
 
   let canvasEl: HTMLDivElement;
   let shellEl: HTMLDivElement;
-  let blockLayout = $state({ top: 0, bottom: 0, right: 0, center: 0 });
+  let blockLayout = $state({ top: 0, bottom: 0, right: 0, center: 0, showBottomActions: false });
   let insertMenuLayout = $state({ top: 0, left: 0 });
   let activeIndex = $state(0);
   let blockCount = $state(initialBlocks.length);
@@ -369,6 +369,9 @@
         bottom: Math.round(bounds.bottom - shell.top),
         right: Math.round(bounds.right - shell.left),
         center: Math.round((bounds.left + bounds.right) / 2 - shell.left),
+        // A second attached control tab is useful only for unusually tall
+        // text/code sections, not ordinary text or image blocks.
+        showBottomActions: active.matches('.atlas-story-text') && bounds.height >= 640,
       };
 
       const selection = editor.state.selection;
@@ -792,8 +795,9 @@
         onpointerdown={(event) => event.preventDefault()}
         onclick={() => openInsertChoices('before')}>+</button>
 
-      <div class="block-corner-controls" role="group" aria-label="Selected block actions"
-        style:top={blockLayout.top + 'px'} style:right={Math.max(0, shellEl.clientWidth - blockLayout.right) + 'px'}>
+      <div class="block-corner-controls top" role="group" aria-label="Selected block actions"
+        style:top={blockLayout.top - 5 + 'px'}
+        style:right={Math.max(0, shellEl.clientWidth - blockLayout.right - 5) + 'px'}>
         <button type="button" aria-label="Move current block up" title="Move block up"
           disabled={activeIndex === 0}
           onpointerdown={(event) => event.preventDefault()}
@@ -806,6 +810,24 @@
           onpointerdown={(event) => event.preventDefault()}
           onclick={requestDeleteBlock}>×</button>
       </div>
+
+      {#if blockLayout.showBottomActions}
+        <div class="block-corner-controls bottom" role="group" aria-label="Selected block actions at end"
+          style:top={blockLayout.bottom + 5 + 'px'}
+          style:right={Math.max(0, shellEl.clientWidth - blockLayout.right - 5) + 'px'}>
+          <button type="button" aria-label="Move current block up" title="Move block up"
+            disabled={activeIndex === 0}
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => moveCurrentBlock(-1)}>↑</button>
+          <button type="button" aria-label="Move current block down" title="Move block down"
+            disabled={activeIndex >= blockCount - 1}
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => moveCurrentBlock(1)}>↓</button>
+          <button type="button" class="corner-delete" aria-label="Delete current block" title="Delete block"
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={requestDeleteBlock}>×</button>
+        </div>
+      {/if}
 
       <button type="button" class="boundary-add after" aria-label="Insert block after"
         style:top={blockLayout.bottom + 'px'} style:left={blockLayout.center + 'px'}
@@ -896,11 +918,22 @@
   }
   .boundary-add:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
   .block-corner-controls {
-    position: absolute; z-index: 20; transform: translateY(-50%);
+    position: absolute; z-index: 20;
     display: flex; align-items: center; gap: .12rem;
-    padding: .2rem; border: 1px solid var(--atlas-border);
-    border-radius: .55rem; background: var(--atlas-surface);
-    color: var(--atlas-text); box-shadow: 0 2px 9px #0002;
+    padding: .15rem; border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
+    background: var(--atlas-surface); color: var(--atlas-text);
+    box-shadow: 0 2px 6px #0001;
+  }
+  /* Like Atlas's node edit tab, these controls JOIN the selection border
+     rather than hovering over text. No padding or indentation is needed. */
+  .block-corner-controls.top {
+    transform: translateY(-100%);
+    border-bottom: 0;
+    border-radius: .45rem .45rem 0 0;
+  }
+  .block-corner-controls.bottom {
+    border-top: 0;
+    border-radius: 0 0 .45rem .45rem;
   }
   .block-corner-controls button {
     display: grid; place-items: center; box-sizing: border-box;
@@ -989,6 +1022,14 @@
     background: var(--atlas-surface); color: var(--atlas-text);
     padding: .35rem .6rem; cursor: pointer; font: 500 .8rem/1.3 system-ui, sans-serif;
     box-shadow: 0 2px 9px #0002;
+  }
+  /* Image configuration is discoverable only on the selected image block.
+     The active decoration is shared with selected Markdown blocks. */
+  :global(.atlas-story-figure .atlas-story-image-action) {
+    opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  :global(.atlas-story-figure.atlas-story-active-block .atlas-story-image-action) {
+    opacity: 1; visibility: visible; pointer-events: auto;
   }
   :global(.atlas-story-image-action:hover) { border-color: var(--atlas-accent); }
   :global(.atlas-story-figure.ProseMirror-selectednode) {
