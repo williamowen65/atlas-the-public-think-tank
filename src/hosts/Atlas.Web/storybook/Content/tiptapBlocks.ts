@@ -3,7 +3,8 @@
  *
  * Every Atlas text block becomes a containing atlasText node (with its key).
  * Paragraphs, headings and lists inside that node remain ONE Markdown block.
- * Images remain atomic atlasImage nodes. The key maps back to id/original data.
+ * Standalone images are atlasImage nodes; Markdown-embedded images are inline atoms.
+ * Both stay within the original Atlas block identities and ordering.
  *
  * This proves basic block storage compatibility; it is NOT a production or
  * complete Markdown serializer. Unsupported marks/embeds require more work.
