@@ -123,12 +123,20 @@ test('formatting controls stay visible and the plus stays completely left of wri
   await expect(page.getByLabel('Insert a content block')).toBeVisible();
   const geometry = await page.evaluate(() => {
     const button = document.querySelector('.gutter-position .insert-trigger');
-    const canvas = document.querySelector('.editor-canvas');
-    if (!button || !canvas) return null;
-    return { buttonRight: button.getBoundingClientRect().right, canvasLeft: canvas.getBoundingClientRect().left };
+    const active = document.querySelector('.atlas-story-rich-document > .atlas-story-active-block');
+    const root = document.querySelector('.atlas-story-rich-document');
+    const inactive = Array.from(root?.children ?? []).find(element => element !== active);
+    if (!button || !active || !inactive || !root) return null;
+    return {
+      buttonRight: button.getBoundingClientRect().right,
+      activeLeft: active.getBoundingClientRect().left,
+      inactiveLeft: inactive.getBoundingClientRect().left,
+      editorLeft: root.getBoundingClientRect().left,
+    };
   });
   expect(geometry).not.toBeNull();
-  expect(geometry!.buttonRight).toBeLessThanOrEqual(geometry!.canvasLeft);
+  expect(geometry!.buttonRight).toBeLessThanOrEqual(geometry!.activeLeft);
+  expect(Math.abs(geometry!.inactiveLeft - geometry!.editorLeft)).toBeLessThanOrEqual(3);
   await expect(toolbar).toBeVisible();
 });
 
@@ -170,4 +178,71 @@ test('an extra empty text block can be removed without deleting the final writin
   await expect(page.getByRole('button', { name: 'Remove empty text block' })).toBeVisible();
   await page.getByRole('button', { name: 'Remove empty text block' }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(2);
+});
+
+
+test('only the active block is indented, with move controls in its side rail', async ({ page }) => {
+  await page.goto(storyUrl);
+  const root = page.locator('.atlas-story-rich-document');
+  const original = root.locator('> .atlas-story-text[data-atlas-key="intro"]');
+  const image = root.locator('> .atlas-story-figure[data-atlas-key="public-square"]');
+
+  await original.locator('p').first().click();
+  await expect(original).toHaveClass(/atlas-story-active-block/);
+  await expect(image).not.toHaveClass(/atlas-story-active-block/);
+  await expect(page.getByRole('button', { name: 'Move current block up' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Move current block down' })).toBeEnabled();
+
+  const layout = await page.evaluate(() => {
+    const root = document.querySelector('.atlas-story-rich-document');
+    const first = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
+    const image = root?.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const rail = document.querySelector('.gutter-position');
+    if (!root || !first || !image || !rail) return null;
+    return {
+      rootLeft: root.getBoundingClientRect().left,
+      firstLeft: first.getBoundingClientRect().left,
+      imageLeft: image.getBoundingClientRect().left,
+      railRight: rail.getBoundingClientRect().right,
+    };
+  });
+  expect(layout).not.toBeNull();
+  expect(layout!.firstLeft).toBeGreaterThan(layout!.rootLeft + 25);
+  expect(Math.abs(layout!.imageLeft - layout!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(layout!.railRight).toBeLessThanOrEqual(layout!.firstLeft);
+
+  await page.getByRole('button', { name: 'Move current block down' }).click();
+  await expect(root.locator('> *').first()).toHaveAttribute('data-atlas-key', 'public-square');
+  await expect(original).toHaveClass(/atlas-story-active-block/);
+  await expect(image).not.toHaveClass(/atlas-story-active-block/);
+  await page.getByRole('button', { name: 'Existing block forms' }).click();
+  await expect(page.locator('.block-composer .content-block').first()).toContainText('Block 1 · Image');
+});
+
+test('only one section indents in narrow phone-sized workbench', async ({ page }) => {
+  await page.goto(storyUrl);
+  await page.getByRole('button', { name: 'Simulate phone width' }).click();
+  const root = page.locator('.atlas-story-rich-document');
+  const first = root.locator('> .atlas-story-text[data-atlas-key="intro"]');
+  const image = root.locator('> .atlas-story-figure[data-atlas-key="public-square"]');
+  await image.click();
+  await expect(image).toHaveClass(/atlas-story-active-block/);
+  await expect(first).not.toHaveClass(/atlas-story-active-block/);
+  const layout = await page.evaluate(() => {
+    const root = document.querySelector('.atlas-story-rich-document');
+    const first = root?.querySelector('.atlas-story-text[data-atlas-key="intro"]');
+    const image = root?.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+    const rail = document.querySelector('.gutter-position');
+    if (!root || !first || !image || !rail) return null;
+    return {
+      rootLeft: root.getBoundingClientRect().left,
+      firstLeft: first.getBoundingClientRect().left,
+      imageLeft: image.getBoundingClientRect().left,
+      railRight: rail.getBoundingClientRect().right,
+    };
+  });
+  expect(layout).not.toBeNull();
+  expect(Math.abs(layout!.firstLeft - layout!.rootLeft)).toBeLessThanOrEqual(3);
+  expect(layout!.imageLeft).toBeGreaterThan(layout!.rootLeft + 25);
+  expect(layout!.railRight).toBeLessThanOrEqual(layout!.imageLeft);
 });
