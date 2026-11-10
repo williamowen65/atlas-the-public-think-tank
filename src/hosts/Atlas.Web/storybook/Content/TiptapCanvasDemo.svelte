@@ -22,6 +22,11 @@
     styleMode?: 'atlas' | 'editorial';
   } = $props();
 
+  // Focus is separate from ProseMirror's retained selection: a click elsewhere
+  // in the node or on the page removes BOTH the gutter and block indentation.
+  let editorFocused = false;
+  let controlsVisible = $state(false);
+
   // The document may only hold real Atlas blocks. StarterKit's generic doc
   // otherwise lets Backspace create anonymous top-level paragraphs (phantom IDs).
   const AtlasDocument = Node.create({
@@ -39,6 +44,7 @@
       return [new Plugin({
         props: {
           decorations(state) {
+            if (!editorFocused) return DecorationSet.empty;
             const index = state.selection.$from.index(0);
             if (index < 0 || index >= state.doc.childCount) return DecorationSet.empty;
             let from = 0;
@@ -247,13 +253,34 @@
     // ProseMirror may replace a text-block DOM node after onTransaction. Measure
     // on the next animation frame, after its decorations and layout have updated.
     cancelAnimationFrame(railFrame);
+    if (!editorFocused) {
+      selectionPopup = null;
+      return;
+    }
     railFrame = requestAnimationFrame(() => {
-      if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected) return;
+      if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected || !editorFocused) return;
       const current = editor.state.selection.$from.index(0);
       const block = editor.view.dom.children.item(current);
-      if (!block) return;
-      const top = block.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
-      if (Number.isFinite(top)) gutterTop = Math.max(0, Math.round(top));
+      if (block) {
+        const top = block.getBoundingClientRect().top - shellEl.getBoundingClientRect().top;
+        if (Number.isFinite(top)) gutterTop = Math.max(0, Math.round(top));
+      }
+      const selection = editor.state.selection;
+      if (selection instanceof TextSelection && !selection.empty && !linkFormOpen) {
+        try {
+          const start = editor.view.coordsAtPos(selection.from);
+          const end = editor.view.coordsAtPos(selection.to);
+          const shell = shellEl.getBoundingClientRect();
+          selectionPopup = {
+            left: Math.max(0, Math.min(shellEl.clientWidth - 285, (start.left + end.right) / 2 - shell.left - 137)),
+            top: Math.max(-42, Math.min(start.top, end.top) - shell.top - 48),
+          };
+        } catch {
+          selectionPopup = null;
+        }
+      } else {
+        selectionPopup = null;
+      }
     });
   }
 
@@ -293,6 +320,7 @@
     linkHref = String(editor.getAttributes('link').href ?? '');
     linkError = '';
     linkFormOpen = true;
+    selectionPopup = null;
   }
 
   function saveLink() {
@@ -449,6 +477,19 @@
           class: 'atlas-story-rich-document',
           'aria-label': 'Node content: editable rich-text document',
         },
+      },
+      onFocus: ({ editor }) => {
+        editorFocused = true;
+        controlsVisible = true;
+        editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', true));
+        repositionGutter(editor);
+      },
+      onBlur: ({ editor }) => {
+        editorFocused = false;
+        controlsVisible = false;
+        floatingOptionsOpen = false;
+        selectionPopup = null;
+        editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', false));
       },
       onTransaction: ({ editor }) => {
         editorState = { editor };
