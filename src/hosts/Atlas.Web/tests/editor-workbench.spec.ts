@@ -166,7 +166,7 @@ test('an extra empty text block can be removed without deleting the final writin
   await page.getByRole('button', { name: 'Add a content block' }).click();
   await page.getByRole('button', { name: 'Text', exact: true }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(3);
-  await page.locator('.atlas-story-rich-document > .atlas-story-text p').last().click();
+  await page.locator('.atlas-story-rich-document > .atlas-story-text').nth(1).locator('p').click();
   await expect(page.getByRole('button', { name: 'Remove empty text block' })).toBeVisible();
   await page.getByRole('button', { name: 'Remove empty text block' }).click();
   await expect(page.locator('.atlas-story-rich-document > .atlas-story-text')).toHaveCount(2);
