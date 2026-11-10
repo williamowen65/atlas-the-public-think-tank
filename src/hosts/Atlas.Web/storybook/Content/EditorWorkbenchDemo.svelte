@@ -86,15 +86,12 @@
 
       <header class="node-header">
         {#if view === 'edit'}
-          <div class="type-controls">
-            <label for="workbench-type">Node type</label>
-            <select id="workbench-type" bind:value={nodeType}>
+          <h2 class="editable-title">
+            <select id="workbench-type" class="node-type-select" aria-label="Node type" bind:value={nodeType}>
               <option>Idea</option>
               <option>Question</option>
               <option>Evidence</option>
             </select>
-          </div>
-          <h2 class="editable-title"><span class="type-prefix">{nodeType}:</span>
             <input aria-label="Node title" bind:value={titleDraft} placeholder="Give your node a title" maxlength="200"/>
           </h2>
         {:else}
@@ -194,8 +191,13 @@
   .node-header { padding: 1.1rem 1.25rem .3rem; }
   .node-header h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem; margin: .35rem 0 .4rem; font-size: clamp(1.25rem, 3.5vw, 1.75rem); line-height: 1.25; }
   .type-prefix { color: var(--atlas-accent); }
-  .type-controls { display: flex; gap: .5rem; align-items: center; font-size: .82rem; color: var(--atlas-muted); }
-  .type-controls select, .card-fields select { border: 1px solid var(--atlas-border); border-radius: .35rem; padding: .25rem .4rem; color: var(--atlas-text); background: var(--atlas-surface); }
+  .editable-title .node-type-select {
+    flex: 0 0 auto; max-width: 100%;
+    border: 1px solid var(--atlas-border); border-radius: .35rem;
+    padding: .15rem .35rem; background: var(--atlas-surface);
+    color: var(--atlas-accent); font: inherit; font-weight: 700;
+    cursor: pointer;
+  }
   .editable-title input { display: block; flex: 1 1 15rem; min-width: 0; width: 100%; border: 0; border-bottom: 1px solid transparent; padding: .05rem 0; color: var(--atlas-text); background: transparent; font: inherit; font-weight: inherit; line-height: inherit; }
   .editable-title input:hover, .editable-title input:focus { border-color: var(--atlas-border); }
   .byline { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .4rem; margin: .3rem 0 .75rem; color: var(--atlas-muted); font-size: .81rem; line-height: 1.5; }
@@ -225,7 +227,9 @@
   .phone-width .node-header { padding: .7rem .7rem .2rem; }
   .phone-width .node-frame .breadcrumb { padding: .55rem .7rem; }
   .phone-width .node-content { --editor-card-inset: .7rem; padding: .35rem .7rem .8rem; }
-  .phone-width .editable-title input { flex-basis: 100%; }
+  .phone-width .editable-title { flex-direction: column; align-items: stretch; }
+  .phone-width .editable-title .node-type-select { align-self: flex-start; }
+  .phone-width .editable-title input { flex: 0 1 auto; width: 100%; }
   .phone-width .breadcrumb-toggle { margin-left: 0; }
   @media (max-width: 650px) {
     .workbench { padding: .8rem; }
@@ -233,5 +237,8 @@
     .node-header { padding: .8rem .75rem .25rem; }
     .node-frame .breadcrumb { padding: .6rem .75rem; }
     .node-content { --editor-card-inset: .75rem; padding: .35rem .75rem 1rem; }
+    .editable-title { flex-direction: column; align-items: stretch; }
+    .editable-title .node-type-select { align-self: flex-start; }
+    .editable-title input { flex: 0 1 auto; width: 100%; }
   }
 </style>
