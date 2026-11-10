@@ -284,3 +284,20 @@ principle: configuration belongs visibly to the relevant content block.
 Playwright regression checks cover a link form deep in the document,
 provisional insertion before an existing image, Cancel rollback, and editing
 image metadata from the image's own control.
+
+
+### November 10: inline community picker
+
+The Edit view no longer shows the selected community twice. Its editable
+select appears **in the byline**, directly after "By You · Draft · Community:",
+where the read-only community label appears in Full Node and Feed previews.
+The redundant Community row beneath the byline is removed.
+
+**Open question (not decided):** Authors may eventually be able to select
+**multiple communities** for a node. The current Storybook workbench uses one
+native select only to explore the placement, not to assert single-community
+cardinality. If Atlas moves to multi-community membership, evaluate a compact
+multiselect, chips or popover inside the same byline location, while preserving
+a readable display in the preview views. The actual production model,
+permissions, routing and persistence for multiple communities require
+separate design work.
