@@ -248,7 +248,7 @@
 </div>
 
 <style>
-  .tiptap-prototype { color: var(--atlas-text); }
+  .tiptap-prototype { color: var(--atlas-text); container-type: inline-size; }
   .editor-hint { display: flex; justify-content: space-between; gap: .4rem 1rem; flex-wrap: wrap; padding: .55rem 0 .8rem; font-size: .82rem; color: var(--atlas-muted); }
   .document-shell { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); overflow: visible; }
   .editor-canvas { min-height: 18rem; padding: 1.2rem 1.5rem 2.5rem; }
@@ -286,7 +286,7 @@
   .form-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent); }
   .touch-toolbar, .touch-insert-options { display: none; }
   button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--atlas-focus); outline-offset: 2px; }
-  @media (max-width: 650px) {
+  @container (max-width: 650px) {
     .editor-canvas { padding: 1rem .75rem 1.7rem; }
     .editor-hint { font-size: .75rem; }
     .touch-toolbar { display: flex; flex-wrap: wrap; gap: .35rem; padding: .5rem 0; }
