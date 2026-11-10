@@ -301,3 +301,21 @@ multiselect, chips or popover inside the same byline location, while preserving
 a readable display in the preview views. The actual production model,
 permissions, routing and persistence for multiple communities require
 separate design work.
+
+
+### November 10: node title and type placement
+
+The Storybook **Edit** node card now uses the type selector **in the title
+where the read-only Idea/Question/Evidence prefix would be**, rather than
+showing both a separate Node Type field and a duplicate prefix.
+
+Layout intentionally follows the existing Atlas responsive pattern:
+- **Desktop:** the type dropdown is immediately beside the title input.
+- **Mobile or Storybook phone-width simulation:** the same selector sits
+  **above the title**, not beside it, avoiding an excessively cramped row.
+- **Full node / feed previews:** display the type as ordinary title text
+  followed by a colon, with no select control.
+
+The community selection is also inline with the byline, with the possibility
+of multi-community selection left open for future UX and model discussion.
+No production Svelte component, API or database code was changed.
