@@ -6,8 +6,6 @@
   import { onMount } from 'svelte';
   import { Editor, Node } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
-  import BubbleMenu from '@tiptap/extension-bubble-menu';
-  import FloatingMenu from '@tiptap/extension-floating-menu';
   import { publicUrl } from '../../src/lib/api/nodePage';
   import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import { blocksToTiptapHtml, tiptapDocumentToBlocks } from './tiptapBlocks';
@@ -21,6 +19,14 @@
     onChange?: (blocks: AuthorBlock[]) => void;
     styleMode?: 'atlas' | 'editorial';
   } = $props();
+
+  // The document may only hold real Atlas blocks. StarterKit's generic doc
+  // otherwise lets Backspace create anonymous top-level paragraphs (phantom IDs).
+  const AtlasDocument = Node.create({
+    name: 'doc',
+    topNode: true,
+    content: '(atlasText | atlasImage | atlasUnsupported)+',
+  });
 
   // A Markdown block stays one Atlas block even when it contains multiple
   // paragraphs/headings. This wrapper carries its stable key through editing,
@@ -123,8 +129,13 @@
   });
 
   let canvasEl: HTMLDivElement;
-  let bubbleEl: HTMLDivElement;
-  let floatingEl: HTMLDivElement;
+  let shellEl: HTMLDivElement;
+  let gutterTop = $state(8);
+  let linkFormOpen = $state(false);
+  let linkHref = $state('');
+  let linkText = $state('');
+  let linkError = $state('');
+  let linkSelection: { from: number; to: number } | null = null;
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
   let floatingOptionsOpen = $state(false);
   let mobileOptionsOpen = $state(false);
@@ -169,19 +180,82 @@
     else editor.chain().focus().toggleBulletList().run();
   }
 
-  function addLink() {
+  function repositionGutter(editor: Editor) {
+    if (!shellEl || !editor.view?.dom?.isConnected) return;
+    try {
+      const caret = editor.view.coordsAtPos(editor.state.selection.from);
+      const shell = shellEl.getBoundingClientRect();
+      if (Number.isFinite(caret.top)) gutterTop = Math.max(6, Math.round(caret.top - shell.top - 3));
+    } catch {
+      // During an editor remount the DOM selection may not exist yet.
+    }
+  }
+
+  // An in-page link form is safer than window.prompt in the Storybook iframe.
+  // Capture the document selection BEFORE the input field takes focus.
+  function openLinkForm() {
     const editor = currentEditor();
     if (!editor) return;
-    const existing = editor.getAttributes('link').href || '';
-    const url = window.prompt('Link URL (http:// or https://)', String(existing));
-    if (url === null) return;
-    if (!url.trim()) {
-      editor.chain().focus().unsetLink().run();
-    } else if (/^https?:\/\//i.test(url.trim())) {
-      editor.chain().focus().setLink({ href: url.trim() }).run();
-    } else {
-      window.alert('Use a full http:// or https:// link.');
+    const { from, to } = editor.state.selection;
+    linkSelection = { from, to };
+    linkText = editor.state.doc.textBetween(from, to, ' ');
+    linkHref = String(editor.getAttributes('link').href ?? '');
+    linkError = '';
+    linkFormOpen = true;
+  }
+
+  function saveLink() {
+    const editor = currentEditor();
+    if (!editor || !linkSelection) return;
+    const url = linkHref.trim();
+    let valid = false;
+    try { valid = ['http:', 'https:'].includes(new URL(url).protocol); } catch { /* Invalid URL. */ }
+    if (!valid) {
+      linkError = 'Enter a full HTTP(S) URL.';
+      return;
     }
+    if (linkSelection.from === linkSelection.to) {
+      editor.chain().focus().setTextSelection(linkSelection).insertContent({
+        type: 'text', text: linkText.trim() || url,
+        marks: [{ type: 'link', attrs: { href: url } }],
+      }).run();
+    } else {
+      editor.chain().focus().setTextSelection(linkSelection).setLink({ href: url }).run();
+    }
+    linkFormOpen = false;
+    linkSelection = null;
+  }
+
+  function unlink() {
+    const editor = currentEditor();
+    if (editor && linkSelection)
+      editor.chain().focus().setTextSelection(linkSelection).unsetLink().run();
+    linkFormOpen = false;
+    linkSelection = null;
+  }
+
+  function selectedEmptyTextBlock(editor: Editor): boolean {
+    const index = editor.state.selection.$from.index(0);
+    const node = editor.state.doc.maybeChild(index);
+    return editor.state.doc.childCount > 1 && node?.type.name === 'atlasText' && !node.textContent.trim();
+  }
+
+  function removeEmptyTextBlock() {
+    const editor = currentEditor();
+    if (!editor || !selectedEmptyTextBlock(editor)) return;
+    const index = editor.state.selection.$from.index(0);
+    let from = 0;
+    for (let i = 0; i < index; i++) from += editor.state.doc.child(i).nodeSize;
+    const to = from + editor.state.doc.child(index).nodeSize;
+    editor.chain().focus().deleteRange({ from, to }).run();
+  }
+
+  function removeSelectedImage() {
+    const editor = currentEditor();
+    if (!editor || !editor.isActive('atlasImage')) return;
+    // Keep one empty text block if this was the last node in the document.
+    if (editor.state.doc.childCount === 1) insertTextBlock();
+    editor.chain().focus().deleteSelection().run();
   }
 
   function insertDivider() {
@@ -257,12 +331,11 @@
     const editor = new Editor({
       element: canvasEl,
       extensions: [
-        StarterKit,
+        StarterKit.configure({ document: false }),
+        AtlasDocument,
         AtlasText,
         AtlasImage,
         AtlasUnsupported,
-        BubbleMenu.configure({ element: bubbleEl }),
-        FloatingMenu.configure({ element: floatingEl }),
       ],
       content: blocksToTiptapHtml(initialBlocks),
       editorProps: {
@@ -271,7 +344,10 @@
           'aria-label': 'Node content: editable rich-text document',
         },
       },
-      onTransaction: ({ editor }) => { editorState = { editor }; },
+      onTransaction: ({ editor }) => {
+        editorState = { editor };
+        repositionGutter(editor);
+      },
       onUpdate: ({ editor }) => {
         const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks);
         latestBlocks = next;
@@ -279,57 +355,101 @@
       },
     });
     editorState = { editor };
+    repositionGutter(editor);
     return () => { editor.destroy(); };
   });
 </script>
 
+
 <div class="tiptap-prototype" class:editorial={styleMode === 'editorial'}>
   <div class="editor-hint">
-    <span>Click into the document and type.</span>
-    <span>Select text for formatting · Empty line for <strong>+</strong></span>
+    <span>Click into the node and write. Press Enter to start another paragraph.</span>
   </div>
 
-  <!-- Both menu elements must exist before the editor is created on mount.
-       Tiptap positions them; Atlas owns their contents and styles. -->
-  <div bind:this={bubbleEl} class="atlas-story-bubble" aria-label="Selected text formatting">
-    <button type="button" onclick={() => format('bold')} aria-label="Bold selected text" title="Bold"><strong>B</strong></button>
-    <button type="button" onclick={() => format('italic')} aria-label="Italicize selected text" title="Italic"><em>I</em></button>
-    <button type="button" onclick={addLink} aria-label="Add or edit link">Link</button>
+  <!-- Persistent toolbar: never moves, expands, or disappears as the selection changes. -->
+  <div class="format-toolbar" role="toolbar" aria-label="Text formatting">
+    <button type="button" aria-label="Bold selected text" title="Bold"
+      onpointerdown={(event) => event.preventDefault()} onclick={() => format('bold')}>
+      <strong>B</strong>
+    </button>
+    <button type="button" aria-label="Italicize selected text" title="Italic"
+      onpointerdown={(event) => event.preventDefault()} onclick={() => format('italic')}>
+      <em>I</em>
+    </button>
+    <button type="button" aria-label="Add or edit link"
+      onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
+    <span class="toolbar-separator" aria-hidden="true"></span>
+    <button type="button" aria-label="Toggle heading" onclick={() => format('heading')}>H2</button>
+    <button type="button" aria-label="Toggle bulleted list" onclick={() => format('bulletList')}>List</button>
   </div>
-  <div bind:this={floatingEl} class="atlas-story-floating" aria-label="Insert content on empty line">
-    <button type="button" class="insert-trigger" aria-label="Add a content block" aria-expanded={floatingOptionsOpen} onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
-    {#if floatingOptionsOpen}
-      <div class="insert-choices">
-        <button type="button" onclick={insertTextBlock}>Text</button>
-        <button type="button" onclick={openImageForm}>Image</button>
-        <button type="button" onclick={() => { format('heading'); floatingOptionsOpen = false; }}>Heading</button>
-        <button type="button" onclick={insertDivider}>Section break</button>
+
+  {#if linkFormOpen}
+    <form class="link-form" aria-label="Insert or edit link"
+      onsubmit={(event) => { event.preventDefault(); saveLink(); }}>
+      <label for="story-link-url">Link URL</label>
+      <input id="story-link-url" type="url" required bind:value={linkHref}
+        placeholder="https://example.org/article" />
+      {#if linkSelection?.from === linkSelection?.to}
+        <label for="story-link-text">Link text (optional)</label>
+        <input id="story-link-text" bind:value={linkText} placeholder="Text to insert" />
+      {/if}
+      {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
+      <div class="form-actions">
+        <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
+        <button type="button" onclick={unlink}>Remove link</button>
+        <button type="submit" class="primary">Apply link</button>
       </div>
-    {/if}
-  </div>
+    </form>
+  {/if}
 
-  <div class="document-shell">
+  {#if floatingOptionsOpen}
+    <div class="insert-choices" aria-label="Insert a content block">
+      <span class="insert-label">Insert after current block:</span>
+      <button type="button" onclick={insertTextBlock}>Text</button>
+      <button type="button" onclick={openImageForm}>Image</button>
+      <button type="button" onclick={() => { format('heading'); floatingOptionsOpen = false; }}>Heading</button>
+      <button type="button" onclick={insertDivider}>Section break</button>
+      <button type="button" onclick={() => floatingOptionsOpen = false} aria-label="Close insert choices">Close</button>
+    </div>
+  {/if}
+
+  <!-- Reserve an actual gutter: the plus never covers the writing surface.
+       Its vertical position follows the current selection without floating-ui. -->
+  <div class="document-shell" bind:this={shellEl}>
+    <div class="gutter-position" style:top={gutterTop + 'px'}>
+      <button type="button" class="insert-trigger" aria-label="Add a content block"
+        aria-expanded={floatingOptionsOpen} onclick={() => floatingOptionsOpen = !floatingOptionsOpen}>+</button>
+    </div>
     <div class="editor-canvas" bind:this={canvasEl}></div>
   </div>
 
   {#if editorState.editor?.isActive('atlasImage')}
-    <div class="image-context">
-      <span>Image block selected</span>
+    <div class="block-context">
+      <span>Image selected</span>
       <button type="button" onclick={() => moveSelectedImage(-1)}>Move image up</button>
       <button type="button" onclick={() => moveSelectedImage(1)}>Move image down</button>
       <button type="button" onclick={openImageForm}>Edit image, caption &amp; alt text</button>
+      <button type="button" onclick={removeSelectedImage}>Remove image</button>
+    </div>
+  {:else if editorState.editor && selectedEmptyTextBlock(editorState.editor)}
+    <div class="block-context">
+      <span>Empty text block</span>
+      <button type="button" onclick={removeEmptyTextBlock}>Remove empty text block</button>
     </div>
   {/if}
 
   {#if imageFormOpen}
-    <form class="image-form" aria-label={editingExisting ? 'Edit image' : 'Insert image'} onsubmit={(event) => { event.preventDefault(); saveImage(); }}>
+    <form class="image-form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
+      onsubmit={(event) => { event.preventDefault(); saveImage(); }}>
       <h3>{editingExisting ? 'Edit image' : 'Insert an image'}</h3>
       <label for="story-image-url">Image URL</label>
-      <input id="story-image-url" type="url" required bind:value={imageDraft.url} placeholder="https://example.com/photo.jpg"/>
+      <input id="story-image-url" type="url" required bind:value={imageDraft.url}
+        placeholder="https://example.org/photo.jpg"/>
       <label for="story-image-alt">Alternative text <span>(required)</span></label>
-      <textarea id="story-image-alt" rows="2" required bind:value={imageDraft.alt} placeholder="Describe the photograph for someone who can't see it"></textarea>
+      <textarea id="story-image-alt" rows="2" required bind:value={imageDraft.alt}
+        placeholder="Describe the photograph for someone who cannot see it"></textarea>
       <label for="story-image-caption">Caption <span>(optional)</span></label>
-      <input id="story-image-caption" bind:value={imageDraft.caption} placeholder="An optional explanation"/>
+      <input id="story-image-caption" bind:value={imageDraft.caption} placeholder="Optional caption"/>
       {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
       <div class="form-actions">
         <button type="button" onclick={() => { imageFormOpen = false; imageError = ''; }}>Cancel</button>
@@ -338,70 +458,115 @@
     </form>
   {/if}
 
-  <!-- Large touch targets instead of relying solely on hovering beside a line. -->
-  <div class="touch-toolbar" aria-label="Mobile editing controls">
-    <button type="button" onclick={() => format('bold')} aria-label="Bold selected text"><strong>B</strong></button>
-    <button type="button" onclick={() => format('italic')} aria-label="Italic selected text"><em>I</em></button>
-    <button type="button" onclick={addLink}>Link</button>
-    <button type="button" onclick={() => format('heading')}>H2</button>
-    <button type="button" onclick={() => mobileOptionsOpen = !mobileOptionsOpen} aria-expanded={mobileOptionsOpen}>+ Insert</button>
-  </div>
-  {#if mobileOptionsOpen}
-    <div class="touch-insert-options" aria-label="Mobile insert options">
-      <button type="button" onclick={insertTextBlock}>Text</button>
-      <button type="button" onclick={openImageForm}>Image</button>
-      <button type="button" onclick={insertDivider}>Section break</button>
-      <button type="button" onclick={() => { format('bulletList'); mobileOptionsOpen = false; }}>Bulleted list</button>
-    </div>
-  {/if}
+  <p class="editor-note">The + follows the cursor in the left gutter. Enter creates a paragraph inside the current Atlas text block. Use + → Text to create a separate block. The final empty text block remains as a place to type.</p>
 </div>
 
 <style>
-  .tiptap-prototype { color: var(--atlas-text); container-type: inline-size; }
-  .editor-hint { display: flex; justify-content: space-between; gap: .4rem 1rem; flex-wrap: wrap; padding: .55rem 0 .8rem; font-size: .82rem; color: var(--atlas-muted); }
-  .document-shell { border: 0; background: transparent; overflow: visible; }
-  .editor-canvas { min-height: 12rem; padding: .4rem 0 1.25rem; }
-  .editorial .document-shell { border-color: transparent; }
+  .tiptap-prototype {
+    color: var(--atlas-text);
+    container-type: inline-size;
+    min-width: 0;
+  }
+  .editor-hint { color: var(--atlas-muted); font-size: .84rem; padding: .4rem 0 .7rem; }
+  .format-toolbar {
+    display: flex; align-items: center; gap: .3rem; flex-wrap: wrap;
+    padding: .3rem .45rem; border: 1px solid var(--atlas-border);
+    border-radius: .6rem; background: var(--atlas-surface);
+    margin: 0 0 1rem; min-height: 2.65rem;
+  }
+  .format-toolbar button {
+    color: var(--atlas-text); font: inherit; cursor: pointer; padding: .3rem .65rem;
+    border: 0; border-radius: .4rem; background: transparent; min-height: 2rem;
+  }
+  .format-toolbar button:hover { background: var(--atlas-bg); }
+  .toolbar-separator { height: 1.35rem; border-left: 1px solid var(--atlas-border); margin-inline: .2rem; }
+  .document-shell {
+    position: relative; min-width: 0; background: transparent;
+    padding-left: 3.15rem; border: 0;
+  }
+  .document-shell:focus-within { box-shadow: inset 2px 0 0 var(--atlas-focus); }
+  .gutter-position {
+    position: absolute; left: .2rem; width: 2.5rem; z-index: 2;
+    display: flex; justify-content: center;
+  }
+  .insert-trigger {
+    width: 2.15rem; height: 2.15rem; border: 1px solid var(--atlas-border);
+    border-radius: 50%; background: var(--atlas-surface); color: var(--atlas-text);
+    display: grid; place-items: center; box-sizing: border-box;
+    padding: 0; line-height: 1; font: 600 1.4rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .insert-trigger:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
+  .insert-choices {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .35rem;
+    padding: .55rem; border: 1px solid var(--atlas-border);
+    border-radius: .55rem; margin: -.4rem 0 1rem; background: var(--atlas-surface);
+  }
+  .insert-label { font-size: .78rem; color: var(--atlas-muted); margin-right: .3rem; }
+  .insert-choices button,
+  .block-context button, .form-actions button {
+    cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .4rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    padding: .45rem .65rem; font: inherit; font-size: .85rem;
+  }
+  .editor-canvas { padding: .3rem 0 1rem; min-height: 11rem; }
   .editorial .editor-canvas { font-family: Georgia, 'Times New Roman', serif; font-size: 1.14rem; line-height: 1.8; }
-  .editorial .editor-hint { font-family: system-ui, sans-serif; }
-  :global(.atlas-story-rich-document) { min-height: 10rem; outline: none; overflow-wrap: anywhere; line-height: 1.7; }
-  :global(.atlas-story-text) { min-width: 0; }
-  :global(.atlas-story-unsupported) { border: 1px dashed var(--atlas-border); border-radius: .4rem; color: var(--atlas-muted); padding: .7rem; margin-block: .7rem; font-size: .85rem; }
-  :global(.atlas-story-rich-document:focus-visible) { outline: 2px solid var(--atlas-focus); outline-offset: .5rem; border-radius: 2px; }
+  :global(.atlas-story-rich-document) {
+    min-height: 10rem; outline: none; overflow-wrap: anywhere; line-height: 1.7;
+  }
+  :global(.atlas-story-rich-document:focus-visible) { outline: none; }
   :global(.atlas-story-rich-document > *:first-child) { margin-top: 0; }
-  :global(.atlas-story-rich-document p) { margin: 0 0 .9rem; }
-  :global(.atlas-story-rich-document h2) { font-size: 1.4em; margin: 1.35rem 0 .5rem; line-height: 1.3; }
-  :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.6rem; }
+  :global(.atlas-story-text) { min-width: 0; }
+  :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
+  :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
+  :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
   :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }
-  :global(.atlas-story-rich-document a) { color: var(--atlas-accent); }
+  :global(.atlas-story-rich-document a) { color: var(--atlas-accent); text-decoration: underline; }
   :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }
   :global(.atlas-story-figure) { margin: 1rem 0; padding: .15rem; max-width: 100%; }
-  :global(.atlas-story-figure.ProseMirror-selectednode) { outline: 2px solid var(--atlas-focus); }
-  :global(.atlas-story-figure img) { display: block; max-width: 100%; max-height: 24rem; border-radius: var(--atlas-radius); }
-  :global(.atlas-story-figure figcaption) { color: var(--atlas-muted); margin-top: .5rem; font: .87rem/1.5 system-ui, sans-serif; }
-  :global(.atlas-story-bubble), :global(.atlas-story-floating) { display: flex; gap: .25rem; align-items: center; padding: .3rem; border: 1px solid var(--atlas-border); border-radius: .65rem; box-shadow: 0 8px 30px #0002; background: var(--atlas-surface); color: var(--atlas-text); z-index: 2000; }
-  :global(.atlas-story-floating) { border-radius: 999px; }
-  :global(.atlas-story-bubble button), :global(.atlas-story-floating button) { cursor: pointer; border: 0; background: none; border-radius: .4rem; color: inherit; padding: .4rem .6rem; font: inherit; }
-  :global(.atlas-story-bubble button:hover), :global(.atlas-story-floating button:hover) { background: var(--atlas-bg); }
-  :global(.atlas-story-floating .insert-trigger) { width: 2rem; height: 2rem; padding: 0; font-size: 1.4rem; }
-  :global(.atlas-story-floating .insert-choices) { display: flex; gap: .15rem; }
-  .image-context { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; font-size: .85rem; color: var(--atlas-muted); }
-  .image-context button, .form-actions button, .touch-toolbar button, .touch-insert-options button { cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .5rem; background: var(--atlas-surface); color: var(--atlas-text); padding: .5rem .7rem; font: inherit; }
-  .image-form { border: 1px solid var(--atlas-border); border-radius: .65rem; background: var(--atlas-surface); padding: 1rem; margin-top: 1rem; display: grid; gap: .45rem; }
-  .image-form h3 { margin: 0 0 .3rem; }
-  .image-form label { font-weight: 600; font-size: .85rem; }
-  .image-form label span { font-weight: normal; color: var(--atlas-muted); }
-  .image-form input, .image-form textarea { box-sizing: border-box; width: 100%; max-width: 100%; border: 1px solid var(--atlas-border); border-radius: .5rem; background: var(--atlas-bg); color: var(--atlas-text); padding: .65rem; font: inherit; }
-  .image-form .input-error { color: #b32318; font-weight: 600; margin: 0; }
-  .form-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .5rem; }
+  :global(.atlas-story-figure.ProseMirror-selectednode) {
+    outline: 2px solid var(--atlas-focus); outline-offset: 2px;
+  }
+  :global(.atlas-story-figure img) {
+    display: block; max-width: 100%; max-height: 24rem; border-radius: var(--atlas-radius);
+  }
+  :global(.atlas-story-figure figcaption) {
+    color: var(--atlas-muted); margin-top: .5rem; font: .85rem/1.5 system-ui, sans-serif;
+  }
+  :global(.atlas-story-unsupported) {
+    border: 1px dashed var(--atlas-border); border-radius: .4rem;
+    color: var(--atlas-muted); padding: .65rem; margin-block: .7rem; font-size: .85rem;
+  }
+  .block-context {
+    margin: .6rem 0 0 3.15rem; display: flex; flex-wrap: wrap;
+    align-items: center; gap: .45rem; color: var(--atlas-muted); font-size: .82rem;
+  }
+  .image-form, .link-form {
+    display: grid; gap: .45rem; padding: .8rem; margin: .5rem 0 1rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface);
+  }
+  .image-form h3 { margin: 0 0 .25rem; }
+  .image-form label, .link-form label { font-size: .85rem; font-weight: 600; }
+  .image-form label span { font-weight: 400; color: var(--atlas-muted); }
+  .image-form input, .image-form textarea, .link-form input {
+    box-sizing: border-box; width: 100%; padding: .6rem;
+    border-radius: .4rem; border: 1px solid var(--atlas-border);
+    background: var(--atlas-bg); color: var(--atlas-text); font: inherit;
+  }
+  .input-error { margin: 0; color: #b32318; font-size: .85rem; }
+  .form-actions { display: flex; justify-content: flex-end; gap: .4rem; flex-wrap: wrap; }
   .form-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent); }
-  .touch-toolbar, .touch-insert-options { display: none; }
-  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--atlas-focus); outline-offset: 2px; }
-  @container (max-width: 650px) {
-    .editor-canvas { padding: 1rem .75rem 1.7rem; }
-    .editor-hint { font-size: .75rem; }
-    .touch-toolbar { display: flex; flex-wrap: wrap; gap: .35rem; padding: .5rem 0; }
-    .touch-toolbar button { min-height: 44px; min-width: 44px; }
-    .touch-insert-options { display: flex; gap: .4rem; flex-wrap: wrap; padding: .4rem 0; }
+  .editor-note { margin: .6rem 0 0; color: var(--atlas-muted); font-size: .75rem; line-height: 1.5; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--atlas-focus); outline-offset: 2px;
+  }
+  @container (max-width: 430px) {
+    .document-shell { padding-left: 2.7rem; }
+    .gutter-position { left: 0; }
+    .insert-trigger { width: 2rem; height: 2rem; }
+    .block-context { margin-left: 2.7rem; }
+    .format-toolbar { gap: .1rem; }
+    .format-toolbar button { min-height: 2.5rem; padding: .4rem .65rem; }
   }
 </style>
