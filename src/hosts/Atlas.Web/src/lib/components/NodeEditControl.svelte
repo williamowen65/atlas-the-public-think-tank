@@ -4,16 +4,22 @@
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readJson, type NodeDetail, type ContentBlock } from '../api/nodePage';
   import { authorBlock, blockRequest, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
-  import BlockComposer from './BlockComposer.svelte';
+  import NodeAuthoringCard from './NodeAuthoringCard.svelte';
+  import type { NodeCardData } from './node-card-versions/types';
 
-  let { nodeId, authorId, apiBase = '/atlas-public-api', onSaved, corner = false }: {
+  let { node, apiBase = '/atlas-public-api', onSaved, corner = false, average, totalVotes }: {
     corner?: boolean;
-    nodeId: string;
-    authorId?: string;
+    node: NodeCardData;
+    average?: number | null;
+    totalVotes?: number;
     apiBase?: string;
     onSaved?: (update: { title: string; shortDescription: string; blocks: ContentBlock[] }) => void;
   } = $props();
 
+  const instance = $props.id();
+  const nodeId = $derived(node.id);
+  const authorId = $derived(node.authorId);
+  let editorRevision = $state(0);
   let dialog = $state<HTMLDialogElement>();
   let opened = $state(false);
   let busy = $state(false);
@@ -21,6 +27,7 @@
   let error = $state('');
   let notice = $state('');
   let title = $state('');
+  const preview = $derived({ ...node, title: title.trim() || 'Untitled node', isHidden: false });
   let originalTitle = $state('');
   let blocks = $state<AuthorBlock[]>([]);
   let original = $state<ContentBlock[]>([]);
@@ -42,6 +49,7 @@
     original = nextBlocks;
     blocks = nextBlocks.map(authorBlock);
     savedSnapshot = JSON.stringify({ title, blocks });
+    editorRevision += 1;
   }
 
   async function open() {
@@ -168,6 +176,7 @@
           restored.push(authorBlock(old));
       }
       blocks = restored;
+      editorRevision += 1;
       title = draft.title;
       notice = 'Private revision restored. Review before publishing.';
     } catch { error = 'Could not restore this revision.'; }
@@ -185,15 +194,16 @@
 {/if}
 {#if opened}
   <dialog bind:this={dialog} aria-label="Edit node" oncancel={(event) => { event.preventDefault(); close(); }}>
-    <header><h2>Edit your node</h2><p>Arrange content blocks in the order readers will see them. Preview the full node after publishing.</p></header>
+    <h2>Edit your node</h2>
     {#if busy}<p role="status">Saving or loading…</p>{/if}
     {#if error}<p role="alert">{error}</p>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
     {#if loaded}
       <fieldset disabled={busy || !permitted}>
-        <label for="node-edit-title">Title</label><input id="node-edit-title" bind:value={title} maxlength="450" />
-        <h3>Content</h3>
-        <BlockComposer {blocks} onChange={(next) => blocks = next} disabled={busy} />
+        {#key editorRevision}
+          <NodeAuthoringCard node={preview} {blocks} fields={titleField} disabled={busy}
+            {average} {totalVotes} onChange={(next) => blocks = next} />
+        {/key}
         <div class="actions">
           <button class="primary" type="button" onclick={() => void save()} disabled={!dirty || busy}>Publish changes</button>
           <button type="button" onclick={saveDraft}>Save private revision</button>
@@ -208,6 +218,14 @@
   </dialog>
 {/if}
 
+{#snippet titleField()}
+  <label for={`${instance}-title`}>Title</label>
+  <div class="title-row">
+    <strong>{node.typeName}:</strong>
+    <input id={`${instance}-title`} bind:value={title} maxlength="450" />
+  </div>
+{/snippet}
+
 <style>
   button, input { font: inherit; }
   button { cursor: pointer; padding: .4rem .7rem; margin: .25rem; }
@@ -216,9 +234,11 @@
   .edit-node:focus-visible { outline: 3px solid var(--atlas-focus); outline-offset: -4px; }
   dialog { box-sizing: border-box; width: min(48rem, 96vw); max-height: 94dvh; overflow-y: auto; padding: clamp(.75rem, 3vw, 1.5rem); color: var(--atlas-text); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   dialog::backdrop { background: rgb(0 0 0 / .55); }
+  .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
+  .title-row strong { color: var(--atlas-accent); }
   fieldset { border: 0; padding: 0; min-width: 0; }
   label { display: block; margin: .8rem 0 .3rem; }
-  input { box-sizing: border-box; width: 100%; padding: .65rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); color: var(--atlas-text); }
+  input { flex: 1 1 14rem; min-width: 0; box-sizing: border-box; font-size: 1.3rem; font-weight: 600; padding: .65rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); color: var(--atlas-text); }
   .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
   .primary { background: var(--atlas-accent); color: white; border-radius: var(--atlas-radius); }
   [role='alert'] { color: #b3261e; }

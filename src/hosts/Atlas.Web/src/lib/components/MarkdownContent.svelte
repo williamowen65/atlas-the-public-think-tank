@@ -1,7 +1,7 @@
 <!--
   @component
   MarkdownContent: Shared Markdown rendering for published blocks and editor previews.
-  The renderer disables raw HTML/images and validates link protocols before producing HTML.
+  The renderer disables raw HTML and validates link protocols before producing HTML.
 
   **Props**
   - `text` (`string`; required): Markdown block source; short descriptions remain plain text
@@ -12,15 +12,19 @@
 
   let {
     text,
+    images = false,
+    preview = false,
   }: {
     /** Markdown block source; short descriptions remain plain text elsewhere. */
     text: string;
+    images?: boolean;
+    preview?: boolean;
   } = $props();
   /**
    * HTML derived only from the shared Markdown renderer; never raw user text for the HTML
    * insertion.
    */
-  const html = $derived(renderMarkdown(text));
+  const html = $derived(renderMarkdown(text, images, preview));
 </script>
 
 <!-- Layout: One typography wrapper contains HTML produced only by the shared Markdown policy. -->
@@ -44,6 +48,13 @@
     margin-inline: 0;
     padding-inline-start: 1rem;
     border-inline-start: 3px solid var(--atlas-border);
+  }
+  .markdown :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    max-height: 24rem;
+    object-fit: contain;
   }
   .markdown :global(a) {
     text-decoration: underline;

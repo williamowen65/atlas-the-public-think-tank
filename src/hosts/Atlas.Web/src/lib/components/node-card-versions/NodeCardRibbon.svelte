@@ -96,8 +96,9 @@
   {/if}
   <header>
     <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
         node = { ...node, title: update.title, description: update.shortDescription };

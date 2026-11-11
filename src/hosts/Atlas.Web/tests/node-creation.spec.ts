@@ -49,7 +49,7 @@ async function login(page: Page) {
 }
 async function fill(page: Page) {
   await page.getByLabel('Title', { exact: true }).fill('Created through the frontend');
-  await page.getByLabel('Text (Markdown)', { exact: true }).fill('The full content');
+  await page.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('The full content');
 }
 for (const environment of ['storybook', 'spa']) {
   test(`${environment} root creation prompts sign-in and opens the saved node`, async ({ page }) => {

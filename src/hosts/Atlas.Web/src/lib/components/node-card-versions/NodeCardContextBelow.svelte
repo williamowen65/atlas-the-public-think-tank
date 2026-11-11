@@ -70,8 +70,9 @@
 <article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
   <header>
     <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
         node = { ...node, title: update.title, description: update.shortDescription };

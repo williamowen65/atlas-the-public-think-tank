@@ -1,52 +1,62 @@
 import MarkdownIt from 'markdown-it';
+import { publicUrl } from '../api/nodePage';
 
-/**
- * Shared Atlas policy for published content and form previews. Raw HTML and images
- * stay disabled; enabling plugins or HTML later requires reviewing this trust boundary.
- * No plugin may inject untrusted HTML into the output consumed by {@html}.
- */
-const markdown = new MarkdownIt({
-  // Escape user-written HTML as text instead of allowing actual HTML elements.
-  html: false,
-  // Do not automatically turn bare URLs into links; explicit [label](URL) links still work.
-  linkify: false,
-  // Preserve punctuation rather than applying smart quotes and other typography substitutions.
-  typographer: false,
-})
-  // Keep images in dedicated content blocks; Markdown must not produce image elements.
-  .disable('image');
-
-// Save the library’s original validator before replacing it below. bind(markdown)
-// preserves its `this` context when called separately; it does not run validation yet.
-const defaultValidateLink = markdown.validateLink.bind(markdown);
-
-// Install a callback that markdown-it calls when checking link destinations.
-// Require BOTH the library’s built-in checks and our explicit protocol allowlist.
-markdown.validateLink = (url: string) => {
-  // Preserve markdown-it’s existing rejection of dangerous link destinations.
-  if (!defaultValidateLink(url)) return false;
-  try {
-    // This dummy HTTPS address is ONLY a parsing base for relative links/fragments.
-    // It is not a deployment address, makes no network request, and never replaces
-    // the rendered href. For example, /nodes?id=123 stays relative and will work on
-    // thepublicthinktank.com. Only the temporary URL’s protocol is inspected here.
-    return ['https:', 'http:', 'mailto:'].includes(new URL(url, 'https://atlas.invalid/').protocol);
-  } catch {
-    // A destination that cannot be parsed is not accepted as a clickable link.
-    return false;
-  }
-};
-
-// A node/page already owns its heading. Markdown starts at h2 and never exceeds h6.
-for (const rule of ['heading_open', 'heading_close']) {
-  markdown.renderer.rules[rule] = (tokens, index, options, _env, renderer) => {
-    const token = tokens[index];
-    token.tag = `h${Math.min(6, Number(token.tag.slice(1)) + 1)}`;
-    return renderer.renderToken(tokens, index, options);
+// Raw HTML stays disabled in both renderers. Node content can opt into
+// external images using the same URL policy as standalone image blocks.
+function createRenderer(images: boolean, shiftHeadings = true, links = true) {
+  const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false });
+  if (!images) markdown.disable('image');
+  const validate = markdown.validateLink.bind(markdown);
+  markdown.validateLink = (url) => {
+    if (!validate(url)) return false;
+    try {
+      return ['https:', 'http:', 'mailto:'].includes(new URL(url, 'https://atlas.invalid/').protocol);
+    } catch {
+      return false;
+    }
   };
+
+  const renderImage = markdown.renderer.rules.image;
+  if (images && renderImage) {
+    markdown.renderer.rules.image = (tokens, index, options, env, renderer) => {
+      const token = tokens[index];
+      const src = publicUrl(String(token.attrGet('src') ?? ''));
+      if (!src) return '<span>[Image URL must be HTTP(S)]</span>';
+      token.attrSet('src', src);
+      token.attrSet('loading', 'lazy');
+      token.attrSet('referrerpolicy', 'no-referrer');
+      return renderImage(tokens, index, options, env, renderer);
+    };
+  }
+
+  if (!links) {
+    markdown.renderer.rules.link_open = () => '<span>';
+    markdown.renderer.rules.link_close = () => '</span>';
+  }
+
+  if (shiftHeadings) {
+    for (const rule of ['heading_open', 'heading_close']) {
+      markdown.renderer.rules[rule] = (tokens, index, options, _env, renderer) => {
+        const token = tokens[index];
+        token.tag = `h${Math.min(6, Number(token.tag.slice(1)) + 1)}`;
+        return renderer.renderToken(tokens, index, options);
+      };
+    }
+  }
+  return markdown;
 }
 
+const markdown = createRenderer(false);
+const nodeMarkdown = createRenderer(true);
+const feedMarkdown = createRenderer(true, true, false);
+const editorMarkdown = createRenderer(true, false);
+
 /** Render user Markdown using the fixed policy above; never pass arbitrary HTML through. */
-export function renderMarkdown(source: string): string {
-  return markdown.render(source);
+export function renderMarkdown(source: string, images = false, preview = false): string {
+  return (preview ? feedMarkdown : images ? nodeMarkdown : markdown).render(source);
+}
+
+/** Keep Markdown heading levels when loading a document into the editor. */
+export function renderEditorMarkdown(source: string): string {
+  return editorMarkdown.render(source);
 }

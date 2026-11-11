@@ -60,6 +60,7 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await page.getByLabel('Title', { exact: true }).fill('A root idea');
   await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
+  await page.getByLabel('Edit Markdown').check();
   await page.getByLabel('Text (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
   await page.getByText('Preview text', { exact: true }).click();
   await expect(page.getByText('Supporting content', { exact: true })).toBeVisible();

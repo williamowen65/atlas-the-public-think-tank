@@ -1,29 +1,33 @@
-<!--
-  Storybook-only research prototype. This uses the real Tiptap editing engine,
-  but is not wired to creation, API writes, or persisted Atlas block identity.
--->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { Editor, Extension, Node } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
   import { Decoration, DecorationSet } from '@tiptap/pm/view';
-  import { publicUrl } from '../../src/lib/api/nodePage';
-  import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
-  import { blocksToTiptapHtml, tiptapDocumentToBlocks } from './tiptapBlocks';
+  import { publicUrl } from '../api/nodePage';
+  import type { AuthorBlock } from '../api/contentAuthoring';
+  import { blocksToTiptapHtml, equivalentMarkdown, tiptapDocumentToBlocks } from './tiptapBlocks';
 
   let {
     initialBlocks,
     onChange,
     styleMode = 'atlas',
+    disabled = false,
+    workshop = false,
+    onUnsupportedMarkdown,
   }: {
     initialBlocks: AuthorBlock[];
     onChange?: (blocks: AuthorBlock[]) => void;
     styleMode?: 'atlas' | 'editorial';
+    disabled?: boolean;
+    workshop?: boolean;
+    onUnsupportedMarkdown?: () => void;
   } = $props();
 
   // Focus is separate from ProseMirror's retained selection: a click elsewhere
   // in the node or on the page removes BOTH the gutter and block indentation.
+  const instance = $props.id();
+  const startingBlocks = untrack(() => initialBlocks);
   let editorFocused = false;
   let controlsVisible = $state(false);
 
@@ -135,6 +139,7 @@
         src,
         alt: String(node.attrs.alt ?? ''),
         class: 'atlas-story-inline-image',
+        referrerpolicy: 'no-referrer',
         'data-atlas-inline-image': 'true',
         draggable: 'true',
       }];
@@ -223,7 +228,7 @@
         editButton,
       ];
       return ['figure', figureAttrs,
-        ['img', { src, alt: node.attrs.alt }],
+        ['img', { src, alt: node.attrs.alt, referrerpolicy: 'no-referrer' }],
         ['figcaption', {}, node.attrs.caption || ''],
         editButton,
       ];
@@ -231,11 +236,12 @@
   });
 
   let canvasEl: HTMLDivElement;
-  let shellEl: HTMLDivElement;
+  let shellEl = $state<HTMLDivElement>();
   let blockLayout = $state({ top: 0, bottom: 0, right: 0, center: 0, showBottomActions: false });
   let insertMenuLayout = $state({ top: 0, left: 0 });
   let activeIndex = $state(0);
-  let blockCount = $state(initialBlocks.length);
+  let activeSupported = $state(true);
+  let blockCount = $state(startingBlocks.length);
   let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
   let deleteConfirmPosition = $state({ top: 0, left: 0 });
   let railFrame = 0;
@@ -263,7 +269,7 @@
   let imageFormAnchorKey = $state<string | null>(null);
   let provisionalImageKey: string | null = null;
   let imageFormPosition = $state({ top: 0, left: 0 });
-  let latestBlocks: AuthorBlock[] = initialBlocks;
+  let latestBlocks: AuthorBlock[] = startingBlocks;
 
   // The forms are positioned against the document, not the full node footer.
   // The node and forms therefore scroll together, including on long nodes.
@@ -368,7 +374,7 @@
     const offset = side === 'before' ? blockLayout.top : blockLayout.bottom;
     insertMenuLayout = {
       top: offset + 8,
-      left: Math.max(0, Math.min(shellEl.clientWidth - 282, blockLayout.center - 18)),
+      left: Math.max(0, Math.min((shellEl?.clientWidth ?? 282) - 282, blockLayout.center - 18)),
     };
     selectionPopup = null;
     floatingOptionsOpen = true;
@@ -406,6 +412,7 @@
     if (!shellEl || !editor.view?.dom?.isConnected) return;
     const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
     activeIndex = Math.max(0, index);
+    activeSupported = editor.state.doc.maybeChild(index)?.type.name !== 'atlasUnsupported';
     blockCount = editor.state.doc.childCount;
 
     cancelAnimationFrame(railFrame);
@@ -489,6 +496,13 @@
     positionAnchoredForms();
   }
 
+  function applyOnEnter(event: KeyboardEvent, apply: () => void) {
+    if (event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      apply();
+    }
+  }
+
   function saveLink() {
     const editor = currentEditor();
     if (!editor || !linkSelection) return;
@@ -560,7 +574,7 @@
     if (!editor) return;
     const index = editor.state.selection.$from.index(0);
     const node = editor.state.doc.maybeChild(index);
-    if (!node) return;
+    if (!node || (!workshop && node.type.name === 'atlasUnsupported')) return;
     const kind = node.type.name === 'atlasImage' ? 'image' :
       node.type.name === 'atlasText' ? 'text' : 'unsupported';
     deleteTarget = {
@@ -701,32 +715,67 @@
       imageError = 'This image block is no longer present.';
       return;
     }
+    provisionalImageKey = null;
     editor.chain().focus().setNodeSelection(block.from).updateAttributes('atlasImage', {
       src: imageDraft.url.trim(), alt: imageDraft.alt.trim(), caption: imageDraft.caption.trim(),
     }).run();
-    provisionalImageKey = null;
     imageFormOpen = false;
     imageFormAnchorKey = null;
     imageError = '';
   }
 
+  $effect(() => {
+    const editable = !disabled;
+    const editor = editorState.editor;
+    if (editor && editor.isEditable !== editable) editor.setEditable(editable, false);
+  });
+
   onMount(() => {
+    const startingByKey = new Map(startingBlocks.map((block) => [block.key, block]));
+    // Assign a stable key to pasted or split blocks, and preserve kinds that
+    // the editor cannot modify even during a multi-block keyboard deletion.
+    const keys = new Plugin({
+      filterTransaction(transaction) {
+        if (workshop || !transaction.docChanged) return true;
+        const retained = new Set<string>();
+        transaction.doc.forEach((node) => {
+          if (node.type.name === 'atlasUnsupported') retained.add(String(node.attrs.key));
+        });
+        return startingBlocks.every((block) => block.kind === 'markdown'
+          || block.kind === 'image' || retained.has(block.key));
+      },
+      appendTransaction(transactions, _previous, state) {
+        if (!transactions.some((transaction) => transaction.docChanged)) return null;
+        const seen = new Set<string>();
+        const fix = state.tr;
+        state.doc.forEach((node, position) => {
+          const key = String(node.attrs.key ?? '');
+          if (key && !seen.has(key)) seen.add(key);
+          else fix.setNodeMarkup(position, undefined, { ...node.attrs, key: crypto.randomUUID() });
+        });
+        return fix.docChanged ? fix : null;
+      },
+    });
     const editor = new Editor({
       element: canvasEl,
       extensions: [
-        StarterKit.configure({ document: false }),
+        StarterKit.configure({ document: false, underline: false, link: { openOnClick: false, autolink: false } }),
         AtlasDocument,
         AtlasText,
         AtlasInlineImage,
         AtlasImage,
         AtlasUnsupported,
         ActiveBlockDecoration,
+        Extension.create({ name: 'atlasBlockKeys', addProseMirrorPlugins: () => [keys] }),
       ],
-      content: blocksToTiptapHtml(initialBlocks),
+      content: blocksToTiptapHtml(startingBlocks),
+      editable: !disabled,
       editorProps: {
         attributes: {
           class: 'atlas-story-rich-document',
           'aria-label': 'Node content: editable rich-text document',
+          role: 'textbox',
+          'aria-multiline': 'true',
         },
         handleDOMEvents: {
           pointerup: () => {
@@ -772,11 +821,17 @@
         requestAnimationFrame(positionAnchoredForms);
       },
       onUpdate: ({ editor }) => {
-        const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks);
+        const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks, baseline)
+          .filter((block) => block.key !== provisionalImageKey);
         latestBlocks = next;
         onChange?.(next);
       },
     });
+    const baseline = new Map(tiptapDocumentToBlocks(editor.getJSON(), startingBlocks)
+      .filter((block) => block.kind === 'markdown')
+      .map((block) => [block.key, { serialized: block.text, source: startingByKey.get(block.key)?.text ?? block.text }]));
+    if (!workshop && startingBlocks.some((block) => block.kind === 'markdown'
+      && !equivalentMarkdown(block.text, baseline.get(block.key)?.serialized ?? ''))) onUnsupportedMarkdown?.();
     editorState = { editor };
     repositionGutter(editor);
     const reposition = () => {
@@ -787,9 +842,6 @@
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     return () => {
-      // Switching editor modes must not leak a staged, invalid image into the
-      // canonical block-form draft when its inline settings were never applied.
-      if (provisionalImageKey) cancelImageForm();
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', reposition, true);
       cancelAnimationFrame(railFrame);
@@ -799,10 +851,10 @@
 </script>
 
 
-<div class="tiptap-prototype" class:editorial={styleMode === 'editorial'}>
-  <div class="editor-hint">
+<fieldset class="tiptap-prototype" class:editorial={styleMode === 'editorial'} {disabled}>
+  {#if workshop}<div class="editor-hint">
     <span>Click into the node and write. Press Enter to start another paragraph.</span>
-  </div>
+  </div>{/if}
 
   <!-- Persistent toolbar: never moves, expands, or disappears as the selection changes. -->
   <div class="format-toolbar" role="toolbar" aria-label="Text formatting">
@@ -831,12 +883,12 @@
   <div class="document-shell" bind:this={shellEl}>
     {#if deleteTarget}
       <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
-        aria-describedby="story-delete-description"
+        aria-describedby={`${instance}-delete-description`}
         style:top={deleteConfirmPosition.top + 'px'}
         style:left={deleteConfirmPosition.left + 'px'}>
         <strong>Delete this {deleteTarget.kind} block?</strong>
-        <p id="story-delete-description">
-          This removes the entire block from this Storybook draft: {deleteTarget.summary}
+        <p id={`${instance}-delete-description`}>
+          This removes the entire block from this draft: {deleteTarget.summary}
         </p>
         <div class="form-actions">
           <button type="button" onclick={cancelDeleteBlock}>Cancel</button>
@@ -845,42 +897,40 @@
       </div>
     {/if}
     {#if linkFormOpen}
-      <form class="link-form" aria-label="Insert or edit link"
-        style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}
-        onsubmit={(event) => { event.preventDefault(); saveLink(); }}>
-        <label for="story-link-url">Link URL</label>
-        <input id="story-link-url" type="url" required bind:value={linkHref}
+      <div class="link-form" role="form" aria-label="Insert or edit link"
+        style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}>
+        <label for={`${instance}-link-url`}>Link URL</label>
+        <input id={`${instance}-link-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkHref}
           placeholder="https://example.org/article" />
         {#if linkSelection?.from === linkSelection?.to}
-          <label for="story-link-text">Link text (optional)</label>
-          <input id="story-link-text" bind:value={linkText} placeholder="Text to insert" />
+          <label for={`${instance}-link-text`}>Link text (optional)</label>
+          <input id={`${instance}-link-text`} onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkText} placeholder="Text to insert" />
         {/if}
         {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
         <div class="form-actions">
           <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
           <button type="button" onclick={unlink}>Remove link</button>
-          <button type="submit" class="primary">Apply link</button>
+          <button type="button" class="primary" onclick={saveLink}>Apply link</button>
         </div>
-      </form>
+      </div>
     {/if}
 
     {#if inlineImageOpen}
-      <form class="inline-image-form" aria-label="Insert image into Markdown"
+      <div class="inline-image-form" role="form" aria-label="Insert image into Markdown"
         style:top={inlineImageFormPosition.top + 'px'}
-        style:left={inlineImageFormPosition.left + 'px'}
-        onsubmit={(event) => { event.preventDefault(); applyInlineImage(); }}>
-        <label for="story-inline-image-url">Inline image URL</label>
-        <input id="story-inline-image-url" type="url" required bind:value={inlineImageUrl}
+        style:left={inlineImageFormPosition.left + 'px'}>
+        <label for={`${instance}-inline-image-url`}>Inline image URL</label>
+        <input id={`${instance}-inline-image-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, applyInlineImage)} bind:value={inlineImageUrl}
           placeholder="https://example.org/photo.jpg"/>
-        <label for="story-inline-image-alt">Inline image alternative text</label>
-        <input id="story-inline-image-alt" required bind:value={inlineImageAlt}
+        <label for={`${instance}-inline-image-alt`}>Inline image alternative text</label>
+        <input id={`${instance}-inline-image-alt`} onkeydown={(event) => applyOnEnter(event, applyInlineImage)} bind:value={inlineImageAlt}
           placeholder="Describe the image"/>
         {#if inlineImageError}<p class="input-error" role="alert">{inlineImageError}</p>{/if}
         <div class="form-actions">
           <button type="button" onclick={() => { inlineImageOpen = false; inlineImageAt = null; }}>Cancel</button>
-          <button type="submit" class="primary">Insert image</button>
+          <button type="button" class="primary" onclick={applyInlineImage}>Insert image</button>
         </div>
-      </form>
+      </div>
     {/if}
 
     {#if selectionPopup && controlsVisible}
@@ -909,7 +959,7 @@
 
       <div class="block-corner-controls top" role="group" aria-label="Selected block actions"
         style:top={blockLayout.top - 5 + 'px'}
-        style:right={Math.max(0, shellEl.clientWidth - blockLayout.right - 5) + 'px'}>
+        style:right={Math.max(0, (shellEl?.clientWidth ?? 0) - blockLayout.right - 5) + 'px'}>
         <button type="button" aria-label="Move current block up" title="Move block up"
           disabled={activeIndex === 0}
           onpointerdown={(event) => event.preventDefault()}
@@ -918,7 +968,7 @@
           disabled={activeIndex >= blockCount - 1}
           onpointerdown={(event) => event.preventDefault()}
           onclick={() => moveCurrentBlock(1)}>↓</button>
-        <button type="button" class="corner-delete" aria-label="Delete current block" title="Delete block"
+        <button type="button" class="corner-delete" disabled={!workshop && !activeSupported} aria-label="Delete current block" title="Delete block"
           onpointerdown={(event) => event.preventDefault()}
           onclick={requestDeleteBlock}>×</button>
       </div>
@@ -926,7 +976,7 @@
       {#if blockLayout.showBottomActions}
         <div class="block-corner-controls bottom" role="group" aria-label="Selected block actions at end"
           style:top={blockLayout.bottom + 5 + 'px'}
-          style:right={Math.max(0, shellEl.clientWidth - blockLayout.right - 5) + 'px'}>
+          style:right={Math.max(0, (shellEl?.clientWidth ?? 0) - blockLayout.right - 5) + 'px'}>
           <button type="button" aria-label="Move current block up" title="Move block up"
             disabled={activeIndex === 0}
             onpointerdown={(event) => event.preventDefault()}
@@ -935,7 +985,7 @@
             disabled={activeIndex >= blockCount - 1}
             onpointerdown={(event) => event.preventDefault()}
             onclick={() => moveCurrentBlock(1)}>↓</button>
-          <button type="button" class="corner-delete" aria-label="Delete current block" title="Delete block"
+          <button type="button" class="corner-delete" disabled={!workshop && !activeSupported} aria-label="Delete current block" title="Delete block"
             onpointerdown={(event) => event.preventDefault()}
             onclick={requestDeleteBlock}>×</button>
         </div>
@@ -967,24 +1017,23 @@
     {/if}
     <div class="editor-canvas" bind:this={canvasEl}></div>
   {#if imageFormOpen}
-    <form class="image-form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
-      style:top={imageFormPosition.top + 'px'} style:left={imageFormPosition.left + 'px'}
-      onsubmit={(event) => { event.preventDefault(); saveImage(); }}>
+    <div class="image-form" role="form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
+      style:top={imageFormPosition.top + 'px'} style:left={imageFormPosition.left + 'px'}>
       <h3>{editingExisting ? 'Edit image' : 'Insert an image'}</h3>
-      <label for="story-image-url">Image URL</label>
-      <input id="story-image-url" type="url" required bind:value={imageDraft.url}
+      <label for={`${instance}-image-url`}>Image URL</label>
+      <input id={`${instance}-image-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, saveImage)} bind:value={imageDraft.url}
         placeholder="https://example.org/photo.jpg"/>
-      <label for="story-image-alt">Alternative text <span>(required)</span></label>
-      <textarea id="story-image-alt" rows="2" required bind:value={imageDraft.alt}
+      <label for={`${instance}-image-alt`}>Alternative text <span>(required)</span></label>
+      <textarea id={`${instance}-image-alt`} rows="2" bind:value={imageDraft.alt}
         placeholder="Describe the photograph for someone who cannot see it"></textarea>
-      <label for="story-image-caption">Caption <span>(optional)</span></label>
-      <input id="story-image-caption" bind:value={imageDraft.caption} placeholder="Optional caption"/>
+      <label for={`${instance}-image-caption`}>Caption <span>(optional)</span></label>
+      <input id={`${instance}-image-caption`} onkeydown={(event) => applyOnEnter(event, saveImage)} bind:value={imageDraft.caption} placeholder="Optional caption"/>
       {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
       <div class="form-actions">
         <button type="button" onclick={cancelImageForm}>Cancel</button>
-        <button type="submit" class="primary">Apply image</button>
+        <button type="button" class="primary" onclick={saveImage}>Apply image</button>
       </div>
-    </form>
+    </div>
   {/if}
 
   </div>
@@ -992,11 +1041,12 @@
 
 
 
-  <p class="editor-note">Select a text or image block to reveal its top-right move/delete controls and + buttons before and after it. Enter adds a paragraph inside the same text block. Editing stays inside this Storybook draft.</p>
-</div>
+  {#if workshop}<p class="editor-note">Select a text or image block to reveal its top-right move/delete controls and + buttons before and after it. Enter adds a paragraph inside the same text block. Editing stays inside this Storybook draft.</p>{/if}
+</fieldset>
 
 <style>
   .tiptap-prototype {
+    border: 0; margin: 0; padding: 0;
     color: var(--atlas-text);
     container-type: inline-size;
     min-width: 0;
@@ -1072,7 +1122,7 @@
   }
   .insert-label { font-weight: 600; color: var(--atlas-muted); padding-right: 1.5rem; }
   .insert-types { display: flex; flex-wrap: wrap; gap: .3rem; }
-  .insert-choices button, .block-context button, .form-actions button {
+  .insert-choices button, .form-actions button {
     cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .4rem;
     background: var(--atlas-surface); color: var(--atlas-text);
     padding: .45rem .65rem; font: inherit; font-size: .85rem;
@@ -1169,10 +1219,6 @@
   :global(.atlas-story-unsupported) {
     border: 1px dashed var(--atlas-border); border-radius: .4rem;
     color: var(--atlas-muted); padding: .65rem; margin-block: .7rem; font-size: .85rem;
-  }
-  .block-context {
-    margin: .6rem 0 0 3.15rem; display: flex; flex-wrap: wrap;
-    align-items: center; gap: .45rem; color: var(--atlas-muted); font-size: .82rem;
   }
   .image-form, .link-form, .inline-image-form, .delete-confirm {
     display: grid; gap: .45rem; padding: .8rem; margin: .5rem 0 1rem;

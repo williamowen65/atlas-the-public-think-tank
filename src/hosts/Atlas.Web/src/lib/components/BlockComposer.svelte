@@ -44,7 +44,7 @@
         <label for={`${block.key}-text`}>Text (Markdown)</label>
         <textarea id={`${block.key}-text`} value={block.text} disabled={disabled} rows="5" maxlength="32000"
           placeholder="Write your idea…" oninput={(event) => modify(block.key, { text: event.currentTarget.value })}></textarea>
-        <details><summary>Preview text</summary><MarkdownContent text={block.text}/></details>
+        <details><summary>Preview text</summary><MarkdownContent images text={block.text}/></details>
       {:else if block.kind === 'image'}
         <label for={`${block.key}-url`}>Image URL (HTTP or HTTPS)</label>
         <input id={`${block.key}-url`} type="url" value={block.url} disabled={disabled} placeholder="https://…"

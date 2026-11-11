@@ -1,7 +1,6 @@
 <!--
   Explicit research-only Markdown preview: allow safe HTTP(S) inline images.
-  The production MarkdownContent renderer intentionally disables images.
-  Do NOT replace its security policy without a separate architecture review.
+  The published-card story uses the shared production renderer instead.
 -->
 <script lang="ts">
   import MarkdownIt from 'markdown-it';
@@ -28,7 +27,7 @@
   const imageRenderer = markdown.renderer.rules.image;
   markdown.renderer.rules.image = (tokens, index, options, env, renderer) => {
     const token = tokens[index];
-    const safe = publicUrl(token.attrGet('src') || '');
+    const safe = publicUrl(String(token.attrGet('src') ?? ''));
     if (!safe) return '<span class="unsupported-image">[Image URL must be HTTP(S)]</span>';
     token.attrSet('src', safe);
     token.attrSet('loading', 'lazy');

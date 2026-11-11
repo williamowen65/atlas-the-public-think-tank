@@ -29,8 +29,9 @@
 <script lang="ts">
   import type { NodeDraft } from './nodeDraft.types';
   import { untrack } from 'svelte';
-  import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
-  import BlockComposer from './BlockComposer.svelte';
+  import type { BreadcrumbItem } from './Breadcrumb.svelte';
+  import NodeAuthoringCard from './NodeAuthoringCard.svelte';
+  import type { NodeCardData } from './node-card-versions/types';
   import { derivedExcerpt, newAuthorBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import type { NodeType } from '../api/nodePage';
   let {
@@ -137,6 +138,27 @@
   $effect(() => {
     if (!typeId && types.length) typeId = initialTypeId || types[0].id;
   });
+  const createdAt = new Date().toISOString();
+  const preview = $derived<NodeCardData>({
+    id: instance,
+    title: title.trim() || 'Untitled node',
+    typeName: typeId === 'new'
+      ? typeName.trim() || 'New node type'
+      : types.find((type) => type.id === typeId)?.name ?? 'Node',
+    authorName: 'You',
+    createdAt,
+    description: '',
+    breadcrumb: path,
+    communities: [],
+    related: [],
+    requestedTypes: requestedTypeIds.map((id) => {
+      const type = types.find((entry) => entry.id === id);
+      return type?.pluralName ?? type?.name ?? id;
+    }),
+    reactions: [],
+    commentCount: 0,
+    status: 'Active',
+  });
   // Build a normalized snapshot for preview/submission without mutating the caller’s initial draft.
   function draft(): NodeDraft {
     return {
@@ -163,7 +185,7 @@
 -->
 
 <form
-  class="node-form atlas-panel"
+  class="node-form"
   aria-label={parentId ? 'Create child node' : 'Create root node'}
   onsubmit={(event) => {
     event.preventDefault();
@@ -172,9 +194,12 @@
     onSubmit(draft());
   }}
 >
-  {#if path.length}<div class="ribbon-context"><Breadcrumb items={path} /></div>{/if}
-  <header>
-    <p class="note">{parentId ? 'Add a child node' : 'Create a root node'} · Draft</p>
+  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions}
+    disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
+  {#if blockError}<p role="alert">{blockError}</p>{/if}
+</form>
+
+{#snippet titleFields()}
     <div class="title-row">
       <div class="type-field">
         <label for={`${instance}-type`}>Node type</label><select
@@ -210,18 +235,9 @@
           ><input type="checkbox" bind:checked={autoPluralize} /> Automatically pluralize this type</label
         >
       </fieldset>{/if}
-  </header>
-  <!-- One ordered content document replaces the former separate introduction + textarea. -->
-  <div class="content-editor">
-    <h3>Content blocks</h3>
-    <p class="note">Add text and images in any order. The feed will show a compact preview.</p>
-    <BlockComposer {blocks} onChange={(updated) => { blocks = updated; blockError = ''; }} />
-    {#if blockError}<p role="alert">{blockError}</p>{/if}
-  </div>
-  <!--
-    Contribution requests describe desired child types; they are separate from this node’s own
-    type.
-  -->
+{/snippet}
+
+{#snippet creationActions()}
   <footer>
     <div class="contributions">
       <label for={`${instance}-requested`}>Requested contributions</label><select
@@ -253,7 +269,7 @@
   <div class="actions">
     <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
   </div>
-</form>
+{/snippet}
 
 <style lang="scss">
   .plural-choice {
@@ -273,20 +289,9 @@
     overflow-wrap: anywhere;
     scroll-margin-top: 1rem;
   }
-  .ribbon-context {
-    min-width: 0;
-    padding: 0.75rem 0 0;
-    margin-bottom: var(--atlas-card-padding, 1.25rem);
-    --atlas-breadcrumb-bottom-space: 0px;
-  }
-  header,
-  .content-editor,
   footer,
   .actions {
     padding-inline: var(--atlas-card-padding, 1.25rem);
-  }
-  header {
-    padding-top: 0.75rem;
   }
   label {
     display: block;
@@ -338,25 +343,6 @@
     padding: 0.75rem;
     margin-top: 0.75rem;
   }
-  .intro {
-    display: flex;
-    align-items: start;
-    gap: var(--atlas-dial-text-gap, 1rem);
-    margin-block: 1rem;
-  }
-  .summary {
-    flex: 1;
-    min-width: 0;
-  }
-  .content-editor {
-    min-width: 0;
-  }
-  section:empty {
-    display: none;
-  }
-  section {
-    margin-block: 1rem;
-  }
   footer {
     display: flex;
     flex-wrap: wrap;
@@ -397,19 +383,11 @@
   button:disabled {
     cursor: default;
   }
-  .note,
-  small {
-    color: var(--atlas-muted);
-    font-size: 0.85rem;
-  }
   :focus-visible {
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
   }
   @media (max-width: 380px) {
-    header,
-    .intro,
-    .content-editor,
     footer,
     .actions {
       padding-inline: var(--atlas-card-padding-narrow, 0.75rem);

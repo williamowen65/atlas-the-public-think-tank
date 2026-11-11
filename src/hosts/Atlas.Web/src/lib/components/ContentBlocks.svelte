@@ -12,9 +12,11 @@
   import { publicUrl, type ContentBlock } from '../api/nodePage';
   let {
     blocks,
+    preview = false,
   }: {
     /** Ordered content blocks to render; follow the ContentBlock type definition for its fields. */
     blocks: ContentBlock[];
+    preview?: boolean;
   } = $props();
 </script>
 
@@ -27,6 +29,8 @@
   <!-- Match supported block kinds; unsupported interactive kinds retain a plain fallback. -->
   {#each blocks as block (block.id)}
     {#if block.kind.toLowerCase().includes('markdown')}<MarkdownContent
+        images
+        {preview}
         text={block.content.markdown ?? ''}
       />
     {:else if block.kind.toLowerCase().includes('image') && publicUrl(block.content.url)}<figure>
@@ -34,12 +38,13 @@
           src={publicUrl(block.content.url)}
           alt={block.content.altText ?? ''}
           loading="lazy"
+          referrerpolicy="no-referrer"
         />{#if block.content.caption}<figcaption>{block.content.caption}</figcaption>{/if}
       </figure>
     {:else if publicUrl(block.content.url)}<p>
-        <a href={publicUrl(block.content.url)} rel="noopener noreferrer"
-          >{block.content.title ?? block.content.caption ?? 'Open linked content'}</a
-        >
+        {#if preview}{block.content.title ?? block.content.caption ?? 'Linked content'}
+        {:else}<a href={publicUrl(block.content.url)} rel="noopener noreferrer"
+          >{block.content.title ?? block.content.caption ?? 'Open linked content'}</a>{/if}
         {block.content.description ?? ''}
       </p>
     {:else}<p>{block.content.title ?? block.kind} content</p>{/if}

@@ -2,8 +2,9 @@
   import BlockComposer from '../../src/lib/components/BlockComposer.svelte';
   import StorybookContentBlocks from './StorybookContentBlocks.svelte';
   import { contentForPreview, type AuthorBlock } from '../../src/lib/api/contentAuthoring';
-  import TiptapCanvasDemo from './TiptapCanvasDemo.svelte';
-  import FeedNodeCarousel from './FeedNodeCarousel.svelte';
+  import type { ContentBlock } from '../../src/lib/api/nodePage';
+  import TiptapCanvas from '../../src/lib/components/TiptapCanvas.svelte';
+  import FeedNodeCarousel from '../../src/lib/components/FeedNodeCarousel.svelte';
 
   let {
     initialBlocks,
@@ -156,12 +157,12 @@
           {#if mode === 'blocks'}
             <div class="forms-area"><BlockComposer {blocks} onChange={(next) => blocks = next}/></div>
           {:else}
-            <TiptapCanvasDemo initialBlocks={blocks} {styleMode} onChange={(next) => blocks = next}/>
+            <TiptapCanvas workshop initialBlocks={blocks} {styleMode} onChange={(next) => blocks = next}/>
           {/if}
         {:else if view === 'feed'}
           <!-- Feed slides are derived DIRECTLY from the editable node blocks.
                No separately authored gallery and no inner carousel in Full Node. -->
-          <FeedNodeCarousel blocks={previewBlocks} index={feedIndex} frame={feedFrame}
+          <FeedNodeCarousel renderBlock={storySlide} blocks={previewBlocks} index={feedIndex} frame={feedFrame}
             onIndexChange={(next) => feedBlockKey = previewBlocks[next]?.id ?? null}
             onOpenFull={() => view = 'full'} />
         {:else}
@@ -273,3 +274,5 @@
     .editable-title input { flex: 0 1 auto; width: 100%; }
   }
 </style>
+
+{#snippet storySlide(block: ContentBlock)}<StorybookContentBlocks blocks={[block]} />{/snippet}

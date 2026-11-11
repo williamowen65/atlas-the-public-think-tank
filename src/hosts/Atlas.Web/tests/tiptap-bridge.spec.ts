@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { blocksToTiptapHtml, tiptapDocumentToBlocks } from '../storybook/Content/tiptapBlocks';
+import { blocksToTiptapHtml, tiptapDocumentToBlocks } from '../src/lib/components/tiptapBlocks';
 import type { AuthorBlock } from '../src/lib/api/contentAuthoring';
 
 test('markdown and image blocks preserve their keys, saved IDs and reordering', () => {
