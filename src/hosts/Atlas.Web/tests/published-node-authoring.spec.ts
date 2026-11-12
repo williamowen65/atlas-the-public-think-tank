@@ -89,3 +89,33 @@ test('the desktop feed carousel uses the voting dial height on short and long sl
   expect((await feed.getByRole('button', { name: 'Next node content block' }).boundingBox())!.y).toBeCloseTo(arrowTop, 0);
   expect(await bottom()).toBeCloseTo(dialBottom, 0);
 });
+
+
+test('the feed and full node open the same gallery at the clicked image', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="green"/></svg>',
+  }));
+  await page.goto(story);
+  await page.getByRole('button', { name: 'Preview in feed' }).click();
+  const feed = page.getByRole('region', { name: 'Feed preview of node content blocks' });
+  const openingImage = feed.getByRole('button', { name: 'View A city street lined with tall buildings' });
+  await openingImage.click();
+  const gallery = page.getByRole('dialog', { name: 'Node media gallery' });
+  await expect(gallery).toContainText('1 of 2');
+  await expect(gallery.getByRole('img', { name: 'A city street lined with tall buildings' })).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(gallery).toContainText('2 of 2');
+  await expect(gallery.getByRole('img', { name: 'A street lined with trees' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(gallery).toBeHidden();
+  await expect(openingImage).toBeFocused();
+  await expect(feed).toContainText('1 of 3');
+
+  await feed.getByRole('button', { name: 'Read more' }).click();
+  await page.getByRole('button', { name: 'View A street lined with trees' }).click();
+  await expect(gallery).toContainText('2 of 2');
+  await gallery.getByRole('button', { name: 'Previous item' }).click();
+  await expect(gallery).toContainText('1 of 2');
+});

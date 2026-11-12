@@ -1196,19 +1196,17 @@
   :global(.atlas-story-inline-image) {
     position: relative;
     float: inline-start;
-    width: min(42%, 12rem);
+    width: 50%;
     margin: 0.2rem 0.85rem 0.45rem 0;
   }
   :global(.atlas-story-inline-image img),
   :global(.atlas-story-image-frame img) {
     display: block;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    object-fit: contain;
-    background: var(--atlas-bg);
+    height: auto;
     border-radius: var(--atlas-radius);
   }
-  :global(.atlas-story-image-frame) { position: relative; width: min(100%, 28rem); }
+  :global(.atlas-story-image-frame) { position: relative; width: 50%; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }

@@ -3,7 +3,7 @@ import { publicUrl } from '../api/nodePage';
 
 // Raw HTML stays disabled in both renderers. Node content can opt into
 // external images using the same URL policy as standalone image blocks.
-function createRenderer(images: boolean, shiftHeadings = true, links = true) {
+function createRenderer(images: boolean, shiftHeadings = true, links = true, gallery = false) {
   const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false });
   if (!images) markdown.disable('image');
   const validate = markdown.validateLink.bind(markdown);
@@ -25,13 +25,40 @@ function createRenderer(images: boolean, shiftHeadings = true, links = true) {
       token.attrSet('src', src);
       token.attrSet('loading', 'lazy');
       token.attrSet('referrerpolicy', 'no-referrer');
-      return renderImage(tokens, index, options, env, renderer);
+      const image = renderImage(tokens, index, options, env, renderer);
+      if (!gallery) return image;
+      const position = Number(env?.imageIndex ?? 0);
+      if (env) env.imageIndex = position + 1;
+      const label = markdown.utils.escapeHtml(String(token.attrGet('alt') || 'image'));
+      return `<button type="button" class="markdown-image" data-node-image="${position}" aria-label="View ${label}">${image}</button>`;
     };
   }
 
   if (!links) {
     markdown.renderer.rules.link_open = () => '<span>';
     markdown.renderer.rules.link_close = () => '</span>';
+  }
+
+  if (gallery && links) {
+    // An image button cannot sit inside a link. In gallery mode, image
+    // links open the gallery while ordinary Markdown links stay clickable.
+    markdown.core.ruler.after('inline', 'gallery_image_links', (state) => {
+      for (const token of state.tokens) {
+        let open: NonNullable<typeof token.children>[number] | undefined;
+        let containsImage = false;
+        for (const child of token.children ?? []) {
+          if (child.type === 'link_open') {
+            open = child;
+            containsImage = false;
+          } else if (child.type === 'image' && publicUrl(String(child.attrGet('src') ?? ''))) {
+            containsImage = true;
+          } else if (child.type === 'link_close' && open && containsImage) {
+            open.tag = child.tag = 'span';
+            open.attrs = null;
+          }
+        }
+      }
+    });
   }
 
   if (shiftHeadings) {
@@ -49,14 +76,29 @@ function createRenderer(images: boolean, shiftHeadings = true, links = true) {
 const markdown = createRenderer(false);
 const nodeMarkdown = createRenderer(true);
 const feedMarkdown = createRenderer(true, true, false);
+const galleryMarkdown = createRenderer(true, true, true, true);
+const galleryFeedMarkdown = createRenderer(true, true, false, true);
 const editorMarkdown = createRenderer(true, false);
 
 /** Render user Markdown using the fixed policy above; never pass arbitrary HTML through. */
-export function renderMarkdown(source: string, images = false, preview = false): string {
-  return (preview ? feedMarkdown : images ? nodeMarkdown : markdown).render(source);
+export function renderMarkdown(source: string, images = false, preview = false, gallery = false): string {
+  const renderer = gallery ? (preview ? galleryFeedMarkdown : galleryMarkdown)
+    : preview ? feedMarkdown : images ? nodeMarkdown : markdown;
+  return renderer.render(source, { imageIndex: 0 });
 }
 
 /** Keep Markdown heading levels when loading a document into the editor. */
 export function renderEditorMarkdown(source: string): string {
   return editorMarkdown.render(source);
+}
+
+/** Image order matches the gallery buttons emitted by the Markdown renderer. */
+export function markdownImages(source: string) {
+  return nodeMarkdown.parse(source, {}).flatMap((token) => (token.children ?? []).flatMap((child) => {
+    if (child.type !== 'image') return [];
+    const src = publicUrl(String(child.attrGet('src') ?? ''));
+    if (!src) return [];
+    const alt = nodeMarkdown.renderer.renderInlineAsText(child.children ?? [], nodeMarkdown.options, {});
+    return [{ src, alt, caption: String(child.attrGet('title') ?? '') }];
+  }));
 }

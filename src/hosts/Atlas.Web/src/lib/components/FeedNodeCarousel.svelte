@@ -35,7 +35,7 @@
     // Don't turn child interactions into navigation gestures.
     const target = event.target;
     const touch = event.touches[0];
-    start = touch && !(target instanceof Element && target.closest('button, a, input, video, textarea'))
+    start = touch && !(target instanceof Element && target.closest('button, a, input, video, textarea, dialog'))
       ? { x: touch.clientX, y: touch.clientY }
       : null;
   }
@@ -68,9 +68,11 @@
         aria-label={'Block ' + (safeIndex + 1) + ' of ' + blocks.length}
         data-block-id={active.id} data-block-kind={active.kind}>
         <div class="block-preview">
-          {#key active.id}
-            {#if renderBlock}{@render renderBlock(active)}{:else}<ContentBlocks blocks={[active]} preview />{/if}
-          {/key}
+          {#if renderBlock}
+            {#key active.id}{@render renderBlock(active)}{/key}
+          {:else}
+            <ContentBlocks blocks={[active]} galleryBlocks={blocks} preview />
+          {/if}
         </div>
       </div>
     {:else}
@@ -135,19 +137,23 @@
     margin: 0; height: 100%; min-height: 0;
     display: flex; flex-direction: column; gap: .25rem;
   }
-  :global(.feed-block-slide .content-blocks figure img) {
-    display: block; flex: 1 1 auto; min-height: 0;
-    max-width: 100%; width: 100%; height: 100%;
-    object-fit: contain;
+  :global(.feed-block-slide .standalone-image) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
-  /* Embedded Markdown images are part of the text slide, not a separate
-     full-height image block. Text remains visible in the same card. */
-  :global(.feed-block-slide :is(.story-markdown, .markdown) img) {
-    max-height: 8rem;
+  :global(.feed-block-slide .standalone-image img) {
     width: auto;
-    object-fit: contain;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
   }
-  .compact :global(.markdown img) { width: min(42%, 7.25rem); }
+  :global(.feed-block-slide .story-markdown img) { max-height: 8rem; }
+  .compact :global(.markdown-image) { width: auto; max-width: 50%; }
+  .compact :global(.markdown-image img) { width: auto; max-width: 100%; max-height: 8rem; }
+  @media (max-width: 560px) {
+    .compact :global(.markdown-image img) { max-height: 6.5rem; }
+  }
   :global(.feed-block-slide .content-blocks figcaption) {
     font-size: .76rem; color: var(--atlas-muted);
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;

@@ -14,21 +14,27 @@
     text,
     images = false,
     preview = false,
+    onImage,
   }: {
     /** Markdown block source; short descriptions remain plain text elsewhere. */
     text: string;
     images?: boolean;
     preview?: boolean;
+    onImage?: (index: number, trigger: HTMLButtonElement) => void;
   } = $props();
   /**
    * HTML derived only from the shared Markdown renderer; never raw user text for the HTML
    * insertion.
    */
-  const html = $derived(renderMarkdown(text, images, preview));
+  const html = $derived(renderMarkdown(text, images, preview, !!onImage));
 </script>
 
 <!-- Layout: One typography wrapper contains HTML produced only by the shared Markdown policy. -->
-<div class="markdown">
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Events are delegated from native image buttons.) -->
+<div class="markdown" onclick={(event) => {
+  const button = event.target instanceof Element ? event.target.closest('button[data-node-image]') : null;
+  if (button instanceof HTMLButtonElement) onImage?.(Number(button.dataset.nodeImage), button);
+}}>
   <!-- {@html} inserts HTML without sanitizing it. Only use renderMarkdown output here, never raw user input. -->
   {@html html}
 </div>
@@ -50,14 +56,27 @@
     padding-inline-start: 1rem;
     border-inline-start: 3px solid var(--atlas-border);
   }
-  .markdown :global(img) {
+  .markdown :global(:is(.markdown-image, img)) {
     float: inline-start;
-    width: min(42%, 12rem);
-    aspect-ratio: 4 / 3;
+    width: 50%;
     margin: 0.2rem 0.85rem 0.45rem 0;
-    object-fit: contain;
-    background: var(--atlas-bg);
+  }
+  .markdown :global(.markdown-image) {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+  }
+  .markdown :global(img) {
+    display: block;
+    height: auto;
     border-radius: var(--atlas-radius);
+  }
+  .markdown :global(.markdown-image img) {
+    float: none;
+    width: 100%;
+    margin: 0;
   }
   .markdown :global(a) {
     text-decoration: underline;
