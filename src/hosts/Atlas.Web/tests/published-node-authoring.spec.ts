@@ -12,7 +12,19 @@ test('the published-card story previews the current draft and keeps editing stat
   const canvas = page.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await expect(canvas).toBeVisible();
   const type = page.getByRole('combobox', { name: 'Node type' });
+  const title = page.getByRole('textbox', { name: 'Title', exact: true });
   const shortWidth = (await type.boundingBox())!.width;
+  expect((await type.boundingBox())!.height).toBeCloseTo((await title.boundingBox())!.height, 0);
+  await expect(type).toHaveCSS('font-size', await title.evaluate((input) => getComputedStyle(input).fontSize));
+  await type.selectOption('question');
+  expect(await type.evaluate((select) => {
+    const label = select.previousElementSibling!;
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const style = getComputedStyle(select);
+    return select.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      >= range.getBoundingClientRect().width - 1;
+  })).toBe(true);
   await type.selectOption('counterargument');
   expect((await type.boundingBox())!.width).toBeGreaterThan(shortWidth);
   await type.selectOption('idea');

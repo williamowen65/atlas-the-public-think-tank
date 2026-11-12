@@ -342,38 +342,55 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    align-items: end;
+    align-items: center;
   }
   .type-field {
     position: relative;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
     max-width: 100%;
   }
   /* Size the closed native select from its current label. The options stay
      in the native popup, which can size independently of the control. */
+  .title-row :is(.type-field span, .type-field select, .title-field input) {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-field :is(span, select) {
+    /* Match the measured label's insets to the select's actual insets. */
+    padding: 0.6rem 2.6rem 0.6rem 0.6rem;
+  }
   .type-field span {
     display: block;
     visibility: hidden;
     white-space: nowrap;
     overflow: hidden;
-    padding: 0.6rem 2rem 0.6rem 0.6rem;
     border: 1px solid transparent;
   }
   .type-field select {
     position: absolute;
     inset: 0;
     height: 100%;
-    text-overflow: ellipsis;
+    appearance: none;
     color: var(--atlas-accent);
+  }
+  .type-field::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0.95rem;
+    top: 50%;
+    width: 0.48rem;
+    height: 0.48rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    color: var(--atlas-accent);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
   }
   .title-field {
     flex: 3 1 16rem;
     min-width: 0;
-  }
-  .title-field input {
-    font-size: 1.3rem;
-    font-weight: 600;
   }
   input,
   textarea,
