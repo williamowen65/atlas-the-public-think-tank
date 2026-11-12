@@ -158,7 +158,13 @@
     font-size: .76rem; color: var(--atlas-muted);
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
-  :global(.feed-block-slide .content-blocks p) { margin-top: 0; }
+  /* The slide supplies its own inset. Keep the spacing between elements
+     inside the block and remove only the leading element's extra space. */
+  .block-preview :global(.content-blocks > :first-child),
+  .block-preview :global(.content-blocks > :is(.markdown, .story-markdown):first-child > :first-child) {
+    margin-block-start: 0;
+    padding-block-start: 0;
+  }
   .fade { position: absolute; bottom: 0; left: 0; right: 0; height: 1.7rem;
     background: linear-gradient(transparent, var(--atlas-surface));
     pointer-events: none; }
