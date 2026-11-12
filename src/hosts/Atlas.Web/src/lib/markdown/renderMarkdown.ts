@@ -89,6 +89,9 @@ const feedMarkdown = createRenderer(true, true, false);
 const galleryMarkdown = createRenderer(true, true, true, true);
 const galleryFeedMarkdown = createRenderer(true, true, false, true);
 const editorMarkdown = createRenderer(true, false);
+// ProseMirror collapses soft breaks to spaces when it loads HTML. Render
+// them the same way for the round-trip check while preserving hard breaks.
+editorMarkdown.renderer.rules.softbreak = () => ' ';
 
 /** Render user Markdown using the fixed policy above; never pass arbitrary HTML through. */
 export function renderMarkdown(source: string, images = false, preview = false, gallery = false): string {

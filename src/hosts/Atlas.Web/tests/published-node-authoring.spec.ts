@@ -119,3 +119,18 @@ test('the feed and full node open the same gallery at the clicked image', async 
   await gallery.getByRole('button', { name: 'Previous item' }).click();
   await expect(gallery).toContainText('1 of 2');
 });
+
+test('Image Layouts opens in TipTap and can switch back from Markdown', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto(story.replace('--published-card', '--image-layouts'));
+  const markdown = page.getByRole('checkbox', { name: 'Edit Markdown' });
+  const canvas = page.getByRole('textbox', { name: 'Node content: editable rich-text document' });
+
+  await expect(canvas).toBeVisible();
+  await markdown.check();
+  await expect(page.getByLabel('Text (Markdown)').first()).toBeVisible();
+  await markdown.uncheck();
+  await expect(canvas.locator('[data-atlas-inline-image][data-image-placement="right"]')).toHaveCount(1);
+  await expect(canvas.locator('[data-atlas-inline-image][data-image-placement="center"]')).toHaveCount(1);
+  await expect(markdown).not.toBeChecked();
+});

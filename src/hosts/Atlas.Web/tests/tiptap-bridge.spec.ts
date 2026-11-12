@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { blocksToTiptapHtml, tiptapDocumentToBlocks } from '../src/lib/components/tiptapBlocks';
+import { blocksToTiptapHtml, equivalentMarkdown, tiptapDocumentToBlocks } from '../src/lib/components/tiptapBlocks';
 import { authorBlock, blockRequest, contentForPreview, type AuthorBlock } from '../src/lib/api/contentAuthoring';
 import { markdownImages, renderMarkdown } from '../src/lib/markdown/renderMarkdown';
 
@@ -106,4 +106,12 @@ test('image presets round-trip through the editor, publication payload and galle
   expect(blockRequest(standalone).layout).toBe('third:center');
   expect(contentForPreview([standalone])[0].content.layout).toBe('third:center');
   expect(blocksToTiptapHtml([standalone])).toContain('data-image-placement="center"');
+});
+
+test('soft breaks between paired Markdown images can round-trip through TipTap', () => {
+  const first = '![Street](https://example.org/one.jpg "atlas-image:half:left")';
+  const second = '![Square](https://example.org/two.jpg "atlas-image:half:right")';
+  const serialized = '![Street](https://example.org/one.jpg)';
+  expect(equivalentMarkdown(first + '\n' + second, serialized + ' ' + second)).toBe(true);
+  expect(equivalentMarkdown(first + '  \n' + second, serialized + ' ' + second)).toBe(false);
 });
