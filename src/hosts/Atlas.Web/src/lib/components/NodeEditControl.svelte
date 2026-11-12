@@ -122,7 +122,7 @@
         const old = original.find((entry) => entry.id === block.id);
         if (!old || (block.kind !== 'markdown' && block.kind !== 'image')) continue;
         const oldFields = authorBlock(old);
-        if (oldFields.text !== block.text || oldFields.url !== block.url || oldFields.caption !== block.caption)
+        if (oldFields.text !== block.text || oldFields.url !== block.url || oldFields.caption !== block.caption || oldFields.width !== block.width || oldFields.placement !== block.placement)
           await write(`/description/blocks/${block.id}`, 'PUT', blockRequest(block));
       }
       for (const block of desired) {

@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import { imageLayoutStyle, readImageTitle } from './imageLayout';
 import { publicUrl } from '../api/nodePage';
 
 // Raw HTML stays disabled in both renderers. Node content can opt into
@@ -22,6 +23,15 @@ function createRenderer(images: boolean, shiftHeadings = true, links = true, gal
       const token = tokens[index];
       const src = publicUrl(String(token.attrGet('src') ?? ''));
       if (!src) return '<span>[Image URL must be HTTP(S)]</span>';
+      const layout = readImageTitle(String(token.attrGet('title') ?? ''));
+      token.attrs = token.attrs?.filter(([name]) => name !== 'title') ?? null;
+      if (layout.title) token.attrSet('title', layout.title);
+      const style = imageLayoutStyle(layout);
+      if (!gallery) {
+        token.attrSet('data-image-width', layout.width);
+        token.attrSet('data-image-placement', layout.placement);
+        token.attrSet('style', style);
+      }
       token.attrSet('src', src);
       token.attrSet('loading', 'lazy');
       token.attrSet('referrerpolicy', 'no-referrer');
@@ -30,7 +40,7 @@ function createRenderer(images: boolean, shiftHeadings = true, links = true, gal
       const position = Number(env?.imageIndex ?? 0);
       if (env) env.imageIndex = position + 1;
       const label = markdown.utils.escapeHtml(String(token.attrGet('alt') || 'image'));
-      return `<button type="button" class="markdown-image" data-node-image="${position}" aria-label="View ${label}">${image}</button>`;
+      return `<button type="button" class="markdown-image" data-image-placement="${layout.placement}" style="${style}" data-node-image="${position}" aria-label="View ${label}">${image}</button>`;
     };
   }
 
@@ -99,6 +109,6 @@ export function markdownImages(source: string) {
     const src = publicUrl(String(child.attrGet('src') ?? ''));
     if (!src) return [];
     const alt = nodeMarkdown.renderer.renderInlineAsText(child.children ?? [], nodeMarkdown.options, {});
-    return [{ src, alt, caption: String(child.attrGet('title') ?? '') }];
+    return [{ src, alt, caption: readImageTitle(String(child.attrGet('title') ?? '')).title }];
   }));
 }

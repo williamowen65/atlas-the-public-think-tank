@@ -10,6 +10,8 @@
 <script lang="ts">
   import NodeMediaGallery, { type GalleryMedia } from './NodeMediaGallery.svelte';
   import { markdownImages } from '../markdown/renderMarkdown';
+  import { standaloneImageLayout } from '../api/contentAuthoring';
+  import { imageLayoutStyle } from '../markdown/imageLayout';
   import MarkdownContent from './MarkdownContent.svelte';
   import { publicUrl, type ContentBlock } from '../api/nodePage';
   let {
@@ -55,7 +57,9 @@
         onImage={(index, trigger) => showMedia(block.id, index, trigger)}
         text={block.content.markdown ?? ''}
       />
-    {:else if block.kind.toLowerCase().includes('image') && publicUrl(block.content.url)}<figure>
+    {:else if block.kind.toLowerCase().includes('image') && publicUrl(block.content.url)}
+      {@const layout = standaloneImageLayout(block.content.layout)}
+      <figure data-image-placement={layout.placement} style={imageLayoutStyle(layout)}>
         <button type="button" class="standalone-image" aria-label={`View ${block.content.altText || 'image'}`}
           onclick={(event) => showMedia(block.id, 0, event.currentTarget)}>
         <img
@@ -90,12 +94,14 @@
   }
   .standalone-image {
     display: block;
-    width: 50%;
+    width: var(--atlas-image-width, 50%);
     padding: 0;
     border: 0;
     background: transparent;
     cursor: zoom-in;
   }
+  figure[data-image-placement='center'] .standalone-image { margin-inline: auto; }
+  figure[data-image-placement='right'] .standalone-image { margin-inline-start: auto; }
   .standalone-image img {
     display: block;
     width: 100%;

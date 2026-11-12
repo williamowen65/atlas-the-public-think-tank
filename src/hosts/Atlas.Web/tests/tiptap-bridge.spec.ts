@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { blocksToTiptapHtml, tiptapDocumentToBlocks } from '../src/lib/components/tiptapBlocks';
-import type { AuthorBlock } from '../src/lib/api/contentAuthoring';
+import { authorBlock, blockRequest, contentForPreview, type AuthorBlock } from '../src/lib/api/contentAuthoring';
+import { markdownImages, renderMarkdown } from '../src/lib/markdown/renderMarkdown';
 
 test('markdown and image blocks preserve their keys, saved IDs and reordering', () => {
   const starting: AuthorBlock[] = [
@@ -79,4 +80,30 @@ test('an unfinished image URL is retained for the form to validate', () => {
     } }],
   }, [input]);
   expect(output[0].url).toBe('not-a-url');
+});
+
+test('image presets round-trip through the editor, publication payload and gallery', () => {
+  const [markdown] = tiptapDocumentToBlocks({
+    type: 'doc',
+    content: [{ type: 'atlasText', attrs: { key: 'intro' }, content: [{
+      type: 'paragraph', content: [{ type: 'atlasInlineImage', attrs: {
+        src: 'https://example.org/photo.jpg', alt: 'Street', width: 'quarter', placement: 'right',
+        title: 'An evening view',
+      } }],
+    }] }],
+  });
+  expect(markdown.text).toContain('"atlas-image:quarter:right An evening view"');
+  const html = renderMarkdown(markdown.text, true, false, true);
+  expect(html).toContain('data-image-placement="right"');
+  expect(html).toContain('--atlas-image-width:25%');
+  expect(markdownImages(markdown.text)[0].caption).toBe('An evening view');
+  expect(blocksToTiptapHtml([markdown])).toContain('data-image-width="quarter"');
+
+  const standalone = authorBlock({
+    id: 'image', kind: 'image',
+    content: { url: 'https://example.org/photo.jpg', altText: 'Street', layout: 'third:center' },
+  });
+  expect(blockRequest(standalone).layout).toBe('third:center');
+  expect(contentForPreview([standalone])[0].content.layout).toBe('third:center');
+  expect(blocksToTiptapHtml([standalone])).toContain('data-image-placement="center"');
 });

@@ -1,6 +1,7 @@
 import type { JSONContent } from '@tiptap/core';
 import { renderEditorMarkdown } from '../markdown/renderMarkdown';
 import { publicUrl } from '../api/nodePage';
+import { imageLayout, writeImageTitle } from '../markdown/imageLayout';
 import type { AuthorBlock } from '../api/contentAuthoring';
 
 type MarkdownBaseline = ReadonlyMap<string, { serialized: string; source: string }>;
@@ -24,7 +25,8 @@ export function blocksToTiptapHtml(blocks: AuthorBlock[]): string {
     }
     if (block.kind === 'image') {
       const src = publicUrl(block.url) || '';
-      return '<figure data-atlas-image="true" data-atlas-key="' + key +
+      const layout = imageLayout(block.width, block.placement);
+      return '<figure data-image-width="' + layout.width + '" data-image-placement="' + layout.placement + '" data-atlas-image="true" data-atlas-key="' + key +
         '" data-src="' + escapeAttribute(block.url) +
         '" data-alt="' + escapeAttribute(block.text) +
         '" data-caption="' + escapeAttribute(block.caption) +
@@ -43,7 +45,9 @@ function inlineMarkdown(node: JSONContent): string {
     const url = publicUrl(String(node.attrs?.src ?? ''));
     if (!url) return '';
     const alt = String(node.attrs?.alt ?? '').replace(/([\\\[\]])/g, '\\$1');
-    return '![' + alt + '](' + url.replace(/\(/g, '%28').replace(/\)/g, '%29') + ')';
+    const title = writeImageTitle(imageLayout(node.attrs?.width, node.attrs?.placement), String(node.attrs?.title ?? ''));
+    return '![' + alt + '](' + url.replace(/\(/g, '%28').replace(/\)/g, '%29')
+      + (title ? ' "' + title.replace(/([\\"])/g, '\\$1') + '"' : '') + ')';
   }
   if (node.type === 'hardBreak') return '  \n';
   if (node.type === 'text') {
@@ -123,6 +127,7 @@ export function tiptapDocumentToBlocks(
         key, kind: 'image', url,
         text: String(node.attrs?.alt ?? ''),
         caption: String(node.attrs?.caption ?? ''),
+        ...imageLayout(node.attrs?.width, node.attrs?.placement),
       });
     } else if (node.type === 'atlasUnsupported') {
       if (original && original.kind !== 'markdown' && original.kind !== 'image')

@@ -1,7 +1,8 @@
+import { imageLayout, type ImageLayout } from '../markdown/imageLayout';
 import { publicUrl, type ContentBlock } from './nodePage';
 
 /** UI-only key distinguishes unsaved blocks; id is the stable server BlockId once saved. */
-export interface AuthorBlock {
+export interface AuthorBlock extends Partial<ImageLayout> {
   key: string;
   id?: string;
   kind: string;
@@ -24,8 +25,19 @@ export function authorBlock(block: ContentBlock): AuthorBlock {
     text: block.kind === 'image' ? (block.content.altText ?? '') : (block.content.markdown ?? ''),
     url: block.content.url ?? '',
     caption: block.content.caption ?? '',
+    ...(block.kind === 'image' ? standaloneImageLayout(block.content.layout) : {}),
     original: block,
   };
+}
+
+export function standaloneImageLayout(value?: string): ImageLayout {
+  const [width, placement] = (value ?? '').split(':');
+  return imageLayout(width, placement);
+}
+
+function serializedImageLayout(block: AuthorBlock) {
+  const { width, placement } = imageLayout(block.width, block.placement);
+  return `${width}:${placement}`;
 }
 
 export function supportedBlock(block: AuthorBlock): boolean {
@@ -40,6 +52,7 @@ export function blockRequest(block: AuthorBlock, index?: number) {
     text: block.text,
     url: block.kind === 'image' ? block.url : null,
     caption: block.kind === 'image' ? block.caption : null,
+    ...(block.kind === 'image' ? { layout: serializedImageLayout(block) } : {}),
     ...(index === undefined ? {} : { index }),
   };
 }
@@ -84,7 +97,7 @@ export function contentForPreview(blocks: AuthorBlock[]): ContentBlock[] {
       id: block.id ?? block.key,
       kind: block.kind,
       content: block.kind === 'image'
-        ? { url: block.url, altText: block.text, caption: block.caption }
+        ? { url: block.url, altText: block.text, caption: block.caption, layout: serializedImageLayout(block) }
         : { markdown: block.text },
     });
 }

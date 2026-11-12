@@ -101,7 +101,8 @@ public sealed class ContentController(
             {
                 i.Url,
                 i.AltText,
-                i.Caption
+                i.Caption,
+                i.Layout
             },
             VideoBlock v => new
             {
@@ -136,13 +137,14 @@ public sealed record BlockRequest(
     string? Url,
     string? Title,
     string? Caption,
-    int? Index
+    int? Index,
+    string? Layout = null
 )
 {
     public BlockInput Input() => Kind switch
     {
         "markdown" => new MarkdownInput(Text!),
-        "image" => new ImageInput(Url!, Text!, Caption),
+        "image" => new ImageInput(Url!, Text!, Caption, Layout),
         "video" => new VideoInput(Url!, Caption),
         "link-preview" => new LinkPreviewInput(Url!, Title!, Text),
         "poll-reference" => new PollInput(),

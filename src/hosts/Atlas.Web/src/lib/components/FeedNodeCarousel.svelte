@@ -149,7 +149,7 @@
     max-height: 100%;
   }
   :global(.feed-block-slide .story-markdown img) { max-height: 8rem; }
-  .compact :global(.markdown-image) { width: auto; max-width: 50%; }
+  .compact :global(.markdown-image) { width: auto; max-width: calc(var(--atlas-image-width, 50%) - .5rem); }
   .compact :global(.markdown-image img) { width: auto; max-width: 100%; max-height: 8rem; }
   @media (max-width: 560px) {
     .compact :global(.markdown-image img) { max-height: 6.5rem; }

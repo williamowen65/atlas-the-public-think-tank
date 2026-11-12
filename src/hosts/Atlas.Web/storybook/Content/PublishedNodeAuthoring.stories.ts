@@ -56,3 +56,27 @@ export const ChildNode: Story = {
     parentTitle: 'How could we improve our public spaces?',
   },
 };
+
+export const ImageLayouts: Story = {
+  args: {
+    initialDraft: {
+      ...draft,
+      blocks: [
+        {
+          key: 'paired-images', kind: 'markdown', url: '', caption: '',
+          text: [
+            '![Buildings along the street](https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600 "atlas-image:half:left")',
+            '![Curving buildings](https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=600 "atlas-image:half:right")',
+            '',
+            'Two views of the kinds of places that could frame a public square.',
+          ].join('\n'),
+        },
+        {
+          key: 'centered-image', kind: 'markdown', url: '', caption: '',
+          text: 'The next photograph gets its own line. ![Looking up at curving buildings](https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=600 "atlas-image:third:center") The paragraph continues below.',
+        },
+        { ...draft.blocks[2], width: 'third', placement: 'right' },
+      ],
+    },
+  },
+};

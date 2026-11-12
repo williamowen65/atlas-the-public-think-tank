@@ -58,8 +58,8 @@
   }
   .markdown :global(:is(.markdown-image, img)) {
     float: inline-start;
-    width: 50%;
-    margin: 0.2rem 0.85rem 0.45rem 0;
+    width: calc(var(--atlas-image-width, 50%) - .5rem);
+    margin: 0.2rem .5rem 0.45rem 0;
   }
   .markdown :global(.markdown-image) {
     display: block;
@@ -72,6 +72,10 @@
     display: block;
     height: auto;
     border-radius: var(--atlas-radius);
+  }
+  .markdown :global([data-image-placement='right']) { float: right; margin-inline: .5rem 0; }
+  .markdown :global([data-image-placement='center']) {
+    display: block; float: none; clear: both; margin-inline: auto;
   }
   .markdown :global(.markdown-image img) {
     float: none;

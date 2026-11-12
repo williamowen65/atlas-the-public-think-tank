@@ -41,6 +41,9 @@ export interface ContentBlock {
     /** Optional image caption. */
     caption?: string;
 
+    /** Width and placement preset for a standalone image. */
+    layout?: string;
+
     /** Display title supplied by the API. */
     title?: string;
 

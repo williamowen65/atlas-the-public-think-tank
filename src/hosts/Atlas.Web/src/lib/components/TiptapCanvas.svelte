@@ -4,6 +4,8 @@
   import StarterKit from '@tiptap/starter-kit';
   import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
   import { Decoration, DecorationSet } from '@tiptap/pm/view';
+  import ImageLayoutFields from './ImageLayoutFields.svelte';
+  import { defaultImageLayout, imageLayout, imageLayoutStyle } from '../markdown/imageLayout';
   import { publicUrl } from '../api/nodePage';
   import type { AuthorBlock } from '../api/contentAuthoring';
   import { blocksToTiptapHtml, equivalentMarkdown, tiptapDocumentToBlocks } from './tiptapBlocks';
@@ -124,7 +126,10 @@
     addAttributes() {
       return {
         src: { default: '' },
+        title: { default: '' },
         alt: { default: '' },
+        width: { default: 'half' },
+        placement: { default: 'left' },
       };
     },
     parseHTML() {
@@ -133,19 +138,24 @@
         getAttrs: (element) => {
           if (typeof element === 'string') return false;
           const image = element.querySelector('img');
-          return image ? { src: image.getAttribute('src') ?? '', alt: image.getAttribute('alt') ?? '' } : false;
+          return image ? { src: image.getAttribute('src') ?? '', alt: image.getAttribute('alt') ?? '', title: image.getAttribute('title') ?? '',
+            ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')) } : false;
         },
       }, {
         tag: 'img:not([data-atlas-image])',
         getAttrs: (element) => typeof element === 'string' ? false : {
-          src: element.getAttribute('src') ?? '', alt: element.getAttribute('alt') ?? '',
+          src: element.getAttribute('src') ?? '', alt: element.getAttribute('alt') ?? '', title: element.getAttribute('title') ?? '',
+          ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')),
         },
       }];
     },
     renderHTML({ node }) {
       const src = publicUrl(String(node.attrs.src ?? ''));
-      return ['span', { class: 'atlas-story-inline-image', 'data-atlas-inline-image': 'true', contenteditable: 'false' },
-        ['img', { src, alt: String(node.attrs.alt ?? ''), referrerpolicy: 'no-referrer' }],
+      const layout = imageLayout(node.attrs.width, node.attrs.placement);
+      return ['span', { class: 'atlas-story-inline-image', 'data-atlas-inline-image': 'true', contenteditable: 'false',
+        'data-image-width': layout.width, 'data-image-placement': layout.placement,
+        style: imageLayoutStyle(layout) },
+        ['img', { src, alt: String(node.attrs.alt ?? ''), referrerpolicy: 'no-referrer', title: node.attrs.title || undefined }],
         imageEditButton('Edit image in text'),
       ];
     },
@@ -192,6 +202,8 @@
       return {
         src: { default: '' },
         alt: { default: '' },
+        width: { default: 'half' },
+        placement: { default: 'left' },
         caption: { default: '' },
         key: { default: '' },
       };
@@ -206,13 +218,18 @@
             alt: element.getAttribute('data-alt') || element.querySelector('img')?.getAttribute('alt') || '',
             caption: element.getAttribute('data-caption') || element.querySelector('figcaption')?.textContent || '',
             key: element.getAttribute('data-atlas-key') || '',
+            ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')),
           };
         },
       }];
     },
     renderHTML({ node }) {
       const src = publicUrl(String(node.attrs.src ?? '')) || '';
+      const layout = imageLayout(node.attrs.width, node.attrs.placement);
       const figureAttrs = {
+        'data-image-width': layout.width,
+        'data-image-placement': layout.placement,
+        style: imageLayoutStyle(layout),
         'data-atlas-image': 'true',
         'data-atlas-key': node.attrs.key,
         'data-src': node.attrs.src,
@@ -260,6 +277,7 @@
   let inlineImageAt: number | null = null;
   let inlineImageUrl = $state('');
   let inlineImageAlt = $state('');
+  let inlineLayout = $state({ ...defaultImageLayout });
   let inlineImageError = $state('');
   let inlineImageFormPosition = $state({ top: 0, left: 0 });
   let editorState = $state<{ editor: Editor | null }>({ editor: null });
@@ -270,7 +288,7 @@
   let imageFormOpen = $state(false);
   let imageError = $state('');
   let editingExisting = $state(false);
-  let imageDraft = $state({ url: '', alt: '', caption: '' });
+  let imageDraft = $state({ url: '', alt: '', caption: '', ...defaultImageLayout });
   let imageFormAnchorKey = $state<string | null>(null);
   let provisionalImageKey: string | null = null;
   let imageFormPosition = $state({ top: 0, left: 0 });
@@ -551,6 +569,7 @@
     inlineImageAt = position ?? editor.state.selection.from;
     inlineImageUrl = String(existing?.attrs.src ?? '');
     inlineImageAlt = String(existing?.attrs.alt ?? '');
+    inlineLayout = imageLayout(existing?.attrs.width, existing?.attrs.placement);
     inlineImageError = '';
     inlineImageOpen = true;
     positionAnchoredForms();
@@ -568,7 +587,7 @@
       inlineImageError = 'Describe the image for screen readers.';
       return;
     }
-    const attrs = { src: safe, alt: inlineImageAlt.trim() };
+    const attrs = { src: safe, alt: inlineImageAlt.trim(), title: inlineImageOriginal?.attrs.title ?? '', ...inlineLayout };
     if (inlineImageOriginal) {
       if (editor.state.doc.nodeAt(inlineImageAt) !== inlineImageOriginal) {
         inlineImageError = 'The image moved. Select it again to edit it.';
@@ -678,13 +697,14 @@
         url: String(existing.attrs.src ?? ''),
         alt: String(existing.attrs.alt ?? ''),
         caption: String(existing.attrs.caption ?? ''),
+        ...imageLayout(existing.attrs.width, existing.attrs.placement),
       };
     } else {
       const key = crypto.randomUUID();
       const position = insertionPoint(editor);
       provisionalImageKey = key;
       imageFormAnchorKey = key;
-      imageDraft = { url: '', alt: '', caption: '' };
+      imageDraft = { url: '', alt: '', caption: '', ...defaultImageLayout };
       editor.chain().focus().insertContentAt(position, {
         type: 'atlasImage',
         attrs: { key, src: '', alt: '', caption: '' },
@@ -734,6 +754,7 @@
     provisionalImageKey = null;
     editor.chain().focus().setNodeSelection(block.from).updateAttributes('atlasImage', {
       src: imageDraft.url.trim(), alt: imageDraft.alt.trim(), caption: imageDraft.caption.trim(),
+      ...imageLayout(imageDraft.width, imageDraft.placement),
     }).run();
     imageFormOpen = false;
     imageFormAnchorKey = null;
@@ -950,6 +971,7 @@
         <label for={`${instance}-inline-image-alt`}>Inline image alternative text</label>
         <input id={`${instance}-inline-image-alt`} onkeydown={(event) => applyOnEnter(event, applyInlineImage)} bind:value={inlineImageAlt}
           placeholder="Describe the image"/>
+        <ImageLayoutFields inline bind:width={inlineLayout.width} bind:placement={inlineLayout.placement} />
         {#if inlineImageError}<p class="input-error" role="alert">{inlineImageError}</p>{/if}
         <div class="form-actions">
           <button type="button" onclick={() => { inlineImageOpen = false; inlineImageAt = null; }}>Cancel</button>
@@ -1053,6 +1075,7 @@
         placeholder="Describe the photograph for someone who cannot see it"></textarea>
       <label for={`${instance}-image-caption`}>Caption <span>(optional)</span></label>
       <input id={`${instance}-image-caption`} onkeydown={(event) => applyOnEnter(event, saveImage)} bind:value={imageDraft.caption} placeholder="Optional caption"/>
+      <ImageLayoutFields bind:width={imageDraft.width} bind:placement={imageDraft.placement} />
       {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
       <div class="form-actions">
         <button type="button" onclick={cancelImageForm}>Cancel</button>
@@ -1196,8 +1219,8 @@
   :global(.atlas-story-inline-image) {
     position: relative;
     float: inline-start;
-    width: 50%;
-    margin: 0.2rem 0.85rem 0.45rem 0;
+    width: calc(var(--atlas-image-width, 50%) - .5rem);
+    margin: 0.2rem .5rem .45rem 0;
   }
   :global(.atlas-story-inline-image img),
   :global(.atlas-story-image-frame img) {
@@ -1206,7 +1229,15 @@
     height: auto;
     border-radius: var(--atlas-radius);
   }
-  :global(.atlas-story-image-frame) { position: relative; width: 50%; }
+  :global(.atlas-story-inline-image[data-image-placement='right']) {
+    float: right; margin-inline: .5rem 0;
+  }
+  :global(.atlas-story-inline-image[data-image-placement='center']) {
+    display: block; float: none; clear: both; margin-inline: auto;
+  }
+  :global(.atlas-story-image-frame) { position: relative; width: var(--atlas-image-width, 50%); }
+  :global([data-image-placement='center'] > .atlas-story-image-frame) { margin-inline: auto; }
+  :global([data-image-placement='right'] > .atlas-story-image-frame) { margin-inline-start: auto; }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
