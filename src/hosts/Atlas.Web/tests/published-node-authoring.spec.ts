@@ -11,12 +11,20 @@ test('the published-card story previews the current draft and keeps editing stat
   await page.goto(story);
   const canvas = page.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await expect(canvas).toBeVisible();
+  const type = page.getByRole('combobox', { name: 'Node type' });
+  const shortWidth = (await type.boundingBox())!.width;
+  await type.selectOption('counterargument');
+  expect((await type.boundingBox())!.width).toBeGreaterThan(shortWidth);
+  await type.selectOption('idea');
   await expect(page.getByRole('checkbox', { name: 'Show parent breadcrumb' })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('A revised public square');
   await page.getByRole('button', { name: 'Preview in feed' }).click();
 
   const card = page.getByRole('article', { name: /A revised public square/ });
   await expect(card).toHaveAttribute('data-presentation', 'ribbon-corner');
+  const footer = card.locator('.navigation-details');
+  await expect(footer.getByRole('button')).toHaveText(['0 Comments', '0 Questions', '0 Evidence']);
+  await expect(card).not.toContainText('Help develop this node with');
   const feed = card.getByRole('region', { name: 'Feed preview of node content blocks' });
   await expect(feed).toContainText('1 of 2');
   await expect(feed.getByRole('img', { name: 'A city street lined with tall buildings' })).toBeVisible();

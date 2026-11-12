@@ -219,10 +219,9 @@
 {/if}
 
 {#snippet titleField()}
-  <label for={`${instance}-title`}>Title</label>
   <div class="title-row">
     <strong>{node.typeName}:</strong>
-    <input id={`${instance}-title`} bind:value={title} maxlength="450" />
+    <input id={`${instance}-title`} aria-label="Title" placeholder="Give your node a title" bind:value={title} maxlength="450" />
   </div>
 {/snippet}
 
@@ -237,7 +236,6 @@
   .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
   .title-row strong { color: var(--atlas-accent); }
   fieldset { border: 0; padding: 0; min-width: 0; }
-  label { display: block; margin: .8rem 0 .3rem; }
   input { flex: 1 1 14rem; min-width: 0; box-sizing: border-box; font-size: 1.3rem; font-weight: 600; padding: .65rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); color: var(--atlas-text); }
   .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
   .primary { background: var(--atlas-accent); color: white; border-radius: var(--atlas-radius); }

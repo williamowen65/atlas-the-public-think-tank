@@ -6,7 +6,12 @@ const meta = {
   title: 'Content/Node authoring',
   component: NodeForm,
   args: {
-    types: [{ id: typeId, name: 'Idea', pluralName: 'Ideas' }],
+    types: [
+      { id: typeId, name: 'Idea', pluralName: 'Ideas' },
+      { id: 'question', name: 'Question', pluralName: 'Questions' },
+      { id: 'evidence', name: 'Evidence', pluralName: 'Evidence' },
+      { id: 'counterargument', name: 'Counterargument', pluralName: 'Counterarguments' },
+    ],
     onSubmit: () => {},
   },
 } satisfies Meta<typeof NodeForm>;
@@ -18,7 +23,7 @@ const draft = {
   shortDescription: '',
   markdown: '',
   typeId,
-  requestedTypeIds: [],
+  requestedTypeIds: ['question', 'evidence'],
   blocks: [
     {
       key: 'introduction', kind: 'markdown', url: '', caption: '',

@@ -107,7 +107,7 @@
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
       <span
-        >By {#if node.authorId}<a
+        >{'By '}{#if node.authorId}<a
             href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
             onclick={(event) => {
               if (onOpenProfile && node.authorId) {

@@ -138,23 +138,28 @@
   $effect(() => {
     if (!typeId && types.length) typeId = initialTypeId || types[0].id;
   });
+  const newTypeOption = 'Define a new node type…';
+  const selectedTypeName = $derived(types.find((type) => type.id === typeId)?.name);
+  const selectedTypeLabel = $derived(typeId === 'new' ? newTypeOption : selectedTypeName ?? '');
   const createdAt = new Date().toISOString();
   const preview = $derived<NodeCardData>({
     id: instance,
     title: title.trim() || 'Untitled node',
     typeName: typeId === 'new'
       ? typeName.trim() || 'New node type'
-      : types.find((type) => type.id === typeId)?.name ?? 'Node',
+      : selectedTypeName ?? 'Node',
     authorName: 'You',
     createdAt,
     description: '',
     breadcrumb: path,
     communities: [],
     related: [],
-    requestedTypes: requestedTypeIds.map((id) => {
-      const type = types.find((entry) => entry.id === id);
-      return type?.pluralName ?? type?.name ?? id;
-    }),
+    requestedTypes: [],
+    childTypes: types.filter((type) => requestedTypeIds.includes(type.id)).map((type) => ({
+      typeId: type.id,
+      label: `0 ${type.pluralName ?? type.name}`,
+      count: 0,
+    })),
     reactions: [],
     commentCount: 0,
     status: 'Active',
@@ -202,18 +207,21 @@
 {#snippet titleFields()}
     <div class="title-row">
       <div class="type-field">
-        <label for={`${instance}-type`}>Node type</label><select
+        <span aria-hidden="true">{selectedTypeLabel}</span>
+        <select
+          aria-label="Node type"
           use:focusAndScrollOnMount
           id={`${instance}-type`}
           bind:value={typeId}
           required
           >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
-            value="new">Define a new node type…</option
+            value="new">{newTypeOption}</option
           ></select
         >
       </div>
       <div class="title-field">
-        <label for={`${instance}-title`}>Title</label><input
+        <input
+          aria-label="Title"
           id={`${instance}-title`}
           bind:value={title}
           placeholder="Give your node a title"
@@ -305,8 +313,27 @@
     align-items: end;
   }
   .type-field {
-    flex: 1 1 10rem;
+    position: relative;
+    flex: 0 1 auto;
     min-width: 0;
+    max-width: 100%;
+  }
+  /* Size the closed native select from its current label. The options stay
+     in the native popup, which can size independently of the control. */
+  .type-field span {
+    display: block;
+    visibility: hidden;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 0.6rem 2rem 0.6rem 0.6rem;
+    border: 1px solid transparent;
+  }
+  .type-field select {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    text-overflow: ellipsis;
+    color: var(--atlas-accent);
   }
   .title-field {
     flex: 3 1 16rem;

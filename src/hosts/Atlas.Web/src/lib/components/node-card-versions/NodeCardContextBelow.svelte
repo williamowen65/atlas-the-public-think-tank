@@ -84,7 +84,7 @@
     </div>
     <h2 id={`${instance}-title`}>{node.title}</h2>
     <p class="byline">
-      By {#if node.authorId}<a
+      {'By '}{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {

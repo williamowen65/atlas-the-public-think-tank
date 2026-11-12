@@ -131,7 +131,7 @@
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
       <span
-        ><span class="by-prefix">By </span>{#if node.authorId && !draft}<a
+        ><span class="by-prefix">{'By '}</span>{#if node.authorId && !draft}<a
             href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
             onclick={(event) => {
               if (onOpenProfile && node.authorId) {
@@ -178,11 +178,6 @@
       {:else}
         <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
-      {/if}
-      {#if node.requestedTypes.length}
-        <p class="invitation">
-          Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
-        </p>
       {/if}
     </div>
     <div class="card-details">
@@ -387,7 +382,6 @@
     gap: 0 var(--dial-text-gap);
     margin-bottom: var(--atlas-paragraph-gap, 0.65rem);
     .dial { float: none; margin-right: 0; }
-    .invitation { grid-column: 1 / -1; }
   }
 
   .dial {
@@ -407,12 +401,6 @@
     margin: var(--corner-top, 0px) 0 0 0.75rem;
     shape-outside: inset(var(--corner-top, 0px) 0 0 0);
     white-space: normal;
-  }
-
-  .invitation {
-    clear: both;
-    font-size: 0.9rem;
-    color: var(--atlas-muted);
   }
 
   .text-action {
