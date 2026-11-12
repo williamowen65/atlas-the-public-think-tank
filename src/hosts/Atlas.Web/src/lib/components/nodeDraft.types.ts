@@ -21,6 +21,9 @@ export interface NodeDraft {
   /** Catalog type IDs the author requests as contributions to this node. */
   requestedTypeIds: string[];
 
+  /** Optional community associations to apply when publishing. */
+  communityIds?: string[];
+
   /** Parent node ID for a child draft; omitted for a root draft. */
   parentId?: string;
 

@@ -35,6 +35,7 @@
 
 <style>
   .markdown {
+    display: flow-root;
     overflow-wrap: anywhere;
     line-height: var(--atlas-line-height, 1.65);
   }
@@ -50,11 +51,13 @@
     border-inline-start: 3px solid var(--atlas-border);
   }
   .markdown :global(img) {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    max-height: 24rem;
+    float: inline-start;
+    width: min(42%, 12rem);
+    aspect-ratio: 4 / 3;
+    margin: 0.2rem 0.85rem 0.45rem 0;
     object-fit: contain;
+    background: var(--atlas-bg);
+    border-radius: var(--atlas-radius);
   }
   .markdown :global(a) {
     text-decoration: underline;

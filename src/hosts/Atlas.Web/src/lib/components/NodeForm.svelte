@@ -36,6 +36,8 @@
   import type { NodeType } from '../api/nodePage';
   let {
     initialDraft,
+    communities = [],
+    previewReactions = [],
     types,
     parentId,
     parentTitle,
@@ -48,6 +50,8 @@
   }: {
     /** Available node types and their singular/plural display labels. */
     types: NodeType[];
+    communities?: { id: string; name: string }[];
+    previewReactions?: NodeCardData['reactions'];
     /**
      * Seed values for editable fields. Captured once when the form is created; later prop changes
      * do not overwrite user edits.
@@ -104,6 +108,7 @@
    * Current contribution-type picker value, reset after adding a choice.
    */
   let requestedType = $state('');
+  let communityIds = $state<string[]>(startingDraft?.communityIds ?? []);
   /**
    * Parent ancestry plus the immediate parent, used by the child-draft breadcrumb.
    */
@@ -152,7 +157,7 @@
     createdAt,
     description: '',
     breadcrumb: path,
-    communities: [],
+    communities: communityIds.map((id) => communities.find((community) => community.id === id)?.name ?? 'Unavailable community'),
     related: [],
     requestedTypes: [],
     childTypes: types.filter((type) => requestedTypeIds.includes(type.id)).map((type) => ({
@@ -160,7 +165,7 @@
       label: `0 ${type.pluralName ?? type.name}`,
       count: 0,
     })),
-    reactions: [],
+    reactions: previewReactions,
     commentCount: 0,
     status: 'Active',
   });
@@ -173,6 +178,7 @@
       blocks,
       typeId: typeId === 'new' ? null : typeId,
       requestedTypeIds,
+      communityIds,
       parentId,
       ...(typeId === 'new'
         ? { newType: { name: typeName.trim(), description: typeDescription.trim(), autoPluralize } }
@@ -247,6 +253,32 @@
 
 {#snippet creationActions()}
   <footer>
+    {#if communities.length || communityIds.length}
+      <div class="contributions">
+        <label for={`${instance}-community`}>Communities (optional)</label>
+        <select id={`${instance}-community`} aria-describedby={`${instance}-community-help`}
+          onchange={(event) => {
+            const id = event.currentTarget.value;
+            if (id && !communityIds.includes(id)) communityIds = [...communityIds, id];
+            event.currentTarget.value = '';
+          }}>
+          <option value="">Add a community…</option>
+          {#each communities as community (community.id)}
+            <option value={community.id} disabled={communityIds.includes(community.id)}>{community.name}</option>
+          {/each}
+        </select>
+        <small id={`${instance}-community-help`}>Link to any number of communities, or leave this blank.</small>
+        {#if communityIds.length}
+          <ul aria-label="Linked communities">
+            {#each communityIds as id (id)}
+              {@const name = communities.find((community) => community.id === id)?.name ?? 'Unavailable community'}
+              <li>{name}<button type="button" aria-label={`Remove ${name}`}
+                onclick={() => communityIds = communityIds.filter((entry) => entry !== id)}>×</button></li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    {/if}
     <div class="contributions">
       <label for={`${instance}-requested`}>Requested contributions</label><select
         id={`${instance}-requested`}

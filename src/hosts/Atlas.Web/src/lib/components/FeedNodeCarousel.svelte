@@ -137,7 +137,7 @@
     width: auto;
     object-fit: contain;
   }
-  .compact :global(.markdown img) { max-height: 5.5rem; }
+  .compact :global(.markdown img) { width: min(42%, 7.25rem); }
   :global(.feed-block-slide .content-blocks figcaption) {
     font-size: .76rem; color: var(--atlas-muted);
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;

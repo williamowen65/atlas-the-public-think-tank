@@ -59,7 +59,10 @@
     margin: 1rem 0;
   }
   img {
-    max-width: 100%;
-    height: auto;
+    width: min(100%, 28rem);
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background: var(--atlas-bg);
+    border-radius: var(--atlas-radius);
   }
 </style>

@@ -18,18 +18,31 @@ test('the published-card story previews the current draft and keeps editing stat
   await type.selectOption('idea');
   await expect(page.getByRole('checkbox', { name: 'Show parent breadcrumb' })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('A revised public square');
+  const community = page.getByRole('combobox', { name: 'Communities (optional)' });
+  await community.selectOption('public-spaces');
+  await community.selectOption('urban-trees');
+  await expect(page.getByRole('list', { name: 'Linked communities' })).toContainText('Urban trees');
+
+  await canvas.getByRole('button', { name: 'Edit image in text' }).click();
+  const imageSettings = page.getByRole('form', { name: 'Edit image in Markdown' });
+  await expect(imageSettings.getByLabel('Inline image URL')).toHaveValue(/images.unsplash.com/);
+  await imageSettings.getByLabel('Inline image alternative text').fill('Buildings around the square');
+  await imageSettings.getByRole('button', { name: 'Apply image' }).click();
+  await expect(canvas.getByRole('img', { name: 'Buildings around the square' })).toHaveCount(1);
   await page.getByRole('button', { name: 'Preview in feed' }).click();
 
   const card = page.getByRole('article', { name: /A revised public square/ });
   await expect(card).toHaveAttribute('data-presentation', 'ribbon-corner');
+  await expect(card.locator('.byline')).toContainText('Public spaces, Urban trees');
+  await expect(card.locator('.reactions')).toContainText('Useful 3');
   const footer = card.locator('.navigation-details');
   await expect(footer.getByRole('button')).toHaveText(['0 Comments', '0 Questions', '0 Evidence']);
   await expect(card).not.toContainText('Help develop this node with');
   const feed = card.getByRole('region', { name: 'Feed preview of node content blocks' });
-  await expect(feed).toContainText('1 of 2');
-  await expect(feed.getByRole('img', { name: 'A city street lined with tall buildings' })).toBeVisible();
+  await expect(feed).toContainText('1 of 3');
+  await expect(feed.getByRole('img', { name: 'Buildings around the square' })).toBeVisible();
   await feed.getByRole('button', { name: 'Next node content block' }).click();
-  await expect(feed).toContainText('2 of 2');
+  await expect(feed).toContainText('2 of 3');
   await expect(feed).toContainText('Start with a small pilot');
   await feed.getByRole('button', { name: 'Read more' }).click();
   await expect(page.getByText('Full node preview', { exact: true })).toBeVisible();

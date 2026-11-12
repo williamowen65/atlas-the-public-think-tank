@@ -105,9 +105,15 @@
     },
   });
 
-  // Storybook research: an image may also live INSIDE a Markdown paragraph.
-  // It is not a sibling image block, and the Atlas text block's key remains
-  // unchanged. This only changes the experimental Tiptap schema.
+  function imageEditButton(label: string) {
+    return ['button', {
+      type: 'button', contenteditable: 'false', draggable: 'false',
+      'data-atlas-edit-image': 'true', class: 'atlas-story-image-action',
+      'aria-label': label, title: label,
+    }, '✎'];
+  }
+
+  // Inline images remain part of their containing Markdown block.
   const AtlasInlineImage = Node.create({
     name: 'atlasInlineImage',
     group: 'inline',
@@ -123,26 +129,25 @@
     },
     parseHTML() {
       return [{
-        tag: 'img:not([data-atlas-image])',
-        getAttrs: element => {
+        tag: 'span[data-atlas-inline-image]',
+        getAttrs: (element) => {
           if (typeof element === 'string') return false;
-          return {
-            src: element.getAttribute('src') || '',
-            alt: element.getAttribute('alt') || '',
-          };
+          const image = element.querySelector('img');
+          return image ? { src: image.getAttribute('src') ?? '', alt: image.getAttribute('alt') ?? '' } : false;
+        },
+      }, {
+        tag: 'img:not([data-atlas-image])',
+        getAttrs: (element) => typeof element === 'string' ? false : {
+          src: element.getAttribute('src') ?? '', alt: element.getAttribute('alt') ?? '',
         },
       }];
     },
     renderHTML({ node }) {
-      const src = publicUrl(String(node.attrs.src ?? '')) || '';
-      return ['img', {
-        src,
-        alt: String(node.attrs.alt ?? ''),
-        class: 'atlas-story-inline-image',
-        referrerpolicy: 'no-referrer',
-        'data-atlas-inline-image': 'true',
-        draggable: 'true',
-      }];
+      const src = publicUrl(String(node.attrs.src ?? ''));
+      return ['span', { class: 'atlas-story-inline-image', 'data-atlas-inline-image': 'true', contenteditable: 'false' },
+        ['img', { src, alt: String(node.attrs.alt ?? ''), referrerpolicy: 'no-referrer' }],
+        imageEditButton('Edit image in text'),
+      ];
     },
   });
 
@@ -215,11 +220,7 @@
         'data-caption': node.attrs.caption,
         class: 'atlas-story-figure',
       };
-      const editButton = ['button', {
-        type: 'button', contenteditable: 'false', draggable: 'false',
-        'data-atlas-edit-image': 'true', class: 'atlas-story-image-action',
-        'aria-label': src ? 'Edit image details' : 'Add image details',
-      }, src ? 'Edit image' : 'Add image details'];
+      const editButton = imageEditButton(src ? 'Edit image details' : 'Add image details');
       // A new image has a real, in-flow placeholder at its intended position.
       // Its editor panel is anchored inside this reserved image slot.
       if (!src) return ['figure', figureAttrs,
@@ -228,9 +229,11 @@
         editButton,
       ];
       return ['figure', figureAttrs,
-        ['img', { src, alt: node.attrs.alt, referrerpolicy: 'no-referrer' }],
+        ['div', { class: 'atlas-story-image-frame' },
+          ['img', { src, alt: node.attrs.alt, referrerpolicy: 'no-referrer' }],
+          editButton,
+        ],
         ['figcaption', {}, node.attrs.caption || ''],
-        editButton,
       ];
     },
   });
@@ -251,6 +254,8 @@
   let linkError = $state('');
   let linkSelection = $state<{ from: number; to: number } | null>(null);
   let linkFormPosition = $state({ top: 0, left: 0 });
+  let editingInlineImage = $state(false);
+  let inlineImageOriginal: import('@tiptap/pm/model').Node | null = null;
   let inlineImageOpen = $state(false);
   let inlineImageAt: number | null = null;
   let inlineImageUrl = $state('');
@@ -533,15 +538,19 @@
     linkSelection = null;
   }
 
-  function openInlineImageForm() {
+  function openInlineImageForm(position?: number) {
     const editor = currentEditor();
     if (!editor) return;
-    const block = editor.state.doc.child(editor.state.selection.$from.index(0));
+    const block = editor.state.doc.maybeChild(editor.state.selection.$from.index(0));
     // Inline media only belongs inside a Markdown section, not an image block.
-    if (block.type.name !== 'atlasText') return;
-    inlineImageAt = editor.state.selection.from;
-    inlineImageUrl = '';
-    inlineImageAlt = '';
+    const existing = position === undefined ? null : editor.state.doc.nodeAt(position);
+    if (position !== undefined && existing?.type.name !== 'atlasInlineImage') return;
+    if (!existing && block?.type.name !== 'atlasText') return;
+    inlineImageOriginal = existing;
+    editingInlineImage = !!existing;
+    inlineImageAt = position ?? editor.state.selection.from;
+    inlineImageUrl = String(existing?.attrs.src ?? '');
+    inlineImageAlt = String(existing?.attrs.alt ?? '');
     inlineImageError = '';
     inlineImageOpen = true;
     positionAnchoredForms();
@@ -559,10 +568,17 @@
       inlineImageError = 'Describe the image for screen readers.';
       return;
     }
-    editor.chain().focus().insertContentAt(inlineImageAt, {
-      type: 'atlasInlineImage',
-      attrs: { src: safe, alt: inlineImageAlt.trim() },
-    }).run();
+    const attrs = { src: safe, alt: inlineImageAlt.trim() };
+    if (inlineImageOriginal) {
+      if (editor.state.doc.nodeAt(inlineImageAt) !== inlineImageOriginal) {
+        inlineImageError = 'The image moved. Select it again to edit it.';
+        return;
+      }
+      editor.view.dispatch(editor.state.tr.setNodeMarkup(inlineImageAt, undefined, attrs));
+      editor.commands.focus();
+    } else {
+      editor.chain().focus().insertContentAt(inlineImageAt, { type: 'atlasInlineImage', attrs }).run();
+    }
     inlineImageOpen = false;
     inlineImageAt = null;
   }
@@ -759,7 +775,7 @@
     const editor = new Editor({
       element: canvasEl,
       extensions: [
-        StarterKit.configure({ document: false, underline: false, link: { openOnClick: false, autolink: false } }),
+        StarterKit.configure({ document: false, trailingNode: false, underline: false, link: { openOnClick: false, autolink: false } }),
         AtlasDocument,
         AtlasText,
         AtlasInlineImage,
@@ -786,16 +802,25 @@
             });
             return false;
           },
-          pointerdown: (view, event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return false;
-            const action = target.closest('[data-atlas-edit-image]');
-            const figure = action?.closest('figure[data-atlas-key]');
-            const key = figure?.getAttribute('data-atlas-key');
-            if (!key) return false;
+          pointerdown: (_view, event) => {
+            if (!(event.target instanceof Element) || !event.target.closest('[data-atlas-edit-image]')) return false;
             event.preventDefault();
-            const block = findBlock(key);
-            if (!block) return true;
+            return true;
+          },
+          click: (view, event) => {
+            const target = event.target;
+            if (!view.editable || !(target instanceof Element)) return false;
+            const action = target.closest('[data-atlas-edit-image]');
+            if (!action) return false;
+            const inline = action.closest('[data-atlas-inline-image]');
+            if (inline?.parentNode) {
+              const index = Array.from(inline.parentNode.childNodes).indexOf(inline);
+              openInlineImageForm(view.posAtDOM(inline.parentNode, index));
+              return true;
+            }
+            const key = action.closest('figure[data-atlas-key]')?.getAttribute('data-atlas-key');
+            const block = key && findBlock(key);
+            if (!block) return false;
             view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, block.from)));
             openImageForm('existing');
             return true;
@@ -869,7 +894,7 @@
     <button type="button" aria-label="Add or edit link"
       onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
     <button type="button" aria-label="Insert image within text" title="Inline image within this Markdown section"
-      onpointerdown={(event) => event.preventDefault()} onclick={openInlineImageForm}>Image in text</button>
+      onpointerdown={(event) => event.preventDefault()} onclick={() => openInlineImageForm()}>Image in text</button>
     <span class="toolbar-separator" aria-hidden="true"></span>
     <button type="button" aria-label="Toggle heading" onpointerdown={(event) => event.preventDefault()}
       onclick={() => format('heading')}>H2</button>
@@ -916,7 +941,7 @@
     {/if}
 
     {#if inlineImageOpen}
-      <div class="inline-image-form" role="form" aria-label="Insert image into Markdown"
+      <div class="inline-image-form" role="form" aria-label={editingInlineImage ? 'Edit image in Markdown' : 'Insert image into Markdown'}
         style:top={inlineImageFormPosition.top + 'px'}
         style:left={inlineImageFormPosition.left + 'px'}>
         <label for={`${instance}-inline-image-url`}>Inline image URL</label>
@@ -928,7 +953,7 @@
         {#if inlineImageError}<p class="input-error" role="alert">{inlineImageError}</p>{/if}
         <div class="form-actions">
           <button type="button" onclick={() => { inlineImageOpen = false; inlineImageAt = null; }}>Cancel</button>
-          <button type="button" class="primary" onclick={applyInlineImage}>Insert image</button>
+          <button type="button" class="primary" onclick={applyInlineImage}>{editingInlineImage ? 'Apply image' : 'Insert image'}</button>
         </div>
       </div>
     {/if}
@@ -1167,12 +1192,23 @@
     border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
     border-radius: .45rem;
   }
-  :global(.atlas-story-text) { min-width: 0; }
+  :global(.atlas-story-text) { min-width: 0; display: flow-root; }
   :global(.atlas-story-inline-image) {
-    display: block; width: auto; height: auto;
-    max-width: 100%; max-height: 17rem; object-fit: contain;
-    margin: .45rem 0 .7rem; border-radius: .35rem;
+    position: relative;
+    float: inline-start;
+    width: min(42%, 12rem);
+    margin: 0.2rem 0.85rem 0.45rem 0;
   }
+  :global(.atlas-story-inline-image img),
+  :global(.atlas-story-image-frame img) {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background: var(--atlas-bg);
+    border-radius: var(--atlas-radius);
+  }
+  :global(.atlas-story-image-frame) { position: relative; width: min(100%, 28rem); }
   :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
@@ -1191,10 +1227,10 @@
     font-size: .85rem;
   }
   :global(.atlas-story-image-action) {
-    position: absolute; bottom: .5rem; right: .5rem; z-index: 2;
+    position: absolute; top: .4rem; right: .4rem; z-index: 2;
     border: 1px solid var(--atlas-border); border-radius: .45rem;
     background: var(--atlas-surface); color: var(--atlas-text);
-    padding: .35rem .6rem; cursor: pointer; font: 500 .8rem/1.3 system-ui, sans-serif;
+    width: 2rem; height: 2rem; padding: 0; cursor: pointer; font: 1.1rem/1 system-ui, sans-serif;
     box-shadow: 0 2px 9px #0002;
   }
   /* Image configuration is discoverable only on the selected image block.
@@ -1209,9 +1245,6 @@
   :global(.atlas-story-figure.ProseMirror-selectednode) {
     /* Avoid default ProseMirror outline competing with the Atlas highlight. */
     outline: none;
-  }
-  :global(.atlas-story-figure img) {
-    display: block; max-width: 100%; max-height: 24rem; border-radius: var(--atlas-radius);
   }
   :global(.atlas-story-figure figcaption) {
     color: var(--atlas-muted); margin-top: .5rem; font: .85rem/1.5 system-ui, sans-serif;
