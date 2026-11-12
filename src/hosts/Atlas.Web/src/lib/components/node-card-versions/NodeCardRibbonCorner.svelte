@@ -381,7 +381,18 @@
     align-items: start;
     gap: 0 var(--dial-text-gap);
     margin-bottom: var(--atlas-paragraph-gap, 0.65rem);
-    .dial { float: none; margin-right: 0; }
+    .dial { float: none; margin-right: 0; margin-bottom: 0; }
+  }
+
+  // Let the dial set the grid row height. Slide contents are clipped inside
+  // that row and cannot make the card grow when the active block changes.
+  @media (min-width: 561px) {
+    .body:has(> :global(.has-slides)) > :global(.has-slides) {
+      align-self: stretch;
+      display: flex;
+      contain: size;
+      min-block-size: calc(var(--atlas-feed-preview-height, 8.5rem) + 2.75rem);
+    }
   }
 
   .dial {

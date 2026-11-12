@@ -52,3 +52,28 @@ test('the published-card story previews the current draft and keeps editing stat
   await expect(canvas).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('A revised public square');
 });
+
+test('the desktop feed carousel uses the voting dial height on short and long slides', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto(story);
+  await page.getByRole('button', { name: 'Preview in feed' }).click();
+
+  const feed = page.getByRole('region', { name: 'Feed preview of node content blocks' });
+  const viewport = feed.getByRole('region', { name: 'Node content carousel, swipe or use arrows' });
+  const readMore = feed.getByRole('button', { name: 'Read more' });
+  const dial = page.getByRole('complementary', { name: 'Importance rating' }).locator('.voting-dial');
+  await expect(dial).toBeVisible();
+  const bottom = async () => readMore.evaluate((button) => button.getBoundingClientRect().bottom);
+  const dialBottom = await dial.evaluate((element) => element.getBoundingClientRect().bottom);
+  await expect.poll(async () => Math.abs((await bottom()) - dialBottom)).toBeLessThan(2);
+  const longHeight = (await viewport.boundingBox())!.height;
+  const arrowTop = (await feed.getByRole('button', { name: 'Next node content block' }).boundingBox())!.y;
+  expect(await viewport.locator('.content-blocks').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+
+  await feed.getByRole('button', { name: 'Next node content block' }).click();
+  await expect(viewport).toContainText('Start with a small pilot');
+  expect((await viewport.boundingBox())!.height).toBeCloseTo(longHeight, 0);
+  expect((await feed.getByRole('button', { name: 'Next node content block' }).boundingBox())!.y).toBeCloseTo(arrowTop, 0);
+  expect(await bottom()).toBeCloseTo(dialBottom, 0);
+});

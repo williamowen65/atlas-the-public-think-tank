@@ -33,7 +33,7 @@ const draft = {
   blocks: [
     {
       key: 'introduction', kind: 'markdown', url: '', caption: '',
-      text: '![A city street lined with tall buildings](https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600) What if the public square made more room to **walk** and meet? Today most people pass straight through. A few trees, seats in the shade, and a wider path could give neighbors a reason to linger, make it easier to cross the square, and leave space for a weekend market. We could start with movable benches and planters and ask people where they naturally stop.',
+      text: '![A city street lined with tall buildings](https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600) What if the public square made more room to **walk** and meet? Today most people pass straight through. A few trees, seats in the shade, and a wider path could give neighbors a reason to linger, make it easier to cross the square, and leave space for a weekend market. We could start with movable benches and planters and ask people where they naturally stop. On market days, a clear route through the middle would keep the square easy to cross. On quieter days, the same space could hold tables for lunch or a place for children to play. We could count how many people stay and for how long, then compare what changes when we move the seating. Shop owners and neighbors could help choose what to keep after the pilot ends.',
     },
     {
       key: 'detail', kind: 'markdown', url: '', caption: '',

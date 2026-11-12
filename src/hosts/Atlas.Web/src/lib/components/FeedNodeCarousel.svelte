@@ -103,14 +103,24 @@
 </section>
 
 <style>
-  .feed-block-carousel { width: 100%; min-width: 0; color: var(--atlas-text); }
+  .feed-block-carousel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    color: var(--atlas-text);
+  }
   /* No nested card/border: the slide IS the old short-description area
      of the Atlas node card. Only the outer node border should remain visible. */
   .viewport { position: relative; width: 100%; box-sizing: border-box;
     overflow: hidden; border: 0; border-radius: 0; background: transparent;
     touch-action: pan-y;
   }
-  .viewport.compact { height: var(--atlas-feed-preview-height, 8.5rem); }
+  .viewport.compact {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: var(--atlas-feed-preview-height, 8.5rem);
+  }
   .viewport.landscape { height: min(12rem, 50vw); min-height: 8rem; }
   .viewport.portrait { height: min(17rem, 77vw); min-height: 11rem; }
   .feed-block-slide { box-sizing: border-box; display: flex; flex-direction: column;
@@ -155,7 +165,7 @@
   }
   .viewport:not(:has(.nav)) .feed-block-slide { padding-inline: 0; }
   .previous { left: 0; } .next { right: 0; }
-  .carousel-bottom { display: flex; align-items: center; justify-content: space-between;
+  .carousel-bottom { flex: none; display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: .35rem .6rem; padding: .5rem 0 .05rem; }
   .progress { font-size: .73rem; color: var(--atlas-muted); font-variant-numeric: tabular-nums; }
   .dots { display: flex; gap: .33rem; flex-wrap: wrap; align-items: center; }
