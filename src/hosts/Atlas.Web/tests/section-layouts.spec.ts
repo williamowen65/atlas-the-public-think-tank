@@ -96,18 +96,41 @@ test('duplicates a section with independent blocks, photos and slot alignment', 
   expect(result.assignments.find(({ sectionId, slotId }) => sectionId === copy.id && slotId === 'left')?.vertical).toBe('center');
 });
 
-test('confirms section deletion and restores it with Control+Z', async ({ page }) => {
+test('confirms block removal and undoes block and empty section removal in order', async ({ page }) => {
   await page.route('https://images.unsplash.com/**', (route) => route.abort());
   await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
   const sections = page.locator('.edit-section');
-  await expect(sections).toHaveCount(2);
+  const section = sections.first();
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  await expect(undo).toBeDisabled();
+  await expect(section.getByRole('button', { name: 'Delete empty section' })).toHaveCount(0);
+  const text = section.getByRole('textbox', { name: /Node content/ });
+  await text.click();
   page.once('dialog', (dialog) => dialog.dismiss());
-  await sections.first().getByRole('button', { name: 'Delete section' }).click();
-  await expect(sections).toHaveCount(2);
+  await section.getByRole('button', { name: 'Remove block' }).click();
+  await expect(text).toBeVisible();
+  await expect(undo).toBeDisabled();
+
   page.once('dialog', (dialog) => dialog.accept());
-  await sections.first().getByRole('button', { name: 'Delete section' }).click();
-  await expect(sections).toHaveCount(1);
+  await section.getByRole('button', { name: 'Remove block' }).click();
+  await expect(text).toHaveCount(0);
   await page.keyboard.press('Control+z');
+  await expect(text).toBeVisible();
+
+  await text.click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await section.getByRole('button', { name: 'Remove block' }).click();
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await section.getByRole('button', { name: 'Remove block' }).click();
+  await section.getByRole('button', { name: 'Delete empty section' }).click();
+  await expect(sections).toHaveCount(1);
+  await undo.click();
   await expect(sections).toHaveCount(2);
-  await expect(sections.first()).toContainText('Wide left');
+  await expect(section.getByRole('button', { name: 'Delete empty section' })).toBeVisible();
+  await undo.click();
+  await expect(section.getByRole('img')).toBeVisible();
+  await undo.click();
+  await expect(text).toBeVisible();
+  await expect(undo).toBeDisabled();
 });

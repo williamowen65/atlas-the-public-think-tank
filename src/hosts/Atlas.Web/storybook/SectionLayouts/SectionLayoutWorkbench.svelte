@@ -7,7 +7,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example, moveBlock, newId,
-    type Block, type Layout, type Photo, type Section, type Assignment, type VerticalAlignment,
+    type Block, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: 'blank' | 'editorial' | 'photoEssay' } = $props();
@@ -32,31 +32,36 @@
     ['heading', 'Heading', 'H2'], ['bulletList', 'Bulleted list', 'List'],
   ] as const;
 
-  let deleted = $state<{ section: Section; index: number; blocks: Block[]; assignments: Assignment[] }[]>([]);
+  let history = $state.raw<Draft[]>([]);
+  let editorVersion = $state(0);
   const selectedText = $derived(draft.blocks.find((block) => block.id === activeBlock && block.kind === 'text'));
   const selectedAssignment = $derived(draft.assignments.find(({ blockId }) => blockId === activeBlock));
 
-  function deleteSection(section: Section, index: number) {
-    const assignments = draft.assignments.filter((entry) => entry.sectionId === section.id);
-    if (!window.confirm(assignments.length ? 'Delete this section and its blocks?' : 'Delete this empty section?')) return;
-    const ids = new Set(assignments.map(({ blockId }) => blockId));
-    deleted.push({ section, index, assignments, blocks: draft.blocks.filter(({ id }) => ids.has(id)) });
-    draft.sections = draft.sections.filter(({ id }) => id !== section.id);
-    draft.assignments = draft.assignments.filter((entry) => entry.sectionId !== section.id);
-    draft.blocks = draft.blocks.filter(({ id }) => !ids.has(id));
-    layoutSection = null;
-    activeBlock = null;
-    activeEditor = undefined;
-    message = 'Section deleted.';
+  function remember() {
+    history = [...history, structuredClone($state.snapshot(draft))];
   }
 
-  function restoreSection() {
-    const item = deleted.pop();
-    if (!item) return;
-    draft.sections.splice(item.index, 0, item.section);
-    draft.blocks.push(...item.blocks);
-    draft.assignments.push(...item.assignments);
-    message = 'Section restored.';
+  function deleteEmptySection(sectionId: string) {
+    if (draft.sections.length < 2 || draft.assignments.some((entry) => entry.sectionId === sectionId)) return;
+    remember();
+    draft.sections = draft.sections.filter(({ id }) => id !== sectionId);
+    if (layoutSection === sectionId) layoutSection = null;
+    message = 'Empty section deleted.';
+  }
+
+  function undo() {
+    const previous = history.at(-1);
+    if (!previous) return;
+    history = history.slice(0, -1);
+    draft = previous;
+    editorVersion++;
+    movingBlock = null;
+    activeBlock = null;
+    activeEditor = undefined;
+    layoutSection = null;
+    picker = null;
+    photoDetails = null;
+    message = 'Change undone.';
   }
 
   function authorText(block: Extract<Block, { kind: 'text' }>): AuthorBlock[] {
@@ -93,6 +98,7 @@
     const id = movingBlock;
     if (!id) return;
     const target = blockAt(draft, sectionId, slotId);
+    remember();
     draft = moveBlock(draft, id, sectionId, slotId);
     movingBlock = null;
     activeBlock = id;
@@ -119,7 +125,8 @@
       : 60;
   }
 
-  function applyChoice(layoutId: string) {
+  function applyChoice(layoutId: string, record = true) {
+    if (record && (layoutSection === 'new' || draft.sections.some((item) => item.id === layoutSection && item.layoutId !== layoutId))) remember();
     if (layoutSection === 'new') {
       draft.sections.push({ id: newId(), layoutId });
     } else if (layoutSection) {
@@ -139,13 +146,15 @@
       slots: customColumns === 1 ? [{ id: 'left', weight: 1 }]
         : [{ id: 'left', weight: leftShare }, { id: 'right', weight: 100 - leftShare }],
     };
+    remember();
     draft.layouts.push({ ...layout, ...(reusable ? {} : { sectionOnly: true }) });
-    applyChoice(layout.id);
+    applyChoice(layout.id, false);
   }
 
   function addBlock(sectionId: string, slotId: string, kind: Block['kind']) {
     if (blockAt(draft, sectionId, slotId)) return;
     const id = newId();
+    remember();
     const photo = kind === 'image' ? newPhoto() : undefined;
     draft.blocks.push(kind === 'text' ? { id, kind, text: '' }
       : { id, kind, photos: photo ? [photo] : [] });
@@ -161,8 +170,11 @@
   }
 
   function removeBlock(blockId: string) {
+    if (!window.confirm('Remove this block?')) return;
+    remember();
     draft.assignments = draft.assignments.filter((entry) => entry.blockId !== blockId);
     draft.blocks = draft.blocks.filter(({ id }) => id !== blockId);
+    message = 'Block removed.';
     activeBlock = null;
     activeEditor = undefined;
   }
@@ -172,19 +184,21 @@
     const to = from + direction;
     if (to < 0 || to >= draft.sections.length) return;
     activeEditor = undefined;
+    remember();
     const sections = [...draft.sections];
     [sections[from], sections[to]] = [sections[to], sections[from]];
     draft.sections = sections;
   }
 </script>
 
-<svelte:window onkeydown={(event) => {
+<svelte:window onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
-  if (view === 'edit' && deleted.length && !movingBlock && !event.defaultPrevented
+  if (view === 'edit' && history.length && !movingBlock && !event.defaultPrevented
     && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z'
-    && !(event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable="true"]'))) {
+    && !(event.target instanceof Element && event.target.closest('.layout-panel'))) {
     event.preventDefault();
-    restoreSection();
+    event.stopPropagation();
+    undo();
   }
 }} />
 <div class="workbench" class:narrow bind:this={workbench}>
@@ -198,7 +212,7 @@
   <article class="node">
     <header>
       {#if view === 'edit'}
-        <input class="title" aria-label="Node title" placeholder="Give your node a title" bind:value={draft.title} />
+        <input class="title" aria-label="Node title" placeholder="Give your node a title" value={draft.title} oninput={(event) => { remember(); draft.title = event.currentTarget.value; }} />
       {:else}
         <h1>{draft.title || 'Untitled node'}</h1>
       {/if}
@@ -209,6 +223,7 @@
         {#if movingBlock}
           <span role="status">Choose a slot to move or swap.</span>
           <button type="button" onclick={cancelMove}>Cancel move</button>
+          <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
         {:else}
           <div class="formatting" role="group" aria-label="Text formatting">
             {#each formats as [command, label, short]}
@@ -219,7 +234,7 @@
             <label>Text alignment
               <select disabled={selectedText?.kind !== 'text'} value={selectedText?.kind === 'text' ? selectedText.alignment ?? 'left' : 'left'}
                 onchange={(event) => {
-                  if (selectedText?.kind === 'text') selectedText.alignment = event.currentTarget.value as 'left' | 'center' | 'right';
+                  if (selectedText?.kind === 'text') { remember(); selectedText.alignment = event.currentTarget.value as 'left' | 'center' | 'right'; }
                 }}>
                 <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
               </select>
@@ -227,12 +242,12 @@
             <label>Vertical alignment
               <select disabled={!selectedAssignment} value={selectedAssignment?.vertical ?? 'start'}
                 onchange={(event) => {
-                  if (selectedAssignment) selectedAssignment.vertical = event.currentTarget.value as VerticalAlignment;
+                  if (selectedAssignment) { remember(); selectedAssignment.vertical = event.currentTarget.value as VerticalAlignment; }
                 }}>
                 <option value="start">Top</option><option value="center">Middle</option><option value="end">Bottom</option>
               </select>
             </label>
-            {#if deleted.length}<button type="button" onclick={restoreSection}>Undo section deletion</button>{/if}
+            <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
           </div>
         {/if}
       </div>
@@ -246,8 +261,10 @@
                 onclick={() => moveSection(section.id, -1)}>↑</button>
               <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
                 onclick={() => moveSection(section.id, 1)}>↓</button>
-              <button type="button" onclick={() => draft = duplicateSection(draft, section.id)}>Duplicate section</button>
-              <button type="button" onclick={() => deleteSection(section, index)}>Delete section</button>
+              <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
+              {#if draft.sections.length > 1 && !draft.assignments.some((entry) => entry.sectionId === section.id)}
+                <button type="button" onclick={() => deleteEmptySection(section.id)}>Delete empty section</button>
+              {/if}
               <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
             </div>
             {#if layoutSection === section.id}{@render layoutEditor()}{/if}
@@ -265,9 +282,9 @@
                   {/if}
                   <div class="slot-content" style:text-align={block?.kind === 'text' ? block.alignment : undefined} inert={!!movingBlock}>
                     {#if block}
-                      {#key block.id}
+                      {#key `${block.id}/${editorVersion}`}
                         {#if block.kind === 'text'}
-                          <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => block.text = text}
+                          <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => { if (text !== block.text) { remember(); block.text = text; } }}
                             onActivate={(editor) => {
                               activeBlock = block.id;
                               activeEditor = editor;
@@ -293,12 +310,13 @@
                                 {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
                                 {#if photoDetails === photo.id}
                                   <div class="photo-details">
-                                    <label>Image URL<input type="url" bind:value={photo.src} /></label>
-                                    <label>Alternative text<input bind:value={photo.alt} /></label>
-                                    <label>Caption<input bind:value={photo.caption} /></label>
+                                    <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
+                                    <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
+                                    <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
                                     <button type="button" onclick={() => photoDetails = null}>Done</button>
                                     {#if block.kind === 'gallery'}
                                       <button type="button" onclick={() => {
+                                        remember();
                                         block.photos = block.photos.filter(({ id }) => id !== photo.id);
                                         photoDetails = null;
                                       }}>Remove image</button>
@@ -311,6 +329,7 @@
                           {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
                             <button type="button" onclick={() => {
                               const photo = newPhoto();
+                              remember();
                               block.photos.push(photo);
                               activeBlock = block.id;
                               activeEditor = undefined;
