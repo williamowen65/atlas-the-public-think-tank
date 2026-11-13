@@ -89,10 +89,11 @@
   }
   .paired .feature { align-self: stretch; position: relative; }
   .paired .feature :global(figure) {
-    position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto;
+    position: absolute; inset: 0; display: grid; grid-template: minmax(0, 1fr) auto / minmax(0, 1fr);
   }
-  .paired .feature :global(figure > button),
-  .paired .feature :global(figure > button > .frame) { height: 100%; }
+  .paired .feature :global(figure > button) { min-width: 0; min-height: 0; height: 100%; }
+  .paired .feature :global(figure > button > .frame) { height: 100%; aspect-ratio: auto !important; }
+  .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
   .masonry { columns: 3; column-gap: .6rem; }
   .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }

@@ -293,3 +293,23 @@ test('masonry image settings close within the gallery without moving its tiles',
   await expect(settings).toHaveCount(0);
   await expect(gallery.getByText('An evening walk')).toBeVisible();
 });
+
+test('mosaic keeps its gutter for both caption placements', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--mosaic-gallery&viewMode=story');
+  const row = page.locator('.mosaic-row').first();
+  const frame = row.locator('.feature .frame');
+  const stack = row.locator('.mosaic-stack');
+  const checkGutter = async () => {
+    const featureBox = await frame.boundingBox();
+    const stackBox = await stack.boundingBox();
+    const gap = await row.evaluate((element) => parseFloat(getComputedStyle(element).columnGap));
+    expect(stackBox!.x - (featureBox!.x + featureBox!.width)).toBeCloseTo(gap, 0);
+  };
+  await checkGutter();
+  await row.getByRole('button', { name: 'Edit Buildings along a city street' }).click();
+  await page.getByLabel('Caption placement').selectOption('below');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await checkGutter();
+  await page.getByRole('button', { name: 'Node page', exact: true }).click();
+  await checkGutter();
+});
