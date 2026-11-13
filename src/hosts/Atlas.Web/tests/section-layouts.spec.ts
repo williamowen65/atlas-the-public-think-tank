@@ -228,7 +228,10 @@ test('image framing and centered captions carry from editing into the feed', asy
 
 test('an image wraps at a selected paragraph in the editor and previews', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 900 });
-  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="teal"/></svg>',
+  }));
   await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
 
   const section = page.getByRole('region', { name: 'Section 1', exact: true });
@@ -238,6 +241,22 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
   await section.getByText(/^Start with the places/).click();
   await page.getByRole('button', { name: 'Move image here' }).click();
   await expect(section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image')).toHaveCSS('float', 'right');
+
+  const image = section.getByRole('button', { name: 'Edit Buildings along a city street' });
+  await image.dragTo(section.getByText(/^A public square can be/));
+  await expect(section.locator('.atlas-story-text > .ProseMirror-widget:first-child').getByRole('button', {
+    name: 'Edit Buildings along a city street',
+  })).toBeVisible();
+  await image.dragTo(section.getByText(/^Start with the places/));
+  await image.click();
+  await section.getByRole('slider', { name: /Image width/ }).focus();
+  await page.keyboard.press('Home');
+  await section.getByRole('button', { name: 'Done', exact: true }).click();
+  const float = section.locator('.section-wrapped-image');
+  expect(await float.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThan(160);
+  expect(await image.evaluate((element) => element.getBoundingClientRect().width)).toBeCloseTo(
+    await float.evaluate((element) => element.getBoundingClientRect().width),
+  );
 
   await page.getByRole('button', { name: 'Feed preview' }).click();
   const wrapped = page.locator('.markdown > p + .section-wrapped-image');

@@ -50,9 +50,9 @@
                   {#if block?.kind === 'text'}
                     {#snippet inset()}
                       {#if wrap}
-                        <WrappedImage side={wrap.side}>
+                        <WrappedImage side={wrap.side} width={wrap.image.photos[0]?.frame?.width}>
                           {#each wrap.image.photos as photo (photo.id)}
-                            {@render photoView(photo, false)}
+                            {@render photoView(photo, false, 100)}
                           {/each}
                         </WrappedImage>
                       {/if}
@@ -86,10 +86,10 @@
 {/if}
 {#if media.length}<NodeMediaGallery bind:this={gallery} items={media} />{/if}
 
-{#snippet photoView(photo: Photo, inGallery: boolean)}
+{#snippet photoView(photo: Photo, inGallery: boolean, width = photo.frame?.width ?? 100)}
   {@const src = publicUrl(photo.src)}
   {#if src}
-    <figure style:width={(photo.frame?.width ?? 100) + '%'}>
+    <figure style:width={width + '%'}>
       <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
         onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
         <PhotoFrame {photo} {src} gallery={inGallery} />

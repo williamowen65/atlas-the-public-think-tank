@@ -11,7 +11,7 @@
 <span class="frame" class:crop={ratio !== 'natural'} class:square={photo.frame?.corners === 'square'}
   style:aspect-ratio={ratio === 'natural' ? undefined : ratio}
   style:--focus-x={x} style:--focus-y={y} style:--zoom={photo.frame?.zoom ?? 1}>
-  <img {src} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
+  <img draggable="false" {src} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
 </span>
 
 <style>

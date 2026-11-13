@@ -29,6 +29,8 @@
   let activeBlock = $state<string | null>(null);
   let movingBlock = $state<string | null>(null);
   let picker = $state<string | null>(null);
+  let draggedSection = $state<string | null>(null);
+  let dropParagraph = $state<HTMLElement | null>(null);
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
@@ -59,10 +61,58 @@
   function moveWrappedImageHere() {
     const section = draft.sections.find(({ wrap }) => wrap && wrap.textId === activeBlock);
     if (!section?.wrap || !activeEditor) return;
-    const anchor = activeEditor.selectedTextBlockIndex();
-    if (section.wrap.anchor === anchor) return;
+    moveImageAnchor(section, activeEditor.selectedTextBlockIndex());
+  }
+
+  function moveImageAnchor(section: Section, anchor: number) {
+    if (!section.wrap || section.wrap.anchor === anchor) return;
     remember();
     section.wrap.anchor = anchor;
+  }
+
+  function clearImageDrag() {
+    dropParagraph?.classList.remove('image-drop-target');
+    dropParagraph = null;
+    draggedSection = null;
+  }
+
+  function startImageDrag(event: DragEvent, sectionId: string) {
+    if (!event.dataTransfer) return;
+    draggedSection = sectionId;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-atlas-image-anchor', sectionId);
+  }
+
+  function imageDropTarget(event: DragEvent) {
+    if (!draggedSection || !(event.target instanceof Element)) return;
+    const section = draft.sections.find(({ id }) => id === draggedSection);
+    const editor = event.target.closest('.atlas-story-text');
+    if (!section?.wrap || !editor || !workbench?.contains(editor)
+      || editor.closest<HTMLElement>('.edit-slot')?.dataset.block !== section.wrap.textId) return;
+    const blocks = Array.from(editor.children).filter((child) => !child.classList.contains('ProseMirror-widget'));
+    const anchor = blocks.findIndex((child) => child.contains(event.target as Element));
+    const paragraph = blocks[anchor];
+    if (paragraph instanceof HTMLElement) return { section, anchor, paragraph };
+  }
+
+  function previewImageDrop(event: DragEvent) {
+    if (!draggedSection) return;
+    const target = imageDropTarget(event);
+    dropParagraph?.classList.remove('image-drop-target');
+    dropParagraph = target?.paragraph ?? null;
+    if (!target) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    target.paragraph.classList.add('image-drop-target');
+  }
+
+  function dropWrappedImage(event: DragEvent) {
+    if (!draggedSection) return;
+    const target = imageDropTarget(event);
+    event.preventDefault();
+    event.stopPropagation();
+    clearImageDrag();
+    if (target) moveImageAnchor(target.section, target.anchor);
   }
 
   function deleteEmptySection(sectionId: string) {
@@ -267,7 +317,8 @@
   }
 </script>
 
-<svelte:window onpointerdowncapture={(event) => updateFocus(event.target)}
+<svelte:window ondragovercapture={previewImageDrop} ondropcapture={dropWrappedImage} ondragend={clearImageDrag}
+  onpointerdowncapture={(event) => updateFocus(event.target)}
   onfocusin={(event) => updateFocus(event.target, true)} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
   if (view === 'edit' && history.length && !movingBlock && !event.defaultPrevented
@@ -385,9 +436,9 @@
                             {#if block.kind === 'text'}
                               {#snippet inset()}
                                 {#if wrap}
-                                  <WrappedImage side={wrap.side}>
+                                  <WrappedImage side={wrap.side} width={wrap.image.photos[0]?.frame?.width}>
                                     <div data-block={wrap.imageId}>
-                                      {@render editPhotos(wrap.image, section, row.slots)}
+                                      {@render editPhotos(wrap.image, section, row.slots, true)}
                                     </div>
                                   </WrappedImage>
                                 {/if}
@@ -451,11 +502,14 @@
   </details>
 </div>
 
-{#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[])}
+{#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
   <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
     {#each block.photos as photo (photo.id)}
       <figure class="edit-photo">
-        <button style:--photo-width={(photo.frame?.width ?? 100) + '%'} class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
+        <button style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'} class="photo-button"
+          class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
+          title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
+          ondragstart={(event) => { if (wrapped) startImageDrag(event, section.id); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
           aria-expanded={photoDetails === photo.id}
           onclick={() => {
             activeBlock = block.id;
@@ -591,6 +645,8 @@
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .block-tools { position: absolute; bottom: 0; right: 0; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
+  .draggable-photo { cursor: grab; }
+  .edit-slot :global(.image-drop-target) { outline: 2px solid var(--atlas-accent); outline-offset: .15rem; }
   figure { margin: 0; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); }
   .photo-details { display: grid; gap: .4rem; margin-block-start: .5rem; }
