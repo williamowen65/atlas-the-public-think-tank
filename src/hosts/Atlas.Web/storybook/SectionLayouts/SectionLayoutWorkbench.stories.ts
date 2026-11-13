@@ -17,3 +17,4 @@ export const PhotoEssay: Story = { args: { start: 'photoEssay' } };
 export const GridGallery: Story = { args: { start: 'grid' } };
 export const MosaicGallery: Story = { args: { start: 'mosaic' } };
 export const SlideshowGallery: Story = { args: { start: 'slideshow' } };
+export const MasonryGallery: Story = { args: { start: 'masonry' } };

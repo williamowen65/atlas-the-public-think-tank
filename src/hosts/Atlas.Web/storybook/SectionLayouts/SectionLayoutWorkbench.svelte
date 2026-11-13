@@ -580,6 +580,7 @@
       }}>
         <option value="grid">Grid</option>
         <option value="mosaic">Mosaic</option>
+        <option value="masonry">Masonry</option>
         <option value="slideshow">Slideshow</option>
       </select>
     </label>

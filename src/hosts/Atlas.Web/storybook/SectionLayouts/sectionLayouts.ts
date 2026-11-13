@@ -14,7 +14,7 @@ export type PhotoFrame = {
   corners?: 'square' | 'rounded';
 };
 export type Photo = { id: string; src: string; alt: string; caption: string; frame?: PhotoFrame };
-export type GalleryStyle = 'grid' | 'mosaic' | 'slideshow';
+export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
 export type Block =
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
@@ -125,9 +125,20 @@ export function example(kind: Example): Draft {
   };
   if (kind === 'blank') {
     add('full', text('opening', ''));
-  } else if (kind === 'grid' || kind === 'mosaic' || kind === 'slideshow') {
+  } else if (kind === 'grid' || kind === 'mosaic' || kind === 'masonry' || kind === 'slideshow') {
     draft.title = 'A greener public square';
-    add('full', { id: 'reference-photos', kind: 'gallery', photos: structuredClone(photos), galleryStyle: kind });
+    const galleryPhotos = structuredClone(photos);
+    if (kind === 'mosaic' || kind === 'masonry') {
+      galleryPhotos.push(
+        photo('walkway', 'photo-1470071459604-3b5ec3a7fe05', 'Road through the hills'),
+        photo('trees', 'photo-1441974231531-c6227db76b6e', 'Trees along a woodland path'),
+      );
+    }
+    if (kind === 'masonry') {
+      const ratios = ['2 / 3', '4 / 3', '1 / 1', '4 / 5', '4 / 3', '2 / 3'] as const;
+      galleryPhotos.forEach((image, index) => { image.frame = { ratio: ratios[index] }; });
+    }
+    add('full', { id: 'reference-photos', kind: 'gallery', photos: galleryPhotos, galleryStyle: kind });
     add('full', text('pilot', pilot));
   } else {
     draft.title = 'A greener public square';

@@ -10,6 +10,9 @@
     photo: Snippet<[Photo]>;
   } = $props();
 
+  const mosaicRows = $derived(photos.flatMap((_, index) =>
+    index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
+
   let index = $state(0);
   const selectedIndex = $derived(photos.findIndex(({ id }) => id === selected));
   const current = $derived(selectedIndex >= 0 ? selectedIndex : Math.min(index, photos.length - 1));
@@ -37,8 +40,29 @@
       </div>
     {/if}
   </div>
+{:else if layout === 'mosaic' && photos.length > 1}
+  <div class="mosaic">
+    {#each mosaicRows as [feature, ...small], row (feature.id)}
+      <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length}>
+        <div class="feature">{@render photo(feature)}</div>
+        {#if small.length}
+          <div class="mosaic-stack">
+            {#each small as item (item.id)}
+              {@render photo(item)}
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+{:else if layout === 'masonry' && photos.length > 1}
+  <div class="masonry">
+    {#each photos as item (item.id)}
+      <div class="masonry-tile">{@render photo(item)}</div>
+    {/each}
+  </div>
 {:else}
-  <div class="tiles" class:mosaic={layout === 'mosaic'} class:single={photos.length === 1}>
+  <div class="tiles">
     {#each photos as item (item.id)}
       <div class="tile">{@render photo(item)}</div>
     {/each}
@@ -47,15 +71,24 @@
 
 <style>
   .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; align-items: start; }
-  .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .mosaic .tile:is(:nth-child(4n + 1), :nth-child(4n + 4)) { grid-column: span 2; }
-  .single .tile, .tiles .tile:last-child:nth-child(odd) { grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center; }
+  .tiles .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
+    grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;
+  }
+  .mosaic, .mosaic-stack { display: grid; gap: .6rem; align-content: start; }
+  .mosaic-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .6rem; align-items: start; }
+  .mosaic-row.reverse { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .reverse:not(.single) .feature { grid-area: 1 / 2; }
+  .reverse .mosaic-stack { grid-area: 1 / 1; }
+  .masonry { columns: 3; column-gap: .6rem; }
+  .masonry-tile { break-inside: avoid; display: flow-root; padding-block-end: .6rem; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
   @container (max-width: 24rem) {
-    .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .mosaic .tile:not(:last-child):is(:nth-child(4n + 1), :nth-child(4n + 4)) { grid-column: auto; }
-    .mosaic .tile:last-child:nth-child(even) { grid-column: auto; }
+    .mosaic-row, .mosaic-row.reverse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .masonry { columns: 2; }
+  }
+  @container (max-width: 17rem) {
+    .masonry { columns: 1; }
   }
 </style>
