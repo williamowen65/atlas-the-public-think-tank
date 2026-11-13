@@ -18,7 +18,7 @@ export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
 export type Block =
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
-  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered' };
+  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; masonryAlignment?: 'top' | 'center' };
 export type Draft = {
   title: string;
   layouts: Layout[];

@@ -2,10 +2,11 @@
   import type { Snippet } from 'svelte';
   import type { GalleryStyle, Photo } from './sectionLayouts';
 
-  let { photos, layout = 'grid', width = 'full', selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', masonryAlignment = 'top', selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
     width?: 'full' | 'centered';
+    masonryAlignment?: 'top' | 'center';
     selected?: string | null;
     onNavigate?: () => void;
     photo: Snippet<[Photo]>;
@@ -13,6 +14,15 @@
 
   const mosaicRows = $derived(photos.flatMap((_, index) =>
     index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
+
+  let masonryWidth = $state(0);
+  const columnCount = $derived(Math.min(photos.length, masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : 3));
+  const masonryColumns = $derived(Array.from({ length: columnCount }, (_, column) => {
+    const size = Math.floor(photos.length / columnCount);
+    const remainder = photos.length % columnCount;
+    const start = column * size + Math.min(column, remainder);
+    return photos.slice(start, start + size + Number(column < remainder));
+  }));
 
   let index = $state(0);
   const selectedIndex = $derived(photos.findIndex(({ id }) => id === selected));
@@ -58,9 +68,14 @@
       {/each}
     </div>
   {:else if layout === 'masonry' && photos.length > 1}
-    <div class="masonry">
-      {#each photos as item (item.id)}
-        <div class="masonry-tile">{@render photo(item)}</div>
+    <div class="masonry" class:middle={masonryAlignment === 'center'}
+      bind:clientWidth={masonryWidth} style:--column-count={columnCount}>
+      {#each masonryColumns as items}
+        <div class="masonry-column">
+          {#each items as item (item.id)}
+            {@render photo(item)}
+          {/each}
+        </div>
       {/each}
     </div>
   {:else}
@@ -100,16 +115,13 @@
   .paired .feature :global(figure > button) { min-width: 0; min-height: 0; height: 100%; }
   .paired .feature :global(figure > button > .frame) { height: 100%; aspect-ratio: auto !important; }
   .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
-  .masonry { columns: 3; column-gap: .6rem; }
-  .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }
+  .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
+  .masonry.middle { align-items: center; }
+  .masonry-column { display: grid; gap: .6rem; min-width: 0; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
   @container (max-width: 24rem) {
     .mosaic-row, .mosaic-row.reverse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .masonry { columns: 2; }
-  }
-  @container (max-width: 17rem) {
-    .masonry { columns: 1; }
   }
 </style>

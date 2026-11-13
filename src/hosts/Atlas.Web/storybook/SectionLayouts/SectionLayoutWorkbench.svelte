@@ -611,7 +611,7 @@
       </figure>
   {/snippet}
   {#if block.kind === 'gallery'}
-    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
@@ -638,6 +638,15 @@
         </select>
       </label>
       {#if block.galleryStyle === 'masonry'}
+        <label>Masonry vertical alignment
+          <select value={block.masonryAlignment ?? 'top'} onchange={(event) => {
+            remember();
+            block.masonryAlignment = event.currentTarget.value === 'center' ? 'center' : 'top';
+          }}>
+            <option value="top">Top</option>
+            <option value="center">Center</option>
+          </select>
+        </label>
         <button type="button" disabled={block.photos.length < 2}
           onclick={() => randomizeMasonryHeights(block.photos)}>Randomize image heights</button>
       {/if}
