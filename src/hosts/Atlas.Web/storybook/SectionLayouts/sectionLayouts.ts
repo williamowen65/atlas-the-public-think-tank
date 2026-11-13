@@ -20,8 +20,9 @@ export type SlideshowSettings = {
   neighbors?: boolean;
 };
 export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
-export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
+export type Example = 'blank' | 'editorial' | 'photoEssay' | 'linkPreviews' | GalleryStyle;
 export type Block =
+  | { id: string; kind: 'link'; url: string }
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
   | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; masonryAlignment?: 'top' | 'center'; slideshow?: SlideshowSettings };
 export type Draft = {
@@ -118,6 +119,23 @@ const next = '### What to measure\n\nCount how long people stay, where they sit,
 const ending = '### What happens after the pilot\n\nInvite neighbors to suggest what stays, moves, or goes. Compare the feedback with what volunteers observed, then publish a short summary so people can see how the next design responds to their suggestions.';
 const text = (id: string, value: string): Block => ({ id, kind: 'text', text: value });
 
+export const linkPreviewSamples = [
+  {
+    url: 'https://example.org/public-square',
+    label: 'Article with photo',
+    title: 'What makes a public square worth stopping in?',
+    description: 'A look at how seating, shade, and walkable routes shape the way neighbors use shared spaces.',
+    image: photos[0].src,
+  },
+  {
+    url: 'https://example.com/community-discussion',
+    label: 'Discussion without photo',
+    title: 'What would bring you back to the town square?',
+    description: 'Neighbors share ideas for a weekend pilot and suggest what the city could measure.',
+    image: undefined,
+  },
+] as const;
+
 export function example(kind: Example): Draft {
   const draft: Draft = { title: '', layouts: structuredClone(presets), sections: [], blocks: [], assignments: [] };
   const add = (layoutId: string, ...blocks: Block[]) => {
@@ -130,6 +148,13 @@ export function example(kind: Example): Draft {
   };
   if (kind === 'blank') {
     add('full', text('opening', ''));
+  } else if (kind === 'linkPreviews') {
+    draft.title = 'A greener public square';
+    add('full', text('opening', 'Two outside references for the public square pilot.'));
+    add('equal',
+      { id: 'article', kind: 'link', url: linkPreviewSamples[0].url },
+      { id: 'discussion', kind: 'link', url: linkPreviewSamples[1].url });
+    add('full', { id: 'plain-link', kind: 'link', url: 'https://example.net/project-notes' });
   } else if (kind === 'grid' || kind === 'mosaic' || kind === 'masonry' || kind === 'slideshow') {
     draft.title = 'A greener public square';
     const galleryPhotos = structuredClone(photos);
@@ -171,7 +196,7 @@ export function duplicateSection(draft: Draft, sectionId: string): Draft {
     const block = draft.blocks.find(({ id }) => id === entry.blockId)!;
     const id = newId();
     copiedIds.set(block.id, id);
-    blocks.push(block.kind === 'text' ? { ...block, id }
+    blocks.push(!('photos' in block) ? { ...block, id }
       : { ...block, id, photos: block.photos.map((photo) => ({ ...photo, id: newId(), frame: photo.frame && { ...photo.frame } })) });
     assignments.push({ ...entry, sectionId: copy.id, blockId: id });
   }

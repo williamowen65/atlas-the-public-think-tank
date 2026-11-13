@@ -18,3 +18,4 @@ export const GridGallery: Story = { args: { start: 'grid' } };
 export const MosaicGallery: Story = { args: { start: 'mosaic' } };
 export const SlideshowGallery: Story = { args: { start: 'slideshow' } };
 export const MasonryGallery: Story = { args: { start: 'masonry' } };
+export const LinkPreviews: Story = { args: { start: 'linkPreviews' } };

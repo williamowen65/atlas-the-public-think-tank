@@ -1,6 +1,7 @@
 <script lang="ts">
   import PhotoFramingControls from './PhotoFramingControls.svelte';
   import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
+  import LinkPreviewCard from './LinkPreviewCard.svelte';
   import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
@@ -13,7 +14,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
+    type Block, linkPreviewSamples, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: Example } = $props();
@@ -188,7 +189,7 @@
     if (block?.dataset.block === activeBlock) return;
     activeEditor?.dismissControls();
     activeEditor = undefined;
-    activeBlock = keyboard || block?.classList.contains('gallery-slot') ? block?.dataset.block ?? null : null;
+    activeBlock = keyboard || block?.matches('.gallery-slot, .link-slot') ? block?.dataset.block ?? null : null;
     photoDetails = null;
   }
 
@@ -315,6 +316,7 @@
     remember();
     const photo = kind === 'image' ? newPhoto() : undefined;
     draft.blocks.push(kind === 'text' ? { id, kind, text: '' }
+      : kind === 'link' ? { id, kind, url: '' }
       : { id, kind, photos: photo ? [photo] : [] });
     draft.assignments.push({ sectionId, slotId, blockId: id });
     activeBlock = id;
@@ -487,7 +489,7 @@
                   {@const slotKey = `${section.id}/${slot.id}`}
                   {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
                   {#if !wrap || block?.id !== wrap.imageId}
-                    <div class="edit-slot" class:gallery-slot={block?.kind === 'gallery'}
+                    <div class="edit-slot" class:link-slot={block?.kind === 'link'} class:gallery-slot={block?.kind === 'gallery'}
                       role={block?.kind === 'gallery' ? 'group' : undefined}
                       aria-label={block?.kind === 'gallery' ? 'Gallery block' : undefined} style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
                       {#if movingBlock && block?.id !== movingBlock}
@@ -519,6 +521,26 @@
                                   activeEditor = editor;
                                   photoDetails = null;
                                 }} />
+                            {:else if block.kind === 'link'}
+                              <div class="link-preview-editor">
+                                <LinkPreviewCard url={block.url} editable />
+                                {#if activeBlock === block.id || !publicUrl(block.url.trim())}
+                                  <label>Link URL
+                                    <input type="url" value={block.url} placeholder="https://example.org/article"
+                                      oninput={(event) => { remember(); block.url = event.currentTarget.value; }} />
+                                  </label>
+                                  {#if block.url && !publicUrl(block.url.trim())}
+                                    <small>Enter a full HTTP or HTTPS URL.</small>
+                                  {/if}
+                                  <div class="buttons">
+                                    {#each linkPreviewSamples as sample (sample.url)}
+                                      <button type="button" onclick={() => { remember(); block.url = sample.url; }}>
+                                        {sample.label}
+                                      </button>
+                                    {/each}
+                                  </div>
+                                {/if}
+                              </div>
                             {:else}
                               {@render editPhotos(block, section, row.slots)}
                             {/if}
@@ -539,6 +561,7 @@
                               <button type="button" onclick={() => addBlock(section.id, slot.id, 'text')}>Text</button>
                               <button type="button" onclick={() => addBlock(section.id, slot.id, 'image')}>Image</button>
                               <button type="button" onclick={() => addBlock(section.id, slot.id, 'gallery')}>Gallery</button>
+                              <button type="button" onclick={() => addBlock(section.id, slot.id, 'link')}>Link preview</button>
                             {/if}
                           </div>
                         {/if}
@@ -815,6 +838,7 @@
   .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
+  .link-preview-editor { display: grid; gap: .6rem; }
   .gallery-tools { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; margin-block-start: .75rem; }
   .section-tools.inactive { display: none; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }

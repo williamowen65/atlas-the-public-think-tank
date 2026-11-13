@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LinkPreviewCard from './LinkPreviewCard.svelte';
   import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
@@ -24,7 +25,7 @@
     const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
     return sectionRows(section, layout).flatMap(({ slots }) => slots).flatMap((slot) => {
       const block = blockAt(draft, section.id, slot.id);
-      return block && block.kind !== 'text' ? block.photos.flatMap((photo) => {
+      return block && 'photos' in block ? block.photos.flatMap((photo) => {
         const src = publicUrl(photo.src);
         return src ? [{ ...photo, src }] : [];
       }) : [];
@@ -59,6 +60,8 @@
                       {/if}
                     {/snippet}
                     <MarkdownContent preserveHeadingLevels text={block.text} inset={wrap ? inset : undefined} insetAnchor={wrap?.anchor} />
+                  {:else if block?.kind === 'link'}
+                    <LinkPreviewCard url={block.url} />
                   {:else if block?.kind === 'gallery'}
                     {#snippet tile(photo: Photo)}{@render photoView(photo, block.galleryStyle !== 'masonry')}{/snippet}
                     <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} photo={tile} />
