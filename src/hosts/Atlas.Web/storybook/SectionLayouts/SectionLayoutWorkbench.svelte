@@ -179,7 +179,7 @@
     activeEditor = undefined;
     layoutSection = null;
     await tick();
-    workbench?.querySelector<HTMLButtonElement>('.destination')?.focus();
+    workbench?.querySelector<HTMLButtonElement>('.destination')?.focus({ preventScroll: true });
   }
 
   async function cancelMove() {
