@@ -35,7 +35,7 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
   await section.getByText('Customize layout').click();
   await section.getByLabel('Layout name').fill('Pilot layout');
   await section.getByRole('button', { name: 'Save as a new preset' }).click();
-  await expect(section.getByText('Pilot layout', { exact: true })).toBeVisible();
+  await expect(section.getByRole('button', { name: 'Change layout' })).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('button', { name: 'Add section' }).click();
   await page.getByLabel('Layout', { exact: true }).selectOption({ label: 'Pilot layout' });
   await page.getByRole('button', { name: 'Add this layout' }).click();
@@ -133,4 +133,23 @@ test('confirms block removal and undoes block and empty section removal in order
   await undo.click();
   await expect(text).toBeVisible();
   await expect(undo).toBeDisabled();
+});
+
+test('only authored section breaks appear in the editor and previews', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const rule = page.locator('hr.section-break');
+  const second = page.getByRole('region', { name: 'Section 2', exact: true });
+  await expect(rule).toHaveCount(0);
+  await second.getByRole('button', { name: 'Add section break' }).click();
+  await expect(second.locator('hr.section-break')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(rule).toHaveCount(1);
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(rule).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await second.getByRole('button', { name: 'Remove section break' }).click();
+  await expect(rule).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(rule).toHaveCount(1);
 });

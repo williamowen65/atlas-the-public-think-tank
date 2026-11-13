@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SectionBreak from './SectionBreak.svelte';
   import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
@@ -33,6 +34,7 @@
   <div class="sections" bind:offsetHeight={contentHeight}>
     {#each draft.sections as section (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
+      {#if section.breakBefore}<SectionBreak />{/if}
       {#if layout.slots.some((slot) => blockAt(draft, section.id, slot.id))}
         <section class="section" style:--columns={columns(layout)}>
           {#each layout.slots as slot (slot.id)}

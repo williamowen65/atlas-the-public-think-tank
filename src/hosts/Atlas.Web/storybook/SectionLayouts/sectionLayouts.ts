@@ -1,6 +1,6 @@
 export type Slot = { id: string; weight: number };
 export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
-export type Section = { id: string; layoutId: string };
+export type Section = { id: string; layoutId: string; breakBefore?: boolean };
 export type VerticalAlignment = 'start' | 'center' | 'end';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };

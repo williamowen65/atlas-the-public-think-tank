@@ -4,6 +4,7 @@
   import SectionTextEditor from './SectionTextEditor.svelte';
   import type TiptapCanvas from '../../src/lib/components/TiptapCanvas.svelte';
   import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
+  import SectionBreak from './SectionBreak.svelte';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example, moveBlock, newId,
@@ -255,8 +256,12 @@
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
           <section class="edit-section" aria-label={`Section ${index + 1}`}>
+            {#if section.breakBefore}<SectionBreak />{/if}
             <div class="section-tools" inert={!!movingBlock}>
-              <span class="layout-name">{layout.name}</span>
+              <button type="button" onclick={() => {
+                remember();
+                section.breakBefore = !section.breakBefore;
+              }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
               <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
                 onclick={() => moveSection(section.id, -1)}>↑</button>
               <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
@@ -446,9 +451,8 @@
   .formatting { display: flex; flex-wrap: wrap; align-items: end; gap: .4rem; }
   .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
-  .edit-section { border-block-start: 1px solid var(--atlas-border); padding-block: .5rem 1rem; }
-  .section-tools { color: var(--atlas-muted); font-size: .82rem; }
-  .layout-name { margin-inline-end: auto; }
+  .edit-section { padding-block: .5rem 1rem; }
+  .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: start; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
