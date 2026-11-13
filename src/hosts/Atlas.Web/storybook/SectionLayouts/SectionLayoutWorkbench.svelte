@@ -722,8 +722,27 @@
   .toolbar { margin-bottom: .75rem; }
   .phone { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
   .node { container-type: inline-size; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .75rem); background: var(--atlas-surface); padding: clamp(.8rem, 3vw, 2.5rem); }
+  .node { --node-title-size: clamp(1.5rem, 5cqi, 2.75rem); }
+  .node :global(:is(.atlas-story-text, .markdown) :is(h2, h3, h4, h5, h6)) {
+    font-size: max(var(--heading-min), calc(var(--node-title-size) * var(--heading-ratio)));
+    font-weight: 650;
+    line-height: 1.25;
+    margin-block: 1.25rem .5rem;
+  }
+  .node :global(:is(.atlas-story-text, .markdown) h2) { --heading-ratio: .8; --heading-min: 1.375rem; }
+  .node :global(:is(.atlas-story-text, .markdown) h3) { --heading-ratio: .68; --heading-min: 1.25rem; }
+  .node :global(:is(.atlas-story-text, .markdown) h4) { --heading-ratio: .57; --heading-min: 1.125rem; }
+  .node :global(:is(.atlas-story-text, .markdown) h5) { --heading-ratio: .48; --heading-min: 1.0625rem; }
+  .node :global(:is(.atlas-story-text, .markdown) h6) { --heading-ratio: .42; --heading-min: 1rem; }
+  .node :global(:is(.atlas-story-text, .markdown) > :is(h2, h3, h4, h5, h6):first-child),
+  .node :global(.atlas-story-text > .ProseMirror-widget:first-child + :is(h2, h3, h4, h5, h6)) {
+    margin-block-start: 0;
+  }
+  .node :global(:is(.atlas-story-text, .markdown) > :is(h2, h3, h4, h5, h6):last-child) {
+    margin-block-end: 0;
+  }
   header { margin-bottom: clamp(.8rem, 3vw, 1.7rem); }
-  h1, .title { font-size: clamp(1.5rem, 5cqi, 2.75rem); font-weight: 650; margin: 0; line-height: 1.16; overflow-wrap: anywhere; }
+  h1, .title { font-size: var(--node-title-size); font-weight: 650; margin: 0; line-height: 1.16; overflow-wrap: anywhere; }
   .title { width: 100%; padding: .35rem 0; border: 0; border-bottom: 1px solid var(--atlas-border); border-radius: 0; }
   .editor, .edit-section, .edit-slot, .layout-panel { display: grid; gap: .75rem; min-width: 0; }
   .editor > button { justify-self: start; }
