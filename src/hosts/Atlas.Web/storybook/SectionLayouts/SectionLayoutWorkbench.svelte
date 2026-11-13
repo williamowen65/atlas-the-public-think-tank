@@ -1,5 +1,6 @@
 <script lang="ts">
   import PhotoFramingControls from './PhotoFramingControls.svelte';
+  import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import { tick, untrack } from 'svelte';
@@ -11,10 +12,10 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
+    type Block, type Example, type GalleryStyle, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
-  let { start = 'editorial' }: { start?: 'blank' | 'editorial' | 'photoEssay' } = $props();
+  let { start = 'editorial' }: { start?: Example } = $props();
   let draft = $state(untrack(() => example(start)));
   let view = $state<'edit' | 'feed' | 'node'>('edit');
   let narrow = $state(false);
@@ -288,6 +289,14 @@
     photoDetails = photo?.id ?? null;
   }
 
+  function reorderPhoto(block: Extract<Block, { photos: Photo[] }>, index: number, direction: number) {
+    remember();
+    const photos = [...block.photos];
+    const [photo] = photos.splice(index, 1);
+    photos.splice(index + direction, 0, photo);
+    block.photos = photos;
+  }
+
   function newPhoto(): Photo {
     return { id: newId(), src: '', alt: '', caption: '' };
   }
@@ -503,8 +512,7 @@
 </div>
 
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
-  <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
-    {#each block.photos as photo (photo.id)}
+  {#snippet editPhoto(photo: Photo)}
       <figure class="edit-photo" class:photo-open={photoDetails === photo.id} style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
           class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
@@ -546,6 +554,9 @@
               <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
             {/if}
             {#if block.kind === 'gallery'}
+              {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
+              <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
+              <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
               <button type="button" onclick={() => {
                 remember();
                 block.photos = block.photos.filter(({ id }) => id !== photo.id);
@@ -555,9 +566,23 @@
           </div>
         {/if}
       </figure>
-    {/each}
-  </div>
+  {/snippet}
+  {#if block.kind === 'gallery'}
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+  {:else}
+    {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
+  {/if}
   {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
+    <label>Gallery layout
+      <select value={block.galleryStyle ?? 'grid'} onchange={(event) => {
+        remember();
+        block.galleryStyle = event.currentTarget.value as GalleryStyle;
+      }}>
+        <option value="grid">Grid</option>
+        <option value="mosaic">Mosaic</option>
+        <option value="slideshow">Slideshow</option>
+      </select>
+    </label>
     <button type="button" onclick={() => {
       const photo = newPhoto();
       remember();
@@ -675,8 +700,7 @@
   .edit-slot label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
   .empty-slot { min-height: 4rem; justify-content: center; }
-  .edit-photos, .custom { display: grid; gap: .6rem; }
-  .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .custom { display: grid; gap: .6rem; }
   .edit-photo { position: relative; min-width: 0; }
   .layout-panel { padding: .65rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem); }
   .custom { margin: .55rem 0; }
@@ -697,5 +721,4 @@
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
     .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }
-  @container (max-width: 24rem) { .edit-photos { grid-template-columns: minmax(0, 1fr); } }
 </style>

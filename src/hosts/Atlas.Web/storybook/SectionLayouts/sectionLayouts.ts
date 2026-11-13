@@ -14,9 +14,11 @@ export type PhotoFrame = {
   corners?: 'square' | 'rounded';
 };
 export type Photo = { id: string; src: string; alt: string; caption: string; frame?: PhotoFrame };
+export type GalleryStyle = 'grid' | 'mosaic' | 'slideshow';
+export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
 export type Block =
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
-  | { id: string; kind: 'image' | 'gallery'; photos: Photo[] };
+  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle };
 export type Draft = {
   title: string;
   layouts: Layout[];
@@ -111,7 +113,7 @@ const next = '### What to measure\n\nCount how long people stay, where they sit,
 const ending = '### What happens after the pilot\n\nInvite neighbors to suggest what stays, moves, or goes. Compare the feedback with what volunteers observed, then publish a short summary so people can see how the next design responds to their suggestions.';
 const text = (id: string, value: string): Block => ({ id, kind: 'text', text: value });
 
-export function example(kind: 'blank' | 'editorial' | 'photoEssay'): Draft {
+export function example(kind: Example): Draft {
   const draft: Draft = { title: '', layouts: structuredClone(presets), sections: [], blocks: [], assignments: [] };
   const add = (layoutId: string, ...blocks: Block[]) => {
     const sectionId = `section-${draft.sections.length + 1}`;
@@ -123,6 +125,10 @@ export function example(kind: 'blank' | 'editorial' | 'photoEssay'): Draft {
   };
   if (kind === 'blank') {
     add('full', text('opening', ''));
+  } else if (kind === 'grid' || kind === 'mosaic' || kind === 'slideshow') {
+    draft.title = 'A greener public square';
+    add('full', { id: 'reference-photos', kind: 'gallery', photos: structuredClone(photos), galleryStyle: kind });
+    add('full', text('pilot', pilot));
   } else {
     draft.title = 'A greener public square';
     if (kind === 'editorial') {

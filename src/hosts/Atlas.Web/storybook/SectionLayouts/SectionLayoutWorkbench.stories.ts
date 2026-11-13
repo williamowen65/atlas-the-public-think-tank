@@ -13,3 +13,7 @@ type Story = StoryObj<typeof meta>;
 export const BlankNode: Story = { args: { start: 'blank' } };
 export const Editorial: Story = { args: { start: 'editorial' } };
 export const PhotoEssay: Story = { args: { start: 'photoEssay' } };
+
+export const GridGallery: Story = { args: { start: 'grid' } };
+export const MosaicGallery: Story = { args: { start: 'mosaic' } };
+export const SlideshowGallery: Story = { args: { start: 'slideshow' } };

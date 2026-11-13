@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import SectionBreak from './SectionBreak.svelte';
@@ -58,12 +59,11 @@
                       {/if}
                     {/snippet}
                     <MarkdownContent preserveHeadingLevels text={block.text} inset={wrap ? inset : undefined} insetAnchor={wrap?.anchor} />
+                  {:else if block?.kind === 'gallery'}
+                    {#snippet tile(photo: Photo)}{@render photoView(photo, true)}{/snippet}
+                    <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} photo={tile} />
                   {:else if block}
-                    <div class="photos" class:photo-grid={block.kind === 'gallery'}>
-                      {#each block.photos as photo (photo.id)}
-                        {@render photoView(photo, block.kind === 'gallery')}
-                      {/each}
-                    </div>
+                    {#each block.photos as photo (photo.id)}{@render photoView(photo, false)}{/each}
                   {/if}
                 </div>
               {/if}
@@ -108,8 +108,6 @@
   .slot { min-width: 0; }
   .slot :global(.markdown > :first-child) { margin-block-start: 0; }
   .slot :global(.markdown > :last-child) { margin-block-end: 0; }
-  .photos { display: grid; gap: .55rem; }
-  .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   figure { margin: 0 auto; }
   figure button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
   figcaption, .cutoff { color: var(--atlas-muted); }
