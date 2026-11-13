@@ -8,17 +8,19 @@
     elsewhere.
 -->
 <script lang="ts">
-  import { renderMarkdown } from '../markdown/renderMarkdown';
+  import { renderMarkdown, renderSectionMarkdown } from '../markdown/renderMarkdown';
 
   let {
     text,
     images = false,
     preview = false,
     onImage,
+    preserveHeadingLevels = false,
   }: {
     /** Markdown block source; short descriptions remain plain text elsewhere. */
     text: string;
     images?: boolean;
+    preserveHeadingLevels?: boolean;
     preview?: boolean;
     onImage?: (index: number, trigger: HTMLButtonElement) => void;
   } = $props();
@@ -26,7 +28,7 @@
    * HTML derived only from the shared Markdown renderer; never raw user text for the HTML
    * insertion.
    */
-  const html = $derived(renderMarkdown(text, images, preview, !!onImage));
+  const html = $derived(preserveHeadingLevels ? renderSectionMarkdown(text) : renderMarkdown(text, images, preview, !!onImage));
 </script>
 
 <!-- Layout: One typography wrapper contains HTML produced only by the shared Markdown policy. -->

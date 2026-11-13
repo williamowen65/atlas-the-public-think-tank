@@ -4,7 +4,7 @@ import { publicUrl } from '../api/nodePage';
 
 // Raw HTML stays disabled in both renderers. Node content can opt into
 // external images using the same URL policy as standalone image blocks.
-function createRenderer(images: boolean, shiftHeadings = true, links = true, gallery = false) {
+function createRenderer(images: boolean, shiftHeadings: boolean | 'preserve' = true, links = true, gallery = false) {
   const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false });
   if (!images) markdown.disable('image');
   const validate = markdown.validateLink.bind(markdown);
@@ -75,7 +75,7 @@ function createRenderer(images: boolean, shiftHeadings = true, links = true, gal
     for (const rule of ['heading_open', 'heading_close']) {
       markdown.renderer.rules[rule] = (tokens, index, options, _env, renderer) => {
         const token = tokens[index];
-        token.tag = `h${Math.min(6, Number(token.tag.slice(1)) + 1)}`;
+        token.tag = `h${Math.min(6, Math.max(2, Number(token.tag.slice(1)) + (shiftHeadings === true ? 1 : 0)))}`;
         return renderer.renderToken(tokens, index, options);
       };
     }
@@ -88,6 +88,7 @@ const nodeMarkdown = createRenderer(true);
 const feedMarkdown = createRenderer(true, true, false);
 const galleryMarkdown = createRenderer(true, true, true, true);
 const galleryFeedMarkdown = createRenderer(true, true, false, true);
+const sectionMarkdown = createRenderer(false, 'preserve');
 const editorMarkdown = createRenderer(true, false);
 // ProseMirror collapses soft breaks to spaces when it loads HTML. Render
 // them the same way for the round-trip check while preserving hard breaks.
@@ -98,6 +99,10 @@ export function renderMarkdown(source: string, images = false, preview = false, 
   const renderer = gallery ? (preview ? galleryFeedMarkdown : galleryMarkdown)
     : preview ? feedMarkdown : images ? nodeMarkdown : markdown;
   return renderer.render(source, { imageIndex: 0 });
+}
+
+export function renderSectionMarkdown(source: string): string {
+  return sectionMarkdown.render(source);
 }
 
 /** Keep Markdown heading levels when loading a document into the editor. */

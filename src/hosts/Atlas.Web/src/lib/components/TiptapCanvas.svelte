@@ -423,17 +423,23 @@
 
   function currentEditor(): Editor | null { return editorState.editor; }
 
-  export function formatText(kind: 'bold' | 'italic' | 'heading' | 'bulletList' | 'link') {
-    if (kind === 'link') openLinkForm();
-    else format(kind);
+  export function dismissControls() {
+    linkFormOpen = false;
+    linkSelection = null;
+    currentEditor()?.commands.blur();
   }
 
-  function format(kind: 'bold' | 'italic' | 'heading' | 'bulletList') {
+  export function formatText(kind: 'bold' | 'italic' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
+    if (kind === 'link') openLinkForm();
+    else format(kind, level);
+  }
+
+  function format(kind: 'bold' | 'italic' | 'heading' | 'bulletList', level: 2 | 3 | 4 | 5 | 6 = 2) {
     const editor = currentEditor();
     if (!editor) return;
     if (kind === 'bold') editor.chain().focus().toggleBold().run();
     else if (kind === 'italic') editor.chain().focus().toggleItalic().run();
-    else if (kind === 'heading') editor.chain().focus().toggleHeading({ level: 2 }).run();
+    else if (kind === 'heading') editor.chain().focus().toggleHeading({ level }).run();
     else editor.chain().focus().toggleBulletList().run();
   }
 
@@ -1257,7 +1263,8 @@
   :global(.atlas-story-image-frame) { position: relative; width: var(--atlas-image-width, 50%); }
   :global([data-image-placement='center'] > .atlas-story-image-frame) { margin-inline: auto; }
   :global([data-image-placement='right'] > .atlas-story-image-frame) { margin-inline-start: auto; }
-  :global(.atlas-story-rich-document p) { margin: 0 0 .85rem; }
+  :global(.atlas-story-rich-document p:not(li p)) { margin: 0 0 .85rem; }
+  :global(.atlas-story-rich-document li p) { margin: 0; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
   :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }

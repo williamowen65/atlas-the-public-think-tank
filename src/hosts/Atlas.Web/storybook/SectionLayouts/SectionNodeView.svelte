@@ -43,7 +43,7 @@
             <div class="slot" style:align-self={vertical ?? 'start'}
               style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
               {#if block?.kind === 'text'}
-                <MarkdownContent text={block.text} />
+                <MarkdownContent preserveHeadingLevels text={block.text} />
               {:else if block}
                 <div class="photos" class:photo-grid={block.kind === 'gallery'}>
                   {#each block.photos as photo (photo.id)}

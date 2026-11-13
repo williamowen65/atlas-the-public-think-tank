@@ -153,3 +153,22 @@ test('only authored section breaks appear in the editor and previews', async ({ 
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(rule).toHaveCount(1);
 });
+
+test('clicking away dismisses block controls and H6 survives preview', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await expect(section.getByLabel('Image URL')).toBeVisible();
+  const editor = section.getByRole('textbox', { name: /Node content/ });
+  await editor.locator('p').first().click();
+  await expect(section.getByLabel('Image URL')).toHaveCount(0);
+  const headings = page.getByRole('combobox', { name: 'Heading level' });
+  await headings.selectOption('6');
+  await expect(editor.locator('h6')).toHaveCount(1);
+  await page.getByRole('textbox', { name: 'Node title' }).click();
+  await expect(headings).toBeDisabled();
+  await expect(section.getByRole('button', { name: 'Remove block' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(page.locator('h6')).toHaveCount(1);
+});

@@ -30,7 +30,7 @@
   let moveButton: HTMLButtonElement | undefined;
   const formats = [
     ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['link', 'Link', 'Link'],
-    ['heading', 'Heading', 'H2'], ['bulletList', 'Bulleted list', 'List'],
+    ['bulletList', 'Bulleted list', 'List'],
   ] as const;
 
   let history = $state.raw<Draft[]>([]);
@@ -192,7 +192,16 @@
   }
 </script>
 
-<svelte:window onkeydowncapture={(event) => {
+<svelte:window onpointerdowncapture={(event) => {
+  if (view !== 'edit' || !activeBlock || !(event.target instanceof Element)) return;
+  if (workbench?.contains(event.target) && (
+    event.target.closest('.editing-tools') || event.target.closest('[data-block]')?.getAttribute('data-block') === activeBlock
+  )) return;
+  activeEditor?.dismissControls();
+  activeEditor = undefined;
+  activeBlock = null;
+  photoDetails = null;
+}} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
   if (view === 'edit' && history.length && !movingBlock && !event.defaultPrevented
     && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z'
@@ -232,6 +241,16 @@
                 onpointerdown={(event) => event.preventDefault()}
                 onclick={() => activeEditor?.formatText(command)}>{short}</button>
             {/each}
+            <label>Heading
+              <select aria-label="Heading level" disabled={!activeEditor} onchange={(event) => {
+                const level = Number(event.currentTarget.value) as 2 | 3 | 4 | 5 | 6;
+                activeEditor?.formatText('heading', level);
+                event.currentTarget.value = '';
+              }}>
+                <option value="" disabled selected>Choose heading</option>
+                {#each [2, 3, 4, 5, 6] as level}<option value={level}>H{level}</option>{/each}
+              </select>
+            </label>
             <label>Text alignment
               <select disabled={selectedText?.kind !== 'text'} value={selectedText?.kind === 'text' ? selectedText.alignment ?? 'left' : 'left'}
                 onchange={(event) => {
