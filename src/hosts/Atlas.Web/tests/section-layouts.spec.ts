@@ -78,3 +78,36 @@ test('the editor formats a text slot and swaps blocks using the destination on t
   await expect(section.locator('.edit-slot').first().getByRole('img')).toHaveCount(1);
   await expect(section.locator('.edit-slot').last().locator('strong')).toHaveCount(1);
 });
+
+test('duplicates a section with independent blocks, photos and slot alignment', async () => {
+  const { duplicateSection } = await import('../storybook/SectionLayouts/sectionLayouts');
+  const draft = example('editorial');
+  draft.assignments[0].vertical = 'center';
+  const original = draft.sections[0];
+  const result = duplicateSection(draft, original.id);
+  const copy = result.sections[1];
+  expect(copy.layoutId).toBe(original.layoutId);
+  expect(copy.id).not.toBe(original.id);
+  const first = blockAt(result, original.id, 'right');
+  const second = blockAt(result, copy.id, 'right');
+  expect(first?.id).not.toBe(second?.id);
+  if (first?.kind !== 'image' || second?.kind !== 'image') throw new Error('Expected image blocks');
+  expect(first.photos[0].id).not.toBe(second.photos[0].id);
+  expect(result.assignments.find(({ sectionId, slotId }) => sectionId === copy.id && slotId === 'left')?.vertical).toBe('center');
+});
+
+test('confirms section deletion and restores it with Control+Z', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const sections = page.locator('.edit-section');
+  await expect(sections).toHaveCount(2);
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await sections.first().getByRole('button', { name: 'Delete section' }).click();
+  await expect(sections).toHaveCount(2);
+  page.once('dialog', (dialog) => dialog.accept());
+  await sections.first().getByRole('button', { name: 'Delete section' }).click();
+  await expect(sections).toHaveCount(1);
+  await page.keyboard.press('Control+z');
+  await expect(sections).toHaveCount(2);
+  await expect(sections.first()).toContainText('Wide left');
+});

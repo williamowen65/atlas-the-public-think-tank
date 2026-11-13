@@ -6,8 +6,8 @@
   import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
-    applyLayout, blockAt, columns, example, moveBlock, newId,
-    type Block, type Layout, type Photo,
+    applyLayout, blockAt, columns, duplicateSection, example, moveBlock, newId,
+    type Block, type Layout, type Photo, type Section, type Assignment, type VerticalAlignment,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: 'blank' | 'editorial' | 'photoEssay' } = $props();
@@ -32,6 +32,33 @@
     ['heading', 'Heading', 'H2'], ['bulletList', 'Bulleted list', 'List'],
   ] as const;
 
+  let deleted = $state<{ section: Section; index: number; blocks: Block[]; assignments: Assignment[] }[]>([]);
+  const selectedText = $derived(draft.blocks.find((block) => block.id === activeBlock && block.kind === 'text'));
+  const selectedAssignment = $derived(draft.assignments.find(({ blockId }) => blockId === activeBlock));
+
+  function deleteSection(section: Section, index: number) {
+    const assignments = draft.assignments.filter((entry) => entry.sectionId === section.id);
+    if (!window.confirm(assignments.length ? 'Delete this section and its blocks?' : 'Delete this empty section?')) return;
+    const ids = new Set(assignments.map(({ blockId }) => blockId));
+    deleted.push({ section, index, assignments, blocks: draft.blocks.filter(({ id }) => ids.has(id)) });
+    draft.sections = draft.sections.filter(({ id }) => id !== section.id);
+    draft.assignments = draft.assignments.filter((entry) => entry.sectionId !== section.id);
+    draft.blocks = draft.blocks.filter(({ id }) => !ids.has(id));
+    layoutSection = null;
+    activeBlock = null;
+    activeEditor = undefined;
+    message = 'Section deleted.';
+  }
+
+  function restoreSection() {
+    const item = deleted.pop();
+    if (!item) return;
+    draft.sections.splice(item.index, 0, item.section);
+    draft.blocks.push(...item.blocks);
+    draft.assignments.push(...item.assignments);
+    message = 'Section restored.';
+  }
+
   function authorText(block: Extract<Block, { kind: 'text' }>): AuthorBlock[] {
     return [{ key: block.id, kind: 'markdown', text: block.text, url: '', caption: '' }];
   }
@@ -47,6 +74,7 @@
 
   async function startMove(id: string, button: HTMLButtonElement) {
     moveButton = button;
+    activeBlock = id;
     movingBlock = id;
     picker = null;
     photoDetails = null;
@@ -152,6 +180,12 @@
 
 <svelte:window onkeydown={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
+  if (view === 'edit' && deleted.length && !movingBlock && !event.defaultPrevented
+    && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z'
+    && !(event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable="true"]'))) {
+    event.preventDefault();
+    restoreSection();
+  }
 }} />
 <div class="workbench" class:narrow bind:this={workbench}>
   <div class="toolbar" role="group" aria-label="Workbench view">
@@ -182,6 +216,23 @@
                 onpointerdown={(event) => event.preventDefault()}
                 onclick={() => activeEditor?.formatText(command)}>{short}</button>
             {/each}
+            <label>Text alignment
+              <select disabled={selectedText?.kind !== 'text'} value={selectedText?.kind === 'text' ? selectedText.alignment ?? 'left' : 'left'}
+                onchange={(event) => {
+                  if (selectedText?.kind === 'text') selectedText.alignment = event.currentTarget.value as 'left' | 'center' | 'right';
+                }}>
+                <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
+              </select>
+            </label>
+            <label>Vertical alignment
+              <select disabled={!selectedAssignment} value={selectedAssignment?.vertical ?? 'start'}
+                onchange={(event) => {
+                  if (selectedAssignment) selectedAssignment.vertical = event.currentTarget.value as VerticalAlignment;
+                }}>
+                <option value="start">Top</option><option value="center">Middle</option><option value="end">Bottom</option>
+              </select>
+            </label>
+            {#if deleted.length}<button type="button" onclick={restoreSection}>Undo section deletion</button>{/if}
           </div>
         {/if}
       </div>
@@ -195,12 +246,8 @@
                 onclick={() => moveSection(section.id, -1)}>↑</button>
               <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
                 onclick={() => moveSection(section.id, 1)}>↓</button>
-              {#if draft.sections.length > 1 && !draft.assignments.some((entry) => entry.sectionId === section.id)}
-                <button type="button" onclick={() => {
-                  draft.sections = draft.sections.filter(({ id }) => id !== section.id);
-                  if (layoutSection === section.id) layoutSection = null;
-                }}>Remove empty section</button>
-              {/if}
+              <button type="button" onclick={() => draft = duplicateSection(draft, section.id)}>Duplicate section</button>
+              <button type="button" onclick={() => deleteSection(section, index)}>Delete section</button>
               <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
             </div>
             {#if layoutSection === section.id}{@render layoutEditor()}{/if}
@@ -209,13 +256,14 @@
                 {@const block = blockAt(draft, section.id, slot.id)}
                 {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
                 {@const slotKey = `${section.id}/${slot.id}`}
-                <div class="edit-slot" class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
+                <div class="edit-slot" style:align-self={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
                   {#if movingBlock && block?.id !== movingBlock}
                     <button class="destination" type="button"
                       aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
                       onclick={() => void placeBlock(section.id, slot.id)}>{block ? 'Swap here' : 'Move here'}</button>
                   {/if}
-                  <div class="slot-content" inert={!!movingBlock}>
+                  <div class="slot-content" style:text-align={block?.kind === 'text' ? block.alignment : undefined} inert={!!movingBlock}>
                     {#if block}
                       {#key block.id}
                         {#if block.kind === 'text'}
@@ -376,7 +424,8 @@
   .editor, .edit-section, .edit-slot, .layout-panel { display: grid; gap: .75rem; min-width: 0; }
   .editor > button { justify-self: start; }
   .editing-tools { position: sticky; top: 0; z-index: 5; background: var(--atlas-surface); padding-block: .4rem; }
-  .formatting { display: flex; flex-wrap: wrap; gap: .25rem; }
+  .formatting { display: flex; flex-wrap: wrap; align-items: end; gap: .4rem; }
+  .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { border-block-start: 1px solid var(--atlas-border); padding-block: .5rem 1rem; }
   .section-tools { color: var(--atlas-muted); font-size: .82rem; }

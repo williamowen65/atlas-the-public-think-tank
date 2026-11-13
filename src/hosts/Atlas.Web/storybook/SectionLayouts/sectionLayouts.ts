@@ -1,10 +1,12 @@
 export type Slot = { id: string; weight: number };
 export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
 export type Section = { id: string; layoutId: string };
-export type Assignment = { sectionId: string; slotId: string; blockId: string };
+export type VerticalAlignment = 'start' | 'center' | 'end';
+export type TextAlignment = 'left' | 'center' | 'right';
+export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };
 export type Photo = { id: string; src: string; alt: string; caption: string };
 export type Block =
-  | { id: string; kind: 'text'; text: string }
+  | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
   | { id: string; kind: 'image' | 'gallery'; photos: Photo[] };
 export type Draft = {
   title: string;
@@ -41,11 +43,12 @@ export function applyLayout(draft: Draft, sectionId: string, layoutId: string): 
   for (const [index, blockId] of blocks.entries()) {
     if (!blockId) continue;
     const slot = layout.slots[index];
-    if (slot) assignments.push({ sectionId, slotId: slot.id, blockId });
+    const vertical = draft.assignments.find((entry) => entry.blockId === blockId)?.vertical;
+    if (slot) assignments.push({ sectionId, slotId: slot.id, blockId, vertical });
     else {
       const id = newId();
       extra.push({ id, layoutId: 'full' });
-      assignments.push({ sectionId: id, slotId: 'left', blockId });
+      assignments.push({ sectionId: id, slotId: 'left', blockId, vertical });
     }
   }
   return {
@@ -64,7 +67,7 @@ export function moveBlock(draft: Draft, blockId: string, sectionId: string, slot
     ...draft,
     assignments: draft.assignments.map((entry) => entry.blockId === blockId
       ? { ...entry, sectionId, slotId }
-      : entry.blockId === target?.id ? { ...source, blockId: entry.blockId } : entry),
+      : entry.blockId === target?.id ? { ...entry, sectionId: source.sectionId, slotId: source.slotId } : entry),
   };
 }
 
@@ -105,4 +108,21 @@ export function example(kind: 'blank' | 'editorial' | 'photoEssay'): Draft {
     add('equal', text('measure', next), text('afterward', ending));
   }
   return draft;
+}
+
+export function duplicateSection(draft: Draft, sectionId: string): Draft {
+  const section = draft.sections.find(({ id }) => id === sectionId);
+  if (!section) return draft;
+  const copy = { ...section, id: newId() };
+  const blocks = [...draft.blocks];
+  const assignments = [...draft.assignments];
+  for (const entry of draft.assignments.filter((item) => item.sectionId === sectionId)) {
+    const block = draft.blocks.find(({ id }) => id === entry.blockId)!;
+    const id = newId();
+    blocks.push(block.kind === 'text' ? { ...block, id }
+      : { ...block, id, photos: block.photos.map((photo) => ({ ...photo, id: newId() })) });
+    assignments.push({ ...entry, sectionId: copy.id, blockId: id });
+  }
+  return { ...draft, sections: draft.sections.flatMap((item) => item === section ? [item, copy] : [item]),
+    blocks, assignments };
 }

@@ -37,7 +37,9 @@
         <section class="section" style:--columns={columns(layout)}>
           {#each layout.slots as slot (slot.id)}
             {@const block = blockAt(draft, section.id, slot.id)}
-            <div class="slot">
+            {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
+            <div class="slot" style:align-self={vertical ?? 'start'}
+              style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
               {#if block?.kind === 'text'}
                 <MarkdownContent text={block.text} />
               {:else if block}
