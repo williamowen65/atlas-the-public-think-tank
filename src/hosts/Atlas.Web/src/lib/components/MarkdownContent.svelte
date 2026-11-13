@@ -8,7 +8,8 @@
     elsewhere.
 -->
 <script lang="ts">
-  import { renderMarkdown, renderSectionMarkdown } from '../markdown/renderMarkdown';
+  import type { Snippet } from 'svelte';
+  import { renderMarkdown, renderSectionMarkdown, renderSectionMarkdownAround } from '../markdown/renderMarkdown';
 
   let {
     text,
@@ -16,10 +17,14 @@
     preview = false,
     onImage,
     preserveHeadingLevels = false,
+    inset,
+    insetAnchor = 0,
   }: {
     /** Markdown block source; short descriptions remain plain text elsewhere. */
     text: string;
     images?: boolean;
+    inset?: Snippet;
+    insetAnchor?: number;
     preserveHeadingLevels?: boolean;
     preview?: boolean;
     onImage?: (index: number, trigger: HTMLButtonElement) => void;
@@ -28,6 +33,7 @@
    * HTML derived only from the shared Markdown renderer; never raw user text for the HTML
    * insertion.
    */
+  const split = $derived(inset ? renderSectionMarkdownAround(text, insetAnchor) : undefined);
   const html = $derived(preserveHeadingLevels ? renderSectionMarkdown(text) : renderMarkdown(text, images, preview, !!onImage));
 </script>
 
@@ -38,7 +44,13 @@
   if (button instanceof HTMLButtonElement) onImage?.(Number(button.dataset.nodeImage), button);
 }}>
   <!-- {@html} inserts HTML without sanitizing it. Only use renderMarkdown output here, never raw user input. -->
-  {@html html}
+  {#if split && inset}
+    {@html split[0]}
+    {@render inset()}
+    {@html split[1]}
+  {:else}
+    {@html html}
+  {/if}
 </div>
 
 <style>

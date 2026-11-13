@@ -1,6 +1,7 @@
 export type Slot = { id: string; weight: number };
 export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
-export type Section = { id: string; layoutId: string; breakBefore?: boolean; rows?: (string | null)[] };
+export type ImageWrap = { textId: string; imageId: string; side: 'left' | 'right'; anchor: number };
+export type Section = { id: string; layoutId: string; breakBefore?: boolean; rows?: (string | null)[]; wrap?: ImageWrap };
 export type VerticalAlignment = 'start' | 'center' | 'end';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };
@@ -45,12 +46,13 @@ export function sectionRows(section: Section, layout: Layout) {
   }));
 }
 
-export function insertRow(section: Section, rowId: string | null, where: 'above' | 'below'): Section {
-  const rows = [...(section.rows ?? [null])];
-  const index = rows.indexOf(rowId);
-  if (index < 0) return section;
-  rows.splice(index + (where === 'below' ? 1 : 0), 0, newId());
-  return { ...section, rows };
+export function rowWrap(draft: Draft, section: Section, slots: Slot[]) {
+  const wrap = section.wrap;
+  if (!wrap) return;
+  const blocks = slots.map(({ id }) => blockAt(draft, section.id, id));
+  const text = blocks.find((block) => block?.id === wrap.textId);
+  const image = blocks.find((block) => block?.id === wrap.imageId);
+  if (text?.kind === 'text' && image?.kind === 'image') return { ...wrap, text, image };
 }
 
 export function applyLayout(draft: Draft, sectionId: string, layoutId: string): Draft {
@@ -137,15 +139,22 @@ export function example(kind: 'blank' | 'editorial' | 'photoEssay'): Draft {
 export function duplicateSection(draft: Draft, sectionId: string): Draft {
   const section = draft.sections.find(({ id }) => id === sectionId);
   if (!section) return draft;
-  const copy = { ...section, id: newId() };
+  const copy: Section = { ...section, id: newId(), wrap: undefined };
+  const copiedIds = new Map<string, string>();
   const blocks = [...draft.blocks];
   const assignments = [...draft.assignments];
   for (const entry of draft.assignments.filter((item) => item.sectionId === sectionId)) {
     const block = draft.blocks.find(({ id }) => id === entry.blockId)!;
     const id = newId();
+    copiedIds.set(block.id, id);
     blocks.push(block.kind === 'text' ? { ...block, id }
       : { ...block, id, photos: block.photos.map((photo) => ({ ...photo, id: newId(), frame: photo.frame && { ...photo.frame } })) });
     assignments.push({ ...entry, sectionId: copy.id, blockId: id });
+  }
+  if (section.wrap) {
+    const textId = copiedIds.get(section.wrap.textId);
+    const imageId = copiedIds.get(section.wrap.imageId);
+    if (textId && imageId) copy.wrap = { ...section.wrap, textId, imageId };
   }
   return { ...draft, sections: draft.sections.flatMap((item) => item === section ? [item, copy] : [item]),
     blocks, assignments };

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, untrack, mount, unmount, type Component, type Snippet } from 'svelte';
   import { Editor, Extension, Node } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
@@ -19,14 +19,16 @@
     singleText = false,
     onActivate,
     onUnsupportedMarkdown,
+    inset,
   }: {
     initialBlocks: AuthorBlock[];
-    onChange?: (blocks: AuthorBlock[]) => void;
+    onChange?: (blocks: AuthorBlock[], insetAnchor?: number) => void;
     styleMode?: 'atlas' | 'editorial';
     disabled?: boolean;
     workshop?: boolean;
     singleText?: boolean;
     onActivate?: () => void;
+    inset?: { component: Component<{ content: Snippet }>; content: Snippet; anchor: number };
     onUnsupportedMarkdown?: () => void;
   } = $props();
 
@@ -423,6 +425,21 @@
 
   function currentEditor(): Editor | null { return editorState.editor; }
 
+  export function selectedTextBlockIndex() {
+    const selection = editorState.editor?.state.selection.$from;
+    return selection && selection.depth > 1 ? selection.index(1) : 0;
+  }
+
+  $effect(() => {
+    const anchor = inset?.anchor;
+    const component = inset?.component;
+    const content = inset?.content;
+    const editor = untrack(() => editorState.editor);
+    if (editor && !editor.isDestroyed) {
+      editor.view.dispatch(editor.state.tr.setMeta('sectionInset', { anchor, component, content }));
+    }
+  });
+
   export function dismissControls() {
     linkFormOpen = false;
     linkSelection = null;
@@ -809,12 +826,58 @@
         return fix.docChanged ? fix : null;
       },
     });
+    const mountedInsets = new WeakMap<HTMLElement, ReturnType<typeof mount>>();
+    const insetPlugin = new Plugin<{ anchor?: number; component?: Component<{ content: Snippet }>; content?: Snippet }>({
+      state: {
+        init: () => inset ?? {},
+        apply(tr, previous) {
+          const settings = tr.getMeta('sectionInset');
+          if (settings) return settings;
+          const oldText = tr.before.firstChild;
+          const text = tr.doc.firstChild;
+          if (!tr.docChanged || !previous.component || !oldText || !text) return previous;
+          const oldIndex = Math.min(previous.anchor ?? 0, oldText.childCount - 1);
+          let position = 1;
+          for (let i = 0; i < oldIndex; i++) position += oldText.child(i).nodeSize;
+          const mapped = Math.min(text.nodeSize - 1, tr.mapping.map(position, 1));
+          return { ...previous, anchor: Math.min(tr.doc.resolve(mapped).index(1), text.childCount - 1) };
+        },
+      },
+      props: {
+        decorations(state) {
+          const settings = insetPlugin.getState(state);
+          const component = settings?.component;
+          const text = state.doc.firstChild;
+          if (!component || !settings.content || !text) return DecorationSet.empty;
+          const content = settings.content;
+          const index = Math.min(settings.anchor ?? 0, text.childCount - 1);
+          let position = 1;
+          for (let i = 0; i < index; i++) position += text.child(i).nodeSize;
+          return DecorationSet.create(state.doc, [Decoration.widget(position, () => {
+            const host = document.createElement('div');
+            host.contentEditable = 'false';
+            mountedInsets.set(host, mount(component, { target: host, props: { content } }));
+            return host;
+          }, {
+            key: 'section-image-inset',
+            side: -1,
+            stopEvent: () => true,
+            ignoreSelection: true,
+            destroy(node) {
+              const instance = mountedInsets.get(node as HTMLElement);
+              if (instance) void unmount(instance);
+            },
+          })]);
+        },
+      },
+    });
     const editor = new Editor({
       element: canvasEl,
       extensions: [
         StarterKit.configure({ document: false, trailingNode: false, underline: singleText ? {} : false, link: { openOnClick: false, autolink: false } }),
         singleText ? AtlasDocument.extend({ content: 'atlasText' }) : AtlasDocument,
         AtlasText,
+        ...(singleText ? [Extension.create({ name: 'sectionInset', addProseMirrorPlugins: () => [insetPlugin] })] : []),
         ...(singleText ? [] : [AtlasInlineImage, AtlasImage, AtlasUnsupported, ActiveBlockDecoration]),
         Extension.create({ name: 'atlasBlockKeys', addProseMirrorPlugins: () => [keys] }),
       ],
@@ -884,7 +947,7 @@
         const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks, baseline)
           .filter((block) => block.key !== provisionalImageKey);
         latestBlocks = next;
-        onChange?.(next);
+        onChange?.(next, insetPlugin.getState(editor.state)?.anchor);
       },
     });
     const baseline = new Map(tiptapDocumentToBlocks(editor.getJSON(), startingBlocks)
@@ -1110,7 +1173,9 @@
   .single-text .editor-canvas { padding: 0; min-height: 0; }
   .single-text :global(.atlas-story-rich-document) { min-height: 2.5rem; line-height: 1.65; }
   .single-text :global(.atlas-story-rich-document > [data-atlas-key]) { margin-block: 0; }
-  .single-text :global(.atlas-story-text > :first-child) { margin-block-start: 0; }
+  .single-text :global(.atlas-story-text > .ProseMirror-widget) { display: contents; }
+  .single-text :global(.atlas-story-text > :first-child),
+  .single-text :global(.atlas-story-text > .ProseMirror-widget:first-child + *) { margin-block-start: 0; }
   .single-text :global(.atlas-story-text > :last-child) { margin-block-end: 0; }
   .single-text :global(.atlas-story-text > p:only-child:has(> br.ProseMirror-trailingBreak)::before) {
     content: 'Start writing…';

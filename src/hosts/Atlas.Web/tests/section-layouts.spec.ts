@@ -226,26 +226,24 @@ test('image framing and centered captions carry from editing into the feed', asy
   await expect(frame).toHaveCSS('border-top-left-radius', '0px');
 });
 
-test('rows can be inserted around a section row and filled in place', async ({ page }) => {
+test('an image wraps at a selected paragraph in the editor and previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 900 });
   await page.route('https://images.unsplash.com/**', (route) => route.abort());
   await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
 
   const section = page.getByRole('region', { name: 'Section 1', exact: true });
-  const rows = section.locator('.grid');
-  await section.getByRole('textbox', { name: /Node content/ }).click();
-  await section.getByRole('button', { name: 'Add row above row 1', exact: true }).click();
-  await section.getByRole('button', { name: 'Add row below row 2', exact: true }).click();
-  await expect(rows).toHaveCount(3);
-  await expect(rows.nth(0).locator('.edit-slot')).toHaveCount(1);
-  await expect(rows.nth(1).locator('.edit-slot')).toHaveCount(2);
-  await expect(rows.nth(2).locator('.edit-slot')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(rows).toHaveCount(2);
-  await rows.first().getByRole('button', { name: /Add block/ }).click();
-  await rows.first().getByRole('button', { name: 'Text', exact: true }).click();
-  await rows.first().getByRole('textbox', { name: /Node content/ }).fill('A new opening row');
+  await section.getByRole('button', { name: 'Edit Buildings along a city street' }).click();
+  await section.getByLabel('Wrap text').selectOption('right');
+  await section.getByRole('button', { name: 'Done', exact: true }).click();
+  await section.getByText(/^Start with the places/).click();
+  await page.getByRole('button', { name: 'Move image here' }).click();
+  await expect(section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image')).toHaveCSS('float', 'right');
+
   await page.getByRole('button', { name: 'Feed preview' }).click();
-  await expect(page.getByText('A new opening row', { exact: true })).toBeVisible();
+  const wrapped = page.locator('.markdown > p + .section-wrapped-image');
+  await expect(wrapped).toHaveCSS('float', 'right');
   await page.getByRole('button', { name: 'Read More', exact: true }).click();
-  await expect(page.getByText('A new opening row', { exact: true })).toBeVisible();
+  await expect(wrapped.getByRole('button', { name: 'View Buildings along a city street' })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Phone width' }).check();
+  await expect(wrapped).toHaveCSS('float', 'none');
 });

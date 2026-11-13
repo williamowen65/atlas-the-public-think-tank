@@ -132,3 +132,17 @@ export function markdownImages(source: string) {
     return [{ src, alt, caption: readImageTitle(String(child.attrGet('title') ?? '')).title }];
   }));
 }
+
+
+// Split at a top-level Markdown block boundary while retaining the parser's
+// shared environment, including reference definitions used on either side.
+export function renderSectionMarkdownAround(source: string, anchor: number): [string, string] {
+  const environment = {};
+  const tokens = sectionMarkdown.parse(source, environment);
+  const starts = tokens.flatMap((token, index) =>
+    token.level === 0 && token.nesting !== -1 ? [index] : []);
+  const boundary = starts[Math.min(anchor, Math.max(0, starts.length - 1))] ?? 0;
+  const render = (part: typeof tokens) =>
+    sectionMarkdown.renderer.render(part, sectionMarkdown.options, environment);
+  return [render(tokens.slice(0, boundary)), render(tokens.slice(boundary))];
+}

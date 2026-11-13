@@ -1,10 +1,11 @@
 <script lang="ts">
+  import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import SectionBreak from './SectionBreak.svelte';
   import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
-  import { blockAt, columns, sectionRows, type Draft } from './sectionLayouts';
+  import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
   let { draft, feed = false, onReadMore }: {
     draft: Draft;
@@ -37,32 +38,35 @@
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
       {#if section.breakBefore}<SectionBreak />{/if}
       {#each sectionRows(section, layout) as row (row.id)}
+        {@const wrap = rowWrap(draft, section, row.slots)}
         {#if row.slots.some((slot) => blockAt(draft, section.id, slot.id))}
-          <section class="section" style:--columns={columns(row.slots)}>
+          <section class="section" style:--columns={wrap ? "minmax(0, 1fr)" : columns(row.slots)}>
             {#each row.slots as slot (slot.id)}
               {@const block = blockAt(draft, section.id, slot.id)}
               {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-              <div class="slot" style:align-self={vertical ?? 'start'}
-                style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
-                {#if block?.kind === 'text'}
-                  <MarkdownContent preserveHeadingLevels text={block.text} />
-                {:else if block}
-                  <div class="photos" class:photo-grid={block.kind === 'gallery'}>
-                    {#each block.photos as photo (photo.id)}
-                      {@const src = publicUrl(photo.src)}
-                      {#if src}
-                        <figure style:width={(photo.frame?.width ?? 100) + '%'}>
-                          <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
-                            onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
-                            <PhotoFrame {photo} {src} gallery={block.kind === 'gallery'} />
-                          </button>
-                          {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
-                        </figure>
+              {#if !wrap || block?.id !== wrap.imageId}
+                <div class="slot" style:align-self={vertical ?? 'start'}
+                  style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
+                  {#if block?.kind === 'text'}
+                    {#snippet inset()}
+                      {#if wrap}
+                        <WrappedImage side={wrap.side}>
+                          {#each wrap.image.photos as photo (photo.id)}
+                            {@render photoView(photo, false)}
+                          {/each}
+                        </WrappedImage>
                       {/if}
-                    {/each}
-                  </div>
-                {/if}
-              </div>
+                    {/snippet}
+                    <MarkdownContent preserveHeadingLevels text={block.text} inset={wrap ? inset : undefined} insetAnchor={wrap?.anchor} />
+                  {:else if block}
+                    <div class="photos" class:photo-grid={block.kind === 'gallery'}>
+                      {#each block.photos as photo (photo.id)}
+                        {@render photoView(photo, block.kind === 'gallery')}
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             {/each}
           </section>
         {/if}
@@ -81,6 +85,19 @@
   </div>
 {/if}
 {#if media.length}<NodeMediaGallery bind:this={gallery} items={media} />{/if}
+
+{#snippet photoView(photo: Photo, inGallery: boolean)}
+  {@const src = publicUrl(photo.src)}
+  {#if src}
+    <figure style:width={(photo.frame?.width ?? 100) + '%'}>
+      <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
+        onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
+        <PhotoFrame {photo} {src} gallery={inGallery} />
+      </button>
+      {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+    </figure>
+  {/if}
+{/snippet}
 
 <style>
   .viewport.feed { max-height: 19rem; overflow: clip; }
