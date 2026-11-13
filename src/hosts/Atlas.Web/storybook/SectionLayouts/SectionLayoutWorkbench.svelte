@@ -164,7 +164,7 @@
     if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
     if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
     if (inside && target.closest('.editing-tools')) return;
-    const section = inside && target.closest('.edit-slot, .section-tools, .layout-panel')
+    const section = inside && target.closest('.edit-slot, .layout-panel')
       ? target.closest<HTMLElement>('[data-section]') : null;
     const block = inside ? target.closest<HTMLElement>('[data-block]') : null;
     activeSection = section?.dataset.section ?? null;
@@ -202,10 +202,9 @@
   }
 
   async function cancelMove() {
-    const id = movingBlock;
     movingBlock = null;
     await tick();
-    workbench?.querySelector<HTMLButtonElement>(`[data-block="${id}"] .move-block`)?.focus();
+    workbench?.querySelector<HTMLButtonElement>('.editor-sidebar .move-block')?.focus({ preventScroll: true });
   }
 
   async function placeBlock(sectionId: string, slotId: string) {
@@ -219,7 +218,7 @@
     activeBlock = id;
     message = target ? 'Blocks swapped.' : 'Block moved.';
     await tick();
-    workbench?.querySelector<HTMLButtonElement>(`[data-block="${id}"] .move-block`)?.focus();
+    workbench?.querySelector<HTMLButtonElement>('.editor-sidebar .move-block')?.focus({ preventScroll: true });
   }
 
   function openLayout(sectionId: string) {
@@ -449,25 +448,6 @@
           {@const rows = sectionRows(section, layout)}
           <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
             {#if index > 0 && section.breakBefore}<SectionBreak />{/if}
-            <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
-              inert={activeSection !== section.id || !!movingBlock}>
-              {#if index > 0}
-                <button type="button" onclick={() => {
-                  remember();
-                  section.breakBefore = !section.breakBefore;
-                }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
-              {/if}
-              <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
-                onclick={() => moveSection(section.id, -1)}>↑</button>
-              <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
-                onclick={() => moveSection(section.id, 1)}>↓</button>
-              <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
-              {#if draft.sections.length > 1 && !draft.assignments.some((entry) => entry.sectionId === section.id)}
-                <button type="button" onclick={() => deleteEmptySection(section.id)}>Delete empty section</button>
-              {/if}
-              <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
-            </div>
-            {#if !movingBlock && activeSection === section.id && layoutSection === section.id}{@render layoutEditor()}{/if}
             {#each rows as row, rowIndex (row.id)}
               {@const wrap = rowWrap(draft, section, row.slots)}
               <div class="grid" style:--columns={wrap ? "minmax(0, 1fr)" : columns(row.slots)}>
@@ -533,13 +513,6 @@
                               {@render editPhotos(block)}
                             {/if}
                           {/key}
-                          {#if !movingBlock && activeBlock === block.id}<div class="block-tools">
-                            <button class="move-block" type="button" aria-label="Move block" title="Move block"
-                              disabled={!!wrap || (draft.sections.length === 1 && rows.length === 1 && row.slots.length === 1)}
-                              onclick={() => void startMove(block.id)}>↔</button>
-                            <button type="button" aria-label="Remove block" title="Remove block"
-                              onclick={() => removeBlock(block.id)}>×</button>
-                          </div>{/if}
                         {:else}
                           <div class="empty-slot">
                             <button type="button" aria-label={`Add block · Section ${index + 1} · ${slotName}`}
@@ -572,19 +545,51 @@
     {/if}
   </article>
   {#if view === 'edit' && sidebarOpen}
+    {@const index = draft.sections.findIndex(({ id }) => id === activeSection)}
+    {@const section = draft.sections[index]}
     <aside class="editor-sidebar" aria-label="Editor controls">
       <div class="sidebar-heading">
         <h2>Editor controls</h2>
         <button type="button" aria-label="Collapse editor controls" onclick={() => sidebarOpen = false}>×</button>
       </div>
+      {#if !movingBlock && section}
+        <h3>Section {index + 1}</h3>
+        <div class="section-tools">
+          {#if index > 0}
+            <button type="button" onclick={() => {
+              remember();
+              section.breakBefore = !section.breakBefore;
+            }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
+          {/if}
+          <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
+            onclick={() => moveSection(section.id, -1)}>↑</button>
+          <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
+            onclick={() => moveSection(section.id, 1)}>↓</button>
+          <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
+          {#if draft.sections.length > 1 && !draft.assignments.some((entry) => entry.sectionId === section.id)}
+            <button type="button" onclick={() => deleteEmptySection(section.id)}>Delete empty section</button>
+          {/if}
+          <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
+        </div>
+        {#if layoutSection === section.id}{@render layoutEditor()}{/if}
+      {/if}
+      {#if !movingBlock && activeBlock && selectedAssignment}
+        <div class="block-tools">
+          <button class="move-block" type="button"
+            disabled={!!(mediaSection && mediaRow && rowWrap(draft, mediaSection, mediaRow.slots)) ||
+              (draft.sections.length === 1 && !!mediaSection && !!mediaLayout &&
+                sectionRows(mediaSection, mediaLayout).reduce((count, row) => count + row.slots.length, 0) < 2)}
+            onclick={() => { if (activeBlock) void startMove(activeBlock); }}>Move block</button>
+          <button type="button" onclick={() => { if (activeBlock) removeBlock(activeBlock); }}>Remove block</button>
+        </div>
+      {/if}
       {#if !movingBlock && mediaBlock && 'photos' in mediaBlock}
         {#if mediaBlock.kind === 'gallery'}{@render gallerySettings(mediaBlock)}{/if}
         {#if selectedPhoto && mediaSection && mediaRow}
-          {@render photoSettings(selectedPhoto, mediaBlock, mediaSection, mediaRow.slots,
-            mediaSection.wrap?.imageId === mediaBlock.id)}
+          {@render photoSettings(selectedPhoto, mediaBlock, mediaSection, mediaRow.slots)}
         {/if}
-      {:else}
-        <p>Select a gallery or image to edit its settings.</p>
+      {:else if !section && !movingBlock}
+        <p>Select a section or block to edit its settings.</p>
       {/if}
     </aside>
   {/if}
@@ -632,7 +637,7 @@
   {/if}
 {/snippet}
 
-{#snippet photoSettings(photo: Photo, block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped: boolean)}
+{#snippet photoSettings(photo: Photo, block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[])}
   <div class="photo-details" role="group" aria-label="Image settings">
     <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
     <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
@@ -660,9 +665,6 @@
       </label>
     {/if}
     <button type="button" onclick={() => photoDetails = null}>Done</button>
-    {#if wrapped}
-      <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
-    {/if}
     {#if block.kind === 'gallery'}
       {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
       <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
@@ -790,7 +792,9 @@
 {/snippet}
 
 <style>
-  .workbench:not(.narrow):has(.with-sidebar) { max-width: 90rem; }
+  @media (min-width: 65.001rem) {
+    .workbench:not(.narrow):has(.with-sidebar) { max-width: none; padding-inline-end: 0; }
+  }
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
   .workbench.narrow { max-width: 25rem; padding-inline: 0; }
   .narrow .node { padding-inline: .65rem; }
@@ -842,23 +846,21 @@
   .edit-section { padding-block: .5rem 1rem; }
   .link-preview-editor { display: grid; gap: .6rem; }
   .gallery-tools { display: grid; gap: .6rem; }
-  .section-tools.inactive { display: none; }
-  .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
+  .section-tools { margin-block-end: .75rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
-  .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
-  .block-tools { position: absolute; bottom: 0; right: 0; }
+  .block-tools { margin-block-end: .75rem; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
   .draggable-photo { cursor: grab; }
   .edit-slot :global(.image-drop-left) { box-shadow: inset 3px 0 var(--atlas-accent); }
   .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }
   figure { margin: 0; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
-  .editor-frame.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem); gap: 1rem; align-items: start; }
+  .editor-frame.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 24rem); gap: 1rem; align-items: start; }
   .editor-sidebar {
     position: sticky; top: .5rem; max-height: calc(100dvh - 1rem); overflow: auto;
     padding: .75rem; background: var(--atlas-surface);
@@ -866,6 +868,7 @@
   }
   .sidebar-heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .65rem; }
   .editor-sidebar h2 { font-size: 1rem; margin: 0; }
+  .editor-sidebar h3 { font-size: .95rem; margin: 0 0 .5rem; }
   .editor-sidebar p { margin: 0; }
   .photo-details { display: grid; gap: .5rem; }
   .gallery-tools + .photo-details { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--atlas-border); }
@@ -897,6 +900,5 @@
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
-    .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }
 </style>
