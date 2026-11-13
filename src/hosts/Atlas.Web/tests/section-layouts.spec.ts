@@ -236,8 +236,8 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
 
   const section = page.getByRole('region', { name: 'Section 1', exact: true });
   await section.getByRole('button', { name: 'Edit Buildings along a city street' }).click();
-  await section.getByLabel('Wrap text').selectOption('right');
-  await section.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByLabel('Wrap text').selectOption('right');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await section.getByText(/^Start with the places/).click();
   await page.getByRole('button', { name: 'Move image here' }).click();
   await expect(section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image')).toHaveCSS('float', 'right');
@@ -256,15 +256,12 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
     name: 'Edit Buildings along a city street',
   })).toBeVisible();
   await image.dragTo(paragraph, { targetPosition: { x: paragraphBox!.width - 8, y: 8 } });
-  const editorFloat = section.locator('.section-wrapped-image');
-  const beforeOpen = await editorFloat.boundingBox();
   await image.click();
-  await expect(section.getByRole('group', { name: 'Image settings' })).toHaveCSS('position', 'fixed');
-  expect(await editorFloat.boundingBox()).toEqual(beforeOpen);
-  await section.getByLabel('Crop shape').selectOption('1 / 1');
-  await section.getByRole('slider', { name: /Image width/ }).focus();
+  await expect(page.getByRole('complementary', { name: 'Editor controls' }).getByRole('group', { name: 'Image settings' })).toBeVisible();
+  await page.getByLabel('Crop shape').selectOption('1 / 1');
+  await page.getByRole('slider', { name: /Image width/ }).focus();
   await page.keyboard.press('Home');
-  await section.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   const float = section.locator('.section-wrapped-image');
   expect(await float.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThan(160);
   expect(await image.evaluate((element) => element.getBoundingClientRect().width)).toBeCloseTo(
@@ -290,12 +287,16 @@ test('masonry image settings close within the gallery without moving its tiles',
   const gallery = page.getByRole('group', { name: 'Gallery block' });
   const image = gallery.getByRole('button', { name: 'Edit Buildings along a city street' });
   await image.focus();
-  await expect(gallery.getByLabel('Gallery layout')).toHaveValue('masonry');
+  await expect(page.getByLabel('Gallery layout')).toHaveValue('masonry');
   const before = await image.boundingBox();
   await image.click();
-  const settings = gallery.getByRole('group', { name: 'Image settings' });
+  const settings = page.getByRole('group', { name: 'Image settings' });
   await expect(settings).toBeVisible();
   expect(await image.boundingBox()).toEqual(before);
+  await page.getByRole('button', { name: 'Collapse editor controls' }).click();
+  await expect(settings).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show editor controls' }).click();
+  await expect(settings).toBeVisible();
   await settings.getByLabel('Caption').fill('An evening walk');
   await gallery.getByText('An evening walk').dispatchEvent('pointerdown');
   await expect(settings).toHaveCount(0);

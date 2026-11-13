@@ -1,6 +1,5 @@
 <script lang="ts">
   import PhotoFramingControls from './PhotoFramingControls.svelte';
-  import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
   import LinkPreviewCard from './LinkPreviewCard.svelte';
   import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
@@ -34,7 +33,7 @@
   let picker = $state<string | null>(null);
   let draggedSection = $state<string | null>(null);
   let dropParagraph = $state<HTMLElement | null>(null);
-  let photoClick: { id: string; x: number; y: number } | undefined;
+  let sidebarOpen = $state(true);
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
@@ -47,6 +46,15 @@
   let editorVersion = $state(0);
   const selectedText = $derived(draft.blocks.find((block) => block.id === activeBlock && block.kind === 'text'));
   const selectedAssignment = $derived(draft.assignments.find(({ blockId }) => blockId === activeBlock));
+
+  const mediaBlock = $derived(draft.blocks.find((block) => block.id === activeBlock && 'photos' in block));
+  const mediaSection = $derived(draft.sections.find(({ id }) => id === selectedAssignment?.sectionId));
+  const mediaLayout = $derived(draft.layouts.find(({ id }) => id === mediaSection?.layoutId));
+  const mediaRow = $derived(mediaSection && mediaLayout
+    ? sectionRows(mediaSection, mediaLayout).find(({ slots }) => slots.some(({ id }) => id === selectedAssignment?.slotId))
+    : undefined);
+  const selectedPhoto = $derived(mediaBlock && 'photos' in mediaBlock
+    ? mediaBlock.photos.find(({ id }) => id === photoDetails) : undefined);
 
   function remember() {
     history = [...history, structuredClone($state.snapshot(draft))];
@@ -149,36 +157,11 @@
     message = 'Change undone.';
   }
 
-  function floatPhotoSettings(panel: HTMLElement, photoId: string) {
-    const trigger = panel.closest('.edit-photo')?.querySelector('.photo-button');
-    if (!(trigger instanceof HTMLElement)) return;
-    const click = photoClick?.id === photoId ? photoClick : undefined;
-    const anchor = click ? {
-      contextElement: trigger,
-      getBoundingClientRect() {
-        const bounds = trigger.getBoundingClientRect();
-        return new DOMRect(bounds.left + bounds.width * click.x, bounds.top + bounds.height * click.y);
-      },
-    } : trigger;
-    panel.showPopover();
-    return { destroy: autoUpdate(anchor, panel, () => {
-      void computePosition(anchor, panel, {
-        strategy: 'fixed',
-        placement: 'bottom-start',
-        middleware: [offset(6), flip(), shift({ padding: 8 })],
-      }).then(({ x, y }) => {
-        Object.assign(panel.style, { left: `${x}px`, top: `${y}px` });
-      });
-    }) };
-  }
-
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
-    if (!keyboard && photoDetails
-      && !target.closest('.photo-details, .photo-button')) {
-      photoDetails = null;
-    }
+    if (inside && target.closest('.editor-sidebar, .sidebar-toggle')) return;
+    if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
     if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
     if (inside && target.closest('.editing-tools')) return;
     const section = inside && target.closest('.edit-slot, .section-tools, .layout-panel')
@@ -397,9 +380,14 @@
     <button type="button" aria-pressed={view === 'edit'} onclick={() => selectView('edit')}>Edit</button>
     <button type="button" aria-pressed={view === 'feed'} onclick={() => selectView('feed')}>Feed preview</button>
     <button type="button" aria-pressed={view === 'node'} onclick={() => selectView('node')}>Node page</button>
+    {#if view === 'edit'}
+      <button class="sidebar-toggle" type="button" aria-expanded={sidebarOpen}
+        onclick={() => sidebarOpen = !sidebarOpen}>{sidebarOpen ? 'Hide editor controls' : 'Show editor controls'}</button>
+    {/if}
     <label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>
   </div>
 
+  <div class="editor-frame" class:with-sidebar={view === 'edit' && sidebarOpen}>
   <article class="node">
     <header>
       {#if view === 'edit'}
@@ -505,7 +493,7 @@
                                 {#if wrap}
                                   <WrappedImage side={wrap.side} width={wrap.image.photos[0]?.frame?.width}>
                                     <div data-block={wrap.imageId}>
-                                      {@render editPhotos(wrap.image, section, row.slots, true)}
+                                      {@render editPhotos(wrap.image, section.id)}
                                     </div>
                                   </WrappedImage>
                                 {/if}
@@ -542,7 +530,7 @@
                                 {/if}
                               </div>
                             {:else}
-                              {@render editPhotos(block, section, row.slots)}
+                              {@render editPhotos(block)}
                             {/if}
                           {/key}
                           {#if !movingBlock && activeBlock === block.id}<div class="block-tools">
@@ -583,6 +571,24 @@
       {/key}
     {/if}
   </article>
+  {#if view === 'edit' && sidebarOpen}
+    <aside class="editor-sidebar" aria-label="Editor controls">
+      <div class="sidebar-heading">
+        <h2>Editor controls</h2>
+        <button type="button" aria-label="Collapse editor controls" onclick={() => sidebarOpen = false}>×</button>
+      </div>
+      {#if !movingBlock && mediaBlock && 'photos' in mediaBlock}
+        {#if mediaBlock.kind === 'gallery'}{@render gallerySettings(mediaBlock)}{/if}
+        {#if selectedPhoto && mediaSection && mediaRow}
+          {@render photoSettings(selectedPhoto, mediaBlock, mediaSection, mediaRow.slots,
+            mediaSection.wrap?.imageId === mediaBlock.id)}
+        {/if}
+      {:else}
+        <p>Select a gallery or image to edit its settings.</p>
+      {/if}
+    </aside>
+  {/if}
+  </div>
 
   <details class="inspector">
     <summary>Backend data preview</summary>
@@ -590,7 +596,7 @@
   </details>
 </div>
 
-{#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
+{#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, wrappedSection?: string)}
   {#snippet editPhoto(photo: Photo, neighbor = false)}
     {#if neighbor}
       {@const src = publicUrl(photo.src)}
@@ -598,22 +604,16 @@
         {#if src}<PhotoFrame {photo} {src} gallery />{/if}
       </div></figure>
     {:else}
-      <figure class="edit-photo" style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
+      <figure class="edit-photo" style:--photo-width={(wrappedSection ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
-          class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
-          title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
-          ondragstart={(event) => { if (wrapped) startImageDrag(event, section.id); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
-          aria-expanded={photoDetails === photo.id}
-          onclick={(event) => {
-            const bounds = event.currentTarget.getBoundingClientRect();
-            photoClick = event.detail && bounds.width && bounds.height ? {
-              id: photo.id,
-              x: (event.clientX - bounds.left) / bounds.width,
-              y: (event.clientY - bounds.top) / bounds.height,
-            } : undefined;
+          class:draggable-photo={!!wrappedSection} draggable={wrappedSection ? 'true' : 'false'}
+          title={wrappedSection ? 'Drag to another paragraph, or click to edit image' : undefined}
+          ondragstart={(event) => { if (wrappedSection) startImageDrag(event, wrappedSection); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
+          aria-pressed={photoDetails === photo.id}
+          onclick={() => {
             activeBlock = block.id;
             activeEditor = undefined;
-            photoDetails = photoDetails === photo.id ? null : photo.id;
+            photoDetails = photo.id;
           }}>
           {#if publicUrl(photo.src)}
             <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} />
@@ -622,50 +622,6 @@
           {/if}
         </button>
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
-        {#if photoDetails === photo.id}
-          <div class="photo-details" role="group" aria-label="Image settings"
-            popover="manual" use:floatPhotoSettings={photo.id}>
-            <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
-            <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
-            <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
-            <label>Caption placement
-              <select value={photo.captionPlacement ?? 'below'} onchange={(event) => {
-                remember();
-                photo.captionPlacement = event.currentTarget.value === 'overlay' ? 'overlay' : 'below';
-              }}>
-                <option value="below">Centered below image</option>
-                <option value="overlay">Over the image</option>
-              </select>
-            </label>
-            <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
-              slideshowFit={block.galleryStyle === 'slideshow' ? block.slideshow?.fit ?? 'contain' : undefined}
-              onChange={(frame) => { remember(); photo.frame = frame; }} />
-            {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
-              <label>Wrap text
-                <select value={section.wrap?.imageId === block.id ? section.wrap.side : 'none'}
-                  onchange={(event) => setWrap(section, slots, block.id, event.currentTarget.value)}>
-                  <option value="none">Off</option>
-                  <option value="left">Image on left</option>
-                  <option value="right">Image on right</option>
-                </select>
-              </label>
-            {/if}
-            <button type="button" onclick={() => photoDetails = null}>Done</button>
-            {#if wrapped}
-              <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
-            {/if}
-            {#if block.kind === 'gallery'}
-              {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
-              <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
-              <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
-              <button type="button" onclick={() => {
-                remember();
-                block.photos = block.photos.filter(({ id }) => id !== photo.id);
-                photoDetails = null;
-              }}>Remove image</button>
-            {/if}
-          </div>
-        {/if}
       </figure>
     {/if}
   {/snippet}
@@ -674,7 +630,53 @@
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
-  {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
+{/snippet}
+
+{#snippet photoSettings(photo: Photo, block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped: boolean)}
+  <div class="photo-details" role="group" aria-label="Image settings">
+    <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
+    <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
+    <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
+    <label>Caption placement
+      <select value={photo.captionPlacement ?? 'below'} onchange={(event) => {
+        remember();
+        photo.captionPlacement = event.currentTarget.value === 'overlay' ? 'overlay' : 'below';
+      }}>
+        <option value="below">Centered below image</option>
+        <option value="overlay">Over the image</option>
+      </select>
+    </label>
+    <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
+      slideshowFit={block.galleryStyle === 'slideshow' ? block.slideshow?.fit ?? 'contain' : undefined}
+      onChange={(frame) => { remember(); photo.frame = frame; }} />
+    {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
+      <label>Wrap text
+        <select value={section.wrap?.imageId === block.id ? section.wrap.side : 'none'}
+          onchange={(event) => setWrap(section, slots, block.id, event.currentTarget.value)}>
+          <option value="none">Off</option>
+          <option value="left">Image on left</option>
+          <option value="right">Image on right</option>
+        </select>
+      </label>
+    {/if}
+    <button type="button" onclick={() => photoDetails = null}>Done</button>
+    {#if wrapped}
+      <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
+    {/if}
+    {#if block.kind === 'gallery'}
+      {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
+      <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
+      <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
+      <button type="button" onclick={() => {
+        remember();
+        block.photos = block.photos.filter(({ id }) => id !== photo.id);
+        photoDetails = null;
+      }}>Remove image</button>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet gallerySettings(block: Extract<Block, { photos: Photo[] }>)}
     <div class="gallery-tools">
       <label>Gallery layout
         <select value={block.galleryStyle ?? 'grid'} onchange={(event) => {
@@ -742,7 +744,6 @@
         photoDetails = photo.id;
       }}>Add gallery image</button>
     </div>
-  {/if}
 {/snippet}
 
 {#snippet layoutEditor()}
@@ -789,6 +790,7 @@
 {/snippet}
 
 <style>
+  .workbench:not(.narrow):has(.with-sidebar) { max-width: 90rem; }
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
   .workbench.narrow { max-width: 25rem; padding-inline: 0; }
   .narrow .node { padding-inline: .65rem; }
@@ -839,7 +841,7 @@
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
   .link-preview-editor { display: grid; gap: .6rem; }
-  .gallery-tools { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; margin-block-start: .75rem; }
+  .gallery-tools { display: grid; gap: .6rem; }
   .section-tools.inactive { display: none; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
@@ -856,24 +858,25 @@
   .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }
   figure { margin: 0; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
-  .photo-details {
-    position: fixed;
-    inset: auto;
-    margin: 0;
-    color: inherit;
-    box-sizing: border-box;
-    width: min(21rem, calc(100vw - 1rem));
-    max-height: min(32rem, 65dvh);
-    overflow: auto;
-    display: grid;
-    gap: .4rem;
-    padding: .65rem;
-    background: var(--atlas-surface);
-    border: 1px solid var(--atlas-border);
-    border-radius: var(--atlas-radius, .5rem);
-    box-shadow: 0 .35rem 1rem rgb(0 0 0 / 15%);
+  .editor-frame.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem); gap: 1rem; align-items: start; }
+  .editor-sidebar {
+    position: sticky; top: .5rem; max-height: calc(100dvh - 1rem); overflow: auto;
+    padding: .75rem; background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem);
   }
-  .edit-slot label, .photo-details label, .layout-panel label { display: grid; gap: .25rem; }
+  .sidebar-heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .65rem; }
+  .editor-sidebar h2 { font-size: 1rem; margin: 0; }
+  .editor-sidebar p { margin: 0; }
+  .photo-details { display: grid; gap: .5rem; }
+  .gallery-tools + .photo-details { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--atlas-border); }
+  @media (max-width: 65rem) {
+    .editor-frame.with-sidebar { display: block; }
+    .editor-sidebar { position: fixed; inset: auto .5rem .5rem; max-height: 38dvh; z-index: 10; }
+    .editor-frame.with-sidebar { padding-bottom: 39dvh; }
+  }
+  .narrow .editor-frame.with-sidebar { display: block; padding-bottom: 39dvh; }
+  .narrow .editor-sidebar { position: fixed; inset: auto .5rem .5rem; max-height: 38dvh; z-index: 10; }
+  .edit-slot label, .editor-sidebar label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
   .empty-slot { min-height: 4rem; justify-content: center; }
   .custom { display: grid; gap: .6rem; }
