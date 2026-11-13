@@ -551,7 +551,7 @@
           </section>
         {/each}
         {#if message}<p role="status">{message}</p>{/if}
-        <button type="button" disabled={!!movingBlock} aria-expanded={layoutSection === 'new'} onclick={() => openLayout('new')}>Add section</button>
+        <button class="add-section" type="button" disabled={!!movingBlock} aria-expanded={layoutSection === 'new'} onclick={() => openLayout('new')}>Add section</button>
         {#if layoutSection === 'new'}{@render layoutEditor()}{/if}
       </div>
     {:else}
@@ -801,7 +801,15 @@
   h1, .title { font-size: var(--node-title-size); font-weight: 650; margin: 0; line-height: 1.16; overflow-wrap: anywhere; }
   .title { width: 100%; padding: .35rem 0; border: 0; border-bottom: 1px solid var(--atlas-border); border-radius: 0; }
   .editor, .edit-section, .edit-slot, .layout-panel { display: grid; gap: .75rem; min-width: 0; }
-  .editor > button { justify-self: start; }
+  button.add-section {
+    justify-self: center;
+    min-height: 2.75rem;
+    padding: .65rem 1.25rem;
+    font-weight: 650;
+    color: var(--atlas-on-accent, white);
+    background: var(--atlas-accent);
+    border-color: var(--atlas-accent);
+  }
   .editing-tools { position: sticky; top: 0; z-index: 5; background: var(--atlas-surface); padding-block: .4rem; }
   .formatting { display: flex; flex-wrap: wrap; align-items: end; gap: .4rem; }
   .formatting label { font-size: .8rem; }
