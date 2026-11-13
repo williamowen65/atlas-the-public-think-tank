@@ -94,7 +94,7 @@
         onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
         <PhotoFrame {photo} {src} gallery={inGallery} />
       </button>
-      {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+      {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
     </figure>
   {/if}
 {/snippet}

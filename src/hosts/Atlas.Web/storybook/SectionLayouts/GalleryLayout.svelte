@@ -88,13 +88,11 @@
     transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
   }
   .paired .feature { align-self: stretch; position: relative; }
-  .paired .feature :global(figure) { position: absolute; inset: 0; }
+  .paired .feature :global(figure) {
+    position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  }
   .paired .feature :global(figure > button),
   .paired .feature :global(figure > button > .frame) { height: 100%; }
-  .mosaic-row:not(.single) :global(figcaption) {
-    position: absolute; inset: auto 0 0; box-sizing: border-box; width: 100%; margin: 0; padding: .2rem;
-    background: rgb(0 0 0 / 65%); color: white; pointer-events: none;
-  }
   .masonry { columns: 3; column-gap: .6rem; }
   .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }

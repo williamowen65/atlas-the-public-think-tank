@@ -13,7 +13,7 @@ export type PhotoFrame = {
   y?: number;
   corners?: 'square' | 'rounded';
 };
-export type Photo = { id: string; src: string; alt: string; caption: string; frame?: PhotoFrame };
+export type Photo = { id: string; src: string; alt: string; caption: string; captionPlacement?: 'overlay' | 'below'; frame?: PhotoFrame };
 export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
 export type Block =
@@ -134,6 +134,7 @@ export function example(kind: Example): Draft {
         photo('trees', 'photo-1441974231531-c6227db76b6e', 'Trees along a woodland path'),
       );
     }
+    if (kind === 'mosaic') galleryPhotos[0].captionPlacement = 'overlay';
     if (kind === 'masonry') {
       const ratios = ['2 / 3', '1 / 1', '4 / 5', '1 / 1', '1 / 1', '1 / 1'] as const;
       galleryPhotos[0].caption = '';

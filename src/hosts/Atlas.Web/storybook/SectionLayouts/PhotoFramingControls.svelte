@@ -46,7 +46,7 @@
           y: Math.round(Math.min(100, Math.max(0, (event.clientY - rect.top) / rect.height * 100))),
         });
       }}>
-      <PhotoFrame photo={{ ...photo, frame: { ratio: 'natural' } }} {src} />
+      <PhotoFrame photo={{ ...photo, caption: '', frame: { ratio: 'natural' } }} {src} />
       <span class="dot" aria-hidden="true" style:left={(photo.frame?.x ?? 50) + '%'} style:top={(photo.frame?.y ?? 50) + '%'}></span>
     </button>
     <small>Click or tap the photo to set its focal point, or use the sliders.</small>

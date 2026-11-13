@@ -552,13 +552,22 @@
             Add image details
           {/if}
         </button>
-        {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+        {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
         {#if photoDetails === photo.id}
           <div class="photo-details" role="group" aria-label="Image settings"
             popover="manual" use:floatPhotoSettings>
             <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
             <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
             <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
+            <label>Caption placement
+              <select value={photo.captionPlacement ?? 'below'} onchange={(event) => {
+                remember();
+                photo.captionPlacement = event.currentTarget.value === 'overlay' ? 'overlay' : 'below';
+              }}>
+                <option value="below">Centered below image</option>
+                <option value="overlay">Over the image</option>
+              </select>
+            </label>
             <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
               onChange={(frame) => { remember(); photo.frame = frame; }} />
             {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
