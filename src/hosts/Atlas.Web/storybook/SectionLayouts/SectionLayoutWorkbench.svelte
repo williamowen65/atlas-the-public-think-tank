@@ -33,6 +33,7 @@
   let picker = $state<string | null>(null);
   let draggedSection = $state<string | null>(null);
   let dropParagraph = $state<HTMLElement | null>(null);
+  let photoClick: { id: string; x: number; y: number } | undefined;
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
@@ -146,12 +147,20 @@
     message = 'Change undone.';
   }
 
-  function floatPhotoSettings(panel: HTMLElement) {
+  function floatPhotoSettings(panel: HTMLElement, photoId: string) {
     const trigger = panel.closest('.edit-photo')?.querySelector('.photo-button');
     if (!(trigger instanceof HTMLElement)) return;
+    const click = photoClick?.id === photoId ? photoClick : undefined;
+    const anchor = click ? {
+      contextElement: trigger,
+      getBoundingClientRect() {
+        const bounds = trigger.getBoundingClientRect();
+        return new DOMRect(bounds.left + bounds.width * click.x, bounds.top + bounds.height * click.y);
+      },
+    } : trigger;
     panel.showPopover();
-    return { destroy: autoUpdate(trigger, panel, () => {
-      void computePosition(trigger, panel, {
+    return { destroy: autoUpdate(anchor, panel, () => {
+      void computePosition(anchor, panel, {
         strategy: 'fixed',
         placement: 'bottom-start',
         middleware: [offset(6), flip(), shift({ padding: 8 })],
@@ -568,7 +577,13 @@
           title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
           ondragstart={(event) => { if (wrapped) startImageDrag(event, section.id); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
           aria-expanded={photoDetails === photo.id}
-          onclick={() => {
+          onclick={(event) => {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            photoClick = event.detail && bounds.width && bounds.height ? {
+              id: photo.id,
+              x: (event.clientX - bounds.left) / bounds.width,
+              y: (event.clientY - bounds.top) / bounds.height,
+            } : undefined;
             activeBlock = block.id;
             activeEditor = undefined;
             photoDetails = photoDetails === photo.id ? null : photo.id;
@@ -582,7 +597,7 @@
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
         {#if photoDetails === photo.id}
           <div class="photo-details" role="group" aria-label="Image settings"
-            popover="manual" use:floatPhotoSettings>
+            popover="manual" use:floatPhotoSettings={photo.id}>
             <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
             <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
             <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
