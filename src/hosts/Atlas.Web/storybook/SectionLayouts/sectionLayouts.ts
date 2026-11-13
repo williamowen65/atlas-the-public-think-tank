@@ -1,6 +1,6 @@
 export type Slot = { id: string; weight: number };
 export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
-export type Section = { id: string; layoutId: string; breakBefore?: boolean };
+export type Section = { id: string; layoutId: string; breakBefore?: boolean; rows?: (string | null)[] };
 export type VerticalAlignment = 'start' | 'center' | 'end';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };
@@ -32,11 +32,26 @@ export const presets: Layout[] = [
 ];
 
 export const newId = () => crypto.randomUUID();
-export const columns = (layout: Layout) => layout.slots.map(({ weight }) => `minmax(0, ${weight}fr)`).join(' ');
+export const columns = (slots: Slot[]) => slots.map(({ weight }) => `minmax(0, ${weight}fr)`).join(' ');
 export const blockAt = (draft: Draft, sectionId: string, slotId: string) => {
   const entry = draft.assignments.find((item) => item.sectionId === sectionId && item.slotId === slotId);
   return draft.blocks.find(({ id }) => id === entry?.blockId);
 };
+
+export function sectionRows(section: Section, layout: Layout) {
+  return (section.rows ?? [null]).map((id) => ({
+    id,
+    slots: id === null ? layout.slots : [{ id, weight: 1 }],
+  }));
+}
+
+export function insertRow(section: Section, rowId: string | null, where: 'above' | 'below'): Section {
+  const rows = [...(section.rows ?? [null])];
+  const index = rows.indexOf(rowId);
+  if (index < 0) return section;
+  rows.splice(index + (where === 'below' ? 1 : 0), 0, newId());
+  return { ...section, rows };
+}
 
 export function applyLayout(draft: Draft, sectionId: string, layoutId: string): Draft {
   const section = draft.sections.find(({ id }) => id === sectionId);
@@ -47,7 +62,8 @@ export function applyLayout(draft: Draft, sectionId: string, layoutId: string): 
   const blocks = layout.slots.length < previous.slots.length
     ? slotBlocks.filter((id) => id !== undefined) : slotBlocks;
   const extra: Section[] = [];
-  const assignments = draft.assignments.filter((entry) => entry.sectionId !== sectionId);
+  const assignments = draft.assignments.filter((entry) =>
+    entry.sectionId !== sectionId || !previous.slots.some(({ id }) => id === entry.slotId));
   for (const [index, blockId] of blocks.entries()) {
     if (!blockId) continue;
     const slot = layout.slots[index];

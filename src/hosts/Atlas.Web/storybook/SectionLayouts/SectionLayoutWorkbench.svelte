@@ -9,7 +9,7 @@
   import SectionBreak from './SectionBreak.svelte';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
-    applyLayout, blockAt, columns, duplicateSection, example, moveBlock, newId,
+    applyLayout, blockAt, columns, duplicateSection, example, insertRow, moveBlock, newId, sectionRows,
     type Block, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
@@ -43,6 +43,12 @@
 
   function remember() {
     history = [...history, structuredClone($state.snapshot(draft))];
+  }
+
+  function addRow(sectionId: string, rowId: string | null, where: 'above' | 'below') {
+    remember();
+    draft.sections = draft.sections.map((section) =>
+      section.id === sectionId ? insertRow(section, rowId, where) : section);
   }
 
   function deleteEmptySection(sectionId: string) {
@@ -318,6 +324,7 @@
       <div class="editor">
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
+          {@const rows = sectionRows(section, layout)}
           <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
             {#if section.breakBefore}<SectionBreak />{/if}
             <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
@@ -337,101 +344,110 @@
               <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
             </div>
             {#if !movingBlock && activeSection === section.id && layoutSection === section.id}{@render layoutEditor()}{/if}
-            <div class="grid" style:--columns={columns(layout)}>
-              {#each layout.slots as slot, slotIndex (slot.id)}
-                {@const block = blockAt(draft, section.id, slot.id)}
-                {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
-                {@const slotKey = `${section.id}/${slot.id}`}
-                {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-                <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
-                  {#if movingBlock && block?.id !== movingBlock}
-                    <button class="destination" type="button"
-                      aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
-                      onclick={() => void placeBlock(section.id, slot.id)}>{block ? 'Swap here' : 'Move here'}</button>
-                  {/if}
-                  <div class="slot-content" style:text-align={block?.kind === 'text' ? block.alignment : undefined} inert={!!movingBlock}>
-                    {#if block}
-                      {#key `${block.id}/${editorVersion}`}
-                        {#if block.kind === 'text'}
-                          <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => { if (text !== block.text) { remember(); block.text = text; } }}
-                            onActivate={(editor) => {
-                              activeBlock = block.id;
-                              activeEditor = editor;
-                              photoDetails = null;
-                            }} />
-                        {:else}
-                          <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
-                            {#each block.photos as photo (photo.id)}
-                              <figure class="edit-photo">
-                                <button style:--photo-width={(photo.frame?.width ?? 100) + '%'} class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
-                                  aria-expanded={photoDetails === photo.id}
-                                  onclick={() => {
-                                    activeBlock = block.id;
-                                    activeEditor = undefined;
-                                    photoDetails = photoDetails === photo.id ? null : photo.id;
-                                  }}>
-                                  {#if publicUrl(photo.src)}
-                                    <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery'} />
-                                  {:else}
-                                    Add image details
-                                  {/if}
-                                </button>
-                                {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
-                                {#if photoDetails === photo.id}
-                                  <div class="photo-details">
-                                    <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
-                                    <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
-                                    <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
-                                    <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'}
-                                      onChange={(frame) => { remember(); photo.frame = frame; }} />
-                                    <button type="button" onclick={() => photoDetails = null}>Done</button>
-                                    {#if block.kind === 'gallery'}
-                                      <button type="button" onclick={() => {
-                                        remember();
-                                        block.photos = block.photos.filter(({ id }) => id !== photo.id);
-                                        photoDetails = null;
-                                      }}>Remove image</button>
-                                    {/if}
-                                  </div>
-                                {/if}
-                              </figure>
-                            {/each}
-                          </div>
-                          {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
-                            <button type="button" onclick={() => {
-                              const photo = newPhoto();
-                              remember();
-                              block.photos.push(photo);
-                              activeBlock = block.id;
-                              activeEditor = undefined;
-                              photoDetails = photo.id;
-                            }}>Add gallery image</button>
-                          {/if}
-                        {/if}
-                      {/key}
-                      {#if !movingBlock && activeBlock === block.id}<div class="block-tools">
-                        <button class="move-block" type="button" aria-label="Move block" title="Move block"
-                          disabled={draft.sections.length === 1 && layout.slots.length === 1}
-                          onclick={() => void startMove(block.id)}>↔</button>
-                        <button type="button" aria-label="Remove block" title="Remove block"
-                          onclick={() => removeBlock(block.id)}>×</button>
-                      </div>{/if}
-                    {:else}
-                      <div class="empty-slot">
-                        <button type="button" aria-label={`Add block · Section ${index + 1} · ${slotName}`}
-                          aria-expanded={picker === slotKey}
-                          onclick={() => picker = picker === slotKey ? null : slotKey}>+</button>
-                        {#if picker === slotKey}
-                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'text')}>Text</button>
-                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'image')}>Image</button>
-                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'gallery')}>Gallery</button>
-                        {/if}
-                      </div>
+            {#each rows as row, rowIndex (row.id)}
+              <div class="row-tools section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
+                inert={activeSection !== section.id || !!movingBlock}>
+                <button type="button" aria-label={`Add row above row ${rowIndex + 1}`}
+                  onclick={() => addRow(section.id, row.id, 'above')}>Add row above</button>
+                <button type="button" aria-label={`Add row below row ${rowIndex + 1}`}
+                  onclick={() => addRow(section.id, row.id, 'below')}>Add row below</button>
+              </div>
+              <div class="grid" style:--columns={columns(row.slots)}>
+                {#each row.slots as slot, slotIndex (slot.id)}
+                  {@const block = blockAt(draft, section.id, slot.id)}
+                  {@const slotName = row.id !== null ? `Row ${rowIndex + 1} · Full width` : row.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
+                  {@const slotKey = `${section.id}/${slot.id}`}
+                  {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
+                  <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                    {#if movingBlock && block?.id !== movingBlock}
+                      <button class="destination" type="button"
+                        aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
+                        onclick={() => void placeBlock(section.id, slot.id)}>{block ? 'Swap here' : 'Move here'}</button>
                     {/if}
+                    <div class="slot-content" style:text-align={block?.kind === 'text' ? block.alignment : undefined} inert={!!movingBlock}>
+                      {#if block}
+                        {#key `${block.id}/${editorVersion}`}
+                          {#if block.kind === 'text'}
+                            <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => { if (text !== block.text) { remember(); block.text = text; } }}
+                              onActivate={(editor) => {
+                                activeBlock = block.id;
+                                activeEditor = editor;
+                                photoDetails = null;
+                              }} />
+                          {:else}
+                            <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
+                              {#each block.photos as photo (photo.id)}
+                                <figure class="edit-photo">
+                                  <button style:--photo-width={(photo.frame?.width ?? 100) + '%'} class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
+                                    aria-expanded={photoDetails === photo.id}
+                                    onclick={() => {
+                                      activeBlock = block.id;
+                                      activeEditor = undefined;
+                                      photoDetails = photoDetails === photo.id ? null : photo.id;
+                                    }}>
+                                    {#if publicUrl(photo.src)}
+                                      <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery'} />
+                                    {:else}
+                                      Add image details
+                                    {/if}
+                                  </button>
+                                  {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+                                  {#if photoDetails === photo.id}
+                                    <div class="photo-details">
+                                      <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
+                                      <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
+                                      <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
+                                      <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'}
+                                        onChange={(frame) => { remember(); photo.frame = frame; }} />
+                                      <button type="button" onclick={() => photoDetails = null}>Done</button>
+                                      {#if block.kind === 'gallery'}
+                                        <button type="button" onclick={() => {
+                                          remember();
+                                          block.photos = block.photos.filter(({ id }) => id !== photo.id);
+                                          photoDetails = null;
+                                        }}>Remove image</button>
+                                      {/if}
+                                    </div>
+                                  {/if}
+                                </figure>
+                              {/each}
+                            </div>
+                            {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
+                              <button type="button" onclick={() => {
+                                const photo = newPhoto();
+                                remember();
+                                block.photos.push(photo);
+                                activeBlock = block.id;
+                                activeEditor = undefined;
+                                photoDetails = photo.id;
+                              }}>Add gallery image</button>
+                            {/if}
+                          {/if}
+                        {/key}
+                        {#if !movingBlock && activeBlock === block.id}<div class="block-tools">
+                          <button class="move-block" type="button" aria-label="Move block" title="Move block"
+                            disabled={draft.sections.length === 1 && rows.length === 1 && row.slots.length === 1}
+                            onclick={() => void startMove(block.id)}>↔</button>
+                          <button type="button" aria-label="Remove block" title="Remove block"
+                            onclick={() => removeBlock(block.id)}>×</button>
+                        </div>{/if}
+                      {:else}
+                        <div class="empty-slot">
+                          <button type="button" aria-label={`Add block · Section ${index + 1} · ${slotName}`}
+                            aria-expanded={picker === slotKey}
+                            onclick={() => picker = picker === slotKey ? null : slotKey}>+</button>
+                          {#if picker === slotKey}
+                            <button type="button" onclick={() => addBlock(section.id, slot.id, 'text')}>Text</button>
+                            <button type="button" onclick={() => addBlock(section.id, slot.id, 'image')}>Image</button>
+                            <button type="button" onclick={() => addBlock(section.id, slot.id, 'gallery')}>Gallery</button>
+                          {/if}
+                        </div>
+                      {/if}
+                    </div>
                   </div>
-                </div>
-              {/each}
-            </div>
+                {/each}
+              </div>
+            {/each}
           </section>
         {/each}
         {#if message}<p role="status">{message}</p>{/if}
@@ -518,6 +534,7 @@
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
   .section-tools.inactive { visibility: hidden; }
+  .row-tools.inactive { display: none; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }

@@ -4,7 +4,7 @@
   import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
-  import { blockAt, columns, type Draft } from './sectionLayouts';
+  import { blockAt, columns, sectionRows, type Draft } from './sectionLayouts';
 
   let { draft, feed = false, onReadMore }: {
     draft: Draft;
@@ -20,7 +20,7 @@
   const truncated = $derived(feed && contentHeight > viewportHeight + 1);
   const photos = $derived(draft.sections.flatMap((section) => {
     const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
-    return layout.slots.flatMap((slot) => {
+    return sectionRows(section, layout).flatMap(({ slots }) => slots).flatMap((slot) => {
       const block = blockAt(draft, section.id, slot.id);
       return block && block.kind !== 'text' ? block.photos.flatMap((photo) => {
         const src = publicUrl(photo.src);
@@ -36,35 +36,37 @@
     {#each draft.sections as section (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
       {#if section.breakBefore}<SectionBreak />{/if}
-      {#if layout.slots.some((slot) => blockAt(draft, section.id, slot.id))}
-        <section class="section" style:--columns={columns(layout)}>
-          {#each layout.slots as slot (slot.id)}
-            {@const block = blockAt(draft, section.id, slot.id)}
-            {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-            <div class="slot" style:align-self={vertical ?? 'start'}
-              style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
-              {#if block?.kind === 'text'}
-                <MarkdownContent preserveHeadingLevels text={block.text} />
-              {:else if block}
-                <div class="photos" class:photo-grid={block.kind === 'gallery'}>
-                  {#each block.photos as photo (photo.id)}
-                    {@const src = publicUrl(photo.src)}
-                    {#if src}
-                      <figure style:width={(photo.frame?.width ?? 100) + '%'}>
-                        <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
-                          onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
-                          <PhotoFrame {photo} {src} gallery={block.kind === 'gallery'} />
-                        </button>
-                        {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
-                      </figure>
-                    {/if}
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </section>
-      {/if}
+      {#each sectionRows(section, layout) as row (row.id)}
+        {#if row.slots.some((slot) => blockAt(draft, section.id, slot.id))}
+          <section class="section" style:--columns={columns(row.slots)}>
+            {#each row.slots as slot (slot.id)}
+              {@const block = blockAt(draft, section.id, slot.id)}
+              {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
+              <div class="slot" style:align-self={vertical ?? 'start'}
+                style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
+                {#if block?.kind === 'text'}
+                  <MarkdownContent preserveHeadingLevels text={block.text} />
+                {:else if block}
+                  <div class="photos" class:photo-grid={block.kind === 'gallery'}>
+                    {#each block.photos as photo (photo.id)}
+                      {@const src = publicUrl(photo.src)}
+                      {#if src}
+                        <figure style:width={(photo.frame?.width ?? 100) + '%'}>
+                          <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
+                            onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
+                            <PhotoFrame {photo} {src} gallery={block.kind === 'gallery'} />
+                          </button>
+                          {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+                        </figure>
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </section>
+        {/if}
+      {/each}
     {/each}
   </div>
 </div>
