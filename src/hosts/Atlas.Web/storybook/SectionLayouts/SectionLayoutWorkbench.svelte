@@ -1,5 +1,6 @@
 <script lang="ts">
   import PhotoFramingControls from './PhotoFramingControls.svelte';
+  import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import { tick, untrack } from 'svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
@@ -9,7 +10,7 @@
   import SectionBreak from './SectionBreak.svelte';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
-    applyLayout, blockAt, columns, duplicateSection, example, moveBlock, newId,
+    applyLayout, blockAt, columns, duplicateSection, splitText, example, moveBlock, newId,
     type Block, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
@@ -145,7 +146,7 @@
   function seedCustomLayout(layoutId: string) {
     const selected = draft.layouts.find(({ id }) => id === layoutId)!;
     customName = '';
-    customColumns = selected.slots.length;
+    customColumns = selected.tracks?.length ?? selected.slots.length;
     leftShare = selected.slots.length === 2
       ? Math.round(selected.slots[0].weight / (selected.slots[0].weight + selected.slots[1].weight) * 100)
       : 60;
@@ -340,10 +341,10 @@
             <div class="grid" style:--columns={columns(layout)}>
               {#each layout.slots as slot, slotIndex (slot.id)}
                 {@const block = blockAt(draft, section.id, slot.id)}
-                {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
+                {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : slotIndex === 1 ? 'Right' : slot.id === 'lower-left' ? 'Lower left' : 'Lower right'}
                 {@const slotKey = `${section.id}/${slot.id}`}
                 {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-                <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                <div class="edit-slot" style:--area={slot.area} style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
                   {#if movingBlock && block?.id !== movingBlock}
                     <button class="destination" type="button"
                       aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
@@ -353,12 +354,19 @@
                     {#if block}
                       {#key `${block.id}/${editorVersion}`}
                         {#if block.kind === 'text'}
+                          {#if slot.continuations}
+                            <MarkdownContent preserveHeadingLevels text={splitText(block.text)[0]} />
+                            <button type="button" class="merged-edit" onclick={() => activeBlock = block.id}>
+                              Edit merged text
+                            </button>
+                          {:else}
                           <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => { if (text !== block.text) { remember(); block.text = text; } }}
                             onActivate={(editor) => {
                               activeBlock = block.id;
                               activeEditor = editor;
                               photoDetails = null;
                             }} />
+                          {/if}
                         {:else}
                           <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
                             {#each block.photos as photo (photo.id)}
@@ -430,6 +438,26 @@
                     {/if}
                   </div>
                 </div>
+                {#if slot.continuations && block?.kind === 'text'}
+                  {#each slot.continuations as area, part (area)}
+                    <div class="edit-slot continuation" style:--area={area} style:text-align={block.alignment}
+                      class:active={activeBlock === block.id} data-block={block.id}>
+                      {#if activeBlock === block.id && !movingBlock && part === slot.continuations.length - 1}
+                        <small>Edit the whole text block here.</small>
+                        <SectionTextEditor initialBlocks={authorText(block)}
+                          onChange={(text) => { if (text !== block.text) { remember(); block.text = text; } }}
+                          onActivate={(editor) => activeEditor = editor} />
+                      {:else}
+                        <MarkdownContent preserveHeadingLevels text={splitText(block.text, slot.continuations.length + 1)[part + 1]} />
+                        {#if !movingBlock && activeBlock !== block.id}
+                          <button type="button" class="merged-edit" onclick={() => activeBlock = block.id}>
+                            Edit text continuation
+                          </button>
+                        {/if}
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
               {/each}
             </div>
           </section>
@@ -464,6 +492,9 @@
         {/each}
       </select>
     </label>
+    {#if layoutChoice.startsWith('merged-text')}
+      <p>The text is edited as one block. Paragraph breaks determine where it continues in the grid.</p>
+    {/if}
     {#if layoutSection !== 'new' && draft.layouts.find(({ id }) => id === layoutChoice)?.slots.length === 1
       && (layoutBefore?.assignments ?? draft.assignments).filter((entry) => entry.sectionId === layoutSection).length > 1}
       <p>The second block will move to a new full-width section below.</p>
@@ -520,7 +551,8 @@
   .section-tools.inactive { visibility: hidden; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
-  .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
+  .merged-edit { margin-block-start: .35rem; }
+  .edit-slot { grid-area: var(--area, auto); position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
@@ -552,6 +584,7 @@
   pre { overflow: auto; max-height: 28rem; padding: .75rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); }
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
+    .edit-slot { grid-area: auto; }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
     .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }
