@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack, mount, unmount, type Component, type Snippet } from 'svelte';
-  import { Editor, Extension, Node } from '@tiptap/core';
+  import { Editor, Extension, Node, getMarkRange } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
   import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -271,6 +271,8 @@
   let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
   let deleteConfirmPosition = $state({ top: 0, left: 0 });
   let railFrame = 0;
+  let linkIndicator = $state<{ left: number; top: number } | null>(null);
+  let editingLink = $state(false);
   let linkFormOpen = $state(false);
   let linkHref = $state('');
   let linkText = $state('');
@@ -315,11 +317,29 @@
     return null;
   }
 
+  function selectedLink(editor: Editor) {
+    const { selection, schema, doc } = editor.state;
+    if (!(selection instanceof TextSelection) || !selection.$from.sameParent(selection.$to)) return;
+    const range = getMarkRange(selection.$from, schema.marks.link);
+    if (!range || range.from > selection.from || range.to < selection.to) return;
+    const mark = doc.resolve(range.from).nodeAfter?.marks.find((mark) => mark.type === schema.marks.link);
+    if (mark) return { ...range, href: String(mark.attrs.href ?? '') };
+  }
+
   function positionAnchoredForms() {
     const editor = currentEditor();
     if (!shellEl || !editor || editor.isDestroyed) return;
     const shell = shellEl.getBoundingClientRect();
     const leftBound = Math.max(0, shellEl.clientWidth - 350);
+
+    const link = singleText && (editorFocused || shellEl.contains(document.activeElement) && document.activeElement?.classList.contains('link-indicator')) && !linkFormOpen ? selectedLink(editor) : undefined;
+    if (link) {
+      const edge = editor.view.coordsAtPos(editor.state.selection.head);
+      linkIndicator = {
+        top: edge.bottom - shell.top + 6,
+        left: Math.max(0, Math.min(shellEl.clientWidth - 100, edge.left - shell.left)),
+      };
+    } else linkIndicator = null;
 
     if (linkFormOpen && linkSelection) {
       try {
@@ -542,10 +562,13 @@
   function openLinkForm() {
     const editor = currentEditor();
     if (!editor) return;
-    const { from, to } = editor.state.selection;
+    const existing = selectedLink(editor);
+    const { from, to } = existing ?? editor.state.selection;
+    editingLink = !!existing;
+    linkIndicator = null;
     linkSelection = { from, to };
     linkText = editor.state.doc.textBetween(from, to, ' ');
-    linkHref = String(editor.getAttributes('link').href ?? '');
+    linkHref = existing?.href ?? '';
     linkError = '';
     linkFormOpen = true;
     selectionPopup = null;
@@ -569,9 +592,19 @@
       linkError = 'Enter a full HTTP(S) URL.';
       return;
     }
-    if (linkSelection.from === linkSelection.to) {
+    const original = editor.state.doc.textBetween(linkSelection.from, linkSelection.to, ' ');
+    const label = linkText.trim() || url;
+    if (editingLink && linkText !== original) {
+      const { from, to } = linkSelection;
+      const { schema, doc } = editor.state;
+      const marks = doc.resolve(from).nodeAfter?.marks.filter((mark) => mark.type !== schema.marks.link) ?? [];
+      editor.chain().focus().command(({ tr }) => {
+        tr.replaceWith(from, to, schema.text(label, [...marks, schema.marks.link.create({ href: url })]));
+        return true;
+      }).run();
+    } else if (linkSelection.from === linkSelection.to) {
       editor.chain().focus().setTextSelection(linkSelection).insertContent({
-        type: 'text', text: linkText.trim() || url,
+        type: 'text', text: label,
         marks: [{ type: 'link', attrs: { href: url } }],
       }).run();
     } else {
@@ -1019,14 +1052,19 @@
         </div>
       </div>
     {/if}
+    {#if linkIndicator && !linkFormOpen}
+      <button type="button" class="link-indicator" style:top={linkIndicator.top + 'px'}
+        style:left={linkIndicator.left + 'px'} onpointerdown={(event) => event.preventDefault()}
+        onclick={openLinkForm}>Edit link</button>
+    {/if}
     {#if linkFormOpen}
       <div class="link-form" role="form" aria-label="Insert or edit link"
         style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}>
         <label for={`${instance}-link-url`}>Link URL</label>
         <input id={`${instance}-link-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkHref}
           placeholder="https://example.org/article" />
-        {#if linkSelection?.from === linkSelection?.to}
-          <label for={`${instance}-link-text`}>Link text (optional)</label>
+        {#if editingLink || linkSelection?.from === linkSelection?.to}
+          <label for={`${instance}-link-text`}>Link text{editingLink ? '' : ' (optional)'}</label>
           <input id={`${instance}-link-text`} onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkText} placeholder="Text to insert" />
         {/if}
         {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
@@ -1170,6 +1208,8 @@
 </fieldset>
 
 <style>
+  .link-indicator { position: absolute; z-index: 4; background: var(--atlas-surface); }
+
   .single-text .editor-canvas { padding: 0; min-height: 0; }
   .single-text :global(.atlas-story-rich-document) { min-height: 2.5rem; line-height: 1.65; }
   .single-text :global(.atlas-story-rich-document > [data-atlas-key]) { margin-block: 0; }
