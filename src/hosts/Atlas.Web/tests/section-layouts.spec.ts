@@ -183,3 +183,25 @@ test('clicking away dismisses block controls and H6 survives preview', async ({ 
   await page.getByRole('button', { name: 'Node page' }).click();
   await expect(page.locator('h6')).toHaveCount(1);
 });
+
+test('layout choices preview immediately and cancel or click-away resolve the change', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const grid = section.locator('.grid');
+  const title = page.getByRole('textbox', { name: 'Node title' });
+  const change = async () => {
+    await section.getByRole('textbox', { name: /Node content/ }).click();
+    await section.getByRole('button', { name: 'Change layout' }).click();
+    await section.getByLabel('Layout', { exact: true }).selectOption('full');
+    await expect(grid.locator('.edit-slot')).toHaveCount(1);
+  };
+  await change();
+  await section.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(2);
+  await change();
+  await title.click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(2);
+});

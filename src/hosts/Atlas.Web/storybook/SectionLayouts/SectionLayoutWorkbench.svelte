@@ -16,6 +16,7 @@
   let view = $state<'edit' | 'feed' | 'node'>('edit');
   let narrow = $state(false);
   let layoutSection = $state<string | null>(null);
+  let layoutBefore = $state.raw<Draft | null>(null);
   let layoutChoice = $state('full');
   let customName = $state('');
   let customColumns = $state(2);
@@ -29,7 +30,7 @@
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
   const formats = [
-    ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['link', 'Link', 'Link'],
+    ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['underline', 'Underline', 'U'], ['link', 'Link', 'Link'],
     ['bulletList', 'Bulleted list', 'List'],
   ] as const;
 
@@ -53,6 +54,7 @@
   function undo() {
     const previous = history.at(-1);
     if (!previous) return;
+    layoutBefore = null;
     history = history.slice(0, -1);
     draft = previous;
     editorVersion++;
@@ -69,12 +71,13 @@
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
+    if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
     if (inside && target.closest('.editing-tools')) return;
     const section = inside && target.closest('.edit-slot, .section-tools, .layout-panel')
       ? target.closest<HTMLElement>('[data-section]') : null;
     const block = inside ? target.closest<HTMLElement>('[data-block]') : null;
     activeSection = section?.dataset.section ?? null;
-    if (layoutSection && layoutSection !== 'new' && layoutSection !== activeSection) layoutSection = null;
+    if (layoutSection && layoutSection !== 'new' && layoutSection !== activeSection) finishLayout();
     if (block?.dataset.block === activeBlock) return;
     activeEditor?.dismissControls();
     activeEditor = undefined;
@@ -146,7 +149,30 @@
       : 60;
   }
 
+  function previewLayout(layoutId: string) {
+    if (!layoutSection || layoutSection === 'new') return;
+    layoutBefore ??= structuredClone($state.snapshot(draft));
+    const original = layoutBefore.sections.find(({ id }) => id === layoutSection);
+    if (original?.layoutId === layoutId) {
+      draft = { ...draft, sections: layoutBefore.sections, assignments: layoutBefore.assignments };
+    } else {
+      draft = applyLayout({ ...draft, sections: layoutBefore.sections, assignments: layoutBefore.assignments }, layoutSection, layoutId);
+    }
+  }
+
+  function finishLayout(cancel = false) {
+    const before = layoutBefore;
+    if (before) {
+      if (cancel) draft = { ...draft, sections: before.sections, assignments: before.assignments };
+      else if (before.sections.find(({ id }) => id === layoutSection)?.layoutId !== layoutChoice)
+        history = [...history, structuredClone(before)];
+    }
+    layoutBefore = null;
+    layoutSection = null;
+  }
+
   function applyChoice(layoutId: string, record = true) {
+    if (record && layoutBefore) { finishLayout(); return; }
     if (record && (layoutSection === 'new' || draft.sections.some((item) => item.id === layoutSection && item.layoutId !== layoutId))) remember();
     if (layoutSection === 'new') {
       draft.sections.push({ id: newId(), layoutId });
@@ -161,6 +187,10 @@
   function saveLayout(reusable: boolean) {
     const name = customName.trim();
     if (reusable && (!name || draft.layouts.some((layout) => layout.name.toLowerCase() === name.toLowerCase()))) return;
+    if (layoutBefore) {
+      draft = { ...draft, sections: layoutBefore.sections, assignments: layoutBefore.assignments };
+      layoutBefore = null;
+    }
     const id = newId();
     const layout: Layout = {
       id, name: reusable ? name : 'Custom section layout',
@@ -311,7 +341,7 @@
                 {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
                 {@const slotKey = `${section.id}/${slot.id}`}
                 {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-                <div class="edit-slot" style:align-self={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
                   {#if movingBlock && block?.id !== movingBlock}
                     <button class="destination" type="button"
                       aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
@@ -423,6 +453,7 @@
       <select value={layoutChoice} onchange={(event) => {
         layoutChoice = event.currentTarget.value;
         seedCustomLayout(layoutChoice);
+        previewLayout(layoutChoice);
       }}>
         {#each draft.layouts.filter((item) => !item.sectionOnly || item.id === layoutChoice) as layout (layout.id)}
           <option value={layout.id}>{layout.name}</option>
@@ -430,12 +461,12 @@
       </select>
     </label>
     {#if layoutSection !== 'new' && draft.layouts.find(({ id }) => id === layoutChoice)?.slots.length === 1
-      && draft.assignments.filter((entry) => entry.sectionId === layoutSection).length > 1}
+      && (layoutBefore?.assignments ?? draft.assignments).filter((entry) => entry.sectionId === layoutSection).length > 1}
       <p>The second block will move to a new full-width section below.</p>
     {/if}
     <div class="buttons">
       <button type="button" onclick={() => applyChoice(layoutChoice)}>{layoutSection === 'new' ? 'Add this layout' : 'Apply layout'}</button>
-      <button type="button" onclick={() => layoutSection = null}>Cancel</button>
+      <button type="button" onclick={() => finishLayout(true)}>Cancel</button>
     </div>
     <details>
       <summary>Customize layout</summary>
@@ -449,7 +480,7 @@
         {/if}
       </div>
       {#if layoutSection !== 'new' && customColumns === 1
-        && draft.assignments.filter((entry) => entry.sectionId === layoutSection).length > 1}
+        && (layoutBefore?.assignments ?? draft.assignments).filter((entry) => entry.sectionId === layoutSection).length > 1}
         <p>The second block will move to a new full-width section below.</p>
       {/if}
       <button type="button" onclick={() => saveLayout(false)}>Apply to this section</button>
@@ -484,9 +515,10 @@
   .edit-section { padding-block: .5rem 1rem; }
   .section-tools.inactive { visibility: hidden; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
-  .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: start; }
+  .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
+  .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
   .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }

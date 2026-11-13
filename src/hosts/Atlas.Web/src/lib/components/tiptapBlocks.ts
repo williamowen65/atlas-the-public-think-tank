@@ -61,6 +61,7 @@ function inlineMarkdown(node: JSONContent): string {
     for (const mark of node.marks ?? []) {
       if (mark.type === 'bold') value = '**' + value + '**';
       else if (mark.type === 'italic') value = '*' + value + '*';
+      else if (mark.type === 'underline') value = '<u>' + value + '</u>';
       else if (mark.type === 'strike') value = '~~' + value + '~~';
       else if (mark.type === 'code') value = String.fromCharCode(96) + value + String.fromCharCode(96);
       else if (mark.type === 'link' && mark.attrs?.href) {

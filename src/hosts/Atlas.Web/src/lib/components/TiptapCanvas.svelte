@@ -429,16 +429,17 @@
     currentEditor()?.commands.blur();
   }
 
-  export function formatText(kind: 'bold' | 'italic' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
+  export function formatText(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
     if (kind === 'link') openLinkForm();
     else format(kind, level);
   }
 
-  function format(kind: 'bold' | 'italic' | 'heading' | 'bulletList', level: 2 | 3 | 4 | 5 | 6 = 2) {
+  function format(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList', level: 2 | 3 | 4 | 5 | 6 = 2) {
     const editor = currentEditor();
     if (!editor) return;
     if (kind === 'bold') editor.chain().focus().toggleBold().run();
     else if (kind === 'italic') editor.chain().focus().toggleItalic().run();
+    else if (kind === 'underline') editor.chain().focus().toggleUnderline().run();
     else if (kind === 'heading') editor.chain().focus().toggleHeading({ level }).run();
     else editor.chain().focus().toggleBulletList().run();
   }
@@ -811,7 +812,7 @@
     const editor = new Editor({
       element: canvasEl,
       extensions: [
-        StarterKit.configure({ document: false, trailingNode: false, underline: false, link: { openOnClick: false, autolink: false } }),
+        StarterKit.configure({ document: false, trailingNode: false, underline: singleText ? {} : false, link: { openOnClick: false, autolink: false } }),
         singleText ? AtlasDocument.extend({ content: 'atlasText' }) : AtlasDocument,
         AtlasText,
         ...(singleText ? [] : [AtlasInlineImage, AtlasImage, AtlasUnsupported, ActiveBlockDecoration]),

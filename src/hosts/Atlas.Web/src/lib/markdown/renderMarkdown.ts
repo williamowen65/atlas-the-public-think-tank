@@ -90,6 +90,18 @@ const galleryMarkdown = createRenderer(true, true, true, true);
 const galleryFeedMarkdown = createRenderer(true, true, false, true);
 const sectionMarkdown = createRenderer(false, 'preserve');
 const editorMarkdown = createRenderer(true, false);
+// Accept only literal underline tags. Markdown's general HTML rule stays disabled.
+for (const renderer of [sectionMarkdown, editorMarkdown]) {
+  renderer.inline.ruler.before('html_inline', 'atlas_underline', (state, silent) => {
+    const tag = state.src.startsWith('<u>', state.pos) ? '<u>'
+      : state.src.startsWith('</u>', state.pos) ? '</u>' : null;
+    if (!tag || state.pos + tag.length > state.posMax) return false;
+    if (!silent) state.push('atlas_underline', 'u', 0).content = tag;
+    state.pos += tag.length;
+    return true;
+  });
+  renderer.renderer.rules.atlas_underline = (tokens, index) => tokens[index].content;
+}
 // ProseMirror collapses soft breaks to spaces when it loads HTML. Render
 // them the same way for the round-trip check while preserving hard breaks.
 editorMarkdown.renderer.rules.softbreak = () => ' ';
