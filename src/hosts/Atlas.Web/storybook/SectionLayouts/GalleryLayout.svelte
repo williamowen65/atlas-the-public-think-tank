@@ -43,7 +43,7 @@
 {:else if layout === 'mosaic' && photos.length > 1}
   <div class="mosaic">
     {#each mosaicRows as [feature, ...small], row (feature.id)}
-      <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length}>
+      <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length} class:paired={small.length === 2}>
         <div class="feature">{@render photo(feature)}</div>
         {#if small.length}
           <div class="mosaic-stack">
@@ -79,6 +79,15 @@
   .mosaic-row.reverse { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
   .reverse:not(.single) .feature { grid-area: 1 / 2; }
   .reverse .mosaic-stack { grid-area: 1 / 1; }
+  .paired .feature { align-self: stretch; position: relative; }
+  .paired .feature :global(figure) { position: absolute; inset: 0; margin-block: 0; }
+  .paired .feature :global(figure > button) { height: 100%; }
+  .paired .feature :global(figure > button > .frame) { height: 100%; }
+  .paired .feature :global(figure > button > .frame > img) { height: 100%; object-fit: cover; }
+  .paired .feature :global(figcaption) {
+    position: absolute; inset: auto 0 0; margin: 0 auto; padding: .2rem;
+    background: rgb(0 0 0 / 65%); color: white;
+  }
   .masonry { columns: 3; column-gap: .6rem; }
   .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }

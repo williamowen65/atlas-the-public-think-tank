@@ -1,5 +1,6 @@
 <script lang="ts">
   import PhotoFramingControls from './PhotoFramingControls.svelte';
+  import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
   import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
@@ -141,11 +142,26 @@
     message = 'Change undone.';
   }
 
+  function floatPhotoSettings(panel: HTMLElement) {
+    const trigger = panel.closest('.edit-photo')?.querySelector('.photo-button');
+    if (!(trigger instanceof HTMLElement)) return;
+    panel.showPopover();
+    return { destroy: autoUpdate(trigger, panel, () => {
+      void computePosition(trigger, panel, {
+        strategy: 'fixed',
+        placement: 'bottom-start',
+        middleware: [offset(6), flip(), shift({ padding: 8 })],
+      }).then(({ x, y }) => {
+        Object.assign(panel.style, { left: `${x}px`, top: `${y}px` });
+      });
+    }) };
+  }
+
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
     if (!keyboard && photoDetails
-      && target.closest<HTMLElement>('[data-photo-id]')?.dataset.photoId !== photoDetails) {
+      && !target.closest('.photo-details, .photo-button')) {
       photoDetails = null;
     }
     if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
@@ -158,7 +174,7 @@
     if (block?.dataset.block === activeBlock) return;
     activeEditor?.dismissControls();
     activeEditor = undefined;
-    activeBlock = keyboard ? block?.dataset.block ?? null : null;
+    activeBlock = keyboard || block?.classList.contains('gallery-slot') ? block?.dataset.block ?? null : null;
     photoDetails = null;
   }
 
@@ -441,7 +457,9 @@
                   {@const slotKey = `${section.id}/${slot.id}`}
                   {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
                   {#if !wrap || block?.id !== wrap.imageId}
-                    <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} class:masonry-slot={block?.kind === 'gallery' && block.galleryStyle === 'masonry'} data-block={block?.id}>
+                    <div class="edit-slot" class:gallery-slot={block?.kind === 'gallery'}
+                      role={block?.kind === 'gallery' ? 'group' : undefined}
+                      aria-label={block?.kind === 'gallery' ? 'Gallery block' : undefined} style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} class:masonry-slot={block?.kind === 'gallery' && block.galleryStyle === 'masonry'} data-block={block?.id}>
                       {#if movingBlock && block?.id !== movingBlock}
                         <button class="destination" type="button"
                           aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
@@ -521,7 +539,7 @@
 
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
   {#snippet editPhoto(photo: Photo)}
-      <figure class="edit-photo" data-photo-id={photo.id} class:photo-open={photoDetails === photo.id} style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
+      <figure class="edit-photo" style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
           class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
           title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
@@ -541,7 +559,7 @@
         {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
         {#if photoDetails === photo.id}
           <div class="photo-details" role="group" aria-label="Image settings"
-            class:align-end={wrapped ? section.wrap?.side === 'right' : block.kind === 'gallery' ? block.photos.indexOf(photo) % 2 === 1 : !!slots[1] && blockAt(draft, section.id, slots[1].id)?.id === block.id}>
+            popover="manual" use:floatPhotoSettings>
             <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
             <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
             <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
@@ -703,12 +721,12 @@
   figure { margin: 0; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
   .photo-details {
-    position: absolute;
-    z-index: 4;
-    inset-block-start: calc(100% + .35rem);
-    inset-inline-start: calc((100% - var(--photo-width)) / 2);
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    color: inherit;
     box-sizing: border-box;
-    width: min(21rem, 90cqi);
+    width: min(21rem, calc(100vw - 1rem));
     max-height: min(32rem, 65dvh);
     overflow: auto;
     display: grid;
@@ -719,12 +737,7 @@
     border-radius: var(--atlas-radius, .5rem);
     box-shadow: 0 .35rem 1rem rgb(0 0 0 / 15%);
   }
-  .photo-details.align-end {
-    inset-inline-start: auto;
-    inset-inline-end: calc((100% - var(--photo-width)) / 2);
-  }
-  .photo-open { z-index: 4; }
-  .edit-slot label, .layout-panel label { display: grid; gap: .25rem; }
+  .edit-slot label, .photo-details label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
   .empty-slot { min-height: 4rem; justify-content: center; }
   .custom { display: grid; gap: .6rem; }
@@ -744,7 +757,6 @@
   pre { overflow: auto; max-height: 28rem; padding: .75rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); }
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
-    .photo-details, .photo-details.align-end { inset-inline: 0 auto; }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
     .edit-slot.active:not(.masonry-slot) .slot-content { padding-block-end: 2.8rem; }
   }

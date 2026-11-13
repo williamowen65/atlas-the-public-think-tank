@@ -251,7 +251,7 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
   const editorFloat = section.locator('.section-wrapped-image');
   const beforeOpen = await editorFloat.boundingBox();
   await image.click();
-  await expect(section.getByRole('group', { name: 'Image settings' })).toHaveCSS('position', 'absolute');
+  await expect(section.getByRole('group', { name: 'Image settings' })).toHaveCSS('position', 'fixed');
   expect(await editorFloat.boundingBox()).toEqual(beforeOpen);
   await section.getByLabel('Crop shape').selectOption('1 / 1');
   await section.getByRole('slider', { name: /Image width/ }).focus();
@@ -275,4 +275,21 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
   await expect(wrapped.getByRole('button', { name: 'View Buildings along a city street' })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Phone width' }).check();
   await expect(wrapped).toHaveCSS('float', 'none');
+});
+
+test('masonry image settings close within the gallery without moving its tiles', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--masonry-gallery&viewMode=story');
+  const gallery = page.getByRole('group', { name: 'Gallery block' });
+  const image = gallery.getByRole('button', { name: 'Edit Buildings along a city street' });
+  await image.focus();
+  await expect(gallery.getByLabel('Gallery layout')).toHaveValue('masonry');
+  const before = await image.boundingBox();
+  await image.click();
+  const settings = gallery.getByRole('group', { name: 'Image settings' });
+  await expect(settings).toBeVisible();
+  expect(await image.boundingBox()).toEqual(before);
+  await settings.getByLabel('Caption').fill('An evening walk');
+  await gallery.getByText('An evening walk').dispatchEvent('pointerdown');
+  await expect(settings).toHaveCount(0);
+  await expect(gallery.getByText('An evening walk')).toBeVisible();
 });
