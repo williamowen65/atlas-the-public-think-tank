@@ -135,7 +135,8 @@ export function example(kind: Example): Draft {
       );
     }
     if (kind === 'masonry') {
-      const ratios = ['2 / 3', '4 / 3', '1 / 1', '4 / 5', '4 / 3', '2 / 3'] as const;
+      const ratios = ['2 / 3', '1 / 1', '4 / 5', '1 / 1', '1 / 1', '1 / 1'] as const;
+      galleryPhotos[0].caption = '';
       galleryPhotos.forEach((image, index) => { image.frame = { ratio: ratios[index] }; });
     }
     add('full', { id: 'reference-photos', kind: 'gallery', photos: galleryPhotos, galleryStyle: kind });

@@ -144,6 +144,10 @@
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
+    if (!keyboard && photoDetails
+      && target.closest<HTMLElement>('[data-photo-id]')?.dataset.photoId !== photoDetails) {
+      photoDetails = null;
+    }
     if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
     if (inside && target.closest('.editing-tools')) return;
     const section = inside && target.closest('.edit-slot, .section-tools, .layout-panel')
@@ -405,7 +409,11 @@
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
           {@const rows = sectionRows(section, layout)}
-          <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
+          <section class="edit-section" data-section={section.id}
+            class:masonry-section={rows.some(({ slots }) => slots.some(({ id }) => {
+              const block = blockAt(draft, section.id, id);
+              return block?.kind === 'gallery' && block.galleryStyle === 'masonry';
+            }))} aria-label={`Section ${index + 1}`}>
             {#if section.breakBefore}<SectionBreak />{/if}
             <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
               inert={activeSection !== section.id || !!movingBlock}>
@@ -433,7 +441,7 @@
                   {@const slotKey = `${section.id}/${slot.id}`}
                   {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
                   {#if !wrap || block?.id !== wrap.imageId}
-                    <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                    <div class="edit-slot" style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} class:masonry-slot={block?.kind === 'gallery' && block.galleryStyle === 'masonry'} data-block={block?.id}>
                       {#if movingBlock && block?.id !== movingBlock}
                         <button class="destination" type="button"
                           aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
@@ -513,7 +521,7 @@
 
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
   {#snippet editPhoto(photo: Photo)}
-      <figure class="edit-photo" class:photo-open={photoDetails === photo.id} style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
+      <figure class="edit-photo" data-photo-id={photo.id} class:photo-open={photoDetails === photo.id} style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
           class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
           title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
@@ -573,25 +581,27 @@
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
   {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
-    <label>Gallery layout
-      <select value={block.galleryStyle ?? 'grid'} onchange={(event) => {
+    <div class="gallery-tools">
+      <label>Gallery layout
+        <select value={block.galleryStyle ?? 'grid'} onchange={(event) => {
+          remember();
+          block.galleryStyle = event.currentTarget.value as GalleryStyle;
+        }}>
+          <option value="grid">Grid</option>
+          <option value="mosaic">Mosaic</option>
+          <option value="masonry">Masonry</option>
+          <option value="slideshow">Slideshow</option>
+        </select>
+      </label>
+      <button type="button" onclick={() => {
+        const photo = newPhoto();
         remember();
-        block.galleryStyle = event.currentTarget.value as GalleryStyle;
-      }}>
-        <option value="grid">Grid</option>
-        <option value="mosaic">Mosaic</option>
-        <option value="masonry">Masonry</option>
-        <option value="slideshow">Slideshow</option>
-      </select>
-    </label>
-    <button type="button" onclick={() => {
-      const photo = newPhoto();
-      remember();
-      block.photos.push(photo);
-      activeBlock = block.id;
-      activeEditor = undefined;
-      photoDetails = photo.id;
-    }}>Add gallery image</button>
+        block.photos.push(photo);
+        activeBlock = block.id;
+        activeEditor = undefined;
+        photoDetails = photo.id;
+      }}>Add gallery image</button>
+    </div>
   {/if}
 {/snippet}
 
@@ -661,6 +671,22 @@
   .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
+  .masonry-section { position: relative; }
+  .masonry-section > .section-tools {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block-end: calc(100% - .25rem);
+    z-index: 6;
+    background: var(--atlas-surface);
+  }
+  .masonry-slot > .slot-content > .block-tools { bottom: auto; top: 100%; }
+  .masonry-slot .gallery-tools {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    z-index: 4;
+    background: var(--atlas-surface);
+  }
   .section-tools.inactive { display: none; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
@@ -668,7 +694,7 @@
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
-  .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
+  .edit-slot.active:not(.masonry-slot) .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .block-tools { position: absolute; bottom: 0; right: 0; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
@@ -720,6 +746,6 @@
     .grid { grid-template-columns: minmax(0, 1fr); }
     .photo-details, .photo-details.align-end { inset-inline: 0 auto; }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
-    .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
+    .edit-slot.active:not(.masonry-slot) .slot-content { padding-block-end: 2.8rem; }
   }
 </style>

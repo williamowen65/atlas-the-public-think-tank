@@ -80,7 +80,7 @@
   .reverse:not(.single) .feature { grid-area: 1 / 2; }
   .reverse .mosaic-stack { grid-area: 1 / 1; }
   .masonry { columns: 3; column-gap: .6rem; }
-  .masonry-tile { break-inside: avoid; display: flow-root; padding-block-end: .6rem; }
+  .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
