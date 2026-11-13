@@ -135,7 +135,8 @@
   .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
   .masonry.middle { align-items: center; }
   .masonry-column { display: grid; gap: .6rem; min-width: 0; }
-  .slideshow { container-type: inline-size; width: min(100%, 40rem); margin-inline: auto; }
+  .slideshow { container-type: inline-size; width: 100%; }
+  .centered > .slideshow { max-width: 40rem; margin-inline: auto; }
   .slide-stage { --slide-height: min(28rem, 57svh); position: relative; isolation: isolate; }
   .slide-stage[data-height='compact'] { --slide-height: min(18rem, 45svh); }
   .slide-stage[data-height='tall'] { --slide-height: min(36rem, 65svh); }
