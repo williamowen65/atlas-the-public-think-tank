@@ -31,6 +31,7 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
   await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
 
   const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  await section.getByRole('textbox', { name: /Node content/ }).click();
   await section.getByRole('button', { name: 'Change layout' }).click();
   await section.getByText('Customize layout').click();
   await section.getByLabel('Layout name').fill('Pilot layout');
@@ -73,7 +74,12 @@ test('the editor formats a text slot and swaps blocks using the destination on t
   await page.getByRole('button', { name: 'Bold', exact: true }).click();
   await expect(text.locator('strong')).toHaveCount(1);
 
-  await section.getByRole('button', { name: 'Move block', exact: true }).first().click();
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(1);
+  await section.getByRole('button', { name: 'Move block', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Swap here/ })).toHaveCount(3);
   await section.getByRole('button', { name: 'Swap here · Section 1 · Right' }).click();
   await expect(section.locator('.edit-slot').first().getByRole('img')).toHaveCount(1);
   await expect(section.locator('.edit-slot').last().locator('strong')).toHaveCount(1);
@@ -127,6 +133,7 @@ test('confirms block removal and undoes block and empty section removal in order
   await expect(sections).toHaveCount(1);
   await undo.click();
   await expect(sections).toHaveCount(2);
+  await section.getByRole('button', { name: /Add block/ }).first().focus();
   await expect(section.getByRole('button', { name: 'Delete empty section' })).toBeVisible();
   await undo.click();
   await expect(section.getByRole('img')).toBeVisible();
@@ -141,6 +148,7 @@ test('only authored section breaks appear in the editor and previews', async ({ 
   const rule = page.locator('hr.section-break');
   const second = page.getByRole('region', { name: 'Section 2', exact: true });
   await expect(rule).toHaveCount(0);
+  await second.getByRole('textbox', { name: /Node content/ }).first().click();
   await second.getByRole('button', { name: 'Add section break' }).click();
   await expect(second.locator('hr.section-break')).toHaveCount(1);
   await page.getByRole('button', { name: 'Feed preview' }).click();
@@ -148,6 +156,7 @@ test('only authored section breaks appear in the editor and previews', async ({ 
   await page.getByRole('button', { name: 'Node page' }).click();
   await expect(rule).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await second.getByRole('textbox', { name: /Node content/ }).first().click();
   await second.getByRole('button', { name: 'Remove section break' }).click();
   await expect(rule).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
@@ -168,6 +177,8 @@ test('clicking away dismisses block controls and H6 survives preview', async ({ 
   await expect(editor.locator('h6')).toHaveCount(1);
   await page.getByRole('textbox', { name: 'Node title' }).click();
   await expect(headings).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(0);
   await expect(section.getByRole('button', { name: 'Remove block' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Node page' }).click();
   await expect(page.locator('h6')).toHaveCount(1);

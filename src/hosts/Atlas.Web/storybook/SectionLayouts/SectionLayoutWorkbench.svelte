@@ -21,13 +21,13 @@
   let customColumns = $state(2);
   let leftShare = $state(60);
   let message = $state('');
+  let activeSection = $state<string | null>(null);
   let activeBlock = $state<string | null>(null);
   let movingBlock = $state<string | null>(null);
   let picker = $state<string | null>(null);
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
-  let moveButton: HTMLButtonElement | undefined;
   const formats = [
     ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['link', 'Link', 'Link'],
     ['bulletList', 'Bulleted list', 'List'],
@@ -57,12 +57,29 @@
     draft = previous;
     editorVersion++;
     movingBlock = null;
+    activeSection = null;
     activeBlock = null;
     activeEditor = undefined;
     layoutSection = null;
     picker = null;
     photoDetails = null;
     message = 'Change undone.';
+  }
+
+  function updateFocus(target: EventTarget | null, keyboard = false) {
+    if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
+    const inside = workbench?.contains(target);
+    if (inside && target.closest('.editing-tools')) return;
+    const section = inside && target.closest('.edit-slot, .section-tools, .layout-panel')
+      ? target.closest<HTMLElement>('[data-section]') : null;
+    const block = inside ? target.closest<HTMLElement>('[data-block]') : null;
+    activeSection = section?.dataset.section ?? null;
+    if (layoutSection && layoutSection !== 'new' && layoutSection !== activeSection) layoutSection = null;
+    if (block?.dataset.block === activeBlock) return;
+    activeEditor?.dismissControls();
+    activeEditor = undefined;
+    activeBlock = keyboard ? block?.dataset.block ?? null : null;
+    photoDetails = null;
   }
 
   function authorText(block: Extract<Block, { kind: 'text' }>): AuthorBlock[] {
@@ -72,14 +89,14 @@
   function selectView(next: typeof view) {
     view = next;
     movingBlock = null;
+    activeSection = null;
     activeBlock = null;
     activeEditor = undefined;
     picker = null;
     photoDetails = null;
   }
 
-  async function startMove(id: string, button: HTMLButtonElement) {
-    moveButton = button;
+  async function startMove(id: string) {
     activeBlock = id;
     movingBlock = id;
     picker = null;
@@ -90,9 +107,11 @@
     workbench?.querySelector<HTMLButtonElement>('.destination')?.focus();
   }
 
-  function cancelMove() {
+  async function cancelMove() {
+    const id = movingBlock;
     movingBlock = null;
-    moveButton?.focus();
+    await tick();
+    workbench?.querySelector<HTMLButtonElement>(`[data-block="${id}"] .move-block`)?.focus();
   }
 
   async function placeBlock(sectionId: string, slotId: string) {
@@ -102,6 +121,7 @@
     remember();
     draft = moveBlock(draft, id, sectionId, slotId);
     movingBlock = null;
+    activeSection = sectionId;
     activeBlock = id;
     message = target ? 'Blocks swapped.' : 'Block moved.';
     await tick();
@@ -192,16 +212,8 @@
   }
 </script>
 
-<svelte:window onpointerdowncapture={(event) => {
-  if (view !== 'edit' || !activeBlock || !(event.target instanceof Element)) return;
-  if (workbench?.contains(event.target) && (
-    event.target.closest('.editing-tools') || event.target.closest('[data-block]')?.getAttribute('data-block') === activeBlock
-  )) return;
-  activeEditor?.dismissControls();
-  activeEditor = undefined;
-  activeBlock = null;
-  photoDetails = null;
-}} onkeydowncapture={(event) => {
+<svelte:window onpointerdowncapture={(event) => updateFocus(event.target)}
+  onfocusin={(event) => updateFocus(event.target, true)} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
   if (view === 'edit' && history.length && !movingBlock && !event.defaultPrevented
     && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z'
@@ -274,9 +286,10 @@
       <div class="editor">
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
-          <section class="edit-section" aria-label={`Section ${index + 1}`}>
+          <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
             {#if section.breakBefore}<SectionBreak />{/if}
-            <div class="section-tools" inert={!!movingBlock}>
+            <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
+              inert={activeSection !== section.id || !!movingBlock}>
               <button type="button" onclick={() => {
                 remember();
                 section.breakBefore = !section.breakBefore;
@@ -291,7 +304,7 @@
               {/if}
               <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
             </div>
-            {#if layoutSection === section.id}{@render layoutEditor()}{/if}
+            {#if !movingBlock && activeSection === section.id && layoutSection === section.id}{@render layoutEditor()}{/if}
             <div class="grid" style:--columns={columns(layout)}>
               {#each layout.slots as slot, slotIndex (slot.id)}
                 {@const block = blockAt(draft, section.id, slot.id)}
@@ -362,15 +375,13 @@
                           {/if}
                         {/if}
                       {/key}
-                      <div class="block-tools">
+                      {#if !movingBlock && activeBlock === block.id}<div class="block-tools">
                         <button class="move-block" type="button" aria-label="Move block" title="Move block"
                           disabled={draft.sections.length === 1 && layout.slots.length === 1}
-                          onclick={(event) => void startMove(block.id, event.currentTarget)}>↔</button>
-                        {#if activeBlock === block.id}
-                          <button type="button" aria-label="Remove block" title="Remove block"
-                            onclick={() => removeBlock(block.id)}>×</button>
-                        {/if}
-                      </div>
+                          onclick={() => void startMove(block.id)}>↔</button>
+                        <button type="button" aria-label="Remove block" title="Remove block"
+                          onclick={() => removeBlock(block.id)}>×</button>
+                      </div>{/if}
                     {:else}
                       <div class="empty-slot">
                         <button type="button" aria-label={`Add block · Section ${index + 1} · ${slotName}`}
@@ -471,12 +482,13 @@
   .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
+  .section-tools.inactive { visibility: hidden; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: start; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .slot-content { min-width: 0; }
-  .edit-slot[data-block] .slot-content { padding-block-end: 2.2rem; }
+  .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .block-tools { position: absolute; bottom: 0; right: 0; }
   .photo-button { display: block; width: 100%; padding: 0; border: 0; text-align: start; }
@@ -507,7 +519,7 @@
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
-    .edit-slot[data-block] .slot-content { padding-block-end: 2.8rem; }
+    .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }
   @container (max-width: 24rem) { .edit-photos { grid-template-columns: minmax(0, 1fr); } }
 </style>
