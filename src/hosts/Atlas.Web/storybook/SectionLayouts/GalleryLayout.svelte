@@ -79,14 +79,21 @@
   .mosaic-row.reverse { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
   .reverse:not(.single) .feature { grid-area: 1 / 2; }
   .reverse .mosaic-stack { grid-area: 1 / 1; }
+  .mosaic-row:not(.single) :global(figure) { position: relative; width: 100% !important; margin: 0; }
+  .mosaic-row:not(.single) :global(figure > button) { display: block; width: 100%; }
+  .mosaic-row:not(.single) :global(figure > button > .frame) { width: 100%; aspect-ratio: 1 !important; }
+  .mosaic-row:not(.single) :global(figure > button > .frame > img) {
+    width: 100%; height: 100%; object-fit: cover;
+    object-position: var(--focus-x) var(--focus-y);
+    transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
+  }
   .paired .feature { align-self: stretch; position: relative; }
-  .paired .feature :global(figure) { position: absolute; inset: 0; margin-block: 0; }
-  .paired .feature :global(figure > button) { height: 100%; }
+  .paired .feature :global(figure) { position: absolute; inset: 0; }
+  .paired .feature :global(figure > button),
   .paired .feature :global(figure > button > .frame) { height: 100%; }
-  .paired .feature :global(figure > button > .frame > img) { height: 100%; object-fit: cover; }
-  .paired .feature :global(figcaption) {
-    position: absolute; inset: auto 0 0; margin: 0 auto; padding: .2rem;
-    background: rgb(0 0 0 / 65%); color: white;
+  .mosaic-row:not(.single) :global(figcaption) {
+    position: absolute; inset: auto 0 0; box-sizing: border-box; width: 100%; margin: 0; padding: .2rem;
+    background: rgb(0 0 0 / 65%); color: white; pointer-events: none;
   }
   .masonry { columns: 3; column-gap: .6rem; }
   .masonry-tile { break-inside: avoid; display: inline-block; vertical-align: top; width: 100%; padding-block-end: .6rem; }

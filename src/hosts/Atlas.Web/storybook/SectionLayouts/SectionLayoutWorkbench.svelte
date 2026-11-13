@@ -425,11 +425,7 @@
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
           {@const rows = sectionRows(section, layout)}
-          <section class="edit-section" data-section={section.id}
-            class:masonry-section={rows.some(({ slots }) => slots.some(({ id }) => {
-              const block = blockAt(draft, section.id, id);
-              return block?.kind === 'gallery' && block.galleryStyle === 'masonry';
-            }))} aria-label={`Section ${index + 1}`}>
+          <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
             {#if section.breakBefore}<SectionBreak />{/if}
             <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
               inert={activeSection !== section.id || !!movingBlock}>
@@ -459,7 +455,7 @@
                   {#if !wrap || block?.id !== wrap.imageId}
                     <div class="edit-slot" class:gallery-slot={block?.kind === 'gallery'}
                       role={block?.kind === 'gallery' ? 'group' : undefined}
-                      aria-label={block?.kind === 'gallery' ? 'Gallery block' : undefined} style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} class:masonry-slot={block?.kind === 'gallery' && block.galleryStyle === 'masonry'} data-block={block?.id}>
+                      aria-label={block?.kind === 'gallery' ? 'Gallery block' : undefined} style:--slot-alignment={vertical ?? 'start'} class:active={!!block && activeBlock === block.id} data-block={block?.id}>
                       {#if movingBlock && block?.id !== movingBlock}
                         <button class="destination" type="button"
                           aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
@@ -563,7 +559,7 @@
             <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
             <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
             <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
-            <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'}
+            <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
               onChange={(frame) => { remember(); photo.frame = frame; }} />
             {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
               <label>Wrap text
@@ -689,22 +685,7 @@
   .formatting label { font-size: .8rem; }
   .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
   .edit-section { padding-block: .5rem 1rem; }
-  .masonry-section { position: relative; }
-  .masonry-section > .section-tools {
-    position: absolute;
-    inset-inline-end: 0;
-    inset-block-end: calc(100% - .25rem);
-    z-index: 6;
-    background: var(--atlas-surface);
-  }
-  .masonry-slot > .slot-content > .block-tools { bottom: auto; top: 100%; }
-  .masonry-slot .gallery-tools {
-    position: absolute;
-    inset-block-start: 100%;
-    inset-inline-start: 0;
-    z-index: 4;
-    background: var(--atlas-surface);
-  }
+  .gallery-tools { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; margin-block-start: .75rem; }
   .section-tools.inactive { display: none; }
   .section-tools { justify-content: flex-end; color: var(--atlas-muted); font-size: .82rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
@@ -712,7 +693,7 @@
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
-  .edit-slot.active:not(.masonry-slot) .slot-content { padding-block-end: 2.2rem; }
+  .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .block-tools { position: absolute; bottom: 0; right: 0; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
@@ -758,6 +739,6 @@
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
-    .edit-slot.active:not(.masonry-slot) .slot-content { padding-block-end: 2.8rem; }
+    .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }
 </style>

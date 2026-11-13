@@ -1,13 +1,16 @@
 <script lang="ts">
   import PhotoFrame from './PhotoFrame.svelte';
   import type { Photo, PhotoFrame as Frame } from './sectionLayouts';
-  let { photo, src, gallery, onChange }: {
-    photo: Photo; src?: string; gallery: boolean; onChange: (frame: Frame) => void;
+  let { photo, src, gallery, fitTile = false, onChange }: {
+    photo: Photo; src?: string; gallery: boolean; fitTile?: boolean; onChange: (frame: Frame) => void;
   } = $props();
   const ratio = $derived(photo.frame?.ratio ?? (gallery ? '1 / 1' : 'natural'));
   function update(change: Frame) { onChange({ ...photo.frame, ...change }); }
 </script>
 
+{#if fitTile}
+  <small>Mosaic sets the tile size. Width and crop shape apply in other layouts.</small>
+{:else}
 <label>Image width · {photo.frame?.width ?? 100}% of slot
   <input type="range" min="25" max="100" step="5" value={photo.frame?.width ?? 100}
     onchange={(event) => update({ width: event.currentTarget.valueAsNumber })} />
@@ -21,13 +24,14 @@
     <option value="4 / 3">Landscape</option>
   </select>
 </label>
+{/if}
 <label>Corners
   <select value={photo.frame?.corners ?? 'rounded'}
     onchange={(event) => update({ corners: event.currentTarget.value as Frame['corners'] })}>
     <option value="rounded">Rounded</option><option value="square">Square</option>
   </select>
 </label>
-{#if ratio !== 'natural'}
+{#if fitTile || ratio !== 'natural'}
   <label>Crop zoom · {photo.frame?.zoom ?? 1}×
     <input type="range" min="1" max="3" step=".1" value={photo.frame?.zoom ?? 1}
       onchange={(event) => update({ zoom: event.currentTarget.valueAsNumber })} />
