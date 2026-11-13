@@ -135,18 +135,25 @@
   .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
   .masonry.middle { align-items: center; }
   .masonry-column { display: grid; gap: .6rem; min-width: 0; }
-  .slideshow { width: min(100%, 40rem); margin-inline: auto; }
+  .slideshow { container-type: inline-size; width: min(100%, 40rem); margin-inline: auto; }
   .slide-stage { --slide-height: min(28rem, 57svh); position: relative; isolation: isolate; }
   .slide-stage[data-height='compact'] { --slide-height: min(18rem, 45svh); }
   .slide-stage[data-height='tall'] { --slide-height: min(36rem, 65svh); }
-  .peek { padding-inline: clamp(1rem, 6%, 3rem); }
-  .neighbor {
-    position: absolute; inset-block-start: 0; width: 20%; overflow: hidden;
-    clip-path: inset(0); opacity: .6;
+  .peek {
+    --peek-width: clamp(.75rem, 7cqi, 3rem);
+    --slide-gap: clamp(.375rem, 1.5cqi, .75rem);
+    display: grid;
+    grid-template-columns: var(--peek-width) minmax(0, 1fr) var(--peek-width);
+    gap: var(--slide-gap);
+    align-items: start;
   }
-  .previous { inset-inline-start: 0; }
-  .next { inset-inline-end: 0; }
-  .peek .current-slide { margin-inline: .4rem; }
+  .neighbor { position: relative; height: var(--slide-height); overflow: hidden; }
+  .neighbor :global(figure) {
+    position: absolute; inset-block-start: 0;
+    width: calc(100cqi - 2 * (var(--peek-width) + var(--slide-gap))) !important;
+  }
+  .previous :global(figure) { inset-inline-end: 0; }
+  .next :global(figure) { inset-inline-start: 0; }
   .current-slide { position: relative; z-index: 1; }
   .slide-stage :global(figure) { width: 100% !important; margin: 0; min-width: 0; }
   .slide-stage :global(figure > :is(button, .neighbor-frame)) { display: block; width: 100%; height: var(--slide-height); }
@@ -166,7 +173,7 @@
     position: absolute; inset: auto 0 0; height: 2.5rem; overflow: auto;
     width: 100%; margin: 0; overflow-wrap: anywhere;
   }
-  .neighbor :global(figcaption) { display: none; }
+  .neighbor :global(:is(figcaption, .caption-overlay)) { display: none; }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
   @container (max-width: 24rem) {
