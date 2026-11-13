@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PhotoFrame from './PhotoFrame.svelte';
   import SectionBreak from './SectionBreak.svelte';
   import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
@@ -49,10 +50,10 @@
                   {#each block.photos as photo (photo.id)}
                     {@const src = publicUrl(photo.src)}
                     {#if src}
-                      <figure>
+                      <figure style:width={(photo.frame?.width ?? 100) + '%'}>
                         <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
                           onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
-                          <img {src} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
+                          <PhotoFrame {photo} {src} gallery={block.kind === 'gallery'} />
                         </button>
                         {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
                       </figure>
@@ -90,12 +91,10 @@
   .slot :global(.markdown > :last-child) { margin-block-end: 0; }
   .photos { display: grid; gap: .55rem; }
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  figure { margin: 0; }
+  figure { margin: 0 auto; }
   figure button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
-  img { display: block; width: 100%; height: auto; max-height: 28rem; object-fit: contain; border-radius: var(--atlas-radius, .5rem); }
-  .photo-grid img { aspect-ratio: 1; object-fit: cover; }
   figcaption, .cutoff { color: var(--atlas-muted); }
-  figcaption { font-size: .85rem; margin-top: .25rem; }
+  figcaption { text-align: center; font-size: .85rem; margin-top: .25rem; }
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
   .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: .5rem; }
   .feed-actions button {

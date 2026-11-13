@@ -4,7 +4,15 @@ export type Section = { id: string; layoutId: string; breakBefore?: boolean };
 export type VerticalAlignment = 'start' | 'center' | 'end';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };
-export type Photo = { id: string; src: string; alt: string; caption: string };
+export type PhotoFrame = {
+  width?: number;
+  ratio?: 'natural' | '1 / 1' | '4 / 5' | '2 / 3' | '4 / 3';
+  zoom?: number;
+  x?: number;
+  y?: number;
+  corners?: 'square' | 'rounded';
+};
+export type Photo = { id: string; src: string; alt: string; caption: string; frame?: PhotoFrame };
 export type Block =
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
   | { id: string; kind: 'image' | 'gallery'; photos: Photo[] };
@@ -120,7 +128,7 @@ export function duplicateSection(draft: Draft, sectionId: string): Draft {
     const block = draft.blocks.find(({ id }) => id === entry.blockId)!;
     const id = newId();
     blocks.push(block.kind === 'text' ? { ...block, id }
-      : { ...block, id, photos: block.photos.map((photo) => ({ ...photo, id: newId() })) });
+      : { ...block, id, photos: block.photos.map((photo) => ({ ...photo, id: newId(), frame: photo.frame && { ...photo.frame } })) });
     assignments.push({ ...entry, sectionId: copy.id, blockId: id });
   }
   return { ...draft, sections: draft.sections.flatMap((item) => item === section ? [item, copy] : [item]),

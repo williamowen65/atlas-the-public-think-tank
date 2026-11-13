@@ -205,3 +205,23 @@ test('layout choices preview immediately and cancel or click-away resolve the ch
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(grid.locator('.edit-slot')).toHaveCount(2);
 });
+
+test('image framing and centered captions carry from editing into the feed', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="240" height="120" fill="green"/></svg>',
+  }));
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const caption = page.getByText('Make room to walk and gather.', { exact: true });
+  await expect(caption).toHaveCSS('text-align', 'center');
+  await page.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await page.getByLabel('Crop shape').selectOption('2 / 3');
+  await page.getByLabel('Corners').selectOption('square');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(caption).toHaveCSS('text-align', 'center');
+  const frame = page.locator('.frame.crop');
+  await expect(frame).toHaveCSS('aspect-ratio', '2 / 3');
+  await expect(frame.locator('img')).toHaveCSS('object-fit', 'cover');
+  await expect(frame).toHaveCSS('border-top-left-radius', '0px');
+});

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PhotoFramingControls from './PhotoFramingControls.svelte';
+  import PhotoFrame from './PhotoFrame.svelte';
   import { tick, untrack } from 'svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
   import SectionTextEditor from './SectionTextEditor.svelte';
@@ -361,7 +363,7 @@
                           <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
                             {#each block.photos as photo (photo.id)}
                               <figure class="edit-photo">
-                                <button class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
+                                <button style:--photo-width={(photo.frame?.width ?? 100) + '%'} class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
                                   aria-expanded={photoDetails === photo.id}
                                   onclick={() => {
                                     activeBlock = block.id;
@@ -369,7 +371,7 @@
                                     photoDetails = photoDetails === photo.id ? null : photo.id;
                                   }}>
                                   {#if publicUrl(photo.src)}
-                                    <img src={publicUrl(photo.src)} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
+                                    <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery'} />
                                   {:else}
                                     Add image details
                                   {/if}
@@ -380,6 +382,8 @@
                                     <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
                                     <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
                                     <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
+                                    <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'}
+                                      onChange={(frame) => { remember(); photo.frame = frame; }} />
                                     <button type="button" onclick={() => photoDetails = null}>Done</button>
                                     {#if block.kind === 'gallery'}
                                       <button type="button" onclick={() => {
@@ -523,9 +527,9 @@
   .edit-slot.active .slot-content { padding-block-end: 2.2rem; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .block-tools { position: absolute; bottom: 0; right: 0; }
-  .photo-button { display: block; width: 100%; padding: 0; border: 0; text-align: start; }
+  .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
   figure { margin: 0; }
-  figcaption { font-size: .85rem; color: var(--atlas-muted); }
+  figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); }
   .photo-details { display: grid; gap: .4rem; margin-block-start: .5rem; }
   .edit-slot label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
@@ -533,8 +537,6 @@
   .edit-photos, .custom { display: grid; gap: .6rem; }
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .edit-photo { min-width: 0; }
-  .edit-photo img { display: block; width: 100%; max-height: 23rem; object-fit: contain; border-radius: var(--atlas-radius, .5rem); }
-  .photo-grid img { aspect-ratio: 1; object-fit: cover; }
   .layout-panel { padding: .65rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem); }
   .custom { margin: .55rem 0; }
   .layout-panel p { margin: 0; }
