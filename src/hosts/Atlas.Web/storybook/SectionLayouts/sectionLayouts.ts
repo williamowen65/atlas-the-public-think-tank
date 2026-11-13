@@ -1,5 +1,5 @@
 export type Slot = { id: string; weight: number };
-export type Layout = { id: string; name: string; slots: Slot[] };
+export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
 export type Section = { id: string; layoutId: string };
 export type Assignment = { sectionId: string; slotId: string; blockId: string };
 export type Photo = { id: string; src: string; alt: string; caption: string };

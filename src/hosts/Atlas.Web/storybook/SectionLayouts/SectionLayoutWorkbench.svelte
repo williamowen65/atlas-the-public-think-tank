@@ -1,6 +1,9 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
+  import SectionTextEditor from './SectionTextEditor.svelte';
+  import type TiptapCanvas from '../../src/lib/components/TiptapCanvas.svelte';
+  import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, example, moveBlock, newId,
@@ -17,17 +20,63 @@
   let customColumns = $state(2);
   let leftShare = $state(60);
   let message = $state('');
-  const destinations = $derived(draft.sections.flatMap((section, sectionIndex) => {
-    const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
-    return layout.slots.map((slot, slotIndex) => ({
-      sectionId: section.id, slotId: slot.id,
-      label: `Section ${sectionIndex + 1} · ${layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}`,
-    }));
-  }));
+  let activeBlock = $state<string | null>(null);
+  let movingBlock = $state<string | null>(null);
+  let picker = $state<string | null>(null);
+  let photoDetails = $state<string | null>(null);
+  let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
+  let workbench = $state<HTMLDivElement>();
+  let moveButton: HTMLButtonElement | undefined;
+  const formats = [
+    ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['link', 'Link', 'Link'],
+    ['heading', 'Heading', 'H2'], ['bulletList', 'Bulleted list', 'List'],
+  ] as const;
+
+  function authorText(block: Extract<Block, { kind: 'text' }>): AuthorBlock[] {
+    return [{ key: block.id, kind: 'markdown', text: block.text, url: '', caption: '' }];
+  }
+
+  function selectView(next: typeof view) {
+    view = next;
+    movingBlock = null;
+    activeBlock = null;
+    activeEditor = undefined;
+    picker = null;
+    photoDetails = null;
+  }
+
+  async function startMove(id: string, button: HTMLButtonElement) {
+    moveButton = button;
+    movingBlock = id;
+    picker = null;
+    photoDetails = null;
+    activeEditor = undefined;
+    layoutSection = null;
+    await tick();
+    workbench?.querySelector<HTMLButtonElement>('.destination')?.focus();
+  }
+
+  function cancelMove() {
+    movingBlock = null;
+    moveButton?.focus();
+  }
+
+  async function placeBlock(sectionId: string, slotId: string) {
+    const id = movingBlock;
+    if (!id) return;
+    const target = blockAt(draft, sectionId, slotId);
+    draft = moveBlock(draft, id, sectionId, slotId);
+    movingBlock = null;
+    activeBlock = id;
+    message = target ? 'Blocks swapped.' : 'Block moved.';
+    await tick();
+    workbench?.querySelector<HTMLButtonElement>(`[data-block="${id}"] .move-block`)?.focus();
+  }
 
   function openLayout(sectionId: string) {
     const section = draft.sections.find(({ id }) => id === sectionId);
     layoutSection = sectionId;
+    activeEditor = undefined;
     layoutChoice = section?.layoutId ?? 'full';
     seedCustomLayout(layoutChoice);
     message = '';
@@ -53,24 +102,30 @@
     layoutSection = null;
   }
 
-  function saveLayout() {
+  function saveLayout(reusable: boolean) {
     const name = customName.trim();
-    if (!name || draft.layouts.some((layout) => layout.name.toLowerCase() === name.toLowerCase())) return;
+    if (reusable && (!name || draft.layouts.some((layout) => layout.name.toLowerCase() === name.toLowerCase()))) return;
+    const id = newId();
     const layout: Layout = {
-      id: newId(), name,
+      id, name: reusable ? name : 'Custom section layout',
       slots: customColumns === 1 ? [{ id: 'left', weight: 1 }]
         : [{ id: 'left', weight: leftShare }, { id: 'right', weight: 100 - leftShare }],
     };
-    draft.layouts.push(layout);
+    draft.layouts.push({ ...layout, ...(reusable ? {} : { sectionOnly: true }) });
     applyChoice(layout.id);
   }
 
   function addBlock(sectionId: string, slotId: string, kind: Block['kind']) {
     if (blockAt(draft, sectionId, slotId)) return;
     const id = newId();
+    const photo = kind === 'image' ? newPhoto() : undefined;
     draft.blocks.push(kind === 'text' ? { id, kind, text: '' }
-      : { id, kind, photos: kind === 'image' ? [newPhoto()] : [] });
+      : { id, kind, photos: photo ? [photo] : [] });
     draft.assignments.push({ sectionId, slotId, blockId: id });
+    activeBlock = id;
+    activeEditor = undefined;
+    picker = null;
+    photoDetails = photo?.id ?? null;
   }
 
   function newPhoto(): Photo {
@@ -80,23 +135,29 @@
   function removeBlock(blockId: string) {
     draft.assignments = draft.assignments.filter((entry) => entry.blockId !== blockId);
     draft.blocks = draft.blocks.filter(({ id }) => id !== blockId);
+    activeBlock = null;
+    activeEditor = undefined;
   }
 
   function moveSection(sectionId: string, direction: number) {
     const from = draft.sections.findIndex(({ id }) => id === sectionId);
     const to = from + direction;
     if (to < 0 || to >= draft.sections.length) return;
+    activeEditor = undefined;
     const sections = [...draft.sections];
     [sections[from], sections[to]] = [sections[to], sections[from]];
     draft.sections = sections;
   }
 </script>
 
-<div class="workbench" class:narrow>
+<svelte:window onkeydown={(event) => {
+  if (event.key === 'Escape' && movingBlock) cancelMove();
+}} />
+<div class="workbench" class:narrow bind:this={workbench}>
   <div class="toolbar" role="group" aria-label="Workbench view">
-    <button type="button" aria-pressed={view === 'edit'} onclick={() => view = 'edit'}>Edit</button>
-    <button type="button" aria-pressed={view === 'feed'} onclick={() => view = 'feed'}>Feed preview</button>
-    <button type="button" aria-pressed={view === 'node'} onclick={() => view = 'node'}>Node page</button>
+    <button type="button" aria-pressed={view === 'edit'} onclick={() => selectView('edit')}>Edit</button>
+    <button type="button" aria-pressed={view === 'feed'} onclick={() => selectView('feed')}>Feed preview</button>
+    <button type="button" aria-pressed={view === 'node'} onclick={() => selectView('node')}>Node page</button>
     <label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>
   </div>
 
@@ -110,12 +171,26 @@
     </header>
 
     {#if view === 'edit'}
+      <div class="editing-tools">
+        {#if movingBlock}
+          <span role="status">Choose a slot to move or swap.</span>
+          <button type="button" onclick={cancelMove}>Cancel move</button>
+        {:else}
+          <div class="formatting" role="group" aria-label="Text formatting">
+            {#each formats as [command, label, short]}
+              <button type="button" aria-label={label} title={label} disabled={!activeEditor}
+                onpointerdown={(event) => event.preventDefault()}
+                onclick={() => activeEditor?.formatText(command)}>{short}</button>
+            {/each}
+          </div>
+        {/if}
+      </div>
       <div class="editor">
         {#each draft.sections as section, index (section.id)}
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
           <section class="edit-section" aria-label={`Section ${index + 1}`}>
-            <div class="section-tools">
-              <strong>{layout.name}</strong>
+            <div class="section-tools" inert={!!movingBlock}>
+              <span class="layout-name">{layout.name}</span>
               <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
                 onclick={() => moveSection(section.id, -1)}>↑</button>
               <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
@@ -132,57 +207,99 @@
             <div class="grid" style:--columns={columns(layout)}>
               {#each layout.slots as slot, slotIndex (slot.id)}
                 {@const block = blockAt(draft, section.id, slot.id)}
-                <div class="edit-slot" aria-label={layout.slots.length === 1 ? 'Full-width slot' : slotIndex === 0 ? 'Left slot' : 'Right slot'}>
-                  {#if block}
-                    {#if block.kind === 'text'}
-                      <textarea aria-label="Text block" placeholder="Start writing…" rows="4" bind:value={block.text}></textarea>
-                    {:else}
-                      <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
-                        {#each block.photos as photo (photo.id)}
-                          <div class="edit-photo">
-                            {#if publicUrl(photo.src)}<img src={publicUrl(photo.src)} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />{/if}
-                            <details open={!publicUrl(photo.src)}>
-                              <summary>Image details</summary>
-                              <label>Image URL<input type="url" bind:value={photo.src} /></label>
-                              <label>Alternative text<input bind:value={photo.alt} /></label>
-                              <label>Caption<input bind:value={photo.caption} /></label>
-                              {#if block.kind === 'gallery'}
-                                <button type="button" onclick={() => block.photos = block.photos.filter(({ id }) => id !== photo.id)}>Remove image</button>
-                              {/if}
-                            </details>
-                          </div>
-                        {/each}
-                      </div>
-                      {#if block.kind === 'gallery'}<button type="button" onclick={() => block.photos.push(newPhoto())}>Add gallery image</button>{/if}
-                    {/if}
-                    <div class="block-tools">
-                      <label>Move or swap
-                        <select aria-label="Move or swap block" value={`${section.id}/${slot.id}`}
-                          onchange={(event) => {
-                            const [sectionId, slotId] = event.currentTarget.value.split('/');
-                            draft = moveBlock(draft, block.id, sectionId, slotId);
-                          }}>
-                          {#each destinations as destination}
-                            <option value={`${destination.sectionId}/${destination.slotId}`}>{destination.label}</option>
-                          {/each}
-                        </select>
-                      </label>
-                      <button type="button" onclick={() => removeBlock(block.id)}>Remove block</button>
-                    </div>
-                  {:else}
-                    <div class="empty-slot">
-                      <button type="button" onclick={() => addBlock(section.id, slot.id, 'text')}>Add text</button>
-                      <button type="button" onclick={() => addBlock(section.id, slot.id, 'image')}>Add image</button>
-                      <button type="button" onclick={() => addBlock(section.id, slot.id, 'gallery')}>Add gallery</button>
-                    </div>
+                {@const slotName = layout.slots.length === 1 ? 'Full width' : slotIndex === 0 ? 'Left' : 'Right'}
+                {@const slotKey = `${section.id}/${slot.id}`}
+                <div class="edit-slot" class:active={!!block && activeBlock === block.id} data-block={block?.id}>
+                  {#if movingBlock && block?.id !== movingBlock}
+                    <button class="destination" type="button"
+                      aria-label={`${block ? 'Swap' : 'Move'} here · Section ${index + 1} · ${slotName}`}
+                      onclick={() => void placeBlock(section.id, slot.id)}>{block ? 'Swap here' : 'Move here'}</button>
                   {/if}
+                  <div class="slot-content" inert={!!movingBlock}>
+                    {#if block}
+                      {#key block.id}
+                        {#if block.kind === 'text'}
+                          <SectionTextEditor initialBlocks={authorText(block)} onChange={(text) => block.text = text}
+                            onActivate={(editor) => {
+                              activeBlock = block.id;
+                              activeEditor = editor;
+                              photoDetails = null;
+                            }} />
+                        {:else}
+                          <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
+                            {#each block.photos as photo (photo.id)}
+                              <figure class="edit-photo">
+                                <button class="photo-button" type="button" aria-label={`Edit ${photo.alt || 'image'}`}
+                                  aria-expanded={photoDetails === photo.id}
+                                  onclick={() => {
+                                    activeBlock = block.id;
+                                    activeEditor = undefined;
+                                    photoDetails = photoDetails === photo.id ? null : photo.id;
+                                  }}>
+                                  {#if publicUrl(photo.src)}
+                                    <img src={publicUrl(photo.src)} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
+                                  {:else}
+                                    Add image details
+                                  {/if}
+                                </button>
+                                {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
+                                {#if photoDetails === photo.id}
+                                  <div class="photo-details">
+                                    <label>Image URL<input type="url" bind:value={photo.src} /></label>
+                                    <label>Alternative text<input bind:value={photo.alt} /></label>
+                                    <label>Caption<input bind:value={photo.caption} /></label>
+                                    <button type="button" onclick={() => photoDetails = null}>Done</button>
+                                    {#if block.kind === 'gallery'}
+                                      <button type="button" onclick={() => {
+                                        block.photos = block.photos.filter(({ id }) => id !== photo.id);
+                                        photoDetails = null;
+                                      }}>Remove image</button>
+                                    {/if}
+                                  </div>
+                                {/if}
+                              </figure>
+                            {/each}
+                          </div>
+                          {#if block.kind === 'gallery' && (activeBlock === block.id || !block.photos.length)}
+                            <button type="button" onclick={() => {
+                              const photo = newPhoto();
+                              block.photos.push(photo);
+                              activeBlock = block.id;
+                              activeEditor = undefined;
+                              photoDetails = photo.id;
+                            }}>Add gallery image</button>
+                          {/if}
+                        {/if}
+                      {/key}
+                      <div class="block-tools">
+                        <button class="move-block" type="button" aria-label="Move block" title="Move block"
+                          disabled={draft.sections.length === 1 && layout.slots.length === 1}
+                          onclick={(event) => void startMove(block.id, event.currentTarget)}>↔</button>
+                        {#if activeBlock === block.id}
+                          <button type="button" aria-label="Remove block" title="Remove block"
+                            onclick={() => removeBlock(block.id)}>×</button>
+                        {/if}
+                      </div>
+                    {:else}
+                      <div class="empty-slot">
+                        <button type="button" aria-label={`Add block · Section ${index + 1} · ${slotName}`}
+                          aria-expanded={picker === slotKey}
+                          onclick={() => picker = picker === slotKey ? null : slotKey}>+</button>
+                        {#if picker === slotKey}
+                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'text')}>Text</button>
+                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'image')}>Image</button>
+                          <button type="button" onclick={() => addBlock(section.id, slot.id, 'gallery')}>Gallery</button>
+                        {/if}
+                      </div>
+                    {/if}
+                  </div>
                 </div>
               {/each}
             </div>
           </section>
         {/each}
         {#if message}<p role="status">{message}</p>{/if}
-        <button type="button" aria-expanded={layoutSection === 'new'} onclick={() => openLayout('new')}>Add section</button>
+        <button type="button" disabled={!!movingBlock} aria-expanded={layoutSection === 'new'} onclick={() => openLayout('new')}>Add section</button>
         {#if layoutSection === 'new'}{@render layoutEditor()}{/if}
       </div>
     {:else}
@@ -205,7 +322,7 @@
         layoutChoice = event.currentTarget.value;
         seedCustomLayout(layoutChoice);
       }}>
-        {#each draft.layouts as layout (layout.id)}
+        {#each draft.layouts.filter((item) => !item.sectionOnly || item.id === layoutChoice) as layout (layout.id)}
           <option value={layout.id}>{layout.name}</option>
         {/each}
       </select>
@@ -219,7 +336,7 @@
       <button type="button" onclick={() => layoutSection = null}>Cancel</button>
     </div>
     <details>
-      <summary>Customize and save a layout</summary>
+      <summary>Customize layout</summary>
       <div class="custom">
         <label>Layout name<input bind:value={customName} placeholder="Name this layout" /></label>
         <label>Columns<select bind:value={customColumns}><option value={1}>One column</option><option value={2}>Two columns</option></select></label>
@@ -233,15 +350,22 @@
         && draft.assignments.filter((entry) => entry.sectionId === layoutSection).length > 1}
         <p>The second block will move to a new full-width section below.</p>
       {/if}
+      <button type="button" onclick={() => saveLayout(false)}>Apply to this section</button>
       <button type="button" disabled={!customName.trim() || draft.layouts.some(({ name }) => name.toLowerCase() === customName.trim().toLowerCase())}
-        onclick={saveLayout}>Save and apply layout</button>
+        onclick={() => saveLayout(true)}>Save as a new preset</button>
     </details>
   </div>
 {/snippet}
 
 <style>
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
-  .workbench.narrow { max-width: 25rem; }
+  .workbench.narrow { max-width: 25rem; padding-inline: 0; }
+  .narrow .node { padding-inline: .65rem; }
+  .narrow .toolbar, .narrow .inspector { padding-inline: .65rem; }
+  @media (max-width: 40rem) {
+    .workbench { padding-inline: 0; }
+    .node, .toolbar, .inspector { padding-inline: .65rem; }
+  }
   .toolbar, .buttons, .section-tools, .empty-slot, .block-tools { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
   .toolbar { margin-bottom: .75rem; }
   .phone { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
@@ -251,34 +375,48 @@
   .title { width: 100%; padding: .35rem 0; border: 0; border-bottom: 1px solid var(--atlas-border); border-radius: 0; }
   .editor, .edit-section, .edit-slot, .layout-panel { display: grid; gap: .75rem; min-width: 0; }
   .editor > button { justify-self: start; }
-  .edit-section { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem); padding: .75rem; }
-  .section-tools strong { margin-right: auto; }
+  .editing-tools { position: sticky; top: 0; z-index: 5; background: var(--atlas-surface); padding-block: .4rem; }
+  .formatting { display: flex; flex-wrap: wrap; gap: .25rem; }
+  .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
+  .edit-section { border-block-start: 1px solid var(--atlas-border); padding-block: .5rem 1rem; }
+  .section-tools { color: var(--atlas-muted); font-size: .82rem; }
+  .layout-name { margin-inline-end: auto; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: start; }
-  .edit-slot { background: var(--atlas-bg); padding: .55rem; border-radius: var(--atlas-radius, .5rem); }
+  .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
+  .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
+  .slot-content { min-width: 0; }
+  .edit-slot[data-block] .slot-content { padding-block-end: 2.2rem; }
+  .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
+  .block-tools { position: absolute; bottom: 0; right: 0; }
+  .photo-button { display: block; width: 100%; padding: 0; border: 0; text-align: start; }
+  figure { margin: 0; }
+  figcaption { font-size: .85rem; color: var(--atlas-muted); }
+  .photo-details { display: grid; gap: .4rem; margin-block-start: .5rem; }
   .edit-slot label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
-  .block-tools label { flex: 1 1 9rem; min-width: 0; }
   .empty-slot { min-height: 4rem; justify-content: center; }
   .edit-photos, .custom { display: grid; gap: .6rem; }
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .edit-photo { min-width: 0; }
   .edit-photo img { display: block; width: 100%; max-height: 23rem; object-fit: contain; border-radius: var(--atlas-radius, .5rem); }
   .photo-grid img { aspect-ratio: 1; object-fit: cover; }
-  .edit-photo details label { margin: .35rem 0; }
   .layout-panel { padding: .65rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem); }
   .custom { margin: .55rem 0; }
   .layout-panel p { margin: 0; }
-  button, input, textarea, select {
+  button, input, select {
     box-sizing: border-box; font: inherit; color: inherit; background: var(--atlas-surface);
     padding: .4rem .55rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .45rem);
   }
   button, summary { cursor: pointer; }
   button:disabled { opacity: .5; cursor: default; }
   button[aria-pressed="true"] { border-color: var(--atlas-accent); color: var(--atlas-accent); }
-  textarea { width: 100%; resize: vertical; min-height: 6rem; line-height: 1.5; }
   label input:not([type="checkbox"]), select { width: 100%; min-width: 0; }
   .inspector { margin-top: 1rem; }
   pre { overflow: auto; max-height: 28rem; padding: .75rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); }
-  @container (max-width: 37rem) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @container (max-width: 37rem) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
+    .edit-slot[data-block] .slot-content { padding-block-end: 2.8rem; }
+  }
   @container (max-width: 24rem) { .edit-photos { grid-template-columns: minmax(0, 1fr); } }
 </style>

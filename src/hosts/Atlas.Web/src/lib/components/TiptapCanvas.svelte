@@ -16,6 +16,8 @@
     styleMode = 'atlas',
     disabled = false,
     workshop = false,
+    singleText = false,
+    onActivate,
     onUnsupportedMarkdown,
   }: {
     initialBlocks: AuthorBlock[];
@@ -23,6 +25,8 @@
     styleMode?: 'atlas' | 'editorial';
     disabled?: boolean;
     workshop?: boolean;
+    singleText?: boolean;
+    onActivate?: () => void;
     onUnsupportedMarkdown?: () => void;
   } = $props();
 
@@ -419,6 +423,11 @@
 
   function currentEditor(): Editor | null { return editorState.editor; }
 
+  export function formatText(kind: 'bold' | 'italic' | 'heading' | 'bulletList' | 'link') {
+    if (kind === 'link') openLinkForm();
+    else format(kind);
+  }
+
   function format(kind: 'bold' | 'italic' | 'heading' | 'bulletList') {
     const editor = currentEditor();
     if (!editor) return;
@@ -797,12 +806,9 @@
       element: canvasEl,
       extensions: [
         StarterKit.configure({ document: false, trailingNode: false, underline: false, link: { openOnClick: false, autolink: false } }),
-        AtlasDocument,
+        singleText ? AtlasDocument.extend({ content: 'atlasText' }) : AtlasDocument,
         AtlasText,
-        AtlasInlineImage,
-        AtlasImage,
-        AtlasUnsupported,
-        ActiveBlockDecoration,
+        ...(singleText ? [] : [AtlasInlineImage, AtlasImage, AtlasUnsupported, ActiveBlockDecoration]),
         Extension.create({ name: 'atlasBlockKeys', addProseMirrorPlugins: () => [keys] }),
       ],
       content: blocksToTiptapHtml(startingBlocks),
@@ -849,6 +855,7 @@
         },
       },
       onFocus: ({ editor }) => {
+        onActivate?.();
         editorFocused = true;
         controlsVisible = true;
         editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', true));
@@ -897,13 +904,13 @@
 </script>
 
 
-<fieldset class="tiptap-prototype" class:editorial={styleMode === 'editorial'} {disabled}>
+<fieldset class="tiptap-prototype" class:single-text={singleText} class:editorial={styleMode === 'editorial'} {disabled}>
   {#if workshop}<div class="editor-hint">
     <span>Click into the node and write. Press Enter to start another paragraph.</span>
   </div>{/if}
 
   <!-- Persistent toolbar: never moves, expands, or disappears as the selection changes. -->
-  <div class="format-toolbar" role="toolbar" aria-label="Text formatting">
+  {#if !singleText}<div class="format-toolbar" role="toolbar" aria-label="Text formatting">
     <button type="button" aria-label="Bold selected text" title="Bold"
       onpointerdown={(event) => event.preventDefault()} onclick={() => format('bold')}>
       <strong>B</strong>
@@ -921,7 +928,7 @@
       onclick={() => format('heading')}>H2</button>
     <button type="button" aria-label="Toggle bulleted list" onpointerdown={(event) => event.preventDefault()}
       onclick={() => format('bulletList')}>List</button>
-  </div>
+  </div>{/if}
 
 
   <!-- Controls are overlays tied to the whole selected block. They never
@@ -980,7 +987,7 @@
       </div>
     {/if}
 
-    {#if selectionPopup && controlsVisible}
+    {#if !singleText && selectionPopup && controlsVisible}
       <div class="selection-bubble" role="toolbar" aria-label="Selected text formatting"
         style:left={selectionPopup.left + 'px'} style:top={selectionPopup.top + 'px'}>
         <button type="button" aria-label="Bold highlighted text" title="Bold"
@@ -997,7 +1004,7 @@
       </div>
     {/if}
 
-    {#if controlsVisible}
+    {#if !singleText && controlsVisible}
       <button type="button" class="boundary-add before" aria-label="Insert block before"
         style:top={blockLayout.top - 5 + 'px'} style:left={blockLayout.center + 'px'}
         aria-expanded={floatingOptionsOpen && insertSide === 'before'}
@@ -1093,6 +1100,18 @@
 </fieldset>
 
 <style>
+  .single-text .editor-canvas { padding: 0; min-height: 0; }
+  .single-text :global(.atlas-story-rich-document) { min-height: 2.5rem; line-height: 1.65; }
+  .single-text :global(.atlas-story-rich-document > [data-atlas-key]) { margin-block: 0; }
+  .single-text :global(.atlas-story-text > :first-child) { margin-block-start: 0; }
+  .single-text :global(.atlas-story-text > :last-child) { margin-block-end: 0; }
+  .single-text :global(.atlas-story-text > p:only-child:has(> br.ProseMirror-trailingBreak)::before) {
+    content: 'Start writing…';
+    float: left;
+    height: 0;
+    color: var(--atlas-muted);
+    pointer-events: none;
+  }
   .tiptap-prototype {
     border: 0; margin: 0; padding: 0;
     color: var(--atlas-text);

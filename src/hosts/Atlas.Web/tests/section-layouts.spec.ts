@@ -32,9 +32,9 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
 
   const section = page.getByRole('region', { name: 'Section 1', exact: true });
   await section.getByRole('button', { name: 'Change layout' }).click();
-  await section.getByText('Customize and save a layout').click();
+  await section.getByText('Customize layout').click();
   await section.getByLabel('Layout name').fill('Pilot layout');
-  await section.getByRole('button', { name: 'Save and apply layout' }).click();
+  await section.getByRole('button', { name: 'Save as a new preset' }).click();
   await expect(section.getByText('Pilot layout', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add section' }).click();
   await page.getByLabel('Layout', { exact: true }).selectOption({ label: 'Pilot layout' });
@@ -54,4 +54,27 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
   await page.getByRole('button', { name: 'Read More', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'A greener public square' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Read More', exact: true })).toHaveCount(0);
+});
+
+test('the editor formats a text slot and swaps blocks using the destination on the page', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const text = section.getByRole('textbox', { name: /Node content/ });
+  await text.click();
+  await text.evaluate((element) => {
+    const range = document.createRange();
+    const paragraph = element.querySelector('p')!;
+    range.selectNodeContents(paragraph);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Bold', exact: true }).click();
+  await expect(text.locator('strong')).toHaveCount(1);
+
+  await section.getByRole('button', { name: 'Move block', exact: true }).first().click();
+  await section.getByRole('button', { name: 'Swap here · Section 1 · Right' }).click();
+  await expect(section.locator('.edit-slot').first().getByRole('img')).toHaveCount(1);
+  await expect(section.locator('.edit-slot').last().locator('strong')).toHaveCount(1);
 });
