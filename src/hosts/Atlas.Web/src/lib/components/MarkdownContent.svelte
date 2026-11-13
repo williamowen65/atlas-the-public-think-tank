@@ -70,7 +70,7 @@
     padding-inline-start: 1rem;
     border-inline-start: 3px solid var(--atlas-border);
   }
-  .markdown :global(:is(.markdown-image, img)) {
+  .markdown :global(:is(.markdown-image, img:not([data-photo-frame]))) {
     float: inline-start;
     width: calc(var(--atlas-image-width, 50%) - .5rem);
     margin: 0.2rem .5rem 0.45rem 0;
@@ -82,7 +82,7 @@
     background: transparent;
     cursor: zoom-in;
   }
-  .markdown :global(img) {
+  .markdown :global(img:not([data-photo-frame])) {
     display: block;
     height: auto;
     border-radius: var(--atlas-radius);

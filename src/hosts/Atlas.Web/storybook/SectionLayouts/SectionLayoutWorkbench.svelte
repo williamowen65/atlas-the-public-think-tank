@@ -505,8 +505,8 @@
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
   <div class="edit-photos" class:photo-grid={block.kind === 'gallery'}>
     {#each block.photos as photo (photo.id)}
-      <figure class="edit-photo">
-        <button style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'} class="photo-button"
+      <figure class="edit-photo" class:photo-open={photoDetails === photo.id} style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
+        <button class="photo-button"
           class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
           title={wrapped ? 'Drag to another paragraph, or click to edit image' : undefined}
           ondragstart={(event) => { if (wrapped) startImageDrag(event, section.id); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
@@ -524,7 +524,8 @@
         </button>
         {#if photo.caption}<figcaption>{photo.caption}</figcaption>{/if}
         {#if photoDetails === photo.id}
-          <div class="photo-details">
+          <div class="photo-details" role="group" aria-label="Image settings"
+            class:align-end={wrapped ? section.wrap?.side === 'right' : block.kind === 'gallery' ? block.photos.indexOf(photo) % 2 === 1 : !!slots[1] && blockAt(draft, section.id, slots[1].id)?.id === block.id}>
             <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
             <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
             <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
@@ -541,6 +542,9 @@
               </label>
             {/if}
             <button type="button" onclick={() => photoDetails = null}>Done</button>
+            {#if wrapped}
+              <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
+            {/if}
             {#if block.kind === 'gallery'}
               <button type="button" onclick={() => {
                 remember();
@@ -562,9 +566,6 @@
       activeEditor = undefined;
       photoDetails = photo.id;
     }}>Add gallery image</button>
-  {/if}
-  {#if section.wrap?.imageId === block.id && activeBlock === block.id}
-    <button type="button" onclick={() => removeBlock(block.id)}>Remove wrapped image</button>
   {/if}
 {/snippet}
 
@@ -648,14 +649,35 @@
   .draggable-photo { cursor: grab; }
   .edit-slot :global(.image-drop-target) { outline: 2px solid var(--atlas-accent); outline-offset: .15rem; }
   figure { margin: 0; }
-  figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); }
-  .photo-details { display: grid; gap: .4rem; margin-block-start: .5rem; }
+  figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
+  .photo-details {
+    position: absolute;
+    z-index: 4;
+    inset-block-start: calc(100% + .35rem);
+    inset-inline-start: calc((100% - var(--photo-width)) / 2);
+    box-sizing: border-box;
+    width: min(21rem, 90cqi);
+    max-height: min(32rem, 65dvh);
+    overflow: auto;
+    display: grid;
+    gap: .4rem;
+    padding: .65rem;
+    background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius, .5rem);
+    box-shadow: 0 .35rem 1rem rgb(0 0 0 / 15%);
+  }
+  .photo-details.align-end {
+    inset-inline-start: auto;
+    inset-inline-end: calc((100% - var(--photo-width)) / 2);
+  }
+  .photo-open { z-index: 4; }
   .edit-slot label, .layout-panel label { display: grid; gap: .25rem; }
   .block-tools { align-items: end; font-size: .85rem; }
   .empty-slot { min-height: 4rem; justify-content: center; }
   .edit-photos, .custom { display: grid; gap: .6rem; }
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .edit-photo { min-width: 0; }
+  .edit-photo { position: relative; min-width: 0; }
   .layout-panel { padding: .65rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem); }
   .custom { margin: .55rem 0; }
   .layout-panel p { margin: 0; }
@@ -671,6 +693,7 @@
   pre { overflow: auto; max-height: 28rem; padding: .75rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); }
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
+    .photo-details, .photo-details.align-end { inset-inline: 0 auto; }
     .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
     .edit-slot.active .slot-content { padding-block-end: 2.8rem; }
   }

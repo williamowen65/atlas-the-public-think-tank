@@ -248,7 +248,12 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
     name: 'Edit Buildings along a city street',
   })).toBeVisible();
   await image.dragTo(section.getByText(/^Start with the places/));
+  const editorFloat = section.locator('.section-wrapped-image');
+  const beforeOpen = await editorFloat.boundingBox();
   await image.click();
+  await expect(section.getByRole('group', { name: 'Image settings' })).toHaveCSS('position', 'absolute');
+  expect(await editorFloat.boundingBox()).toEqual(beforeOpen);
+  await section.getByLabel('Crop shape').selectOption('1 / 1');
   await section.getByRole('slider', { name: /Image width/ }).focus();
   await page.keyboard.press('Home');
   await section.getByRole('button', { name: 'Done', exact: true }).click();
@@ -261,6 +266,11 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
   await page.getByRole('button', { name: 'Feed preview' }).click();
   const wrapped = page.locator('.markdown > p + .section-wrapped-image');
   await expect(wrapped).toHaveCSS('float', 'right');
+  await expect(wrapped.locator('img')).toHaveCSS('float', 'none');
+  const previewFrame = await wrapped.locator('.frame').boundingBox();
+  const previewImage = await wrapped.locator('img').boundingBox();
+  expect(previewImage?.width).toBeCloseTo(previewFrame?.width ?? 0);
+  expect(previewImage?.height).toBeCloseTo(previewFrame?.height ?? 0);
   await page.getByRole('button', { name: 'Read More', exact: true }).click();
   await expect(wrapped.getByRole('button', { name: 'View Buildings along a city street' })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Phone width' }).check();
