@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { applyLayout, blockAt, example, moveBlock, splitText } from '../storybook/SectionLayouts/sectionLayouts';
+import { applyLayout, blockAt, example, moveBlock } from '../storybook/SectionLayouts/sectionLayouts';
 
 test('a smaller layout keeps overflow blocks in reading order', () => {
   const original = example('editorial');
@@ -224,34 +224,4 @@ test('image framing and centered captions carry from editing into the feed', asy
   await expect(frame).toHaveCSS('aspect-ratio', '2 / 3');
   await expect(frame.locator('img')).toHaveCSS('object-fit', 'cover');
   await expect(frame).toHaveCSS('border-top-left-radius', '0px');
-});
-
-test('split and merged grids preserve one text block and the neighboring photo', () => {
-  const original = example('editorial');
-  const sectionId = original.sections[0].id;
-  const split = applyLayout(original, sectionId, 'split-right');
-  expect(blockAt(split, sectionId, 'lower-right')).toBeUndefined();
-  expect(blockAt(split, sectionId, 'right')?.id).toBe('street-photo');
-
-  const merged = applyLayout(split, sectionId, 'merged-text');
-  const text = blockAt(merged, sectionId, 'left');
-  if (text?.kind !== 'text') throw new Error('Expected the original text block');
-  const [lead, continuation] = splitText(text.text);
-  expect(lead).toContain('A public square');
-  expect(continuation).toContain('Start with the places');
-  expect(merged.assignments.filter(({ blockId }) => blockId === text.id)).toHaveLength(1);
-  expect(merged.blocks).toEqual(original.blocks);
-});
-
-test('merged text supports full-width regions above and below the neighboring slot', () => {
-  const original = example('editorial');
-  const sectionId = original.sections[0].id;
-  for (const id of ['merged-text-top', 'merged-text-middle']) {
-    const draft = applyLayout(original, sectionId, id);
-    expect(blockAt(draft, sectionId, 'left')?.id).toBe('opening');
-    expect(blockAt(draft, sectionId, 'right')?.id).toBe('street-photo');
-    expect(draft.layouts.find((layout) => layout.id === id)?.slots[0].area).toBe('1 / 1 / 2 / 3');
-  }
-  expect(splitText('Lead\n\nBeside photo\n\nBelow photo\n\nClosing', 3))
-    .toEqual(['Lead', 'Beside photo', 'Below photo\n\nClosing']);
 });

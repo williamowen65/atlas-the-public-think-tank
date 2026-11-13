@@ -4,7 +4,7 @@
   import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
   import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
   import { publicUrl } from '../../src/lib/api/nodePage';
-  import { blockAt, columns, splitText, type Draft } from './sectionLayouts';
+  import { blockAt, columns, type Draft } from './sectionLayouts';
 
   let { draft, feed = false, onReadMore }: {
     draft: Draft;
@@ -41,10 +41,10 @@
           {#each layout.slots as slot (slot.id)}
             {@const block = blockAt(draft, section.id, slot.id)}
             {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
-            <div class="slot" style:--area={slot.area} style:align-self={vertical ?? 'start'}
+            <div class="slot" style:align-self={vertical ?? 'start'}
               style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
               {#if block?.kind === 'text'}
-                <MarkdownContent preserveHeadingLevels text={slot.continuations ? splitText(block.text)[0] : block.text} />
+                <MarkdownContent preserveHeadingLevels text={block.text} />
               {:else if block}
                 <div class="photos" class:photo-grid={block.kind === 'gallery'}>
                   {#each block.photos as photo (photo.id)}
@@ -62,16 +62,6 @@
                 </div>
               {/if}
             </div>
-            {#if slot.continuations && block?.kind === 'text'}
-              {#each slot.continuations as area, part (area)}
-                {@const content = splitText(block.text, slot.continuations.length + 1)[part + 1]}
-                {#if content}
-                  <div class="slot continuation" style:--area={area} style:text-align={block.alignment}>
-                    <MarkdownContent preserveHeadingLevels text={content} />
-                  </div>
-                {/if}
-              {/each}
-            {/if}
           {/each}
         </section>
       {/if}
@@ -96,7 +86,7 @@
   .viewport.truncated { mask-image: linear-gradient(black calc(100% - 1.6rem), transparent); }
   .sections { display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
   .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
-  .slot { min-width: 0; grid-area: var(--area, auto); }
+  .slot { min-width: 0; }
   .slot :global(.markdown > :first-child) { margin-block-start: 0; }
   .slot :global(.markdown > :last-child) { margin-block-end: 0; }
   .photos { display: grid; gap: .55rem; }
@@ -114,7 +104,6 @@
   .feed-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent, white); border-color: var(--atlas-accent); }
   @container (max-width: 37rem) {
     .section { grid-template-columns: minmax(0, 1fr); }
-    .slot { grid-area: auto; }
     .slot:empty { display: none; }
     .viewport.feed { max-height: 15rem; }
     .viewport.feed.expanded { max-height: 30rem; }
