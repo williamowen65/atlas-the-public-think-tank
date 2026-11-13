@@ -35,9 +35,9 @@
 
 <div class="viewport" class:feed class:expanded class:truncated id={instance} bind:clientHeight={viewportHeight}>
   <div class="sections" bind:offsetHeight={contentHeight}>
-    {#each draft.sections as section (section.id)}
+    {#each draft.sections as section, index (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
-      {#if section.breakBefore}<SectionBreak />{/if}
+      {#if index > 0 && section.breakBefore}<SectionBreak />{/if}
       {#each sectionRows(section, layout) as row (row.id)}
         {@const wrap = rowWrap(draft, section, row.slots)}
         {#if row.slots.some((slot) => blockAt(draft, section.id, slot.id))}

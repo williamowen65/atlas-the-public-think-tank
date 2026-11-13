@@ -126,6 +126,7 @@
     if (draft.sections.length < 2 || draft.assignments.some((entry) => entry.sectionId === sectionId)) return;
     remember();
     draft.sections = draft.sections.filter(({ id }) => id !== sectionId);
+    if (draft.sections[0].breakBefore) draft.sections[0].breakBefore = false;
     if (layoutSection === sectionId) layoutSection = null;
     message = 'Empty section deleted.';
   }
@@ -372,6 +373,7 @@
     remember();
     const sections = [...draft.sections];
     [sections[from], sections[to]] = [sections[to], sections[from]];
+    if (sections[0].breakBefore) sections[0].breakBefore = false;
     draft.sections = sections;
   }
 </script>
@@ -456,13 +458,15 @@
           {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
           {@const rows = sectionRows(section, layout)}
           <section class="edit-section" data-section={section.id} aria-label={`Section ${index + 1}`}>
-            {#if section.breakBefore}<SectionBreak />{/if}
+            {#if index > 0 && section.breakBefore}<SectionBreak />{/if}
             <div class="section-tools" class:inactive={activeSection !== section.id || !!movingBlock}
               inert={activeSection !== section.id || !!movingBlock}>
-              <button type="button" onclick={() => {
-                remember();
-                section.breakBefore = !section.breakBefore;
-              }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
+              {#if index > 0}
+                <button type="button" onclick={() => {
+                  remember();
+                  section.breakBefore = !section.breakBefore;
+                }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
+              {/if}
               <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
                 onclick={() => moveSection(section.id, -1)}>↑</button>
               <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
