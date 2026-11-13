@@ -309,6 +309,18 @@
     photoDetails = photo?.id ?? null;
   }
 
+  function randomizeMasonryHeights(photos: Photo[]) {
+    const ratios = ['1 / 1', '4 / 5', '2 / 3', '4 / 3'] as const;
+    let previous: (typeof ratios)[number] | undefined;
+    remember();
+    for (const photo of photos) {
+      const choices = ratios.filter((ratio) => ratio !== previous && ratio !== photo.frame?.ratio);
+      const ratio = choices[Math.floor(Math.random() * choices.length)];
+      photo.frame = { ...photo.frame, ratio };
+      previous = ratio;
+    }
+  }
+
   function reorderPhoto(block: Extract<Block, { photos: Photo[] }>, index: number, direction: number) {
     remember();
     const photos = [...block.photos];
@@ -547,7 +559,7 @@
             photoDetails = photoDetails === photo.id ? null : photo.id;
           }}>
           {#if publicUrl(photo.src)}
-            <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery'} />
+            <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} />
           {:else}
             Add image details
           {/if}
@@ -568,7 +580,7 @@
                 <option value="overlay">Over the image</option>
               </select>
             </label>
-            <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
+            <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
               onChange={(frame) => { remember(); photo.frame = frame; }} />
             {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
               <label>Wrap text
@@ -599,7 +611,7 @@
       </figure>
   {/snippet}
   {#if block.kind === 'gallery'}
-    <GalleryLayout photos={block.photos} layout={block.galleryStyle} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
@@ -616,6 +628,19 @@
           <option value="slideshow">Slideshow</option>
         </select>
       </label>
+      <label>Gallery width
+        <select value={block.galleryWidth ?? 'full'} onchange={(event) => {
+          remember();
+          block.galleryWidth = event.currentTarget.value === 'centered' ? 'centered' : 'full';
+        }}>
+          <option value="full">Full width</option>
+          <option value="centered">Centered</option>
+        </select>
+      </label>
+      {#if block.galleryStyle === 'masonry'}
+        <button type="button" disabled={block.photos.length < 2}
+          onclick={() => randomizeMasonryHeights(block.photos)}>Randomize image heights</button>
+      {/if}
       <button type="button" onclick={() => {
         const photo = newPhoto();
         remember();

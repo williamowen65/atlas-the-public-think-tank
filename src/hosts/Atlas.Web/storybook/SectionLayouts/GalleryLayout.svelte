@@ -2,9 +2,10 @@
   import type { Snippet } from 'svelte';
   import type { GalleryStyle, Photo } from './sectionLayouts';
 
-  let { photos, layout = 'grid', selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
+    width?: 'full' | 'centered';
     selected?: string | null;
     onNavigate?: () => void;
     photo: Snippet<[Photo]>;
@@ -27,49 +28,54 @@
   }
 </script>
 
-{#if layout === 'slideshow' && photos.length}
-  <div class="slideshow">
-    {#key photos[current].id}
-      {@render photo(photos[current])}
-    {/key}
-    {#if photos.length > 1}
-      <div class="slide-controls">
-        <button type="button" aria-label="Previous gallery image" onclick={() => navigate(-1)}>‹</button>
-        <span aria-live="polite">{current + 1} of {photos.length}</span>
-        <button type="button" aria-label="Next gallery image" onclick={() => navigate(1)}>›</button>
-      </div>
-    {/if}
-  </div>
-{:else if layout === 'mosaic' && photos.length > 1}
-  <div class="mosaic">
-    {#each mosaicRows as [feature, ...small], row (feature.id)}
-      <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length} class:paired={small.length === 2}>
-        <div class="feature">{@render photo(feature)}</div>
-        {#if small.length}
-          <div class="mosaic-stack">
-            {#each small as item (item.id)}
-              {@render photo(item)}
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/each}
-  </div>
-{:else if layout === 'masonry' && photos.length > 1}
-  <div class="masonry">
-    {#each photos as item (item.id)}
-      <div class="masonry-tile">{@render photo(item)}</div>
-    {/each}
-  </div>
-{:else}
-  <div class="tiles">
-    {#each photos as item (item.id)}
-      <div class="tile">{@render photo(item)}</div>
-    {/each}
-  </div>
-{/if}
+<div class:centered={width === 'centered'}>
+  {#if layout === 'slideshow' && photos.length}
+    <div class="slideshow">
+      {#key photos[current].id}
+        {@render photo(photos[current])}
+      {/key}
+      {#if photos.length > 1}
+        <div class="slide-controls">
+          <button type="button" aria-label="Previous gallery image" onclick={() => navigate(-1)}>‹</button>
+          <span aria-live="polite">{current + 1} of {photos.length}</span>
+          <button type="button" aria-label="Next gallery image" onclick={() => navigate(1)}>›</button>
+        </div>
+      {/if}
+    </div>
+  {:else if layout === 'mosaic' && photos.length > 1}
+    <div class="mosaic">
+      {#each mosaicRows as [feature, ...small], row (feature.id)}
+        <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length} class:paired={small.length === 2}>
+          <div class="feature">{@render photo(feature)}</div>
+          {#if small.length}
+            <div class="mosaic-stack">
+              {#each small as item (item.id)}
+                {@render photo(item)}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {:else if layout === 'masonry' && photos.length > 1}
+    <div class="masonry">
+      {#each photos as item (item.id)}
+        <div class="masonry-tile">{@render photo(item)}</div>
+      {/each}
+    </div>
+  {:else}
+    <div class="tiles">
+      {#each photos as item (item.id)}
+        <div class="tile">{@render photo(item)}</div>
+      {/each}
+    </div>
+  {/if}
+
+</div>
 
 <style>
+  .centered { width: min(84%, 48rem); margin-inline: auto; }
+  @container (max-width: 37rem) { .centered { width: 100%; } }
   .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; align-items: start; }
   .tiles .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
     grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;

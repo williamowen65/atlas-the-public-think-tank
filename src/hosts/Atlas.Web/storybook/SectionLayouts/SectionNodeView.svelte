@@ -60,8 +60,8 @@
                     {/snippet}
                     <MarkdownContent preserveHeadingLevels text={block.text} inset={wrap ? inset : undefined} insetAnchor={wrap?.anchor} />
                   {:else if block?.kind === 'gallery'}
-                    {#snippet tile(photo: Photo)}{@render photoView(photo, true)}{/snippet}
-                    <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} photo={tile} />
+                    {#snippet tile(photo: Photo)}{@render photoView(photo, block.galleryStyle !== 'masonry')}{/snippet}
+                    <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} width={block.galleryWidth} photo={tile} />
                   {:else if block}
                     {#each block.photos as photo (photo.id)}{@render photoView(photo, false)}{/each}
                   {/if}
