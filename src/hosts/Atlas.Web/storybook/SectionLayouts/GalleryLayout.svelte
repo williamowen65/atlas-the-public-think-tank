@@ -1,15 +1,16 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { GalleryStyle, Photo } from './sectionLayouts';
+  import type { GalleryStyle, Photo, SlideshowSettings } from './sectionLayouts';
 
-  let { photos, layout = 'grid', width = 'full', masonryAlignment = 'top', selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
     width?: 'full' | 'centered';
     masonryAlignment?: 'top' | 'center';
+    slideshow?: SlideshowSettings;
     selected?: string | null;
     onNavigate?: () => void;
-    photo: Snippet<[Photo]>;
+    photo: Snippet<[Photo, boolean?]>;
   } = $props();
 
   const mosaicRows = $derived(photos.flatMap((_, index) =>
@@ -41,9 +42,25 @@
 <div class:centered={width === 'centered'}>
   {#if layout === 'slideshow' && photos.length}
     <div class="slideshow">
-      {#key photos[current].id}
-        {@render photo(photos[current])}
-      {/key}
+      <div class="slide-stage" class:peek={slideshow.neighbors && photos.length > 1}
+        class:fill={slideshow.fit === 'cover'} data-height={slideshow.height ?? 'standard'}
+        class:has-captions={photos.some((item) => item.caption && item.captionPlacement !== 'overlay')}>
+        {#if slideshow.neighbors && photos.length > 1}
+          <div class="neighbor previous" inert aria-hidden="true">
+            {@render photo(photos[(current + photos.length - 1) % photos.length], true)}
+          </div>
+        {/if}
+        <div class="current-slide">
+          {#key photos[current].id}
+            {@render photo(photos[current])}
+          {/key}
+        </div>
+        {#if slideshow.neighbors && photos.length > 1}
+          <div class="neighbor next" inert aria-hidden="true">
+            {@render photo(photos[(current + 1) % photos.length], true)}
+          </div>
+        {/if}
+      </div>
       {#if photos.length > 1}
         <div class="slide-controls">
           <button type="button" aria-label="Previous gallery image" onclick={() => navigate(-1)}>‹</button>
@@ -119,6 +136,37 @@
   .masonry.middle { align-items: center; }
   .masonry-column { display: grid; gap: .6rem; min-width: 0; }
   .slideshow { width: min(100%, 40rem); margin-inline: auto; }
+  .slide-stage { --slide-height: min(28rem, 57svh); position: relative; isolation: isolate; }
+  .slide-stage[data-height='compact'] { --slide-height: min(18rem, 45svh); }
+  .slide-stage[data-height='tall'] { --slide-height: min(36rem, 65svh); }
+  .peek { padding-inline: clamp(1rem, 6%, 3rem); }
+  .neighbor {
+    position: absolute; inset-block-start: 0; width: 20%; overflow: hidden;
+    clip-path: inset(0); opacity: .6;
+  }
+  .previous { inset-inline-start: 0; }
+  .next { inset-inline-end: 0; }
+  .peek .current-slide { margin-inline: .4rem; }
+  .current-slide { position: relative; z-index: 1; }
+  .slide-stage :global(figure) { width: 100% !important; margin: 0; min-width: 0; }
+  .slide-stage :global(figure > :is(button, .neighbor-frame)) { display: block; width: 100%; height: var(--slide-height); }
+  .slide-stage :global(figure > :is(button, .neighbor-frame)) { background-color: var(--atlas-bg); }
+  .slide-stage :global(figure > :is(button, .neighbor-frame) > .frame) {
+    width: 100%; height: 100%; aspect-ratio: auto !important; background: var(--atlas-bg);
+  }
+  .slide-stage :global(figure > :is(button, .neighbor-frame) > .frame > img) {
+    width: 100%; height: 100%; object-fit: contain; transform: none;
+  }
+  .fill :global(figure > :is(button, .neighbor-frame) > .frame > img) {
+    object-fit: cover; object-position: var(--focus-x) var(--focus-y);
+    transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
+  }
+  .has-captions .current-slide { padding-block-end: 2.75rem; }
+  .current-slide :global(figcaption) {
+    position: absolute; inset: auto 0 0; height: 2.5rem; overflow: auto;
+    width: 100%; margin: 0; overflow-wrap: anywhere;
+  }
+  .neighbor :global(figcaption) { display: none; }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
   @container (max-width: 24rem) {

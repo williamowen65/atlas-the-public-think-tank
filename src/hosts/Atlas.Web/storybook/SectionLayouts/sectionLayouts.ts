@@ -14,11 +14,16 @@ export type PhotoFrame = {
   corners?: 'square' | 'rounded';
 };
 export type Photo = { id: string; src: string; alt: string; caption: string; captionPlacement?: 'overlay' | 'below'; frame?: PhotoFrame };
+export type SlideshowSettings = {
+  height?: 'compact' | 'standard' | 'tall';
+  fit?: 'contain' | 'cover';
+  neighbors?: boolean;
+};
 export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | GalleryStyle;
 export type Block =
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
-  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; masonryAlignment?: 'top' | 'center' };
+  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; masonryAlignment?: 'top' | 'center'; slideshow?: SlideshowSettings };
 export type Draft = {
   title: string;
   layouts: Layout[];

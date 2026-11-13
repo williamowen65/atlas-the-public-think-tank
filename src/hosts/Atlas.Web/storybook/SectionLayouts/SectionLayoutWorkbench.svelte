@@ -13,7 +13,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, type Example, type GalleryStyle, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
+    type Block, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: Example } = $props();
@@ -313,6 +313,11 @@
     photoDetails = photo?.id ?? null;
   }
 
+  function updateSlideshow(block: Extract<Block, { photos: Photo[] }>, settings: SlideshowSettings) {
+    remember();
+    block.slideshow = { ...block.slideshow, ...settings };
+  }
+
   function randomizeMasonryHeights(photos: Photo[]) {
     const ratios = ['1 / 1', '4 / 5', '2 / 3', '4 / 3'] as const;
     let previous: (typeof ratios)[number] | undefined;
@@ -550,7 +555,13 @@
 </div>
 
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[], wrapped = false)}
-  {#snippet editPhoto(photo: Photo)}
+  {#snippet editPhoto(photo: Photo, neighbor = false)}
+    {#if neighbor}
+      {@const src = publicUrl(photo.src)}
+      <figure><div class="neighbor-frame">
+        {#if src}<PhotoFrame {photo} {src} gallery />{/if}
+      </div></figure>
+    {:else}
       <figure class="edit-photo" style:--photo-width={(wrapped ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
           class:draggable-photo={wrapped} draggable={wrapped ? 'true' : 'false'}
@@ -585,6 +596,7 @@
               </select>
             </label>
             <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
+              slideshowFit={block.galleryStyle === 'slideshow' ? block.slideshow?.fit ?? 'contain' : undefined}
               onChange={(frame) => { remember(); photo.frame = frame; }} />
             {#if block.kind === 'image' && slots.some(({ id }) => blockAt(draft, section.id, id)?.kind === 'text')}
               <label>Wrap text
@@ -613,9 +625,10 @@
           </div>
         {/if}
       </figure>
+    {/if}
   {/snippet}
   {#if block.kind === 'gallery'}
-    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
@@ -641,6 +654,30 @@
           <option value="centered">Centered</option>
         </select>
       </label>
+      {#if block.galleryStyle === 'slideshow'}
+        <label>Slideshow height
+          <select value={block.slideshow?.height ?? 'standard'} onchange={(event) =>
+            updateSlideshow(block, { height: event.currentTarget.value as SlideshowSettings['height'] })}>
+            <option value="compact">Compact</option>
+            <option value="standard">Standard</option>
+            <option value="tall">Tall</option>
+          </select>
+        </label>
+        <label>Image fit
+          <select value={block.slideshow?.fit ?? 'contain'} onchange={(event) =>
+            updateSlideshow(block, { fit: event.currentTarget.value === 'cover' ? 'cover' : 'contain' })}>
+            <option value="contain">Show whole image</option>
+            <option value="cover">Fill frame</option>
+          </select>
+        </label>
+        <label>Slideshow presentation
+          <select value={block.slideshow?.neighbors ? 'peek' : 'single'} onchange={(event) =>
+            updateSlideshow(block, { neighbors: event.currentTarget.value === 'peek' })}>
+            <option value="single">One image</option>
+            <option value="peek">Show neighboring edges</option>
+          </select>
+        </label>
+      {/if}
       {#if block.galleryStyle === 'masonry'}
         <label>Masonry vertical alignment
           <select value={block.masonryAlignment ?? 'top'} onchange={(event) => {
