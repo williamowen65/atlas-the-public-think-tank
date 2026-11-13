@@ -243,11 +243,19 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
   await expect(section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image')).toHaveCSS('float', 'right');
 
   const image = section.getByRole('button', { name: 'Edit Buildings along a city street' });
+  const paragraph = section.getByText(/^Start with the places/);
+  await image.dragTo(paragraph, { targetPosition: { x: 8, y: 8 } });
+  const anchoredImage = section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image');
+  await expect(anchoredImage).toHaveCSS('float', 'left');
+  const paragraphBox = await paragraph.boundingBox();
+  await image.dragTo(paragraph, { targetPosition: { x: paragraphBox!.width - 8, y: 8 } });
+  await expect(anchoredImage).toHaveCSS('float', 'right');
+
   await image.dragTo(section.getByText(/^A public square can be/));
   await expect(section.locator('.atlas-story-text > .ProseMirror-widget:first-child').getByRole('button', {
     name: 'Edit Buildings along a city street',
   })).toBeVisible();
-  await image.dragTo(section.getByText(/^Start with the places/));
+  await image.dragTo(paragraph, { targetPosition: { x: paragraphBox!.width - 8, y: 8 } });
   const editorFloat = section.locator('.section-wrapped-image');
   const beforeOpen = await editorFloat.boundingBox();
   await image.click();

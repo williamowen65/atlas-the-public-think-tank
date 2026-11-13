@@ -66,14 +66,15 @@
     moveImageAnchor(section, activeEditor.selectedTextBlockIndex());
   }
 
-  function moveImageAnchor(section: Section, anchor: number) {
-    if (!section.wrap || section.wrap.anchor === anchor) return;
+  function moveImageAnchor(section: Section, anchor: number, side?: 'left' | 'right') {
+    if (!section.wrap || (section.wrap.anchor === anchor && (!side || section.wrap.side === side))) return;
     remember();
     section.wrap.anchor = anchor;
+    if (side) section.wrap.side = side;
   }
 
   function clearImageDrag() {
-    dropParagraph?.classList.remove('image-drop-target');
+    dropParagraph?.classList.remove('image-drop-left', 'image-drop-right');
     dropParagraph = null;
     draggedSection = null;
   }
@@ -94,18 +95,21 @@
     const blocks = Array.from(editor.children).filter((child) => !child.classList.contains('ProseMirror-widget'));
     const anchor = blocks.findIndex((child) => child.contains(event.target as Element));
     const paragraph = blocks[anchor];
-    if (paragraph instanceof HTMLElement) return { section, anchor, paragraph };
+    if (!(paragraph instanceof HTMLElement)) return;
+    const bounds = editor.getBoundingClientRect();
+    const side = event.clientX < bounds.left + bounds.width / 2 ? 'left' : 'right';
+    return { section, anchor, paragraph, side } as const;
   }
 
   function previewImageDrop(event: DragEvent) {
     if (!draggedSection) return;
     const target = imageDropTarget(event);
-    dropParagraph?.classList.remove('image-drop-target');
+    dropParagraph?.classList.remove('image-drop-left', 'image-drop-right');
     dropParagraph = target?.paragraph ?? null;
     if (!target) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    target.paragraph.classList.add('image-drop-target');
+    target.paragraph.classList.add(`image-drop-${target.side}`);
   }
 
   function dropWrappedImage(event: DragEvent) {
@@ -114,7 +118,7 @@
     event.preventDefault();
     event.stopPropagation();
     clearImageDrag();
-    if (target) moveImageAnchor(target.section, target.anchor);
+    if (target) moveImageAnchor(target.section, target.anchor, target.side);
   }
 
   function deleteEmptySection(sectionId: string) {
@@ -741,7 +745,8 @@
   .block-tools { position: absolute; bottom: 0; right: 0; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
   .draggable-photo { cursor: grab; }
-  .edit-slot :global(.image-drop-target) { outline: 2px solid var(--atlas-accent); outline-offset: .15rem; }
+  .edit-slot :global(.image-drop-left) { box-shadow: inset 3px 0 var(--atlas-accent); }
+  .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }
   figure { margin: 0; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
   .photo-details {
