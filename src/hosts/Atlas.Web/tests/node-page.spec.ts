@@ -91,6 +91,7 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
   await page.goto('http://127.0.0.1:4173');
   await page.getByRole('button', { name: 'Read more', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${root}`));
+  await expect(page.getByText('The complete content belongs here.', { exact: true })).toHaveCSS('white-space', 'normal');
   const comments = page.getByRole('tab', { name: '1 Comment', exact: true });
   await comments.focus(); await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: '1 Idea', exact: true })).toHaveAttribute('aria-selected', 'true');

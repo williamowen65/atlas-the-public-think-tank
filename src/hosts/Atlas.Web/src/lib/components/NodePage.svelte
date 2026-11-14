@@ -332,7 +332,7 @@
         <ContentBlocks {blocks} />
       {:else if node.description}
         <!-- Compatibility for older nodes whose Content document is blank. -->
-        <p>{node.description}</p>
+        <p class="plain-description">{node.description}</p>
       {:else}
         <ContentBlocks {blocks} />
       {/if}
@@ -452,6 +452,8 @@
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
+  }
+  .plain-description {
     white-space: pre-line;
   }
   .reaction-controls {
