@@ -109,6 +109,29 @@ test('a published node stacks section columns in slot order on narrow screens', 
   expect(desktopSecond.y).toBeCloseTo(desktopFirst.y);
 });
 
+for (const layout of ['grid', 'masonry'] as const) {
+  test(`a published ${layout} fits its columns to the available width`, async ({ page }) => {
+    const draft = example(layout);
+    const gallery = draft.blocks.find(block => block.kind === 'gallery');
+    if (gallery?.kind !== 'gallery') throw new Error('Expected a gallery in the demo draft');
+    gallery.gridColumns = 4;
+    gallery.masonryColumns = 4;
+    await mock(page);
+    await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({
+      json: [{ id: 'composition', kind: 'sectioned', content: { composition: writeComposition(draft) } }],
+    }));
+    await page.route('https://images.unsplash.com/**', route => route.abort());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`http://127.0.0.1:4173/nodes?id=${root}`);
+    const galleryLayout = page.locator(layout === 'grid' ? '.post-body .tiles' : '.post-body .masonry');
+    const columnCount = () => galleryLayout.evaluate(element =>
+      getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    await expect.poll(columnCount).toBe(2);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect.poll(columnCount).toBe(Math.min(4, gallery.photos.length));
+  });
+}
+
 test('SPA Read more opens a node page and child tabs support keyboard navigation', async ({ page }) => {
   await mock(page);
   await page.setViewportSize({ width: 320, height: 720 });

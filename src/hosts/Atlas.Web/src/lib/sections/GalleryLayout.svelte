@@ -2,13 +2,14 @@
   import type { Snippet } from 'svelte';
   import type { GalleryStyle, GalleryColumns, Photo, SlideshowSettings } from './sectionLayouts';
 
-  let { photos, layout = 'grid', width = 'full', columns, masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', columns, masonryAlignment = 'top', slideshow = {}, fitColumns = false, selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
     width?: 'full' | 'centered';
     columns?: GalleryColumns;
     masonryAlignment?: 'top' | 'center';
     slideshow?: SlideshowSettings;
+    fitColumns?: boolean;
     selected?: string | null;
     onNavigate?: () => void;
     photo: Snippet<[Photo, boolean?]>;
@@ -17,10 +18,14 @@
   const mosaicRows = $derived(photos.flatMap((_, index) =>
     index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
 
-  let masonryWidth = $state(0);
-  const masonryCount = $derived(Math.min(photos.length,
-    columns ?? (masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : 3)));
-  const gridCount = $derived(Math.max(1, Math.min(photos.length, columns ?? 2)));
+  let galleryWidth = $state(0);
+  // Keep roughly 120px per tile in published galleries, including the gaps between columns.
+  const fittingColumns = $derived(fitColumns && galleryWidth > 0
+    ? Math.max(1, Math.floor((galleryWidth + 10) / 130))
+    : Infinity);
+  const masonryCount = $derived(Math.min(photos.length, fittingColumns,
+    columns ?? (galleryWidth === 0 || galleryWidth >= 384 ? 3 : galleryWidth >= 272 ? 2 : 1)));
+  const gridCount = $derived(Math.max(1, Math.min(photos.length, columns ?? 2, fittingColumns)));
   const masonryColumns = $derived(Array.from({ length: masonryCount }, (_, column) => {
     const size = Math.floor(photos.length / masonryCount);
     const remainder = photos.length % masonryCount;
@@ -42,7 +47,7 @@
   }
 </script>
 
-<div class:centered={width === 'centered'}>
+<div bind:clientWidth={galleryWidth} class:editor-columns={!fitColumns} class:centered={width === 'centered'}>
   {#if layout === 'slideshow' && photos.length}
     <div class="slideshow">
       <div class="slide-stage" class:peek={slideshow.neighbors && photos.length > 1}
@@ -88,7 +93,7 @@
     </div>
   {:else if layout === 'masonry' && photos.length > 1}
     <div class="masonry" class:middle={masonryAlignment === 'center'}
-      bind:clientWidth={masonryWidth} style:--column-count={masonryCount}>
+      style:--column-count={masonryCount}>
       {#each masonryColumns as items}
         <div class="masonry-column">
           {#each items as item (item.id)}
@@ -193,7 +198,8 @@
   }
   .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .2rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
+
   @container (max-width: 24rem) {
-    .mosaic-row, .mosaic-row.reverse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .editor-columns > .mosaic .mosaic-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>

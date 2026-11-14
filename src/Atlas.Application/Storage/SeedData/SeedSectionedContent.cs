@@ -112,9 +112,35 @@ internal static partial class DemoData
                 AddSection("equal", Text("## Try it in a lesson\n\nCompare a task students do independently with one where a tool offers hints."),
                     Text("## Discuss the result\n\nAsk students to explain their reasoning and identify where the tool helped."));
                 break;
-            case >= 223 and <= 227:
+            case 223:
+                AddSection("full", new { kind = "gallery", galleryStyle = "grid", gridColumns = 4,
+                    photos = new[] { Street("Look at how people already move through the area."),
+                        Buildings("Notice how buildings shape the space around them."),
+                        Woods("Look for shade along walking routes."), Hills("Consider the landscape beyond the project boundary.") } });
                 AddSection("full", Text(text));
-                AddSection("full", Gallery(number == 224 ? "mosaic" : number == 226 ? "slideshow" : "grid",
+                break;
+            case 224:
+                AddSection("wide-right", Text(text), Gallery("mosaic",
+                    Street("Observe who can use the space comfortably.", "1 / 1"),
+                    Buildings("Notice how buildings frame gathering spaces."),
+                    Woods("Look for shaded places to pause.")));
+                break;
+            case 225:
+                AddSection("full", new { kind = "gallery", galleryStyle = "masonry", masonryColumns = 3,
+                    photos = new[] { Hills("Start with a wide view."), Street("Look at the route from street level."),
+                        Woods("Notice where vegetation provides shade."), Buildings("Look up to see how the surroundings change.") } });
+                AddSection("full", Text(text));
+                break;
+            case 226:
+                AddSection("full", Gallery("slideshow",
+                    Street("Consider where people still need light at night."),
+                    Buildings("Look for surfaces that reflect light upward."),
+                    Hills("Consider how lighting changes the view beyond city limits.")));
+                AddSection("full", Text(text));
+                break;
+            case 227:
+                AddSection("full", Text(text));
+                AddSection("full", Gallery("grid",
                     Street("Observe who can use the space comfortably.", "1 / 1"),
                     Buildings("Consider how the surroundings affect the experience."),
                     Woods("Look for places that offer shade and a quieter route.")));
