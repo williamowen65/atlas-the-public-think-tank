@@ -995,9 +995,10 @@
   }
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
   .workbench.embedded { padding: 0; max-width: none; }
-  .embedded .node { border: 0; border-radius: 0; padding: 0; background: transparent; }
+  /* The Atlas card body supplies the same gutter as its header. */
+  .workbench.embedded .node { border: 0; border-radius: 0; padding: 0; background: transparent; }
   .embedded .editing-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
-  .embedded .formatting { flex: 1 1 0; min-width: 0; }
+  .embedded .formatting { flex: 1 1 0; min-width: 0; padding-inline: 0; }
   .sidebar-icon { order: 1; margin-inline-start: auto; flex: none; width: 2.75rem; height: 2.75rem; display: grid; place-items: center; }
   .workbench.embedded .editor-sidebar {
     position: fixed; inset: 0 0 0 auto; z-index: 65;

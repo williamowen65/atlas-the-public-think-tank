@@ -65,6 +65,15 @@ for (const environment of ['storybook', 'spa']) {
     await login(page);
     if (environment === 'spa') await expect(page).toHaveURL('http://127.0.0.1:4173/new');
     await fill(page);
+    const form = page.getByRole('form', { name: 'Create root node' });
+    const type = form.getByRole('combobox', { name: 'Node type' });
+    const byline = form.locator('.byline');
+    const editor = form.getByRole('textbox', { name: 'Node content: editable rich-text document' });
+    const toolbar = form.getByRole('group', { name: 'Text formatting', exact: true });
+    const left = (await type.boundingBox())!.x;
+    for (const element of [byline, editor, toolbar]) {
+      expect((await element.boundingBox())!.x).toBeCloseTo(left, 0);
+    }
     await page.getByLabel('Requested contributions', { exact: true }).selectOption(idea);
     if (environment === 'spa') {
       const communities = page.getByRole('combobox', { name: 'Communities (optional)' });
