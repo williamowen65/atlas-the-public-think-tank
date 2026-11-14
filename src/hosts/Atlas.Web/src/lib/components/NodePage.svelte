@@ -356,15 +356,6 @@
     </div>
   {/if}
   {#if !inspectionOnly}<div class="discussion-toolbar">
-    <div class="add">
-      <button
-        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
-        disabled={node.status === 'Archived'}
-        >Add {active === 'comments'
-          ? 'a child node'
-          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
-      >
-    </div>
     <div
       class="tabs"
       use:alignDiscussionTabs
@@ -380,6 +371,15 @@
           onclick={() => onTabChange(tab.id)}
           onkeydown={(event) => key(event, index)}>{tab.name}</button
         >{/each}
+    </div>
+    <div class="add">
+      <button
+        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
+        disabled={node.status === 'Archived'}
+        >Add {active === 'comments'
+          ? 'a child node'
+          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
+      >
     </div>
   </div>
   <!--
@@ -411,6 +411,7 @@
   .node-page {
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
+    --discussion-section-padding: 1.25rem;
     --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     margin-inline: auto;
@@ -463,7 +464,7 @@
   }
   .reaction-controls {
     border-block-start: 1px solid var(--atlas-border);
-    padding: 0.65rem var(--card-padding);
+    padding: var(--discussion-section-padding) var(--card-padding);
   }
   .reactions {
     display: flex;
@@ -478,13 +479,16 @@
     padding: 0.2rem 0.6rem;
   }
   .discussion-toolbar {
-    display: flow-root;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.4rem 1.25rem;
     border-block: 1px solid var(--atlas-border);
-    padding: 0.65rem var(--card-padding) 0.5rem;
+    padding: var(--discussion-section-padding) var(--card-padding);
   }
   .add {
-    float: right;
-    margin: 0 0 0.75rem 1.25rem;
+    margin-inline-start: auto;
+    max-inline-size: 100%;
   }
   .add button {
     border: 1px solid var(--atlas-accent);
@@ -514,11 +518,12 @@
   }
   .tabs {
     scroll-margin-top: 20px;
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    min-inline-size: 0;
   }
   .tabs button {
-    margin: 0 0.4rem 0.4rem 0;
-    vertical-align: top;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     min-block-size: 2.25rem;
