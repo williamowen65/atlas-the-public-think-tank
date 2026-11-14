@@ -13,7 +13,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, linkPreviewSamples, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft, type VerticalAlignment,
+    type Block, linkPreviewSamples, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: Example } = $props();
@@ -37,14 +37,17 @@
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   let workbench = $state<HTMLDivElement>();
+  let alignmentMenu = $state<HTMLDivElement>();
+  const alignmentMenuId = $props.id();
+  const textAlignments = [['left', 'Left'], ['center', 'Center'], ['right', 'Right']] as const;
+  const verticalAlignments = [['start', 'Top'], ['center', 'Middle'], ['end', 'Bottom']] as const;
   const formats = [
-    ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['underline', 'Underline', 'U'], ['link', 'Link', 'Link'],
-    ['bulletList', 'Bulleted list', 'List'],
+    ['bold', 'Bold', 'B'], ['italic', 'Italic', 'I'], ['underline', 'Underline', 'U'], ['link', 'Link', ''],
   ] as const;
 
   let history = $state.raw<Draft[]>([]);
   let editorVersion = $state(0);
-  const selectedText = $derived(draft.blocks.find((block) => block.id === activeBlock && block.kind === 'text'));
+  const selectedText = $derived(draft.blocks.find((block): block is Extract<Block, { kind: 'text' }> => block.id === activeBlock && block.kind === 'text'));
   const selectedAssignment = $derived(draft.assignments.find(({ blockId }) => blockId === activeBlock));
 
   const mediaBlock = $derived(draft.blocks.find((block) => block.id === activeBlock && 'photos' in block));
@@ -160,10 +163,9 @@
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
-    if (inside && target.closest('.editor-sidebar, .sidebar-toggle')) return;
+    if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools')) return;
     if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
     if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
-    if (inside && target.closest('.editing-tools')) return;
     const section = inside && target.closest('.edit-slot, .layout-panel')
       ? target.closest<HTMLElement>('[data-section]') : null;
     const block = inside ? target.closest<HTMLElement>('[data-block]') : null;
@@ -404,41 +406,69 @@
           <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
         {:else}
           <div class="formatting" role="group" aria-label="Text formatting">
-            {#each formats as [command, label, short]}
-              <button type="button" aria-label={label} title={label} disabled={!activeEditor}
+            <select class="heading-select" aria-label="Heading level" title="Heading level" disabled={!activeEditor} onchange={(event) => {
+              const level = Number(event.currentTarget.value) as 2 | 3 | 4 | 5 | 6;
+              activeEditor?.formatText('heading', level);
+              event.currentTarget.value = '';
+            }}>
+              <option value="" disabled selected>Heading</option>
+              {#each [2, 3, 4, 5, 6] as level}<option value={level}>H{level}</option>{/each}
+            </select>
+            <div class="format-group" role="group" aria-label="Inline formatting">
+              {#each formats as [command, label, short]}
+                <button class:italic={command === 'italic'} class:underline={command === 'underline'}
+                  type="button" aria-label={label} title={label} disabled={!activeEditor}
+                  onpointerdown={(event) => event.preventDefault()}
+                  onclick={() => activeEditor?.formatText(command)}>
+                  {#if command === 'link'}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m10 13 4-4m-6 6-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 2 1-1a3.5 3.5 0 0 1 5 5l-4 4a3.5 3.5 0 0 1-5 0" transform="translate(2 1)" />
+                    </svg>
+                  {:else}{short}{/if}
+                </button>
+              {/each}
+            </div>
+            <div class="format-group" role="group" aria-label="Paragraph and block formatting">
+              <button type="button" aria-label="Alignment" title="Alignment"
+                disabled={!selectedAssignment} popovertarget={alignmentMenuId}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d={selectedText?.alignment === 'center' ? 'M4 5h16M8 10h8M4 15h16M8 20h8'
+                    : selectedText?.alignment === 'right' ? 'M4 5h16m-8 5h8M4 15h16m-8 5h8' : 'M4 5h16M4 10h8m-8 5h16M4 20h8'} />
+                </svg>
+              </button>
+              <button type="button" aria-label="Bulleted list" title="Bulleted list" disabled={!activeEditor}
                 onpointerdown={(event) => event.preventDefault()}
-                onclick={() => activeEditor?.formatText(command)}>{short}</button>
-            {/each}
-            <label>Heading
-              <select aria-label="Heading level" disabled={!activeEditor} onchange={(event) => {
-                const level = Number(event.currentTarget.value) as 2 | 3 | 4 | 5 | 6;
-                activeEditor?.formatText('heading', level);
-                event.currentTarget.value = '';
-              }}>
-                <option value="" disabled selected>Choose heading</option>
-                {#each [2, 3, 4, 5, 6] as level}<option value={level}>H{level}</option>{/each}
-              </select>
-            </label>
-            <label>Text alignment
-              <select disabled={selectedText?.kind !== 'text'} value={selectedText?.kind === 'text' ? selectedText.alignment ?? 'left' : 'left'}
-                onchange={(event) => {
-                  if (selectedText?.kind === 'text') { remember(); selectedText.alignment = event.currentTarget.value as 'left' | 'center' | 'right'; }
-                }}>
-                <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
-              </select>
-            </label>
-            <label>Vertical alignment
-              <select disabled={!selectedAssignment} value={selectedAssignment?.vertical ?? 'start'}
-                onchange={(event) => {
-                  if (selectedAssignment) { remember(); selectedAssignment.vertical = event.currentTarget.value as VerticalAlignment; }
-                }}>
-                <option value="start">Top</option><option value="center">Middle</option><option value="end">Bottom</option>
-              </select>
-            </label>
+                onclick={() => activeEditor?.formatText('bulletList')}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
+              </button>
+            </div>
+            <button type="button" aria-label="Undo" title="Undo" disabled={!history.length} onclick={undo}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5m-5-5h10a5 5 0 0 1 0 10" /></svg>
+            </button>
+            <div id={alignmentMenuId} class="alignment-menu" popover bind:this={alignmentMenu}
+              role="group" aria-label="Alignment options">
+              {#if selectedText}
+                <div class="alignment-options" role="group" aria-label="Text alignment">
+                  <span>Text alignment</span>
+                  {#each textAlignments as [value, label]}
+                    <button type="button" aria-pressed={(selectedText.alignment ?? 'left') === value}
+                      onclick={() => { remember(); selectedText.alignment = value; alignmentMenu?.hidePopover(); }}>{label}</button>
+                  {/each}
+                </div>
+              {/if}
+              {#if selectedAssignment}
+                <div class="alignment-options" role="group" aria-label="Vertical alignment">
+                  <span>Vertical alignment</span>
+                  {#each verticalAlignments as [value, label]}
+                    <button type="button" aria-pressed={(selectedAssignment.vertical ?? 'start') === value}
+                      onclick={() => { remember(); selectedAssignment.vertical = value; alignmentMenu?.hidePopover(); }}>{label}</button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
             {#if activeEditor && draft.sections.some(({ wrap }) => wrap && wrap.textId === activeBlock)}
               <button type="button" onpointerdown={(event) => event.preventDefault()} onclick={moveWrappedImageHere}>Move image here</button>
             {/if}
-            <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
           </div>
         {/if}
       </div>
@@ -638,7 +668,8 @@
 {/snippet}
 
 {#snippet photoSettings(photo: Photo, block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[])}
-  <div class="photo-details" role="group" aria-label="Image settings">
+  <div class="photo-details" role="group" aria-labelledby={`${alignmentMenuId}-image`}>
+    <h3 id={`${alignmentMenuId}-image`}>Image settings</h3>
     <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
     <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
     <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
@@ -664,22 +695,25 @@
         </select>
       </label>
     {/if}
-    <button type="button" onclick={() => photoDetails = null}>Done</button>
-    {#if block.kind === 'gallery'}
-      {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
-      <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
-      <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
-      <button type="button" onclick={() => {
-        remember();
-        block.photos = block.photos.filter(({ id }) => id !== photo.id);
-        photoDetails = null;
-      }}>Remove image</button>
-    {/if}
+    <div class="buttons photo-actions">
+      <button type="button" onclick={() => photoDetails = null}>Done</button>
+      {#if block.kind === 'gallery'}
+        {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
+        <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
+        <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
+        <button type="button" onclick={() => {
+          remember();
+          block.photos = block.photos.filter(({ id }) => id !== photo.id);
+          photoDetails = null;
+        }}>Remove image</button>
+      {/if}
+    </div>
   </div>
 {/snippet}
 
 {#snippet gallerySettings(block: Extract<Block, { photos: Photo[] }>)}
-    <div class="gallery-tools">
+    <div class="gallery-tools" role="group" aria-labelledby={`${alignmentMenuId}-gallery`}>
+      <h3 id={`${alignmentMenuId}-gallery`}>Gallery settings</h3>
       <label>Gallery layout
         <select value={block.galleryStyle ?? 'grid'} onchange={(event) => {
           remember();
@@ -737,7 +771,7 @@
         <button type="button" disabled={block.photos.length < 2}
           onclick={() => randomizeMasonryHeights(block.photos)}>Randomize image heights</button>
       {/if}
-      <button type="button" onclick={() => {
+      <button class="add-gallery-image" type="button" onclick={() => {
         const photo = newPhoto();
         remember();
         block.photos.push(photo);
@@ -840,12 +874,47 @@
     border-color: var(--atlas-accent);
   }
   .editing-tools { position: sticky; top: 0; z-index: 5; background: var(--atlas-surface); padding-block: .4rem; }
-  .formatting { display: flex; flex-wrap: wrap; align-items: end; gap: .4rem; }
-  .formatting label { font-size: .8rem; }
-  .formatting button, .section-tools button, .block-tools button { min-width: 2.1rem; min-height: 2.1rem; }
+  .formatting {
+    display: flex; align-items: center; gap: .25rem; overflow-x: auto;
+    padding: .25rem; white-space: nowrap;
+    border-block: 1px solid color-mix(in srgb, var(--atlas-border) 35%, transparent);
+  }
+  .formatting > *, .format-group > * { flex: none; }
+  .format-group {
+    display: flex; align-items: center; padding-inline: .2rem;
+    border-inline-start: 1px solid color-mix(in srgb, var(--atlas-border) 45%, transparent);
+  }
+  .heading-select { width: auto; font-size: .875rem; }
+  .formatting button { display: grid; place-items: center; padding: .25rem; border-color: transparent; font-weight: 650; }
+  .formatting button:hover:not(:disabled), .formatting button:focus-visible {
+    background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
+  }
+  .formatting button, .heading-select, .section-tools button, .block-tools button { min-width: 2rem; min-height: 2.5rem; }
+  .formatting .italic { font-style: italic; }
+  .formatting .underline { text-decoration: underline; }
+  .formatting svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .alignment-menu {
+    box-sizing: border-box; width: min(15rem, calc(100vw - 1rem)); padding: .65rem;
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .5rem);
+    color: var(--atlas-text); background: var(--atlas-surface); box-shadow: 0 .25rem 1rem #0003;
+  }
+  @supports (position-area: block-end) {
+    .alignment-menu { inset: auto; margin: .25rem 0; position-area: block-end span-inline-start; position-try-fallbacks: flip-inline, flip-block; }
+  }
+  .alignment-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem; }
+  .alignment-options + .alignment-options { margin-top: .65rem; }
+  .alignment-options span { grid-column: 1 / -1; font-size: .8rem; font-weight: 650; }
+  .alignment-options button { font-size: .875rem; font-weight: 500; border-color: var(--atlas-border); }
+  .alignment-options button[aria-pressed="true"] {
+    border-color: var(--atlas-accent); background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
+  }
   .edit-section { padding-block: .5rem 1rem; }
   .link-preview-editor { display: grid; gap: .6rem; }
-  .gallery-tools { display: grid; gap: .6rem; }
+  .gallery-tools, .photo-details {
+    display: grid; gap: .65rem; padding-block: .75rem;
+    border-top: 1px solid color-mix(in srgb, var(--atlas-border) 40%, transparent);
+  }
+  .gallery-tools .add-gallery-image, .photo-actions { justify-self: start; }
   .section-tools { margin-block-end: .75rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
@@ -868,10 +937,23 @@
   }
   .sidebar-heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .65rem; }
   .editor-sidebar h2 { font-size: 1rem; margin: 0; }
-  .editor-sidebar h3 { font-size: .95rem; margin: 0 0 .5rem; }
+  .editor-sidebar h3 { font-size: .9rem; margin: 0; }
+  .editor-sidebar > h3 { margin-bottom: .45rem; }
   .editor-sidebar p { margin: 0; }
-  .photo-details { display: grid; gap: .5rem; }
-  .gallery-tools + .photo-details { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--atlas-border); }
+  .editor-sidebar :global(label) { font-size: .875rem; font-weight: 600; }
+  .editor-sidebar :global(input:not([type="range"])),
+  .editor-sidebar :global(select) {
+    box-sizing: border-box; width: 100%; min-width: 0; min-height: 2.5rem;
+    padding: .4rem .55rem; font: inherit; font-weight: 400; color: var(--atlas-text);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .45rem);
+    background: color-mix(in srgb, var(--atlas-accent) 4%, var(--atlas-surface));
+  }
+  .editor-sidebar :global(:is(button, select, input):focus-visible),
+  .formatting :is(button, select):focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 1px; }
+  .editor-sidebar :global(input[type="range"]) {
+    display: block; width: 100%; min-width: 0; height: 1.75rem; margin: 0; padding: 0;
+    border: 0; background: transparent; accent-color: var(--atlas-accent); cursor: pointer;
+  }
   @media (max-width: 65rem) {
     .editor-frame.with-sidebar { display: block; }
     .editor-sidebar { position: fixed; inset: auto .5rem .5rem; max-height: 38dvh; z-index: 10; }

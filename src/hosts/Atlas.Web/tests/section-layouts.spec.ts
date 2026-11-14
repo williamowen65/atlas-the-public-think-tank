@@ -322,3 +322,32 @@ test('mosaic keeps its gutter for both caption placements', async ({ page }) => 
   await page.getByRole('button', { name: 'Node page', exact: true }).click();
   await checkGutter();
 });
+
+test('the phone-width formatting toolbar stays on one row and groups alignment', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  await page.getByRole('button', { name: 'Hide editor controls' }).click();
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const editor = section.getByRole('textbox', { name: /Node content/ });
+  const heading = page.getByRole('combobox', { name: 'Heading level' });
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  await editor.locator('p').first().click();
+  const headingBounds = (await heading.boundingBox())!;
+  const undoBounds = (await undo.boundingBox())!;
+  expect(Math.abs(headingBounds.y - undoBounds.y)).toBeLessThan(4);
+
+  const alignment = page.getByRole('button', { name: 'Alignment', exact: true });
+  await alignment.click();
+  const text = page.getByRole('group', { name: 'Text alignment', exact: true });
+  await expect(text.getByRole('button', { name: 'Left' })).toHaveAttribute('aria-pressed', 'true');
+  await text.getByRole('button', { name: 'Center' }).click();
+  await expect(editor.locator('p').first()).toHaveCSS('text-align', 'center');
+  await expect(text).toBeHidden();
+
+  await alignment.click();
+  await expect(text.getByRole('button', { name: 'Center' })).toHaveAttribute('aria-pressed', 'true');
+  const vertical = page.getByRole('group', { name: 'Vertical alignment', exact: true });
+  await vertical.getByRole('button', { name: 'Bottom' }).click();
+  await expect(section.locator('.edit-slot').first()).toHaveCSS('align-items', 'end');
+});
