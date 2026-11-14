@@ -229,7 +229,8 @@
     id
       ? readOlderAncestors(id, AbortSignal.timeout(10000), breadcrumbBase)
       : Promise.resolve({ items: [], hasMore: false })}
-  >{#snippet renderVoting(item)}<LiveVotingDial
+  >{#snippet renderVoting(item, compact)}<LiveVotingDial
+      forceCompact={compact}
       mobileCompact={presentation === 'mobile-experiment'}
       nodeId={item.node.id}
       initialAverage={item.average}

@@ -9,10 +9,11 @@
   import { publicUrl } from '../api/nodePage';
   import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
-  let { draft, feed = false, onReadMore }: {
+  let { draft, feed = false, onReadMore, onExpandedChange }: {
     draft: Draft;
     feed?: boolean;
     onReadMore?: () => void;
+    onExpandedChange?: (expanded: boolean) => void;
   } = $props();
 
   let expanded = $state(false);
@@ -83,7 +84,7 @@
   <div class="feed-actions">
     {#if truncated || expanded}
       <button type="button" aria-expanded={expanded} aria-controls={instance}
-        onclick={() => expanded = !expanded}>{expanded ? 'Collapse' : 'Expand'}</button>
+        onclick={() => { expanded = !expanded; onExpandedChange?.(expanded); }}>{expanded ? 'Collapse' : 'Expand'}</button>
     {/if}
     {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
@@ -106,9 +107,9 @@
 
 <style>
   .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
-  .viewport.feed { max-height: var(--atlas-feed-preview-height, 8.5rem); overflow: clip; }
+  .viewport.feed { max-height: var(--atlas-section-preview-height, 8.5rem); overflow: clip; }
   .viewport.feed.expanded { max-height: none; }
-  .viewport.truncated { mask-image: linear-gradient(black calc(100% - 1.6rem), transparent); }
+  .viewport.truncated { mask-image: linear-gradient(black calc(100% - .65rem), transparent); }
   .sections { display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
   .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
   .slot { min-width: 0; }

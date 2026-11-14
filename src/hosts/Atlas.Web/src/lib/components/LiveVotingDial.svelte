@@ -36,7 +36,8 @@
    * @param button Mounted mobile disclosure button.
    * @returns Cleanup removing the relocated element when its component is destroyed.
    */
-  function placeSummary(button: HTMLButtonElement) {
+  function placeSummary(button: HTMLButtonElement, inline: boolean) {
+    if (inline) return;
     const row = button.closest('article')?.querySelector('.node-type-row');
     if (!row) return;
     button.classList.add('header-summary');
@@ -64,6 +65,7 @@
     initialTotalVotes = 0,
     archived = false,
     mobileCompact = false,
+    forceCompact = false,
     preview = false,
     sessionBase = '/atlas-session-api',
   }: {
@@ -80,6 +82,7 @@
     archived?: boolean;
     /** Collapse the mobile feed dial behind a rating summary; full node pages keep the dial. */
     mobileCompact?: boolean;
+    forceCompact?: boolean;
     /** Render the same controls with supplied counts and without live actions. */
     preview?: boolean;
     /**
@@ -88,7 +91,7 @@
      */
     sessionBase?: string;
   } = $props();
-  const collapsedMode = $derived(mobileCompact && narrow);
+  const collapsedMode = $derived(forceCompact || (mobileCompact && narrow));
   /**
    * Last server-confirmed participant rating; null means no confirmed vote.
    */
@@ -331,9 +334,10 @@
   confirmation and sign-in.
 -->
 
-<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
+<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} class:inline-summary={forceCompact} class:vote-open={forceCompact && expanded} aria-busy={busy}>
   {#if collapsedMode}
-    <button class="rating-summary" bind:this={summaryButton} use:placeSummary type="button" aria-expanded={expanded}
+    {#key forceCompact}
+    <button class="rating-summary" bind:this={summaryButton} use:placeSummary={forceCompact} type="button" aria-expanded={expanded}
       disabled={preview || archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
@@ -344,6 +348,7 @@
       </span>
       <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
     </button>
+    {/key}
   {/if}
   {#if !collapsedMode || expanded}
   <div class="dial-content">
@@ -502,6 +507,9 @@
     inset-inline-start: var(--card-padding);
     bottom: 0.65rem;
   }
+  .live-voting.inline-summary { display: block; width: auto; }
+  .collapsed-mode.inline-summary .rating-summary { position: static; }
+  .collapsed-mode.inline-summary .dial-content { float: none; margin: .4rem 0 0; }
   .collapsed-mode .dial-content {
     display: block;
     float: left;

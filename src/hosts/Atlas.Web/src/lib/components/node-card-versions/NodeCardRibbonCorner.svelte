@@ -48,6 +48,8 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
+  let expandedContent = $state(false);
+  let dialHeight = $state(0);
   let {
     mobileLayout = false,
     cornerControl,
@@ -162,9 +164,9 @@
     <div class="body authoring-body">{@render authoringBody()}</div>
     {@render authoringFooter?.()}
   {:else}
-    <div class="body">
-      <aside class="dial" aria-label="Importance rating">
-        {#if voting}{@render voting()}{:else}<VotingDial
+    <div class="body" class:expanded-content={expandedContent && !!voting}>
+      <aside class="dial" bind:offsetHeight={dialHeight} aria-label="Importance rating">
+        {#if voting}{@render voting(expandedContent)}{:else}<VotingDial
             label="Node importance"
             {value}
             {average}
@@ -176,8 +178,10 @@
       {#if node.isHidden}
         {@render legacyDescription(node.description)}
       {:else}
-        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
+        <div class="section-preview-sizing" style:--atlas-section-preview-height={!expandedContent && dialHeight > 80 ? `max(8.5rem, calc(${dialHeight}px - 3.25rem))` : undefined}>
+        <FeedBlockPreview onExpandedChange={(expanded) => expandedContent = expanded} nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
+        </div>
       {/if}
     </div>
     <div class="card-details">
@@ -375,7 +379,9 @@
 
   .authoring-body { padding-bottom: var(--card-padding); }
 
-  .body:has(> :global(.has-slides)), .body:has(> :global(.has-sections)) {
+  .section-preview-sizing { display: contents; }
+  .body.expanded-content:not(:has(:global(.vote-open))) { grid-template-columns: minmax(0, 1fr); row-gap: .5rem; }
+  .body:has(:global(.has-slides)), .body:has(:global(.has-sections)) {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
@@ -384,12 +390,12 @@
     .dial { float: none; margin-right: 0; margin-bottom: 0; }
   }
 
-  .body:has(> :global(.has-sections)) > :global(.has-sections) { align-self: stretch; display: flex; }
+  .body:has(:global(.has-sections)) :global(.has-sections) { align-self: stretch; display: flex; }
 
   // Let the dial set the grid row height. Slide contents are clipped inside
   // that row and cannot make the card grow when the active block changes.
   @media (min-width: 561px) {
-    .body:has(> :global(.has-slides)) > :global(.has-slides) {
+    .body:has(:global(.has-slides)) :global(.has-slides) {
       align-self: stretch;
       display: flex;
       contain: size;
@@ -465,8 +471,10 @@
       // The button's existing right float lets text occupy the remaining width.
       .body { display: flow-root; }
       .description { display: block; }
-      .body:has(> :global(.has-slides)), .body:has(> :global(.has-sections)) { display: block; }
+      .body:has(:global(.has-slides)), .body:has(:global(.has-sections)) { display: block; }
       .dial { display: contents; }
+      .expanded-content .dial { display: block; margin-bottom: .5rem; }
+      .section-preview-sizing { --atlas-section-preview-height: 8.5rem !important; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }

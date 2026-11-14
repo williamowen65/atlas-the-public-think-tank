@@ -62,9 +62,9 @@
   {#if view === 'feed'}
     <NodeCardRibbonCorner {node} blocks={content} draft mobileLayout {average} {totalVotes}
       onReadMore={() => view = 'full'}>
-      {#snippet voting()}
+      {#snippet voting(compact?: boolean)}
         <LiveVotingDial nodeId={node.id} initialAverage={average} initialTotalVotes={totalVotes}
-          mobileCompact preview />
+          mobileCompact forceCompact={compact} preview />
       {/snippet}
     </NodeCardRibbonCorner>
   {:else if view === 'full'}
