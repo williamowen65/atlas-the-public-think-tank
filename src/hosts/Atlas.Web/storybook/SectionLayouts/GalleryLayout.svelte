@@ -46,8 +46,7 @@
   {#if layout === 'slideshow' && photos.length}
     <div class="slideshow">
       <div class="slide-stage" class:peek={slideshow.neighbors && photos.length > 1}
-        class:fill={slideshow.fit === 'cover'} data-height={slideshow.height ?? 'standard'}
-        class:has-captions={photos.some((item) => item.caption && item.captionPlacement !== 'overlay')}>
+        class:fill={slideshow.fit === 'cover'} data-height={slideshow.height ?? 'standard'}>
         {#if slideshow.neighbors && photos.length > 1}
           <div class="neighbor previous" inert aria-hidden="true">
             {@render photo({ ...photos[(current + photos.length - 1) % photos.length], caption: '' }, true)}
@@ -181,14 +180,10 @@
     object-fit: cover; object-position: var(--focus-x) var(--focus-y);
     transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
   }
-  .has-captions .current-slide :global(figure) {
-    display: grid;
-    grid-template: var(--slide-height) 2.75rem / minmax(0, 1fr);
-  }
   .current-slide :global(figcaption) {
     position: static;
     box-sizing: border-box;
-    grid-row: 2;
+    max-block-size: 2.75rem;
     overflow: auto;
     width: 100%;
     margin: 0;
@@ -196,7 +191,7 @@
     text-align: center;
     overflow-wrap: anywhere;
   }
-  .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .4rem; }
+  .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .2rem; }
   .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
   @container (max-width: 24rem) {
     .mosaic-row, .mosaic-row.reverse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
