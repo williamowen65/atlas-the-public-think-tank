@@ -26,12 +26,16 @@
     canModerate = false,
     pendingModerationCount = 0,
     globeLauncher,
+    headerHeight = $bindable(0),
+    bottomNavigationHeight = $bindable(0),
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
     /** Visitor globe launcher in the mobile bottom controls. */
     globeLauncher?: Snippet;
+    headerHeight?: number;
+    bottomNavigationHeight?: number;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
      * Selects the signed-in header menu versus login/register links; does not authenticate by
@@ -268,6 +272,7 @@
 <header
   class="atlas-header"
   bind:this={headerElement}
+  bind:offsetHeight={headerHeight}
   style:--sidebar-top={`${sidebarTop}px`}
   class:mobile-experiment={mobileExperiment}
   class:search-open={searchOpen}
@@ -411,7 +416,7 @@
   <button class="sidebar-backdrop" type="button" aria-label="Close Explore sidebar" style:top={`${sidebarTop}px`} onclick={() => closeDrawer()}></button>
 {/if}
 {#if mobileExperiment}
-  <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
+  <nav bind:offsetHeight={bottomNavigationHeight} class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
     {#if globeLauncher}<div class="globe-nav">{@render globeLauncher()}</div>{/if}

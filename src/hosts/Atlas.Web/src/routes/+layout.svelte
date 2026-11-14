@@ -28,6 +28,10 @@
     children: Snippet;
   } = $props();
 
+  // Reserve both bars even while scroll animations hide them, so feed cards stay stable.
+  let headerHeight = $state(0);
+  let bottomNavigationHeight = $state(0);
+
   // Local reactive state: changes update the props passed to AtlasHeader below.
   /**
    * Session-derived flag passed to the header; does not itself authorize API access.
@@ -108,11 +112,11 @@
 <div class="app-shell">
   <GlobeExplorer>
     {#snippet navigation(globeLauncher)}
-      <AtlasHeader mobileExperiment {globeLauncher} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
+      <AtlasHeader bind:headerHeight bind:bottomNavigationHeight mobileExperiment {globeLauncher} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
     {/snippet}
   </GlobeExplorer>
   <!-- The current route renders between the shared header and footer. -->
-  <main id="main-content">
+  <main id="main-content" style:--atlas-navigation-height={`${headerHeight + bottomNavigationHeight}px`}>
     {@render children()}
   </main>
   <AtlasFooter />

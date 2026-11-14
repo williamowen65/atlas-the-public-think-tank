@@ -110,8 +110,8 @@
 <style>
   .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
   .viewport.feed {
-    /* Leave room for the card heading, actions, and feed navigation. */
-    max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem)));
+    /* Reserve space for the card itself and the shared navigation bars. */
+    max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem - var(--atlas-navigation-height, 0px))));
     overflow: clip;
   }
   .viewport.feed.expanded { max-block-size: none; }
