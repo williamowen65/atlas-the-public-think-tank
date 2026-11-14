@@ -80,10 +80,12 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
   // Selecting a value must not send a write until the user confirms it.
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
   expect(fixture.mutations).toEqual([]);
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
-  const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
-  await expect(picker.getByRole('status')).toHaveText('Thank you for casting a vote on Atlas, the Public Think Tank.');
+  const picker = page.getByRole('dialog', { name: 'Thank you for voting', exact: true });
+  await expect(picker.getByRole('status')).toContainText('Thank you for casting a vote on Atlas, the Public Think Tank.');
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
   await expect(picker).toBeHidden();
   await page.getByRole('button', { name: /Voted 10.*Average 6.3/ }).click();
   await expect(page.locator('.average')).toHaveText('6.3');

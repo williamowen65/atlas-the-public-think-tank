@@ -242,6 +242,16 @@
       window.removeEventListener('atlas-session-changed', sessionChanged);
     };
   });
+  const reviewing = $derived(pending !== null || pendingUndo);
+  const confirmationTitle = $derived(pendingUndo ? 'Undo your importance rating?' : 'Confirm your importance rating');
+  const pickerTitle = $derived(thanking ? 'Thank you for voting' : reviewing ? confirmationTitle : 'Rate node importance');
+  let pickerHeading = $state<HTMLHeadingElement>();
+  $effect(() => {
+    // Announce each new step without closing and reopening the dialog.
+    const title = pickerTitle;
+    if (expanded && pickerHeading?.textContent === title) pickerHeading.focus();
+  });
+
   $effect(() => {
     if (login && dialog && !dialog.open) dialog.showModal();
   });
@@ -267,6 +277,7 @@
     if (busy || archived || loading || pending !== null || next === confirmed) return;
     value = next;
     pending = next;
+    if (forceCompact) return;
     void tick().then(() => {
       if (!controller.signal.aborted && pending === next && confirmDialog && !confirmDialog.open)
         confirmDialog.showModal();
@@ -276,6 +287,7 @@
     if (busy || loading || archived || confirmed === null) return;
     pending = null;
     pendingUndo = true;
+    if (forceCompact) return;
     void tick().then(() => {
       if (pendingUndo && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
     });
@@ -311,7 +323,7 @@
       saved = true;
       if (forceCompact && expanded && next !== null) {
         thanking = true;
-        thankYouTimer = setTimeout(closePicker, 1600);
+        thankYouTimer = setTimeout(closePicker, 2500);
       } else if (collapsedMode) {
         expanded = false;
       }
@@ -376,19 +388,24 @@
     {/key}
   {/if}
   {#if forceCompact}
-    <dialog bind:this={dialDialog} class="vote-login vote-picker" aria-label="Rate node importance"
+    <dialog bind:this={dialDialog} class="vote-login vote-picker" aria-label={pickerTitle}
       onpointerdown={(event) => backdropPressed = onBackdrop(event)}
       onpointerup={(event) => {
         if (backdropPressed && onBackdrop(event)) closePicker();
         backdropPressed = false;
       }}
       onclose={closePicker}>
-      <div class="picker-heading">
-        <h2>Rate node importance</h2>
+      <div class="picker-heading" class:thank-you-heading={thanking}>
+        <h2 bind:this={pickerHeading} tabindex="-1">{pickerTitle}</h2>
         <button type="button" aria-label="Close vote dial" onclick={closePicker}>×</button>
       </div>
       {#if thanking}
-        <p class="vote-thanks" role="status">Thank you for casting a vote on Atlas, the Public Think Tank.</p>
+        <div class="vote-thanks" role="status">
+          <span class="vote-checkmark" aria-hidden="true">✓</span>
+          <p>Thank you for casting a vote on Atlas, the Public Think Tank.</p>
+        </div>
+      {:else if reviewing}
+        {@render confirmationControls()}
       {:else}
         {@render dialControls()}
         {@render feedback()}
@@ -430,27 +447,28 @@
     >{/if}
   </div>
 {/snippet}
-<!--
-  Confirmation is a separate native dialog so its modal behavior is independent of the inline
-  dial.
--->
-<dialog
-  bind:this={confirmDialog}
-  class="vote-login"
-  aria-labelledby="vote-confirm-title"
-  oncancel={cancelPending}
-  onclose={() => {
-    if (pending !== null || pendingUndo) cancelPending();
-  }}
->
+<!-- Inline dials still need a dialog to review their vote. -->
+{#if !forceCompact}
+  <dialog
+    bind:this={confirmDialog}
+    class="vote-login"
+    aria-label={confirmationTitle}
+    oncancel={cancelPending}
+    onclose={() => {
+      if (reviewing) cancelPending();
+    }}
+  >
+    <h2>{confirmationTitle}</h2>
+    {@render confirmationControls()}
+  </dialog>
+{/if}
+{#snippet confirmationControls()}
   {#if pendingUndo}
-    <h2 id="vote-confirm-title">Undo your importance rating?</h2>
     <p>
       Your current rating of <strong>{confirmed} out of 10</strong> will be removed from the community
       average and vote count.
     </p>
   {:else}
-    <h2 id="vote-confirm-title">Confirm your importance rating</h2>
     <p>
       Does this contribution deserve attention? Rate how important it is to explore or consider,
       from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.
@@ -469,7 +487,7 @@
       >{pendingUndo ? 'Confirm undo' : 'Confirm rating'}</button
     >
   </div>
-</dialog>
+{/snippet}
 <!--
   Sign-in is separate from confirmation; signing in asks the visitor to select their rating
   again.
@@ -584,7 +602,29 @@
     cursor: pointer;
   }
   .picker-heading button:hover { background: var(--atlas-bg); }
-  .vote-thanks { margin: 0.85rem 0 0; }
+  .vote-picker .thank-you-heading h2 { flex: 1; }
+  .vote-thanks {
+    display: grid;
+    justify-items: center;
+    gap: .75rem;
+    margin-block-start: 1rem;
+    padding: 1.15rem;
+    border-radius: var(--atlas-radius);
+    background: color-mix(in srgb, var(--atlas-accent) 9%, var(--atlas-surface));
+    text-align: center;
+  }
+  .vote-thanks p { margin: 0; }
+  .vote-checkmark {
+    display: grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 50%;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
   .collapsed-mode .dial-content {
     display: block;
     float: left;
