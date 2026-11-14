@@ -13,7 +13,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, linkPreviewSamples, type Example, type GalleryStyle, type MasonryColumns, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
+    type Block, linkPreviewSamples, type Example, type GalleryStyle, type GalleryColumns, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: Example } = $props();
@@ -668,7 +668,7 @@
     {/if}
   {/snippet}
   {#if block.kind === 'gallery'}
-    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryColumnLimit={block.masonryColumns} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} columns={block.galleryStyle === 'masonry' ? block.masonryColumns : block.gridColumns} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
@@ -765,17 +765,24 @@
           </select>
         </label>
       {/if}
-      {#if block.galleryStyle === 'masonry'}
-        <label>Masonry columns
-          <select value={block.masonryColumns ?? 3} onchange={(event) => {
-            remember();
-            block.masonryColumns = Number(event.currentTarget.value) as MasonryColumns;
-          }}>
+      {#if !block.galleryStyle || block.galleryStyle === 'grid' || block.galleryStyle === 'masonry'}
+        {@const masonry = block.galleryStyle === 'masonry'}
+        <label>{masonry ? 'Masonry columns' : 'Grid columns'}
+          <select value={masonry ? block.masonryColumns ?? 3 : block.gridColumns ?? 2}
+            onchange={(event) => {
+              const count = Number(event.currentTarget.value) as GalleryColumns;
+              remember();
+              draft.blocks = draft.blocks.map((item) => item.id === block.id
+                ? { ...block, [masonry ? 'masonryColumns' : 'gridColumns']: count }
+                : item);
+            }}>
             <option value={2}>2 columns</option>
             <option value={3}>3 columns</option>
             <option value={4}>4 columns</option>
           </select>
         </label>
+      {/if}
+      {#if block.galleryStyle === 'masonry'}
         <label>Masonry vertical alignment
           <select value={block.masonryAlignment ?? 'top'} onchange={(event) => {
             remember();

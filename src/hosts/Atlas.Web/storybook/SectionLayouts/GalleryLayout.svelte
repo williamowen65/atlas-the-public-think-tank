@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { GalleryStyle, MasonryColumns, Photo, SlideshowSettings } from './sectionLayouts';
+  import type { GalleryStyle, GalleryColumns, Photo, SlideshowSettings } from './sectionLayouts';
 
-  let { photos, layout = 'grid', width = 'full', masonryColumnLimit = 3, masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', columns, masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
     width?: 'full' | 'centered';
-    masonryColumnLimit?: MasonryColumns;
+    columns?: GalleryColumns;
     masonryAlignment?: 'top' | 'center';
     slideshow?: SlideshowSettings;
     selected?: string | null;
@@ -18,10 +18,12 @@
     index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
 
   let masonryWidth = $state(0);
-  const columnCount = $derived(Math.min(photos.length, masonryColumnLimit, masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : masonryWidth < 512 ? 3 : 4));
-  const masonryColumns = $derived(Array.from({ length: columnCount }, (_, column) => {
-    const size = Math.floor(photos.length / columnCount);
-    const remainder = photos.length % columnCount;
+  const masonryCount = $derived(Math.min(photos.length,
+    columns ?? (masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : 3)));
+  const gridCount = $derived(Math.max(1, Math.min(photos.length, columns ?? 2)));
+  const masonryColumns = $derived(Array.from({ length: masonryCount }, (_, column) => {
+    const size = Math.floor(photos.length / masonryCount);
+    const remainder = photos.length % masonryCount;
     const start = column * size + Math.min(column, remainder);
     return photos.slice(start, start + size + Number(column < remainder));
   }));
@@ -87,7 +89,7 @@
     </div>
   {:else if layout === 'masonry' && photos.length > 1}
     <div class="masonry" class:middle={masonryAlignment === 'center'}
-      bind:clientWidth={masonryWidth} style:--column-count={columnCount}>
+      bind:clientWidth={masonryWidth} style:--column-count={masonryCount}>
       {#each masonryColumns as items}
         <div class="masonry-column">
           {#each items as item (item.id)}
@@ -97,7 +99,7 @@
       {/each}
     </div>
   {:else}
-    <div class="tiles">
+    <div class="tiles" class:paired-grid={gridCount === 2} style:--column-count={gridCount}>
       {#each photos as item (item.id)}
         <div class="tile">{@render photo(item)}</div>
       {/each}
@@ -109,8 +111,8 @@
 <style>
   .centered { width: min(84%, 48rem); margin-inline: auto; }
   @container (max-width: 37rem) { .centered { width: 100%; } }
-  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; align-items: start; }
-  .tiles .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
+  .tiles { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
+  .tiles .tile:only-child, .paired-grid .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
     grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;
   }
   .mosaic, .mosaic-stack { display: grid; gap: .6rem; align-content: start; }

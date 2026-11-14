@@ -19,13 +19,13 @@ export type SlideshowSettings = {
   fit?: 'contain' | 'cover';
   neighbors?: boolean;
 };
-export type MasonryColumns = 2 | 3 | 4;
+export type GalleryColumns = 2 | 3 | 4;
 export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | 'linkPreviews' | GalleryStyle;
 export type Block =
   | { id: string; kind: 'link'; url: string }
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
-  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; masonryColumns?: MasonryColumns; masonryAlignment?: 'top' | 'center'; slideshow?: SlideshowSettings };
+  | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; gridColumns?: GalleryColumns; masonryColumns?: GalleryColumns; masonryAlignment?: 'top' | 'center'; slideshow?: SlideshowSettings };
 export type Draft = {
   title: string;
   layouts: Layout[];
