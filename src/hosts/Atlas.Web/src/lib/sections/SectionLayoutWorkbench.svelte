@@ -41,13 +41,21 @@
   let picker = $state<string | null>(null);
   let draggedSection = $state<string | null>(null);
   let dropParagraph = $state<HTMLElement | null>(null);
-  let sidebarOpen = $state(true);
+  let sidebarOpen = $state(untrack(() => !embedded));
+  let sidebarToggle: HTMLButtonElement;
+
+  async function closeSidebar() {
+    sidebarOpen = false;
+    await tick();
+    sidebarToggle?.focus({ preventScroll: true });
+  }
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
   const textFormatting = $derived(activeEditor?.textFormatting());
   let workbench = $state<HTMLDivElement>();
   let alignmentMenu = $state<HTMLDivElement>();
   const alignmentMenuId = $props.id();
+  const sidebarId = `${alignmentMenuId}-sidebar`;
   const textAlignments = [['left', 'Left'], ['center', 'Center'], ['right', 'Right']] as const;
   const verticalAlignments = [['start', 'Top'], ['center', 'Middle'], ['end', 'Bottom']] as const;
   const formats = [
@@ -424,20 +432,20 @@
   else redo();
 }} />
 <div class="workbench" class:embedded class:narrow bind:this={workbench}>
-  <div class="toolbar" role="group" aria-label="Workbench view">
-    {#if !embedded}
+  {#if !embedded}
+    <div class="toolbar" role="group" aria-label="Workbench view">
       <button type="button" aria-pressed={view === 'edit'} onclick={() => selectView('edit')}>Edit</button>
       <button type="button" aria-pressed={view === 'feed'} onclick={() => selectView('feed')}>Feed preview</button>
       <button type="button" aria-pressed={view === 'node'} onclick={() => selectView('node')}>Node page</button>
-    {/if}
-    {#if view === 'edit'}
-      <button class="sidebar-toggle" type="button" aria-expanded={sidebarOpen}
-        onclick={() => sidebarOpen = !sidebarOpen}>{sidebarOpen ? 'Hide editor controls' : 'Show editor controls'}</button>
-    {/if}
-    {#if !embedded}<label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>{/if}
-  </div>
+      {#if view === 'edit'}
+        <button class="sidebar-toggle" type="button" aria-expanded={sidebarOpen}
+          onclick={() => sidebarOpen = !sidebarOpen}>{sidebarOpen ? 'Hide editor controls' : 'Show editor controls'}</button>
+      {/if}
+      <label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>
+    </div>
+  {/if}
 
-  <div class="editor-frame" class:with-sidebar={view === 'edit' && sidebarOpen}>
+  <div class="editor-frame" class:with-sidebar={!embedded && view === 'edit' && sidebarOpen}>
   <article class="node">
     {#if !embedded}<header>
       {#if view === 'edit'}
@@ -449,6 +457,16 @@
 
     {#if view === 'edit'}
       <div class="editing-tools">
+        {#if embedded}
+          <button class="sidebar-toggle sidebar-icon" type="button" bind:this={sidebarToggle}
+            aria-label="Editor settings" title="Editor settings" aria-expanded={sidebarOpen}
+            aria-controls={sidebarOpen ? sidebarId : undefined} onclick={() => sidebarOpen = !sidebarOpen}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M15 4v16m2-11h2m-2 3h2m-2 3h2" />
+            </svg>
+          </button>
+        {/if}
         {#if movingBlock}
           <span role="status">Choose a slot to move or swap.</span>
           <button type="button" onclick={cancelMove}>Cancel move</button>
@@ -631,10 +649,10 @@
   {#if view === 'edit' && sidebarOpen}
     {@const index = draft.sections.findIndex(({ id }) => id === activeSection)}
     {@const section = draft.sections[index]}
-    <aside class="editor-sidebar" aria-label="Editor controls">
+    <aside class="editor-sidebar" id={sidebarId} aria-label="Editor controls">
       <div class="sidebar-heading">
         <h2>Editor controls</h2>
-        <button type="button" aria-label="Collapse editor controls" onclick={() => sidebarOpen = false}>×</button>
+        <button type="button" aria-label="Collapse editor controls" onclick={closeSidebar}>×</button>
       </div>
       {#if !movingBlock && section}
         <div class="action-heading">
@@ -977,13 +995,17 @@
   }
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
   .workbench.embedded { padding: 0; max-width: none; }
-  .embedded .node { padding: .75rem; }
-  @media (min-width: 65.001rem) {
-    .embedded .editor-frame.with-sidebar { grid-template-columns: minmax(0, 1fr) minmax(13rem, 32%); }
-  }
-  @media (max-width: 65rem) {
-    .embedded .editor-sidebar { position: static; max-height: none; }
-    .embedded .editor-frame.with-sidebar { padding-bottom: 0; }
+  /* The Atlas card body supplies the same gutter as its header. */
+  .workbench.embedded .node { border: 0; border-radius: 0; padding: 0; background: transparent; }
+  .embedded .editing-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+  .embedded .formatting { flex: 1 1 0; min-width: 0; padding-inline: 0; }
+  .sidebar-icon { order: 1; margin-inline-start: auto; flex: none; width: 2.75rem; height: 2.75rem; display: grid; place-items: center; }
+  .workbench.embedded .editor-sidebar {
+    position: fixed; inset: 0 0 0 auto; z-index: 65;
+    box-sizing: border-box; width: min(22rem, 85vw); max-height: none;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+    border: 0; border-inline-start: 1px solid var(--atlas-border); border-radius: 0;
+    box-shadow: -.35rem 0 1.25rem #0002; overscroll-behavior: contain;
   }
   .workbench.narrow { max-width: 25rem; padding-inline: 0; }
   .narrow .node { padding-inline: .65rem; }
