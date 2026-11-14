@@ -17,11 +17,9 @@
     leadingAction?: Snippet;
   } = $props();
 
-  let expanded = $state(false);
   let viewportHeight = $state(0);
   let contentHeight = $state(0);
   let gallery = $state<ReturnType<typeof NodeMediaGallery>>();
-  const instance = $props.id();
   const truncated = $derived(feed && contentHeight > viewportHeight + 1);
   const photos = $derived(draft.sections.flatMap((section) => {
     const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
@@ -37,7 +35,7 @@
 </script>
 
 <div class:feed-layout={feed}>
-<div class="viewport" class:feed class:expanded class:truncated id={instance} bind:clientHeight={viewportHeight}>
+<div class="viewport" class:feed class:truncated bind:clientHeight={viewportHeight}>
   <div class="sections" bind:offsetHeight={contentHeight}>
     {#each draft.sections as section, index (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
@@ -84,10 +82,6 @@
 {#if feed}
   <div class="feed-actions">
     {@render leadingAction?.()}
-    {#if truncated || expanded}
-      <button type="button" aria-expanded={expanded} aria-controls={instance}
-        onclick={() => expanded = !expanded}>{expanded ? 'Collapse' : 'Expand'}</button>
-    {/if}
     {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
 {/if}
@@ -114,9 +108,8 @@
     max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem - var(--atlas-navigation-height, 0px))));
     overflow: clip;
   }
-  .viewport.feed.expanded { max-block-size: none; }
   .viewport.truncated { mask-image: linear-gradient(black calc(100% - .65rem), transparent); }
-  .sections { display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
+  .sections { --atlas-markdown-line-height: var(--atlas-node-line-height); display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
   .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
   .slot { min-width: 0; }
   .slot :global(.markdown > :first-child) { margin-block-start: 0; }
@@ -124,7 +117,7 @@
   figure { margin: 0 auto; }
   figure button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
   figcaption, .cutoff { color: var(--atlas-muted); }
-  figcaption { text-align: center; font-size: .85rem; margin-top: .25rem; }
+  figcaption { text-align: center; font-size: var(--atlas-node-meta-size); line-height: var(--atlas-node-meta-line-height); margin-top: .25rem; }
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
   .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; padding-block-start: .5rem; }
   .feed-actions button {

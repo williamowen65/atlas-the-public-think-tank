@@ -278,10 +278,7 @@
     h2 {
       margin: 0 0 var(--atlas-heading-gap, 0.5rem);
       font-size: calc(clamp(1.35rem, 4vw, 1.9rem) * var(--atlas-heading-scale, 1.5) / 1.5);
-      line-height: 1.2;
-    }
-    p {
-      line-height: var(--atlas-line-height, 1.65);
+      line-height: var(--atlas-node-line-height);
     }
   }
 
@@ -386,11 +383,14 @@
       }
     }
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
     color: var(--atlas-muted);
   }
 
   .body {
+    --atlas-markdown-line-height: var(--atlas-node-line-height);
+    line-height: var(--atlas-node-line-height);
     padding: 0.5rem var(--card-padding) 0;
     display: flow-root;
   }
@@ -463,7 +463,6 @@
       --card-padding: 0.75rem;
       h2 { font-size: 1.2rem; }
       .by-prefix, .community-prefix { display: none; }
-      .byline { font-size: 0.75rem; line-height: 1.5; }
       .body { display: flow-root; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }

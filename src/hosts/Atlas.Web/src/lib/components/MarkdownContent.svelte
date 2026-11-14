@@ -57,7 +57,7 @@
   .markdown {
     display: flow-root;
     overflow-wrap: anywhere;
-    line-height: var(--atlas-line-height, 1.65);
+    line-height: var(--atlas-markdown-line-height, var(--atlas-line-height, 1.65));
   }
   /* Injected elements need descendant global selectors; scope them to this wrapper. */
   .markdown :global(pre) {

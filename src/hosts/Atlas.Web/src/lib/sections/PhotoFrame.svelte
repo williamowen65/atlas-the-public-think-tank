@@ -34,7 +34,8 @@
   .caption-overlay {
     position: absolute; inset: auto 0 0; padding: .2rem .4rem;
     background: rgb(0 0 0 / 65%); color: white; text-align: center;
-    font-size: .85rem; overflow-wrap: anywhere; pointer-events: none;
+    font-size: var(--atlas-node-meta-size); line-height: var(--atlas-node-meta-line-height);
+    overflow-wrap: anywhere; pointer-events: none;
   }
   .square { border-radius: 0; }
   .extra-rounded { border-radius: 1.5rem; }

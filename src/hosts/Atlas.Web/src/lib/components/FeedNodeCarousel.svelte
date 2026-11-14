@@ -157,7 +157,6 @@
     .compact :global(.markdown-image img) { max-height: 6.5rem; }
   }
   :global(.feed-block-slide .content-blocks figcaption) {
-    font-size: .76rem; color: var(--atlas-muted);
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
   /* The slide supplies its own inset. Keep the spacing between elements

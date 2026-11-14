@@ -423,11 +423,13 @@
     padding-top: 0;
   }
   h1 {
+    line-height: var(--atlas-node-line-height);
     font-size: clamp(1.4rem, 4vw, 2rem);
     margin: 0 0 0.5rem;
   }
   .byline {
-    font-size: 0.85rem;
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
     color: var(--atlas-muted);
     margin: 0;
     a {
@@ -445,7 +447,8 @@
   .post-body {
     display: flow-root;
     padding: 0.5rem var(--card-padding) 0;
-    line-height: var(--atlas-line-height, 1.65);
+    --atlas-markdown-line-height: var(--atlas-node-line-height);
+    line-height: var(--atlas-node-line-height);
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
@@ -555,7 +558,6 @@
     .node-page { --card-padding: 0.75rem; }
     .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
-    .byline { font-size: 0.75rem; line-height: 1.5; }
   }
   .node-type-row {
     display: flex;

@@ -97,6 +97,11 @@
   figure {
     margin: 1rem 0;
   }
+  figcaption {
+    color: var(--atlas-muted);
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
+  }
   .standalone-image {
     display: block;
     width: var(--atlas-image-width, 50%);

@@ -50,8 +50,7 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
 
   await page.getByRole('checkbox', { name: 'Phone width' }).check();
   await page.getByRole('button', { name: 'Feed preview' }).click();
-  await page.getByRole('button', { name: 'Expand', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Collapse', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Expand', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Read More', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'A greener public square' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Read More', exact: true })).toHaveCount(0);
