@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 const node = 'b1000000-0000-4000-8000-000000000001';
 const story = `http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story&args=nodeId:${node}`;
-async function setup(page: Page, anonymous = false) {
+async function setup(page: Page, anonymous = false, savedVote: number | null = null) {
   let signedIn = !anonymous; let fail = false;
-  let summary = { voteCount: 3, averageVote: 5, currentParticipantVote: null as number | null };
+  let summary = { voteCount: 3, averageVote: 5, currentParticipantVote: savedVote };
   const mutations: { method: string; value?: number }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
@@ -46,6 +46,23 @@ async function setup(page: Page, anonymous = false) {
     return route.fulfill({ status: 404, json: {} });
   });
   return { mutations, fail: (value: boolean) => fail = value };
+}
+
+for (const savedVote of [null, 8, 9, 0]) {
+  test(`the vote dialog centers ${savedVote ?? 'the unrated midpoint'} when opened`, async ({ page }) => {
+    const fixture = await setup(page, false, savedVote);
+    await page.goto(story);
+    const toggle = page.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ });
+    await toggle.click();
+    const dialog = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    const dial = dialog.getByRole('spinbutton');
+    await expect.poll(() => dial.evaluate(reel => {
+      const rowHeight = reel.querySelector('.rating')!.getBoundingClientRect().height;
+      return 10 - Math.round(reel.scrollTop / rowHeight);
+    })).toBe(savedVote ?? 5);
+    await expect(dial).toHaveAttribute('aria-valuetext', savedVote === null ? /Unrated/ : `${savedVote} out of 10`);
+    expect(fixture.mutations).toEqual([]);
+  });
 }
 
 test('node-page votes persist, use server totals, restore on reload and support keyboard undo', async ({ page }) => {
