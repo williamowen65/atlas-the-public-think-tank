@@ -591,7 +591,7 @@
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
       {#snippet reportControl()}
-        {#key node.id}<NodeReportControl nodeId={node.id} />{/key}
+        {#if node}{#key node.id}<NodeReportControl nodeId={node.id} />{/key}{/if}
       {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
