@@ -384,6 +384,12 @@
     if (target) reorderPhoto(block, block.photos.findIndex(({ id }) => id === source), block.photos.findIndex(({ id }) => id === target));
   }
 
+  function updatePhotoText(block: Extract<Block, { photos: Photo[] }>, photoId: string, field: 'src' | 'alt', value: string) {
+    remember();
+    const photos = block.photos.map((photo) => photo.id === photoId ? { ...photo, [field]: value } : photo);
+    draft.blocks = draft.blocks.map((item) => item.id === block.id ? { ...block, photos } : item);
+  }
+
   function newPhoto(): Photo {
     return { id: newId(), src: '', alt: '', caption: '' };
   }
@@ -738,6 +744,9 @@
           {:else}
             Add image details
           {/if}
+          {#if missingAlt}
+            <span class="alt-warning photo-alt-warning" id={`${alignmentMenuId}-alt-${photo.id}`}>Alternative text is required.</span>
+          {/if}
         </button>
         {#if block.kind === 'gallery' && block.galleryStyle !== 'slideshow' && block.photos.length > 1 && activeBlock === block.id && !movingBlock}
           <button class="photo-reorder" type="button" aria-label={`Reorder ${photo.alt || 'image'}`}
@@ -768,9 +777,6 @@
             photo.frame = { ...photo.frame, blobTangents };
           }} />
         {/if}
-        {#if missingAlt}
-          <p class="alt-warning" id={`${alignmentMenuId}-alt-${photo.id}`}>Alternative text is required.</p>
-        {/if}
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
       </figure>
     {/if}
@@ -786,11 +792,11 @@
   {@const missingAlt = !!photo.src.trim() && !photo.alt.trim()}
   <div class="photo-details" role="group" aria-labelledby={`${alignmentMenuId}-image`}>
     <h3 id={`${alignmentMenuId}-image`}>Image settings</h3>
-    <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
+    <label>Image URL<input type="url" value={photo.src} oninput={(event) => updatePhotoText(block, photo.id, 'src', event.currentTarget.value)} /></label>
     <label>Alternative text (required)
       <input value={photo.alt} aria-required="true" aria-invalid={missingAlt}
         aria-describedby={missingAlt ? `${alignmentMenuId}-alt-input-${photo.id}` : undefined}
-        oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} />
+        oninput={(event) => updatePhotoText(block, photo.id, 'alt', event.currentTarget.value)} />
     </label>
     {#if missingAlt}
       <p class="alt-warning" id={`${alignmentMenuId}-alt-input-${photo.id}`}>Describe the photo for people who can’t see it.</p>
@@ -1121,7 +1127,7 @@
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
-  .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
+  .photo-button { position: relative; display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
   button.photo-reorder {
     position: absolute; inset-block-start: .25rem; inset-inline-end: .25rem; z-index: 2;
     width: 2rem; height: 2rem; padding: 0; line-height: 1;
@@ -1134,7 +1140,13 @@
   .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }
   figure { margin: 0; }
   .alt-warning { color: light-dark(#a32323, #ffabab); font-size: .85rem; font-weight: 600; margin: .25rem auto 0; }
-  .edit-photo .alt-warning { width: var(--photo-width, 100%); }
+  .photo-alt-warning {
+    position: absolute; inset: .35rem auto auto .35rem; z-index: 1;
+    max-inline-size: calc(100% - .7rem); box-sizing: border-box; overflow-wrap: anywhere;
+    margin: 0; padding: .2rem .4rem; border-radius: .25rem;
+    background: var(--atlas-surface); box-shadow: 0 1px 4px #0003;
+  }
+  .photo-button:not(:has(> :global(.frame))) .photo-alt-warning { position: static; display: block; }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
   .editor-frame.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 24rem); gap: 1rem; align-items: start; }
   .editor-sidebar {

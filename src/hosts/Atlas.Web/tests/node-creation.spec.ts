@@ -147,7 +147,8 @@ test('a photo missing alt text is flagged before publishing', async ({ page }) =
   await page.getByRole('button', { name: 'Edit image', exact: true }).click();
   await page.getByRole('button', { name: 'Editor settings' }).click();
   await page.getByLabel('Image URL').fill('https://example.test/photo.jpg');
-  await expect(page.getByText('Alternative text is required.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit image', exact: true })
+    .getByText('Alternative text is required.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Alternative text (required)')).toHaveAttribute('aria-invalid', 'true');
   await page.getByLabel('Alternative text (required)').fill('Trees along a walkway');
   await expect(page.getByText('Alternative text is required.', { exact: true })).toHaveCount(0);
