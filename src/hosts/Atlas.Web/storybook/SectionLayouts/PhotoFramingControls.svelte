@@ -4,8 +4,23 @@
   let { photo, src, gallery, fitTile = false, slideshowFit, onChange }: {
     photo: Photo; src?: string; gallery: boolean; fitTile?: boolean; slideshowFit?: 'contain' | 'cover'; onChange: (frame: Frame) => void;
   } = $props();
+  const focalHintId = $props.id();
+  const focalSteps: Record<string, readonly [number, number]> = {
+    ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5],
+  };
   const ratio = $derived(photo.frame?.ratio ?? (gallery ? '1 / 1' : 'natural'));
   function update(change: Frame) { onChange({ ...photo.frame, ...change }); }
+
+  function moveFocalPoint(event: KeyboardEvent) {
+    const step = focalSteps[event.key];
+    if (!step || !Array.isArray(step)) return;
+    event.preventDefault();
+    const [dx, dy] = step;
+    update({
+      x: Math.min(100, Math.max(0, (photo.frame?.x ?? 50) + dx)),
+      y: Math.min(100, Math.max(0, (photo.frame?.y ?? 50) + dy)),
+    });
+  }
 </script>
 
 <fieldset>
@@ -41,7 +56,11 @@
         onchange={(event) => update({ zoom: event.currentTarget.valueAsNumber })} />
     </label>
     {#if src}
+      <div class="focal-label">Focal point
+        <small id={focalHintId}>Click or tap the photo to set the focal point. Use the arrow keys when the photo is focused.</small>
+      </div>
       <button class="focal-preview" type="button" aria-label="Set focal point on photo"
+        aria-describedby={focalHintId} onkeydown={moveFocalPoint}
         onclick={(event) => {
           if (!event.detail) { update({ x: 50, y: 50 }); return; }
           const rect = event.currentTarget.getBoundingClientRect();
@@ -53,16 +72,7 @@
         <PhotoFrame photo={{ ...photo, caption: '', frame: { ratio: 'natural' } }} {src} />
         <span class="dot" aria-hidden="true" style:left={(photo.frame?.x ?? 50) + '%'} style:top={(photo.frame?.y ?? 50) + '%'}></span>
       </button>
-      <small>Click or tap the photo to set its focal point, or use the sliders.</small>
     {/if}
-    <label><span class="range-label">Focal point horizontal <span aria-hidden="true">{photo.frame?.x ?? 50}%</span></span>
-      <input type="range" min="0" max="100" value={photo.frame?.x ?? 50}
-        onchange={(event) => update({ x: event.currentTarget.valueAsNumber })} />
-    </label>
-    <label><span class="range-label">Focal point vertical <span aria-hidden="true">{photo.frame?.y ?? 50}%</span></span>
-      <input type="range" min="0" max="100" value={photo.frame?.y ?? 50}
-        onchange={(event) => update({ y: event.currentTarget.valueAsNumber })} />
-    </label>
   {/if}
 </fieldset>
 
@@ -77,6 +87,8 @@
   small { color: var(--atlas-muted); }
   .range-label { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
   .range-label span { font-weight: 400; font-variant-numeric: tabular-nums; color: var(--atlas-muted); }
+  .focal-label { display: grid; gap: .25rem; font-size: .875rem; font-weight: 600; }
+  .focal-label small { font-weight: 400; }
   .focal-preview { justify-self: center; position: relative; display: block; width: min(100%, 12rem); padding: 0; border: 0; background: transparent; cursor: crosshair; }
   .dot { position: absolute; transform: translate(-50%, -50%); width: .85rem; height: .85rem;
     border: 2px solid white; border-radius: 50%; background: #172f40; pointer-events: none; }
