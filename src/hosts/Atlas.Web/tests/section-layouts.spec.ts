@@ -407,3 +407,32 @@ test('gallery columns update live and carry through both previews', async ({ pag
   await page.getByRole('button', { name: 'Node page' }).click();
   await expect(masonryColumns).toHaveCount(2);
 });
+
+test('redo restores successive edits until a new edit clears the redo history', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const title = page.getByRole('textbox', { name: 'Node title' });
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  const redo = page.getByRole('button', { name: 'Redo', exact: true });
+
+  await expect(redo).toBeDisabled();
+  await title.fill('First edit');
+  await title.fill('Second edit');
+  await undo.click();
+  await undo.click();
+  await expect(title).toHaveValue('A greener public square');
+  await redo.click();
+  await expect(title).toHaveValue('First edit');
+  await redo.click();
+  await expect(title).toHaveValue('Second edit');
+  await expect(redo).toBeDisabled();
+
+  await title.press('Control+z');
+  await title.press('Control+Shift+z');
+  await expect(title).toHaveValue('Second edit');
+  await undo.click();
+  await title.fill('New direction');
+  await expect(redo).toBeDisabled();
+  await undo.click();
+  await redo.click();
+  await expect(title).toHaveValue('New direction');
+});

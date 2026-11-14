@@ -47,6 +47,7 @@
   ] as const;
 
   let history = $state.raw<Draft[]>([]);
+  let future = $state.raw<Draft[]>([]);
   let editorVersion = $state(0);
   const selectedText = $derived(draft.blocks.find((block): block is Extract<Block, { kind: 'text' }> => block.id === activeBlock && block.kind === 'text'));
   const selectedAssignment = $derived(draft.assignments.find(({ blockId }) => blockId === activeBlock));
@@ -60,8 +61,9 @@
   const selectedPhoto = $derived(mediaBlock && 'photos' in mediaBlock
     ? mediaBlock.photos.find(({ id }) => id === photoDetails) : undefined);
 
-  function remember() {
-    history = [...history, structuredClone($state.snapshot(draft))];
+  function remember(previous = $state.snapshot(draft)) {
+    history = [...history, structuredClone(previous)];
+    future = [];
   }
 
   function setWrap(section: Section, slots: Slot[], imageId: string, side: string) {
@@ -145,11 +147,25 @@
   }
 
   function undo() {
+    if (layoutBefore) finishLayout();
     const previous = history.at(-1);
     if (!previous) return;
-    layoutBefore = null;
+    future = [...future, structuredClone($state.snapshot(draft))];
     history = history.slice(0, -1);
-    draft = previous;
+    restoreDraft(previous, 'Change undone.');
+  }
+
+  function redo() {
+    const next = future.at(-1);
+    if (!next) return;
+    if (layoutBefore) finishLayout(true);
+    history = [...history, structuredClone($state.snapshot(draft))];
+    future = future.slice(0, -1);
+    restoreDraft(next, 'Change redone.');
+  }
+
+  function restoreDraft(snapshot: Draft, status: string) {
+    draft = snapshot;
     editorVersion++;
     movingBlock = null;
     activeSection = null;
@@ -158,7 +174,7 @@
     layoutSection = null;
     picker = null;
     photoDetails = null;
-    message = 'Change undone.';
+    message = status;
   }
 
   function updateFocus(target: EventTarget | null, keyboard = false) {
@@ -166,7 +182,7 @@
     const inside = workbench?.contains(target);
     if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools')) return;
     if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
-    if (!keyboard && layoutBefore && !target.closest('.layout-panel')) finishLayout();
+    if (!keyboard && layoutBefore && !target.closest('.layout-panel, .editing-tools')) finishLayout();
     const section = inside && target.closest('.edit-slot, .layout-panel')
       ? target.closest<HTMLElement>('[data-section]') : null;
     const block = inside ? target.closest<HTMLElement>('[data-block]') : null;
@@ -258,7 +274,7 @@
     if (before) {
       if (cancel) draft = { ...draft, sections: before.sections, assignments: before.assignments };
       else if (before.sections.find(({ id }) => id === layoutSection)?.layoutId !== layoutChoice)
-        history = [...history, structuredClone(before)];
+        remember(before);
     }
     layoutBefore = null;
     layoutSection = null;
@@ -369,13 +385,17 @@
   onpointerdowncapture={(event) => updateFocus(event.target)}
   onfocusin={(event) => updateFocus(event.target, true)} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
-  if (view === 'edit' && history.length && !movingBlock && !event.defaultPrevented
-    && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z'
-    && !(event.target instanceof Element && event.target.closest('.layout-panel'))) {
-    event.preventDefault();
-    event.stopPropagation();
-    undo();
-  }
+  if (view !== 'edit' || movingBlock || event.defaultPrevented || event.altKey
+    || !(event.ctrlKey || event.metaKey) || !(event.target instanceof Element)
+    || !workbench?.contains(event.target) || event.target.closest('.layout-panel')) return;
+  const key = event.key.toLowerCase();
+  const undoShortcut = key === 'z' && !event.shiftKey;
+  const redoShortcut = (key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey && event.ctrlKey);
+  if (!undoShortcut && !redoShortcut) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (undoShortcut) undo();
+  else redo();
 }} />
 <div class="workbench" class:narrow bind:this={workbench}>
   <div class="toolbar" role="group" aria-label="Workbench view">
@@ -404,7 +424,8 @@
         {#if movingBlock}
           <span role="status">Choose a slot to move or swap.</span>
           <button type="button" onclick={cancelMove}>Cancel move</button>
-          <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
+          <button type="button" disabled={!history.length && !layoutBefore} onclick={undo}>Undo</button>
+          <button type="button" disabled={!future.length} onclick={redo}>Redo</button>
         {:else}
           <div class="formatting" role="group" aria-label="Text formatting">
             <select class="heading-select" class:active-heading={!!textFormatting?.heading}
@@ -444,8 +465,11 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
               </button>
             </div>
-            <button type="button" aria-label="Undo" title="Undo" disabled={!history.length} onclick={undo}>
+            <button type="button" aria-label="Undo" title="Undo" disabled={!history.length && !layoutBefore} onclick={undo}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5m-5-5h10a5 5 0 0 1 0 10" /></svg>
+            </button>
+            <button type="button" aria-label="Redo" title="Redo" disabled={!future.length} onclick={redo}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 5 5-5 5m5-5H10a5 5 0 0 0 0 10" /></svg>
             </button>
             <div id={alignmentMenuId} class="alignment-menu" popover bind:this={alignmentMenu}
               role="group" aria-label="Alignment options">
