@@ -64,7 +64,7 @@
                     <LinkPreviewCard url={block.url} />
                   {:else if block?.kind === 'gallery'}
                     {#snippet tile(photo: Photo)}{@render photoView(photo, block.galleryStyle !== 'masonry')}{/snippet}
-                    <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} photo={tile} />
+                    <GalleryLayout photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} width={block.galleryWidth} masonryColumnLimit={block.masonryColumns} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} photo={tile} />
                   {:else if block}
                     {#each block.photos as photo (photo.id)}{@render photoView(photo, false)}{/each}
                   {/if}

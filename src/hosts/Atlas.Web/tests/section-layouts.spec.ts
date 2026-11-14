@@ -370,3 +370,20 @@ test('the phone-width formatting toolbar stays on one row and groups alignment',
   await vertical.getByRole('button', { name: 'Bottom' }).click();
   await expect(section.locator('.edit-slot').first()).toHaveCSS('align-items', 'end');
 });
+
+test('masonry column preference applies in the editor and node preview', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--masonry-gallery&viewMode=story');
+  await page.getByRole('button', { name: 'Edit Buildings along a city street' }).focus();
+  const columns = page.getByLabel('Masonry columns');
+  const tiles = page.locator('.masonry-column');
+  await expect(columns).toHaveValue('3');
+  await expect(tiles).toHaveCount(3);
+  await columns.selectOption('4');
+  await expect(tiles).toHaveCount(4);
+  await columns.selectOption('2');
+  await expect(tiles).toHaveCount(2);
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(tiles).toHaveCount(2);
+});

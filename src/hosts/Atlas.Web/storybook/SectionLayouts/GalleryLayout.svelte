@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { GalleryStyle, Photo, SlideshowSettings } from './sectionLayouts';
+  import type { GalleryStyle, MasonryColumns, Photo, SlideshowSettings } from './sectionLayouts';
 
-  let { photos, layout = 'grid', width = 'full', masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
+  let { photos, layout = 'grid', width = 'full', masonryColumnLimit = 3, masonryAlignment = 'top', slideshow = {}, selected, onNavigate, photo }: {
     photos: Photo[];
     layout?: GalleryStyle;
     width?: 'full' | 'centered';
+    masonryColumnLimit?: MasonryColumns;
     masonryAlignment?: 'top' | 'center';
     slideshow?: SlideshowSettings;
     selected?: string | null;
@@ -17,7 +18,7 @@
     index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
 
   let masonryWidth = $state(0);
-  const columnCount = $derived(Math.min(photos.length, masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : 3));
+  const columnCount = $derived(Math.min(photos.length, masonryColumnLimit, masonryWidth < 272 ? 1 : masonryWidth < 384 ? 2 : masonryWidth < 512 ? 3 : 4));
   const masonryColumns = $derived(Array.from({ length: columnCount }, (_, column) => {
     const size = Math.floor(photos.length / columnCount);
     const remainder = photos.length % columnCount;

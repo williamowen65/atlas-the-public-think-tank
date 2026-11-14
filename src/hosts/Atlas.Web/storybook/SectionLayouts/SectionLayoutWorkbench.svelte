@@ -13,7 +13,7 @@
   import SectionNodeView from './SectionNodeView.svelte';
   import {
     applyLayout, blockAt, columns, duplicateSection, example,  moveBlock, newId, sectionRows, rowWrap,
-    type Block, linkPreviewSamples, type Example, type GalleryStyle, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
+    type Block, linkPreviewSamples, type Example, type GalleryStyle, type MasonryColumns, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
   } from './sectionLayouts';
 
   let { start = 'editorial' }: { start?: Example } = $props();
@@ -668,7 +668,7 @@
     {/if}
   {/snippet}
   {#if block.kind === 'gallery'}
-    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
+    <GalleryLayout photos={block.photos} layout={block.galleryStyle} width={block.galleryWidth} masonryColumnLimit={block.masonryColumns} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} selected={photoDetails} onNavigate={() => photoDetails = null} photo={editPhoto} />
   {:else}
     {#each block.photos as photo (photo.id)}{@render editPhoto(photo)}{/each}
   {/if}
@@ -766,6 +766,16 @@
         </label>
       {/if}
       {#if block.galleryStyle === 'masonry'}
+        <label>Masonry columns
+          <select value={block.masonryColumns ?? 3} onchange={(event) => {
+            remember();
+            block.masonryColumns = Number(event.currentTarget.value) as MasonryColumns;
+          }}>
+            <option value={2}>2 columns</option>
+            <option value={3}>3 columns</option>
+            <option value={4}>4 columns</option>
+          </select>
+        </label>
         <label>Masonry vertical alignment
           <select value={block.masonryAlignment ?? 'top'} onchange={(event) => {
             remember();
