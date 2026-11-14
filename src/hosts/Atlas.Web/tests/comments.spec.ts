@@ -131,6 +131,7 @@ test('local session bridge rejects foreign origins and unrelated writes', async 
 test('feed comment control opens and positions the Comments tab', async ({ page }) => {
   await setup(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
+  await page.getByRole('button', { name: 'Show reactions, comments, and subnodes' }).click();
   await page.getByRole('button', { name: '3 Comments', exact: true }).click();
   await expect(page.getByRole('tab', { name: '3 Comments', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();

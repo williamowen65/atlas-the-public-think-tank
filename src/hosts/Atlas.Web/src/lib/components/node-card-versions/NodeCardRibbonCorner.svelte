@@ -38,7 +38,6 @@
 -->
 <script lang="ts">
   import { relativeDate } from '../../format/relativeDate';
-  import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
@@ -218,15 +217,12 @@
 {/snippet}
 
 {#snippet legacyDescription(text: string)}
-  <div class="description" id={`${instance}-description`} use:bottomCornerAction>
-    <span class="read-more"
-      ><ActionButton
-        label="Read more"
-        disabled={!onReadMore}
-        onActivate={() => onReadMore?.(node.id)}
-      /></span
-    ><span class="fallback-text">{text}</span>
-    <span class="fallback-details">{@render detailsToggle()}</span>
+  <div class="description" id={`${instance}-description`}>
+    <span class="fallback-text">{text}</span>
+    {@render detailsToggle()}
+    <span class="read-more">
+      <ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} />
+    </span>
   </div>
 {/snippet}
 
@@ -304,22 +300,13 @@
 
 
 
-  .details-toggle, .fallback-details { display: none; }
-  @media (max-width: 560px) {
-    .details-toggle {
-      display: inline-grid; place-items: center; margin-inline-end: auto;
-      width: 2.25rem; min-height: 2.25rem; padding: 0;
-      color: var(--atlas-accent); background: var(--atlas-surface);
-      border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); cursor: pointer;
-    }
-    .details-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-    .description { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .5rem; }
-    .description .fallback-text { grid-area: 1 / 1 / 2 / -1; }
-    .description .fallback-details { display: flex; grid-area: 2 / 1; }
-    .description .read-more { grid-area: 2 / 2; margin: 0; }
-    [data-presentation] .card-details:not(.details-open) { display: none; }
-    [data-presentation]:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
+  .details-toggle {
+    display: inline-grid; place-items: center; margin-inline-end: auto;
+    width: 2.25rem; min-height: 2.25rem; padding: 0;
+    color: var(--atlas-accent); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); cursor: pointer;
   }
+  .details-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 
   [data-presentation] {
     .card-details {
@@ -328,13 +315,12 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.35rem 1rem;
-      padding: 0 var(--card-padding) 1rem;
-      @media (max-width: 560px) {
-        padding-block-start: .65rem;
-      }
+      padding: .65rem var(--card-padding) 1rem;
+      &:not(.details-open) { display: none; }
       font-size: 0.9rem;
       color: var(--atlas-muted);
     }
+    &:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
     .reactions {
       display: flex;
       flex-wrap: wrap;
@@ -419,17 +405,19 @@
   .fallback-vote-dialog::backdrop { background: #0006; }
 
   .description {
-    margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .fallback-text {
+    grid-column: 1 / -1;
     white-space: pre-line;
   }
 
   .read-more {
     --atlas-action-padding: 0.25rem 0.65rem;
-    // Exclude only the button's bottom-corner footprint from the text flow.
-    float: right;
-    margin: var(--corner-top, 0px) 0 0 0.75rem;
-    shape-outside: inset(var(--corner-top, 0px) 0 0 0);
-    white-space: normal;
   }
 
   .text-action {

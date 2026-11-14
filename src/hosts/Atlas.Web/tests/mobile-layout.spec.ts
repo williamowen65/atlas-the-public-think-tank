@@ -64,17 +64,24 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await summary.click();
   await expect(dial).toHaveCount(0);
   expect(writes).toEqual([]);
-  // Returning to desktop restores the original bottom-right float after the
-  // mobile dial has been mounted and removed.
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(card.locator('.read-more')).toHaveCSS('float', 'right');
-  await expect(card.locator('.read-more')).toHaveCSS('position', 'static');
-  await expect(dial).toBeVisible();
-  await expect.poll(() => card.evaluate(element => Math.abs(
-    element.querySelector('.description')!.getBoundingClientRect().bottom -
-    element.querySelector('.read-more button')!.getBoundingClientRect().bottom,
-  ))).toBeLessThan(2);
 });
+
+for (const width of [390, 1280]) {
+  test(`feed card details are collapsed by default and can be toggled at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('http://127.0.0.1:4173/');
+    const card = page.locator('article.node-card').first();
+    const toggle = card.getByRole('button', { name: /reactions, comments, and subnodes/ });
+    const details = card.locator('.card-details');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(details).toBeHidden();
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(details).toBeVisible();
+    await toggle.click();
+    await expect(details).toBeHidden();
+  });
+}
 
 test('bottom navigation hides while reading down and returns when scrolling up', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/');
