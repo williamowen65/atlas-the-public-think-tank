@@ -1,79 +1,85 @@
 <script lang="ts">
-  import { blobRadii, type BlobRadii, type PhotoFrame } from './sectionLayouts';
+  import { blobCurve, type BlobSide, type BlobTangent } from './blobCurve';
+  import { blobRadii, type PhotoFrame } from './sectionLayouts';
 
   let { frame, onChange }: {
     frame: PhotoFrame;
-    onChange: (radii: BlobRadii, first: boolean) => void;
+    onChange: (tangents: BlobTangent[], first: boolean) => void;
   } = $props();
 
-  const names = ['Top left', 'Top right', 'Bottom right', 'Bottom left'];
-  const radii = $derived(blobRadii(frame));
-  const edgeOffset = 1 - Math.SQRT1_2;
+  const nodes = $derived(blobCurve(frame.blobTangents, blobRadii(frame)));
+  const sides = ['incoming', 'outgoing'] as const;
   let overlay: HTMLDivElement;
-  let drag: { pointer: number; x: number; y: number; radii: BlobRadii; changed: boolean } | undefined;
+  let drag: { pointer: number; changed: boolean } | undefined;
 
-  function adjust(index: number, initial: BlobRadii, dx: number, dy: number, first: boolean) {
-    const next = [...initial] as BlobRadii;
-    const x = index * 2;
-    const y = x + 1;
-    const horizontalNeighbor = [2, 0, 6, 4][index];
-    const verticalNeighbor = [7, 5, 3, 1][index];
-    next[x] = Math.round(Math.max(30, Math.min(100 - initial[horizontalNeighbor], initial[x] + dx)));
-    next[y] = Math.round(Math.max(30, Math.min(100 - initial[verticalNeighbor], initial[y] + dy)));
-    if (next[x] === radii[x] && next[y] === radii[y]) return false;
-    onChange(next, first);
+  function adjust(index: number, side: BlobSide, x: number, y: number, first: boolean) {
+    const node = nodes[index];
+    const sign = side === 'incoming' ? -1 : 1;
+    const dx = (x - node.x) * sign;
+    const dy = (y - node.y) * sign;
+    const angle = (Math.atan2(dy, dx) * 180 / Math.PI - node.angle + 540) % 360 - 180;
+    const boundedAngle = Math.abs(dx) + Math.abs(dy) < .001 ? node.value.angle : Math.max(-20, Math.min(20, angle));
+    // Project onto the allowed tangent so pulling across the anchor shortens the handle.
+    const radians = (node.angle + boundedAngle) * Math.PI / 180;
+    const length = Math.max(.09, Math.min(.25, dx * Math.cos(radians) + dy * Math.sin(radians)));
+    if (Math.abs(length - node.value[side]) < .0001 && Math.abs(boundedAngle - node.value.angle) < .01) return false;
+    onChange(nodes.map(({ value }, i) => i === index ? { ...value, angle: boundedAngle, [side]: length } : value), first);
     return true;
   }
 
-  function start(event: PointerEvent & { currentTarget: HTMLButtonElement }) {
-    if (event.button !== 0 || drag) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY, radii: [...radii], changed: false };
+  function move(event: PointerEvent, index: number, side: BlobSide) {
+    if (drag?.pointer !== event.pointerId) return;
+    const bounds = overlay.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    if (adjust(index, side, (event.clientX - bounds.left) / bounds.width,
+      (event.clientY - bounds.top) / bounds.height, !drag.changed)) drag.changed = true;
   }
 
-  function move(event: PointerEvent, index: number, left: boolean, top: boolean) {
-    if (!drag || drag.pointer !== event.pointerId) return;
-    const { width, height } = overlay.getBoundingClientRect();
-    const dx = (event.clientX - drag.x) / width * 100 / edgeOffset * (left ? 1 : -1);
-    const dy = (event.clientY - drag.y) / height * 100 / edgeOffset * (top ? 1 : -1);
-    if (adjust(index, drag.radii, dx, dy, !drag.changed)) drag.changed = true;
-  }
-
-  function keydown(event: KeyboardEvent, index: number, left: boolean, top: boolean) {
-    const dx = event.key === 'ArrowLeft' ? -2 : event.key === 'ArrowRight' ? 2 : 0;
-    const dy = event.key === 'ArrowUp' ? -2 : event.key === 'ArrowDown' ? 2 : 0;
+  function keydown(event: KeyboardEvent, index: number, side: BlobSide) {
+    const dx = event.key === 'ArrowLeft' ? -.012 : event.key === 'ArrowRight' ? .012 : 0;
+    const dy = event.key === 'ArrowUp' ? -.012 : event.key === 'ArrowDown' ? .012 : 0;
     if (!dx && !dy) return;
     event.preventDefault();
-    adjust(index, radii, dx * (left ? 1 : -1), dy * (top ? 1 : -1), true);
+    const point = nodes[index][side];
+    adjust(index, side, point.x + dx, point.y + dy, true);
   }
 </script>
 
 <div class="blob-handles" bind:this={overlay} role="group" aria-label="Blob shape handles">
-  {#each names as name, index}
-    {@const left = index === 0 || index === 3}
-    {@const top = index < 2}
-    {@const x = radii[index * 2] * edgeOffset}
-    {@const y = radii[index * 2 + 1] * edgeOffset}
-    <button type="button" aria-label={`Adjust ${name.toLowerCase()} blob corner`} title={name}
-      style:left={(left ? x : 100 - x) + '%'} style:top={(top ? y : 100 - y) + '%'}
-      onpointerdown={start} onpointermove={(event) => move(event, index, left, top)}
-      onlostpointercapture={(event) => { if (drag?.pointer === event.pointerId) drag = undefined; }}
-      onkeydown={(event) => keydown(event, index, left, top)}>
-      <span></span>
-    </button>
+  <svg viewBox="0 0 1 1" aria-hidden="true">
+    {#each nodes as node (node.name)}
+      <line x1={node.incoming.x} y1={node.incoming.y} x2={node.outgoing.x} y2={node.outgoing.y} />
+    {/each}
+  </svg>
+  {#each nodes as node, index (node.name)}
+    <span class="anchor" aria-hidden="true" style:left={node.x * 100 + '%'} style:top={node.y * 100 + '%'}></span>
+    {#each sides as side}
+      <button type="button" aria-label={`Adjust ${node.name.toLowerCase()} ${side} blob handle`}
+        style:left={node[side].x * 100 + '%'} style:top={node[side].y * 100 + '%'}
+        onpointerdown={(event) => {
+          if (event.button !== 0 || drag) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          drag = { pointer: event.pointerId, changed: false };
+        }}
+        onpointermove={(event) => move(event, index, side)}
+        onlostpointercapture={(event) => { if (drag?.pointer === event.pointerId) drag = undefined; }}
+        onkeydown={(event) => keydown(event, index, side)}>
+        <span></span>
+      </button>
+    {/each}
   {/each}
 </div>
 
 <style>
   .blob-handles { position: absolute; inset: 0 0 auto; margin-inline: auto; width: var(--photo-width, 100%); aspect-ratio: 1; pointer-events: none; }
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  line { stroke: #766aff; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+  .anchor, button { position: absolute; transform: translate(-50%, -50%); }
+  .anchor { width: .5rem; height: .5rem; background: white; border: 1px solid #4434b0; }
   button {
-    position: absolute; width: 2rem; height: 2rem; padding: 0; border: 0; background: transparent;
-    display: grid; place-items: center; transform: translate(-50%, -50%);
-    pointer-events: auto; touch-action: none; cursor: move;
+    width: 2rem; height: 2rem; padding: 0; border: 0; background: transparent;
+    display: grid; place-items: center; pointer-events: auto; touch-action: none; cursor: move;
   }
-  span {
-    width: .8rem; height: .8rem; border: 2px solid white; border-radius: 50%;
-    background: #174e65; box-shadow: 0 0 0 1px #174e65;
-  }
-  button:focus-visible span { box-shadow: 0 0 0 3px #174e65, 0 0 0 5px white; }
+  button span { width: .65rem; height: .65rem; border: 2px solid #4434b0; border-radius: 50%; background: white; }
+  button:focus-visible span { box-shadow: 0 0 0 2px white, 0 0 0 4px #4434b0; }
 </style>

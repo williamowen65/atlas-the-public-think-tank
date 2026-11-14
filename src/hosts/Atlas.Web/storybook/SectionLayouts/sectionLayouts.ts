@@ -1,3 +1,5 @@
+import type { BlobTangent } from './blobCurve';
+
 export type Slot = { id: string; weight: number };
 export type Layout = { id: string; name: string; slots: Slot[]; sectionOnly?: boolean };
 export type ImageWrap = { textId: string; imageId: string; side: 'left' | 'right'; anchor: number };
@@ -45,6 +47,7 @@ export function blobRadii(frame?: PhotoFrame): BlobRadii {
 }
 
 export type PhotoFrame = {
+  blobTangents?: BlobTangent[];
   blobRadii?: BlobRadii;
   blobProfile?: keyof typeof blobProfiles;
   blobDirection?: 'left' | 'right';

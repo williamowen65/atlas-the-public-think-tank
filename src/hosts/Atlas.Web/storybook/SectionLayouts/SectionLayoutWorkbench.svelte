@@ -690,9 +690,9 @@
         </button>
         {#if photoDetails === photo.id && photo.frame?.ratio === 'blob' && publicUrl(photo.src)
           && block.galleryStyle !== 'slideshow' && !(block.galleryStyle === 'mosaic' && block.photos.length > 1)}
-          <BlobHandles frame={photo.frame} onChange={(blobRadii, first) => {
+          <BlobHandles frame={photo.frame} onChange={(blobTangents, first) => {
             if (first) remember();
-            photo.frame = { ...photo.frame, blobRadii };
+            photo.frame = { ...photo.frame, blobTangents };
           }} />
         {/if}
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
