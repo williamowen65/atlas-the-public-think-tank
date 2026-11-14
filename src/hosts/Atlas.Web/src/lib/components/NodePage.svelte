@@ -7,6 +7,7 @@
   - `voting` (`Snippet`; optional): Renderable snippet for the voting region, replacing the
     read-only vote summary. LiveNodePage supplies LiveVotingDial here to add
     API/session behavior.
+  - `reportControl` (`Snippet`; optional): Report action shown at the end of the content.
   - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
     omitted, NodePage displays the static reaction summary from node.reactions.
   - `scrollToDiscussionTabs` (`boolean`; optional; default `false`): Requests initial focus and
@@ -57,6 +58,7 @@
     onOpenProfile,
     voting,
     reactions,
+    reportControl,
     scrollToDiscussionTabs = false,
     inspectionOnly = false,
     node,
@@ -84,6 +86,7 @@
      * static reaction summary from node.reactions.
      */
     reactions?: Snippet;
+    reportControl?: Snippet;
     /**
      * Requests initial focus and scrolling of the selected discussion tab to 20px below the
      * viewport top where the natural page height allows; never adds space just to reach the target.
@@ -337,18 +340,20 @@
         <ContentBlocks {blocks} />
       {/if}
     </div>
+    {#if !inspectionOnly}{@render reportControl?.()}{/if}
   </div>
-  {#if !inspectionOnly}
-  {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
-      class="reactions"
-      role="group"
-      aria-label="Community reactions"
-    >
-      {#each node.reactions as reaction}<span
-          >{reaction.label} <strong>{reaction.count}</strong></span
-        >{/each}
-    </div>{/if}
-  <!-- Keeps the Add action with the discussion tab strip, above the selected panel. -->
+  {#if !inspectionOnly && (reactions || node.reactions.length)}
+    <div class="reaction-controls">
+      {#if reactions}
+        {@render reactions()}
+      {:else}
+        <div class="reactions" role="group" aria-label="Community reactions">
+          {#each node.reactions as reaction}
+            <span>{reaction.label} <strong>{reaction.count}</strong></span>
+          {/each}
+        </div>
+      {/if}
+    </div>
   {/if}
   {#if !inspectionOnly}<div class="discussion-toolbar">
     <div class="add">
@@ -457,14 +462,13 @@
     white-space: pre-line;
   }
   .reaction-controls {
-    // The page owns its content gutter; feed cards already provide their own inset.
-    padding-inline: var(--card-padding);
+    border-block-start: 1px solid var(--atlas-border);
+    padding: 0.65rem var(--card-padding);
   }
   .reactions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    padding: 0.5rem var(--card-padding) 0;
     font-size: 0.85rem;
     color: var(--atlas-muted);
   }
@@ -475,8 +479,8 @@
   }
   .discussion-toolbar {
     display: flow-root;
-    border-bottom: 1px solid var(--atlas-border);
-    padding: 0.5rem var(--card-padding) 0.75rem;
+    border-block: 1px solid var(--atlas-border);
+    padding: 0.65rem var(--card-padding) 0.5rem;
   }
   .add {
     float: right;
@@ -485,10 +489,11 @@
   .add button {
     border: 1px solid var(--atlas-accent);
     border-radius: var(--atlas-radius);
-    padding: 0.45rem 0.8rem;
+    min-block-size: 2.25rem;
+    padding: 0.25rem 0.65rem;
     background: var(--atlas-accent);
     color: var(--atlas-on-accent);
-    line-height: 1.4;
+    line-height: 1.25;
     font-weight: 600;
 
     &:not(:disabled):hover {
@@ -516,10 +521,11 @@
     vertical-align: top;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
-    padding: 0.45rem 0.8rem;
+    min-block-size: 2.25rem;
+    padding: 0.25rem 0.65rem;
     background: var(--atlas-surface);
     color: var(--atlas-muted);
-    line-height: 1.4;
+    line-height: 1.25;
     font-weight: 600;
 
     &:hover {

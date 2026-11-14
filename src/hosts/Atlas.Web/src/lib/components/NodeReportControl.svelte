@@ -30,7 +30,7 @@
 <div class="report-control">
   {#if success}<p role="status">{message}</p>
   {:else}
-    <button type="button" aria-expanded={open} onclick={() => { open = !open; message = ''; }}>Report node</button>
+    <button class="report-trigger" type="button" aria-expanded={open} onclick={() => { open = !open; message = ''; }}>Report node</button>
     {#if open}
       <form onsubmit={submit}>
         <label for={'report-reason-' + nodeId}>Reason for reporting</label>
@@ -47,7 +47,27 @@
   {/if}
 </div>
 <style>
-  .report-control { margin: 1rem 0; }
+  .report-control {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-block: 0.5rem;
+  }
+  .report-trigger {
+    padding: 0.25rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--atlas-danger);
+    font: inherit;
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
+    cursor: pointer;
+  }
+  .report-trigger:focus-visible {
+    outline: 2px solid var(--atlas-focus);
+    outline-offset: 2px;
+  }
   form { max-width: 28rem; padding: 1rem; border: 1px solid var(--atlas-muted); border-radius: .5rem; }
   label { display: block; margin: .6rem 0 .25rem; }
   input, textarea { width: 100%; }

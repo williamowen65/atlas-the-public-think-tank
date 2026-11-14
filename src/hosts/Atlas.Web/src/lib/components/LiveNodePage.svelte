@@ -590,7 +590,9 @@
             nodeId={node.id}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
-      <NodeReportControl nodeId={node.id} />
+      {#snippet reportControl()}
+        {#key node.id}<NodeReportControl nodeId={node.id} />{/key}
+      {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button
