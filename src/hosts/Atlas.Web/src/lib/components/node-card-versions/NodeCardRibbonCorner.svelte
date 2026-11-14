@@ -318,7 +318,6 @@
     .description .fallback-text { grid-area: 1 / 1 / 2 / -1; }
     .description .fallback-details { display: flex; grid-area: 2 / 1; }
     .description .read-more { grid-area: 2 / 2; margin: 0; }
-    [data-presentation] .card-details { padding-block-start: .65rem; }
     [data-presentation] .card-details:not(.details-open) { display: none; }
     [data-presentation]:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
   }
@@ -331,6 +330,9 @@
       align-items: center;
       gap: 0.35rem 1rem;
       padding: 0 var(--card-padding) 1rem;
+      @media (max-width: 560px) {
+        padding-block-start: .65rem;
+      }
       font-size: 0.9rem;
       color: var(--atlas-muted);
     }
