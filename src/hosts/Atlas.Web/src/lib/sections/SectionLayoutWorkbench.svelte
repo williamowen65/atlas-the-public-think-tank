@@ -371,6 +371,10 @@
     activeEditor = undefined;
     picker = null;
     photoDetails = photo?.id ?? null;
+    if (photo) {
+      activeSection = sectionId;
+      sidebarOpen = true;
+    }
   }
 
   function updateSlideshow(block: Extract<Block, { photos: Photo[] }>, settings: SlideshowSettings) {
@@ -769,6 +773,7 @@
             activeBlock = block.id;
             activeEditor = undefined;
             photoDetails = photo.id;
+            sidebarOpen = true;
           }}>
           {#if publicUrl(photo.src)}
             <PhotoFrame {photo} src={publicUrl(photo.src)!} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} />

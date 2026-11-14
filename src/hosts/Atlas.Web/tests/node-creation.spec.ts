@@ -144,9 +144,13 @@ test('a photo missing alt text is flagged before publishing', async ({ page }) =
   await page.getByRole('button', { name: 'Add this layout' }).click();
   await page.getByRole('button', { name: /Add block · Section 2/ }).click();
   await page.getByRole('button', { name: 'Image', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit image', exact: true }).click();
-  await page.getByRole('button', { name: 'Editor settings' }).click();
-  await page.getByLabel('Image URL').fill('https://example.test/photo.jpg');
+  const sidebar = page.getByRole('complementary', { name: 'Editor controls' });
+  await expect(sidebar.getByLabel('Image URL')).toBeVisible();
+  await sidebar.getByRole('button', { name: 'Collapse editor controls' }).click();
+  await expect(sidebar).toBeHidden();
+  await page.getByText('Add image details', { exact: true }).click();
+  await expect(sidebar.getByLabel('Image URL')).toBeVisible();
+  await sidebar.getByLabel('Image URL').fill('https://example.test/photo.jpg');
   await expect(page.getByRole('button', { name: 'Edit image', exact: true })
     .getByText('Alternative text is required.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Alternative text (required)')).toHaveAttribute('aria-invalid', 'true');
