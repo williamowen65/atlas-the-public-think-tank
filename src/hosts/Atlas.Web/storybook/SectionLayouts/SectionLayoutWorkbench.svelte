@@ -181,7 +181,7 @@
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
-    if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools, .blob-handles')) return;
+    if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools, .blob-handles, .photo-reorder')) return;
     if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
     if (!keyboard && layoutBefore && !target.closest('.layout-panel, .editing-tools')) finishLayout();
     const section = inside && target.closest('.edit-slot, .layout-panel')
@@ -344,12 +344,29 @@
     }
   }
 
-  function reorderPhoto(block: Extract<Block, { photos: Photo[] }>, index: number, direction: number) {
+  let photoMove = $state<{ blockId: string; photoId: string; pointer: number; target?: string }>();
+
+  function reorderPhoto(block: Extract<Block, { photos: Photo[] }>, from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= block.photos.length || to >= block.photos.length) return;
     remember();
     const photos = [...block.photos];
-    const [photo] = photos.splice(index, 1);
-    photos.splice(index + direction, 0, photo);
-    block.photos = photos;
+    const [photo] = photos.splice(from, 1);
+    photos.splice(to, 0, photo);
+    draft.blocks = draft.blocks.map((item) => item.id === block.id ? { ...block, photos } : item);
+    message = `Image moved to position ${to + 1} of ${photos.length}.`;
+  }
+
+  function galleryDropTarget(event: PointerEvent, blockId: string) {
+    const tile = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-gallery-photo]');
+    return tile?.dataset.galleryBlock === blockId ? tile.dataset.galleryPhoto : undefined;
+  }
+
+  function finishPhotoMove(event: PointerEvent, block: Extract<Block, { photos: Photo[] }>) {
+    if (photoMove?.pointer !== event.pointerId) return;
+    const target = galleryDropTarget(event, block.id);
+    const source = photoMove.photoId;
+    photoMove = undefined;
+    if (target) reorderPhoto(block, block.photos.findIndex(({ id }) => id === source), block.photos.findIndex(({ id }) => id === target));
   }
 
   function newPhoto(): Photo {
@@ -386,6 +403,7 @@
   onpointerdowncapture={(event) => updateFocus(event.target)}
   onfocusin={(event) => updateFocus(event.target, true)} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
+  if (event.key === 'Escape') photoMove = undefined;
   if (view !== 'edit' || movingBlock || event.defaultPrevented || event.altKey
     || !(event.ctrlKey || event.metaKey) || !(event.target instanceof Element)
     || !workbench?.contains(event.target) || event.target.closest('.layout-panel')) return;
@@ -671,7 +689,11 @@
         {#if src}<PhotoFrame {photo} {src} gallery />{/if}
       </div></figure>
     {:else}
-      <figure class="edit-photo" style:--photo-width={(wrappedSection ? 100 : photo.frame?.width ?? 100) + '%'}>
+      <figure class="edit-photo"
+        data-gallery-photo={block.kind === 'gallery' ? photo.id : undefined}
+        data-gallery-block={block.kind === 'gallery' ? block.id : undefined}
+        class:photo-drop-target={photoMove?.blockId === block.id && photoMove?.target === photo.id && photoMove.photoId !== photo.id}
+        style:--photo-width={(wrappedSection ? 100 : photo.frame?.width ?? 100) + '%'}>
         <button class="photo-button"
           class:draggable-photo={!!wrappedSection} draggable={wrappedSection ? 'true' : 'false'}
           title={wrappedSection ? 'Drag to another paragraph, or click to edit image' : undefined}
@@ -688,6 +710,28 @@
             Add image details
           {/if}
         </button>
+        {#if block.kind === 'gallery' && block.galleryStyle !== 'slideshow' && block.photos.length > 1 && activeBlock === block.id && !movingBlock}
+          <button class="photo-reorder" type="button" aria-label={`Reorder ${photo.alt || 'image'}`}
+            title="Drag to reorder, or use arrow keys"
+            onpointerdown={(event) => {
+              if (event.button !== 0 || photoMove) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              photoMove = { blockId: block.id, photoId: photo.id, pointer: event.pointerId };
+            }}
+            onpointermove={(event) => {
+              if (photoMove?.pointer === event.pointerId) photoMove.target = galleryDropTarget(event, block.id);
+            }}
+            onpointerup={(event) => finishPhotoMove(event, block)}
+            onlostpointercapture={(event) => { if (photoMove?.pointer === event.pointerId) photoMove = undefined; }}
+            onkeydown={(event) => {
+              const direction = ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1
+                : ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : 0;
+              if (!direction) return;
+              event.preventDefault();
+              const from = block.photos.findIndex(({ id }) => id === photo.id);
+              reorderPhoto(block, from, from + direction);
+            }}>⠿</button>
+        {/if}
         {#if photoDetails === photo.id && photo.frame?.ratio === 'blob' && publicUrl(photo.src)
           && block.galleryStyle !== 'slideshow' && !(block.galleryStyle === 'mosaic' && block.photos.length > 1)}
           <BlobHandles frame={photo.frame} onChange={(blobTangents, first) => {
@@ -756,8 +800,8 @@
       <button type="button" onclick={() => photoDetails = null}>Done</button>
       {#if block.kind === 'gallery'}
         {@const index = block.photos.findIndex(({ id }) => id === photo.id)}
-        <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, -1)}>Move image earlier</button>
-        <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, 1)}>Move image later</button>
+        <button type="button" disabled={index === 0} onclick={() => reorderPhoto(block, index, index - 1)}>Move image earlier</button>
+        <button type="button" disabled={index === block.photos.length - 1} onclick={() => reorderPhoto(block, index, index + 1)}>Move image later</button>
         <button type="button" onclick={() => {
           remember();
           block.photos = block.photos.filter(({ id }) => id !== photo.id);
@@ -1001,6 +1045,13 @@
   .slot-content { min-width: 0; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
+  button.photo-reorder {
+    position: absolute; inset-block-start: .25rem; inset-inline-end: .25rem; z-index: 2;
+    width: 2rem; height: 2rem; padding: 0; line-height: 1;
+    touch-action: none; cursor: grab;
+  }
+  button.photo-reorder:active { cursor: grabbing; }
+  .photo-drop-target { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
   .draggable-photo { cursor: grab; }
   .edit-slot :global(.image-drop-left) { box-shadow: inset 3px 0 var(--atlas-accent); }
   .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }

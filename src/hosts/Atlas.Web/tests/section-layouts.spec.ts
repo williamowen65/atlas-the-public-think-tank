@@ -529,3 +529,25 @@ test('grid aligns a pill crop against a taller photo in the editor and previews'
     await expectCentered();
   }
 });
+
+test('dragging a gallery photo reorders it and supports undo', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editor-controls-playground&viewMode=story');
+  const gallery = page.getByRole('group', { name: 'Gallery block' });
+  const photos = gallery.getByRole('button', { name: /^Edit / });
+  const first = (await photos.first().getAttribute('aria-label'))!;
+  const second = (await photos.nth(1).getAttribute('aria-label'))!;
+  await photos.first().click();
+  const handle = gallery.getByRole('button', { name: first.replace(/^Edit /, 'Reorder ') });
+  const start = (await handle.boundingBox())!;
+  const destination = (await photos.nth(1).boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(destination.x + destination.width / 2, destination.y + destination.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(photos.first()).toHaveAttribute('aria-label', second);
+  await expect(photos.nth(1)).toHaveAttribute('aria-label', first);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(photos.first()).toHaveAttribute('aria-label', first);
+});
