@@ -21,7 +21,17 @@ export function photoCropPreset(id: unknown, gallery = false) {
   return photoCropPresets.find((preset) => preset.id === id) ?? photoCropPresets[gallery ? 1 : 0];
 }
 
+export const blobProfiles = [
+  { id: 'organic', label: 'Organic' },
+  { id: 'soft', label: 'Soft' },
+  { id: 'swept', label: 'Swept' },
+] as const;
+export type BlobProfile = typeof blobProfiles[number]['id'];
+
 export type PhotoFrame = {
+  blobProfile?: BlobProfile;
+  blobDirection?: 'left' | 'right';
+  gridVertical?: VerticalAlignment;
   width?: number;
   ratio?: typeof photoCropPresets[number]['id'];
   zoom?: number;

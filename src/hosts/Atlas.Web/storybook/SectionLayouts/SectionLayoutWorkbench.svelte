@@ -713,6 +713,19 @@
         <option value="overlay">Over the image</option>
       </select>
     </label>
+    {#if block.kind === 'gallery' && (!block.galleryStyle || block.galleryStyle === 'grid')}
+      <label>Vertical alignment in grid
+        <select value={photo.frame?.gridVertical ?? 'start'} onchange={(event) => {
+          const alignment = event.currentTarget.value;
+          remember();
+          photo.frame = { ...photo.frame, gridVertical: alignment === 'center' || alignment === 'end' ? alignment : 'start' };
+        }}>
+          <option value="start">Top</option>
+          <option value="center">Middle</option>
+          <option value="end">Bottom</option>
+        </select>
+      </label>
+    {/if}
     <PhotoFramingControls {photo} src={publicUrl(photo.src)} gallery={block.kind === 'gallery' && block.galleryStyle !== 'masonry'} fitTile={block.kind === 'gallery' && block.galleryStyle === 'mosaic' && block.photos.length > 1}
       slideshowFit={block.galleryStyle === 'slideshow' ? block.slideshow?.fit ?? 'contain' : undefined}
       onChange={(frame) => { remember(); photo.frame = frame; }} />

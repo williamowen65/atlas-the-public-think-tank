@@ -1,6 +1,6 @@
 <script lang="ts">
   import PhotoFrame from './PhotoFrame.svelte';
-  import { photoCropPreset, photoCropPresets, type Photo, type PhotoFrame as Frame } from './sectionLayouts';
+  import { blobProfiles, photoCropPreset, photoCropPresets, type Photo, type PhotoFrame as Frame } from './sectionLayouts';
   let { photo, src, gallery, fitTile = false, slideshowFit, onChange }: {
     photo: Photo; src?: string; gallery: boolean; fitTile?: boolean; slideshowFit?: 'contain' | 'cover'; onChange: (frame: Frame) => void;
   } = $props();
@@ -40,6 +40,25 @@
         {#each photoCropPresets as preset (preset.id)}
           <option value={preset.id}>{preset.label}</option>
         {/each}
+      </select>
+    </label>
+  {/if}
+  {#if !layoutSetsFrame && crop.id === 'blob'}
+    <label>Blob profile
+      <select value={photo.frame?.blobProfile ?? 'organic'} onchange={(event) => {
+        const profile = blobProfiles.find(({ id }) => id === event.currentTarget.value);
+        if (profile) update({ blobProfile: profile.id });
+      }}>
+        {#each blobProfiles as profile (profile.id)}
+          <option value={profile.id}>{profile.label}</option>
+        {/each}
+      </select>
+    </label>
+    <label>Blob direction
+      <select value={photo.frame?.blobDirection ?? 'left'} onchange={(event) =>
+        update({ blobDirection: event.currentTarget.value === 'right' ? 'right' : 'left' })}>
+        <option value="left">Original</option>
+        <option value="right">Mirrored</option>
       </select>
     </label>
   {/if}

@@ -101,7 +101,9 @@
   {:else}
     <div class="tiles" class:paired-grid={gridCount === 2} style:--column-count={gridCount}>
       {#each photos as item (item.id)}
-        <div class="tile">{@render photo(item)}</div>
+        <div class="tile" class:middle={item.frame?.gridVertical === 'center'} class:bottom={item.frame?.gridVertical === 'end'}>
+          {@render photo(item)}
+        </div>
       {/each}
     </div>
   {/if}
@@ -112,6 +114,8 @@
   .centered { width: min(84%, 48rem); margin-inline: auto; }
   @container (max-width: 37rem) { .centered { width: 100%; } }
   .tiles { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
+  .tiles .middle { align-self: center; }
+  .tiles .bottom { align-self: end; }
   .tiles .tile:only-child, .paired-grid .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
     grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;
   }
@@ -135,9 +139,9 @@
   .paired .feature :global(figure > button) { min-width: 0; min-height: 0; height: 100%; }
   .paired .feature :global(figure > button > .frame) { height: 100%; aspect-ratio: auto !important; }
   .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
-  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette]) { border-radius: var(--atlas-radius, .5rem); }
-  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].square) { border-radius: 0; }
-  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].extra-rounded) { border-radius: 1.5rem; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette]) { border-radius: var(--atlas-radius, .5rem) !important; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].square) { border-radius: 0 !important; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].extra-rounded) { border-radius: 1.5rem !important; }
   :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette] .caption-overlay) { inset: auto 0 0; }
   .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
   .masonry.middle { align-items: center; }

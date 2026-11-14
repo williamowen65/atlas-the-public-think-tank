@@ -455,7 +455,12 @@ test('creative crop presets update the photo in the editor and both previews', a
 
   await shape.selectOption('blob');
   await expect(frame).toHaveAttribute('data-silhouette', 'blob');
+  await page.getByLabel('Blob profile').selectOption('swept');
+  await expect(frame).toHaveCSS('border-top-left-radius', '42% 58%');
+  await page.getByLabel('Blob direction').selectOption('right');
+  await expect(frame).toHaveCSS('border-top-left-radius', '58% 36%');
   await shape.selectOption('pill');
+  await expect(page.getByLabel('Blob profile')).toHaveCount(0);
   await expect(frame).toHaveCSS('aspect-ratio', '2 / 1');
   await expect(frame).toHaveAttribute('data-silhouette', 'pill');
 
