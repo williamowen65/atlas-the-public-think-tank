@@ -5,13 +5,14 @@
   import type { ContentBlock } from '../api/nodePage';
 
   let {
-    blocks, index, frame, onIndexChange, onOpenFull, renderBlock,
+    blocks, index, frame, onIndexChange, onOpenFull, renderBlock, leadingAction,
   }: {
     blocks: ContentBlock[];
     index?: number;
     frame?: 'portrait' | 'landscape';
     onIndexChange?: (next: number) => void;
     onOpenFull?: () => void;
+    leadingAction?: Snippet;
     renderBlock?: Snippet<[ContentBlock]>;
   } = $props();
 
@@ -89,6 +90,7 @@
   </div>
 
   <div class="carousel-bottom">
+    {@render leadingAction?.()}
     {#if hasMore}
       <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
       <div class="dots" class:scroll={!frame} role="group" aria-label="Content block pages">

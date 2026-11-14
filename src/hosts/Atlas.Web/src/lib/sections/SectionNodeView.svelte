@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import LinkPreviewCard from './LinkPreviewCard.svelte';
   import GalleryLayout from './GalleryLayout.svelte';
   import WrappedImage from './WrappedImage.svelte';
@@ -9,10 +10,11 @@
   import { publicUrl } from '../api/nodePage';
   import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
-  let { draft, feed = false, onReadMore }: {
+  let { draft, feed = false, onReadMore, leadingAction }: {
     draft: Draft;
     feed?: boolean;
     onReadMore?: () => void;
+    leadingAction?: Snippet;
   } = $props();
 
   let expanded = $state(false);
@@ -81,6 +83,7 @@
 {#if truncated}<div class="cutoff" aria-label="More content follows">…</div>{/if}
 {#if feed}
   <div class="feed-actions">
+    {@render leadingAction?.()}
     {#if truncated || expanded}
       <button type="button" aria-expanded={expanded} aria-controls={instance}
         onclick={() => expanded = !expanded}>{expanded ? 'Collapse' : 'Expand'}</button>

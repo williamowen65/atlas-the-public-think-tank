@@ -48,6 +48,7 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
+  let detailsOpen = $state(false);
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
@@ -184,11 +185,11 @@
       {#if node.isHidden}
         {@render legacyDescription(node.description)}
       {:else}
-        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
+        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} leadingAction={detailsToggle} {apiBase} {blocks}
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
       {/if}
     </div>
-    <div class="card-details">
+    <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
       {@render reactions()}
       <div class="navigation-details">
         {@render comments()}
@@ -208,6 +209,15 @@
   {/if}
 </article>
 
+{#snippet detailsToggle()}
+  <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
+    aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
+    onclick={() => detailsOpen = !detailsOpen}>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  </button>
+{/snippet}
+
 {#snippet legacyDescription(text: string)}
   <div class="description" id={`${instance}-description`} use:bottomCornerAction>
     <span class="read-more"
@@ -216,7 +226,8 @@
         disabled={!onReadMore}
         onActivate={() => onReadMore?.(node.id)}
       /></span
-    >{text}
+    ><span class="fallback-text">{text}</span>
+    <span class="fallback-details">{@render detailsToggle()}</span>
   </div>
 {/snippet}
 
@@ -293,6 +304,24 @@
   }
 
 
+
+  .details-toggle, .fallback-details { display: none; }
+  @media (max-width: 560px) {
+    .details-toggle {
+      display: inline-grid; place-items: center; margin-inline-end: auto;
+      width: 2.75rem; height: 2.75rem; padding: 0;
+      color: var(--atlas-accent); background: var(--atlas-surface);
+      border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); cursor: pointer;
+    }
+    .details-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .description { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .5rem; }
+    .description .fallback-text { grid-area: 1 / 1 / 2 / -1; }
+    .description .fallback-details { display: flex; grid-area: 2 / 1; }
+    .description .read-more { grid-area: 2 / 2; margin: 0; }
+    [data-presentation] .card-details { padding-block-start: .65rem; }
+    [data-presentation] .card-details:not(.details-open) { display: none; }
+    [data-presentation]:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
+  }
 
   [data-presentation] {
     .card-details {
@@ -446,10 +475,7 @@
       h2 { font-size: 1.2rem; }
       .by-prefix, .community-prefix { display: none; }
       .byline { font-size: 0.75rem; line-height: 1.5; }
-      // Keep the description and Read more in one text flow, as on desktop.
-      // The button's existing right float lets text occupy the remaining width.
       .body { display: flow-root; }
-      .description { display: block; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
