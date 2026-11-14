@@ -384,6 +384,8 @@
     .dial { float: none; margin-right: 0; margin-bottom: 0; }
   }
 
+  .body:has(> :global(.has-sections)) > :global(.has-sections) { align-self: stretch; display: flex; }
+
   // Let the dial set the grid row height. Slide contents are clipped inside
   // that row and cannot make the card grow when the active block changes.
   @media (min-width: 561px) {
@@ -463,7 +465,7 @@
       // The button's existing right float lets text occupy the remaining width.
       .body { display: flow-root; }
       .description { display: block; }
-      .body:has(> :global(.has-slides)) { display: block; }
+      .body:has(> :global(.has-slides)), .body:has(> :global(.has-sections)) { display: block; }
       .dial { display: contents; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
