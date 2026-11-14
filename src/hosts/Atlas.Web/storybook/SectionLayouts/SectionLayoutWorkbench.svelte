@@ -594,7 +594,7 @@
               disabled={index === draft.sections.length - 1} onclick={() => moveSection(section.id, 1)}>↓</button>
           </div>
         </div>
-        <div class="sidebar-actions" role="group" aria-label="Section actions">
+        <div class="sidebar-actions section-actions" role="group" aria-label="Section actions">
           <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
           <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
           {#if index > 0}
@@ -968,6 +968,7 @@
   .action-heading { justify-content: space-between; gap: .5rem; }
   .reorder-actions { gap: .15rem; }
   .sidebar-actions { flex-wrap: wrap; gap: .15rem .35rem; padding-block: .15rem .45rem; }
+  .section-actions { justify-content: flex-end; }
   .sidebar-actions button, .reorder-actions button {
     border-color: var(--atlas-border); min-height: 2.5rem; padding: .25rem .4rem;
     font-size: .85rem; color: var(--atlas-accent);
