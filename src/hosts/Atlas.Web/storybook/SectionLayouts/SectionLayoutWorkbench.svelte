@@ -720,7 +720,7 @@
           const gridVertical = value === 'center' || value === 'end' ? value : 'start';
           if ((photo.frame?.gridVertical ?? 'start') === gridVertical) return;
           remember();
-          const photos = block.photos.map((item) => item.id === photo.id
+          const photos = block.photos.map<Photo>((item) => item.id === photo.id
             ? { ...item, frame: { ...item.frame, gridVertical } }
             : item);
           draft.blocks = draft.blocks.map((item) => item.id === block.id ? { ...block, photos } : item);
