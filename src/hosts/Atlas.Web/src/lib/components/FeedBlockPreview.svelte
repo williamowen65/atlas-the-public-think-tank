@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { readJson, publicUrl, type ContentBlock } from '../api/nodePage';
-  import { readComposition, type Composition } from '../sections/composition';
+  import SectionNodeView from '../sections/SectionNodeView.svelte';
+  import { readComposition } from '../sections/composition';
   import FeedNodeCarousel from './FeedNodeCarousel.svelte';
 
   let { nodeId, fallback, renderFallback, apiBase = '/atlas-public-api', blocks, onReadMore }: {
@@ -15,28 +16,13 @@
 
   let host = $state<HTMLDivElement>();
   let loaded = $state<ContentBlock[]>([]);
-  function sectionPages(block: ContentBlock, composition: Composition): ContentBlock[] {
-    return composition.sections.flatMap((section) => {
-      const assignments = composition.assignments.filter(({ sectionId }) => sectionId === section.id);
-      if (!assignments.length) return [];
-      const ids = new Set(assignments.map(({ blockId }) => blockId));
-      return [{
-        ...block, id: `${block.id}/${section.id}`,
-        content: { composition: JSON.stringify({
-          ...composition, sections: [section], assignments, blocks: composition.blocks.filter(({ id }) => ids.has(id)),
-        }) },
-      }];
-    });
-  }
-
-  const pages = $derived((blocks ?? loaded).flatMap((block) => {
-    if (block.kind === 'markdown' && !block.content.markdown?.trim()) return [];
-    if (block.kind === 'image' && !publicUrl(block.content.url)) return [];
-    if (block.kind === 'sectioned') {
-      const composition = readComposition(block.content.composition);
-      return composition ? sectionPages(block, composition) : [];
-    }
-    return [block];
+  let settled = $state(false);
+  const content = $derived(blocks ?? loaded);
+  const composition = $derived(readComposition(content.find(({ kind }) => kind === 'sectioned')?.content.composition));
+  const pages = $derived(content.filter((block) => {
+    if (block.kind === 'markdown') return !!block.content.markdown?.trim();
+    if (block.kind === 'image') return !!publicUrl(block.content.url);
+    return block.kind !== 'sectioned';
   }));
 
   $effect(() => {
@@ -45,6 +31,7 @@
     const element = host;
     if (blocks !== undefined || !element) return;
     loaded = [];
+    settled = false;
     const controller = new AbortController();
     let started = false;
     async function load() {
@@ -53,7 +40,8 @@
       try {
         const result = await readJson<ContentBlock[]>(base, `nodes/${id}/description`, controller.signal);
         if (!controller.signal.aborted && Array.isArray(result)) loaded = result;
-      } catch { /* The discovery excerpt remains visible. */ }
+      } catch { /* Use the discovery excerpt if content is unavailable. */ }
+      finally { if (!controller.signal.aborted) settled = true; }
     }
 
     if (typeof IntersectionObserver === 'undefined') {
@@ -71,16 +59,23 @@
   });
 </script>
 
-<div class="feed-block-preview" class:has-slides={pages.length > 0} bind:this={host}>
-  {#if pages.length}
+<div class="feed-block-preview" class:has-sections={!!composition} class:has-slides={!composition && pages.length > 0} bind:this={host}>
+  {#if composition}
+    {#key nodeId}
+      <SectionNodeView draft={{ ...composition, title: '' }} feed {onReadMore} />
+    {/key}
+  {:else if pages.length}
     {#key nodeId}
       <FeedNodeCarousel blocks={pages} onOpenFull={onReadMore} />
     {/key}
-  {:else}
+  {:else if blocks !== undefined || settled}
     {@render renderFallback(fallback)}
+  {:else}
+    <div class="loading" aria-busy="true"></div>
   {/if}
 </div>
 
 <style>
+  .loading { min-block-size: 5rem; }
   .feed-block-preview { display: block; min-width: 0; }
 </style>

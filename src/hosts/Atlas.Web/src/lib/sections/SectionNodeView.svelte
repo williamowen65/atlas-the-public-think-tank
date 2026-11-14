@@ -84,7 +84,7 @@
       <button type="button" aria-expanded={expanded} aria-controls={instance}
         onclick={() => expanded = !expanded}>{expanded ? 'Collapse' : 'Expand'}</button>
     {/if}
-    <button type="button" class="primary" onclick={onReadMore}>Read More</button>
+    {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
 {/if}
 {#if media.length}<NodeMediaGallery bind:this={gallery} items={media} />{/if}

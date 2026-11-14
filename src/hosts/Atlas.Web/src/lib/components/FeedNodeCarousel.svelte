@@ -89,8 +89,8 @@
   </div>
 
   <div class="carousel-bottom">
-    <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
     {#if hasMore}
+      <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
       <div class="dots" class:scroll={!frame} role="group" aria-label="Content block pages">
         {#each blocks as block, i (block.id)}
           <button type="button" aria-label={'Show node block ' + (i + 1)}

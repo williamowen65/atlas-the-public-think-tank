@@ -47,6 +47,7 @@
     focusOnMount = false,
     onPreview,
     onSubmit,
+    onSaveDraft,
     submitting = false,
   }: {
     /** Available node types and their singular/plural display labels. */
@@ -79,6 +80,7 @@
      * Receives the draft when the form submits; the parent owns persistence.
      */
     onSubmit: (draft: NodeDraft) => void;
+    onSaveDraft?: () => void;
     /** Shows the creation-in-progress label and disables the submit button. */
     submitting?: boolean;
   } = $props();
@@ -313,11 +315,25 @@
   </footer>
   <div class="actions">
     {#if blockError}<p role="alert">{blockError}</p>{/if}
-    <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
+    <div class="create-actions">
+      {#if onSaveDraft}
+        <a href="/my-drafts">My drafts</a>
+        <button type="button" onclick={onSaveDraft} disabled={submitting}>Save private draft</button>
+      {/if}
+      <button class="create-primary" type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
+    </div>
   </div>
 {/snippet}
 
 <style lang="scss">
+  .create-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; }
+  .create-actions :is(a, button) {
+    display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    min-height: 2.75rem; padding: .45rem .85rem; border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius); background: var(--atlas-surface); color: var(--atlas-text);
+    font: inherit; text-decoration: none;
+  }
+  .create-actions .create-primary { background: var(--atlas-accent); color: var(--atlas-on-accent, white); border-color: var(--atlas-accent); }
   .plural-choice {
     display: flex;
     gap: 0.5rem;

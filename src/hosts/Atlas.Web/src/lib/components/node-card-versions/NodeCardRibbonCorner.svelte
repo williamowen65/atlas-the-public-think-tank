@@ -375,7 +375,7 @@
 
   .authoring-body { padding-bottom: var(--card-padding); }
 
-  .body:has(> :global(.has-slides)) {
+  .body:has(> :global(.has-slides)), .body:has(> :global(.has-sections)) {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;

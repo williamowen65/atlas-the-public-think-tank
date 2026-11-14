@@ -434,15 +434,13 @@
             onDraftChange?.(draft);
           }}
           onSubmit={save}
+          onSaveDraft={participantId ? savePrivateDraft : undefined}
         />
       </fieldset>
       {#if communityError}
         <p role="status">Could not load optional communities.</p>
         <button type="button" onclick={() => void loadCommunities()}>Retry communities</button>
       {/if}
-      {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}
-          >Save private draft</button
-        > <a href="/my-drafts">My drafts</a>{/if}
       {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
     {/if}
     {#if saveError}<p role="alert">{saveError} Your draft has been kept.</p>{/if}

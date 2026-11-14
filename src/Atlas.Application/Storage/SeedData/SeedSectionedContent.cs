@@ -70,6 +70,12 @@ internal static partial class DemoData
             case 11:
                 AddSection("wide-left", Text(text), Link("https://www.fisheries.noaa.gov/west-coast/endangered-species-conservation/saving-southern-resident-killer-whales"));
                 break;
+            case 222:
+                AddSection("full", Text("AI-assisted education may collect sensitive patterns about children and families. " + text));
+                AddSection("equal",
+                    Text("## What should schools collect?\n\nStart by listing the information a learning tool needs to help a student."),
+                    Text("## Who can use it?\n\nDistinguish access for students, families, teachers, and vendors. Decide when the data should be deleted."));
+                break;
             case 18:
                 layouts.Add(new { id = "community-network", name = "Network proposal and evidence",
                     slots = new[] { new { id = "left", weight = 65 }, new { id = "right", weight = 35 } } });
