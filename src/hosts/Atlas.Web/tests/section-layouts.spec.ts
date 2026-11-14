@@ -455,12 +455,23 @@ test('creative crop presets update the photo in the editor and both previews', a
 
   await shape.selectOption('blob');
   await expect(frame).toHaveAttribute('data-silhouette', 'blob');
-  await page.getByLabel('Blob profile').selectOption('swept');
-  await expect(frame).toHaveCSS('border-top-left-radius', '42% 58%');
-  await page.getByLabel('Blob direction').selectOption('right');
-  await expect(frame).toHaveCSS('border-top-left-radius', '58% 36%');
+  const handles = page.getByRole('group', { name: 'Blob shape handles' });
+  const corner = handles.getByRole('button', { name: 'Adjust top left blob corner' });
+  await expect(handles.getByRole('button')).toHaveCount(4);
+  await corner.press('ArrowLeft');
+  await expect(frame).toHaveCSS('border-top-left-radius', '57% 43%');
+  const bounds = (await corner.boundingBox())!;
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x - (await frame.boundingBox())!.width * .15, bounds.y + bounds.height / 2, { steps: 5 });
+  await expect(frame).toHaveCSS('border-top-left-radius', '30% 43%');
+  await page.mouse.up();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(frame).toHaveCSS('border-top-left-radius', '57% 43%');
+  await expect(handles).toHaveCount(0);
+  await editPhoto.click();
   await shape.selectOption('pill');
-  await expect(page.getByLabel('Blob profile')).toHaveCount(0);
+  await expect(handles).toHaveCount(0);
   await expect(frame).toHaveCSS('aspect-ratio', '2 / 1');
   await expect(frame).toHaveAttribute('data-silhouette', 'pill');
 

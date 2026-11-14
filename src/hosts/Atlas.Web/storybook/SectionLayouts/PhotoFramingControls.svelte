@@ -1,6 +1,6 @@
 <script lang="ts">
   import PhotoFrame from './PhotoFrame.svelte';
-  import { blobProfiles, photoCropPreset, photoCropPresets, type Photo, type PhotoFrame as Frame } from './sectionLayouts';
+  import { photoCropPreset, photoCropPresets, type Photo, type PhotoFrame as Frame } from './sectionLayouts';
   let { photo, src, gallery, fitTile = false, slideshowFit, onChange }: {
     photo: Photo; src?: string; gallery: boolean; fitTile?: boolean; slideshowFit?: 'contain' | 'cover'; onChange: (frame: Frame) => void;
   } = $props();
@@ -43,24 +43,8 @@
       </select>
     </label>
   {/if}
-  {#if !layoutSetsFrame && crop.id === 'blob'}
-    <label>Blob profile
-      <select value={photo.frame?.blobProfile ?? 'organic'} onchange={(event) => {
-        const profile = blobProfiles.find(({ id }) => id === event.currentTarget.value);
-        if (profile) update({ blobProfile: profile.id });
-      }}>
-        {#each blobProfiles as profile (profile.id)}
-          <option value={profile.id}>{profile.label}</option>
-        {/each}
-      </select>
-    </label>
-    <label>Blob direction
-      <select value={photo.frame?.blobDirection ?? 'left'} onchange={(event) =>
-        update({ blobDirection: event.currentTarget.value === 'right' ? 'right' : 'left' })}>
-        <option value="left">Original</option>
-        <option value="right">Mirrored</option>
-      </select>
-    </label>
+  {#if !layoutSetsFrame && crop.id === 'blob' && src}
+    <small>Drag the handles on the selected photo to shape the blob. Use arrow keys when a handle is focused.</small>
   {/if}
   {#if layoutSetsFrame || !('silhouette' in crop)}
     <label>Corners

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BlobHandles from './BlobHandles.svelte';
   import PhotoFramingControls from './PhotoFramingControls.svelte';
   import LinkPreviewCard from './LinkPreviewCard.svelte';
   import GalleryLayout from './GalleryLayout.svelte';
@@ -180,7 +181,7 @@
   function updateFocus(target: EventTarget | null, keyboard = false) {
     if (view !== 'edit' || movingBlock || !(target instanceof Element)) return;
     const inside = workbench?.contains(target);
-    if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools')) return;
+    if (inside && target.closest('.editor-sidebar, .sidebar-toggle, .editing-tools, .blob-handles')) return;
     if (!keyboard && photoDetails && !target.closest('.photo-button')) photoDetails = null;
     if (!keyboard && layoutBefore && !target.closest('.layout-panel, .editing-tools')) finishLayout();
     const section = inside && target.closest('.edit-slot, .layout-panel')
@@ -687,6 +688,13 @@
             Add image details
           {/if}
         </button>
+        {#if photoDetails === photo.id && photo.frame?.ratio === 'blob' && publicUrl(photo.src)
+          && block.galleryStyle !== 'slideshow' && !(block.galleryStyle === 'mosaic' && block.photos.length > 1)}
+          <BlobHandles frame={photo.frame} onChange={(blobRadii, first) => {
+            if (first) remember();
+            photo.frame = { ...photo.frame, blobRadii };
+          }} />
+        {/if}
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
       </figure>
     {/if}

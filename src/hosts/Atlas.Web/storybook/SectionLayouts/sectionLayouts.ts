@@ -21,15 +21,32 @@ export function photoCropPreset(id: unknown, gallery = false) {
   return photoCropPresets.find((preset) => preset.id === id) ?? photoCropPresets[gallery ? 1 : 0];
 }
 
-export const blobProfiles = [
-  { id: 'organic', label: 'Organic' },
-  { id: 'soft', label: 'Soft' },
-  { id: 'swept', label: 'Swept' },
-] as const;
-export type BlobProfile = typeof blobProfiles[number]['id'];
+export type BlobRadii = [number, number, number, number, number, number, number, number];
+
+const blobProfiles = {
+  organic: [59, 43, 41, 56, 53, 44, 47, 57],
+  soft: [53, 47, 47, 52, 48, 48, 52, 53],
+  swept: [42, 58, 58, 36, 39, 64, 61, 42],
+} satisfies Record<string, BlobRadii>;
+
+export function blobRadii(frame?: PhotoFrame): BlobRadii {
+  const profile = frame?.blobProfile;
+  const original = profile === 'soft' || profile === 'swept' ? blobProfiles[profile] : blobProfiles.organic;
+  const fallback: BlobRadii = frame?.blobDirection === 'right'
+    ? [original[2], original[3], original[0], original[1], original[6], original[7], original[4], original[5]]
+    : original;
+  const values = frame?.blobRadii;
+  if (values !== undefined && (!Array.isArray(values) || values.length !== 8 || !Array.from(values).every(Number.isFinite))) return fallback;
+  const bounded = (values ?? fallback).map((value) => Math.min(70, Math.max(30, value))) as BlobRadii;
+  for (const [first, second] of [[0, 2], [4, 6], [1, 7], [3, 5]]) {
+    bounded[second] = Math.min(bounded[second], 100 - bounded[first]);
+  }
+  return bounded;
+}
 
 export type PhotoFrame = {
-  blobProfile?: BlobProfile;
+  blobRadii?: BlobRadii;
+  blobProfile?: keyof typeof blobProfiles;
   blobDirection?: 'left' | 'right';
   gridVertical?: VerticalAlignment;
   width?: number;
