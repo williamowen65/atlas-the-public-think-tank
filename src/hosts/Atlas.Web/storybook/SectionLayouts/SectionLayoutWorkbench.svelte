@@ -952,7 +952,7 @@
   .reorder-actions { gap: .15rem; }
   .sidebar-actions { flex-wrap: wrap; gap: .15rem .35rem; padding-block: .15rem .45rem; }
   .sidebar-actions button, .reorder-actions button {
-    border-color: transparent; min-height: 2.5rem; padding: .25rem .4rem;
+    border-color: var(--atlas-border); min-height: 2.5rem; padding: .25rem .4rem;
     font-size: .85rem; color: var(--atlas-accent);
   }
   .reorder-actions button { min-width: 2.5rem; font-size: 1rem; }
