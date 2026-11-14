@@ -82,3 +82,10 @@ In browser Network tools, each child-feed nodes request must keep ParentNodeId=b
 Switch to another contribution type and back: each tab starts its own scoped feed, without mixing children or carrying forward another tab's page number. A tall viewport can automatically fetch extra pages to fill available space; the network response size remains three.
 
 The browser regression test uses intercepted API responses to check parent/type scoping and paging independently of SQL. This seed walkthrough is the separate real-database smoke check; it still needs to be run locally after refreshing disposable seed data.
+
+
+### Sectioned demo content
+
+The demo seed stores every node body as a sectioned composition. The fixtures include full-width prose, split layouts with photo or link blocks, grid and masonry galleries, a slideshow, and a custom-width network proposal. Existing node IDs, authors, votes, relationships, and moderation fixtures remain available.
+
+Generate and review `AddSectionedContentComposition` before initializing an empty local database. The migration adds nullable `BlockRows.Composition`. Keep `BlockRows.Markdown` while it serves legacy block readers and the extracted-text projection. A fresh demo seed does not create standalone Markdown blocks.

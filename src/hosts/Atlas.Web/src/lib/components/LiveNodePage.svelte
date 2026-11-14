@@ -96,7 +96,7 @@
   let hiddenHistory = $state<ReportHistory[]>([]);
   let hiddenPreview = $state<NodeCardData | null>(null);
   let hiddenPreviewError = $state(false);
-  type TextRevision = { title: string; shortDescription: string; markdown: string };
+  type TextRevision = { title: string; shortDescription: string; markdown: string; composition?: string };
   let hiddenRevisions = $state<{ reported: TextRevision | null; revised: TextRevision } | null>(null);
   let revisionTab = $state<'reported' | 'revised'>('reported');
   let revisionError = $state('');
@@ -474,7 +474,9 @@
             blocks={hiddenRevisions?.reported && revisionTab === 'reported'
               ? hiddenBlocks.map(block => ['markdown', 'markdowntext'].includes(block.kind.toLowerCase())
                 ? { ...block, content: { ...block.content, markdown: hiddenRevisions!.reported!.markdown } }
-                : block)
+                : block.kind === 'sectioned' && hiddenRevisions!.reported!.composition
+                  ? { ...block, content: { composition: hiddenRevisions!.reported!.composition } }
+                  : block)
               : hiddenBlocks}
             types={[]}
             active="comments"

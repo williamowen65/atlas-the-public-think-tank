@@ -40,6 +40,9 @@ public sealed class SqlPersistenceTests
             Assert.IsTrue(database.NodeRows.Any());
             Assert.IsTrue(database.ParticipantRows.Any());
             Assert.IsTrue(database.DocumentRows.Any());
+            Assert.IsFalse(database.BlockRows.Any(block => block.Kind != "sectioned" || block.Composition == null));
+            Assert.IsTrue(database.BlockRows.Any(block => block.Composition!.Contains("slideshow")));
+            Assert.IsTrue(database.BlockRows.Any(block => block.Composition!.Contains("community-network")));
             Assert.IsTrue(database.VoteRows.Any());
             Assert.IsNotNull(new SqlNodeRepository(() => new AtlasDataContext(options)).GetById(new Atlas.Graph.Nodes.NodeId(database.NodeRows.First().Id)));
 
