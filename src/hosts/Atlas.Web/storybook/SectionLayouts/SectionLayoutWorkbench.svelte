@@ -716,9 +716,14 @@
     {#if block.kind === 'gallery' && (!block.galleryStyle || block.galleryStyle === 'grid')}
       <label>Vertical alignment in grid
         <select value={photo.frame?.gridVertical ?? 'start'} onchange={(event) => {
-          const alignment = event.currentTarget.value;
+          const value = event.currentTarget.value;
+          const gridVertical = value === 'center' || value === 'end' ? value : 'start';
+          if ((photo.frame?.gridVertical ?? 'start') === gridVertical) return;
           remember();
-          photo.frame = { ...photo.frame, gridVertical: alignment === 'center' || alignment === 'end' ? alignment : 'start' };
+          const photos = block.photos.map((item) => item.id === photo.id
+            ? { ...item, frame: { ...item.frame, gridVertical } }
+            : item);
+          draft.blocks = draft.blocks.map((item) => item.id === block.id ? { ...block, photos } : item);
         }}>
           <option value="start">Top</option>
           <option value="center">Middle</option>

@@ -471,3 +471,35 @@ test('creative crop presets update the photo in the editor and both previews', a
     await expect(preview).toHaveCSS('aspect-ratio', '2 / 1');
   }
 });
+
+test('grid aligns a pill crop against a taller photo in the editor and previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editor-controls-playground&viewMode=story');
+  const tiles = page.locator('.tiles .tile');
+  await tiles.nth(1).getByRole('button', { name: /^Edit / }).click();
+  await page.getByLabel('Crop shape').selectOption('pill');
+  const alignment = page.getByLabel('Vertical alignment in grid');
+
+  const verticalGaps = () => tiles.nth(1).evaluate((tile) => {
+    const slot = tile.getBoundingClientRect();
+    const photo = tile.querySelector('figure')!.getBoundingClientRect();
+    return { above: photo.top - slot.top, below: slot.bottom - photo.bottom };
+  });
+  const expectCentered = async () => {
+    await expect.poll(async () => (await verticalGaps()).above).toBeGreaterThan(4);
+    const { above, below } = await verticalGaps();
+    expect(above).toBeCloseTo(below, 0);
+  };
+
+  await alignment.selectOption('end');
+  await expect.poll(async () => (await verticalGaps()).above).toBeGreaterThan(4);
+  expect((await verticalGaps()).below).toBeCloseTo(0, 0);
+  await alignment.selectOption('center');
+  await expectCentered();
+
+  for (const view of ['Feed preview', 'Node page']) {
+    await page.getByRole('button', { name: view, exact: true }).click();
+    await expectCentered();
+  }
+});

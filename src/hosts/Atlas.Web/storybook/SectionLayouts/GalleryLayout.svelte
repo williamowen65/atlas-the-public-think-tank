@@ -113,9 +113,10 @@
 <style>
   .centered { width: min(84%, 48rem); margin-inline: auto; }
   @container (max-width: 37rem) { .centered { width: 100%; } }
-  .tiles { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
-  .tiles .middle { align-self: center; }
-  .tiles .bottom { align-self: end; }
+  .tiles { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; }
+  .tile { display: grid; align-items: start; min-width: 0; }
+  .tile.middle { align-items: center; }
+  .tile.bottom { align-items: end; }
   .tiles .tile:only-child, .paired-grid .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
     grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;
   }
