@@ -135,6 +135,10 @@
   .paired .feature :global(figure > button) { min-width: 0; min-height: 0; height: 100%; }
   .paired .feature :global(figure > button > .frame) { height: 100%; aspect-ratio: auto !important; }
   .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette]) { border-radius: var(--atlas-radius, .5rem); }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].square) { border-radius: 0; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].extra-rounded) { border-radius: 1.5rem; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette] .caption-overlay) { inset: auto 0 0; }
   .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
   .masonry.middle { align-items: center; }
   .masonry-column { display: grid; gap: .6rem; min-width: 0; }

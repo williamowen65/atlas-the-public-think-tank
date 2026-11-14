@@ -440,3 +440,29 @@ test('redo restores successive edits until a new edit clears the redo history', 
   await redo.click();
   await expect(title).toHaveValue('New direction');
 });
+
+test('creative crop presets update the photo in the editor and both previews', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const editPhoto = page.getByRole('button', { name: /Edit Buildings along/ });
+  await editPhoto.click();
+  const shape = page.getByLabel('Crop shape');
+  const frame = editPhoto.locator('.frame');
+  await shape.selectOption('circle');
+  await expect(frame).toHaveCSS('aspect-ratio', '1 / 1');
+  await expect(frame).toHaveCSS('border-top-left-radius', '9999px');
+  await expect(page.getByLabel('Corners', { exact: true })).toHaveCount(0);
+
+  await shape.selectOption('blob');
+  await expect(frame).toHaveAttribute('data-silhouette', 'blob');
+  await shape.selectOption('pill');
+  await expect(frame).toHaveCSS('aspect-ratio', '2 / 1');
+  await expect(frame).toHaveAttribute('data-silhouette', 'pill');
+
+  for (const view of ['Feed preview', 'Node page']) {
+    await page.getByRole('button', { name: view, exact: true }).click();
+    const preview = page.getByRole('button', { name: /View Buildings along/ }).locator('.frame');
+    await expect(preview).toHaveAttribute('data-silhouette', 'pill');
+    await expect(preview).toHaveCSS('aspect-ratio', '2 / 1');
+  }
+});

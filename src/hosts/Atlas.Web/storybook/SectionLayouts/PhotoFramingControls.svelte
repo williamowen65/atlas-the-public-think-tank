@@ -1,6 +1,6 @@
 <script lang="ts">
   import PhotoFrame from './PhotoFrame.svelte';
-  import type { Photo, PhotoFrame as Frame } from './sectionLayouts';
+  import { photoCropPreset, photoCropPresets, type Photo, type PhotoFrame as Frame } from './sectionLayouts';
   let { photo, src, gallery, fitTile = false, slideshowFit, onChange }: {
     photo: Photo; src?: string; gallery: boolean; fitTile?: boolean; slideshowFit?: 'contain' | 'cover'; onChange: (frame: Frame) => void;
   } = $props();
@@ -8,7 +8,8 @@
   const focalSteps: Record<string, readonly [number, number]> = {
     ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5],
   };
-  const ratio = $derived(photo.frame?.ratio ?? (gallery ? '1 / 1' : 'natural'));
+  const crop = $derived(photoCropPreset(photo.frame?.ratio, gallery));
+  const layoutSetsFrame = $derived(!!slideshowFit || fitTile);
   function update(change: Frame) { onChange({ ...photo.frame, ...change }); }
 
   function moveFocalPoint(event: KeyboardEvent) {
@@ -35,22 +36,24 @@
         onchange={(event) => update({ width: event.currentTarget.valueAsNumber })} />
     </label>
     <label>Crop shape
-      <select value={ratio} onchange={(event) => update({ ratio: event.currentTarget.value as Frame['ratio'] })}>
-        <option value="natural">Original proportions</option>
-        <option value="1 / 1">Square</option>
-        <option value="4 / 5">Portrait</option>
-        <option value="2 / 3">Tall portrait</option>
-        <option value="4 / 3">Landscape</option>
+      <select value={crop.id} onchange={(event) => update({ ratio: photoCropPreset(event.currentTarget.value).id })}>
+        {#each photoCropPresets as preset (preset.id)}
+          <option value={preset.id}>{preset.label}</option>
+        {/each}
       </select>
     </label>
   {/if}
-  <label>Corners
-    <select value={photo.frame?.corners ?? 'rounded'}
-      onchange={(event) => update({ corners: event.currentTarget.value as Frame['corners'] })}>
-      <option value="rounded">Rounded</option><option value="square">Square</option>
-    </select>
-  </label>
-  {#if slideshowFit === 'cover' || (!slideshowFit && (fitTile || ratio !== 'natural'))}
+  {#if layoutSetsFrame || !('silhouette' in crop)}
+    <label>Corners
+      <select value={photo.frame?.corners ?? 'rounded'}
+        onchange={(event) => update({ corners: event.currentTarget.value as Frame['corners'] })}>
+        <option value="rounded">Rounded</option>
+        <option value="extra-rounded">Extra rounded</option>
+        <option value="square">Square</option>
+      </select>
+    </label>
+  {/if}
+  {#if slideshowFit === 'cover' || (!slideshowFit && (fitTile || crop.ratio))}
     <label><span class="range-label">Crop zoom <span aria-hidden="true">{photo.frame?.zoom ?? 1}×</span></span>
       <input type="range" min="1" max="3" step=".1" value={photo.frame?.zoom ?? 1}
         onchange={(event) => update({ zoom: event.currentTarget.valueAsNumber })} />

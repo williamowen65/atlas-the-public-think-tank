@@ -1,15 +1,17 @@
 <script lang="ts">
-  import type { Photo } from './sectionLayouts';
+  import { photoCropPreset, type Photo } from './sectionLayouts';
   let { photo, src, gallery = false }: {
     photo: Photo; src: string; gallery?: boolean;
   } = $props();
-  const ratio = $derived(photo.frame?.ratio ?? (gallery ? '1 / 1' : 'natural'));
+  const crop = $derived(photoCropPreset(photo.frame?.ratio, gallery));
   const x = $derived((photo.frame?.x ?? 50) + '%');
   const y = $derived((photo.frame?.y ?? 50) + '%');
 </script>
 
-<span class="frame" class:crop={ratio !== 'natural'} class:square={photo.frame?.corners === 'square'}
-  style:aspect-ratio={ratio === 'natural' ? undefined : ratio}
+<span class="frame" class:crop={!!crop.ratio} class:square={photo.frame?.corners === 'square'}
+  class:extra-rounded={photo.frame?.corners === 'extra-rounded'}
+  data-silhouette={'silhouette' in crop ? crop.silhouette : undefined}
+  style:aspect-ratio={crop.ratio}
   style:--focus-x={x} style:--focus-y={y} style:--zoom={photo.frame?.zoom ?? 1}>
   <img data-photo-frame draggable="false" {src} alt={photo.alt} loading="lazy" referrerpolicy="no-referrer" />
   {#if photo.caption && photo.captionPlacement === 'overlay'}
@@ -25,6 +27,11 @@
     font-size: .85rem; overflow-wrap: anywhere; pointer-events: none;
   }
   .square { border-radius: 0; }
+  .extra-rounded { border-radius: 1.5rem; }
+  .frame[data-silhouette="circle"],
+  .frame[data-silhouette="pill"] { border-radius: 9999px; }
+  .frame[data-silhouette="blob"] { border-radius: 59% 41% 53% 47% / 43% 56% 44% 57%; }
+  .frame[data-silhouette] .caption-overlay { inset: auto 16% 15%; border-radius: var(--atlas-radius, .5rem); }
   img { display: block; width: 100%; height: auto; }
   .crop img { height: 100%; object-fit: cover; object-position: var(--focus-x) var(--focus-y);
     transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y); }

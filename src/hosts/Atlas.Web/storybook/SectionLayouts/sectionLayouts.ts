@@ -5,13 +5,29 @@ export type Section = { id: string; layoutId: string; breakBefore?: boolean; row
 export type VerticalAlignment = 'start' | 'center' | 'end';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type Assignment = { sectionId: string; slotId: string; blockId: string; vertical?: VerticalAlignment };
+export const photoCropPresets = [
+  { id: 'natural', label: 'Original proportions', ratio: undefined },
+  { id: '1 / 1', label: 'Square', ratio: '1 / 1' },
+  { id: '4 / 5', label: 'Portrait', ratio: '4 / 5' },
+  { id: '2 / 3', label: 'Tall portrait', ratio: '2 / 3' },
+  { id: '4 / 3', label: 'Landscape', ratio: '4 / 3' },
+  { id: '16 / 9', label: 'Wide landscape', ratio: '16 / 9' },
+  { id: 'circle', label: 'Circle', ratio: '1 / 1', silhouette: 'circle' },
+  { id: 'pill', label: 'Pill', ratio: '2 / 1', silhouette: 'pill' },
+  { id: 'blob', label: 'Blob', ratio: '1 / 1', silhouette: 'blob' },
+] as const;
+
+export function photoCropPreset(id: unknown, gallery = false) {
+  return photoCropPresets.find((preset) => preset.id === id) ?? photoCropPresets[gallery ? 1 : 0];
+}
+
 export type PhotoFrame = {
   width?: number;
-  ratio?: 'natural' | '1 / 1' | '4 / 5' | '2 / 3' | '4 / 3';
+  ratio?: typeof photoCropPresets[number]['id'];
   zoom?: number;
   x?: number;
   y?: number;
-  corners?: 'square' | 'rounded';
+  corners?: 'square' | 'rounded' | 'extra-rounded';
 };
 export type Photo = { id: string; src: string; alt: string; caption: string; captionPlacement?: 'overlay' | 'below'; frame?: PhotoFrame };
 export type SlideshowSettings = {
