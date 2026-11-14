@@ -490,7 +490,10 @@
     text-align: center;
   }
   .summary-average {
-    padding: 0.3rem 0.5rem;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    padding-inline: 0.5rem;
     border-radius: 0.4rem;
     background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
     font-variant-numeric: tabular-nums;

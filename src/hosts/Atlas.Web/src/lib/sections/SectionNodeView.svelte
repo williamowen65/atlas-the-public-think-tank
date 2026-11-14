@@ -109,8 +109,12 @@
 
 <style>
   .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
-  .viewport.feed { max-height: var(--atlas-section-preview-height, 8.5rem); overflow: clip; }
-  .viewport.feed.expanded { max-height: none; }
+  .viewport.feed {
+    /* Leave room for the card heading, actions, and feed navigation. */
+    max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem)));
+    overflow: clip;
+  }
+  .viewport.feed.expanded { max-block-size: none; }
   .viewport.truncated { mask-image: linear-gradient(black calc(100% - .65rem), transparent); }
   .sections { display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
   .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
@@ -124,7 +128,7 @@
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
   .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; padding-block-start: .5rem; }
   .feed-actions button {
-    font: inherit; padding: .5rem .85rem; border: 1px solid var(--atlas-border);
+    font: inherit; line-height: 1.25; min-block-size: 2.25rem; padding: .25rem .65rem; border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius, .5rem); color: var(--atlas-text); background: var(--atlas-surface); cursor: pointer;
   }
   .feed-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent, white); border-color: var(--atlas-accent); }

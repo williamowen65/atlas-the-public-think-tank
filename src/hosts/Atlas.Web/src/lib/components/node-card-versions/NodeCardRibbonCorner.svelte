@@ -308,7 +308,7 @@
   @media (max-width: 560px) {
     .details-toggle {
       display: inline-grid; place-items: center; margin-inline-end: auto;
-      width: 2.75rem; height: 2.75rem; padding: 0;
+      width: 2.25rem; min-height: 2.25rem; padding: 0;
       color: var(--atlas-accent); background: var(--atlas-surface);
       border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); cursor: pointer;
     }
@@ -424,7 +424,7 @@
   }
 
   .read-more {
-    --atlas-action-padding: 0.4rem 0.7rem;
+    --atlas-action-padding: 0.25rem 0.65rem;
     // Exclude only the button's bottom-corner footprint from the text flow.
     float: right;
     margin: var(--corner-top, 0px) 0 0 0.75rem;
