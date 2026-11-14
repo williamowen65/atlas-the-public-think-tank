@@ -72,7 +72,7 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         {
             case SectionedBlock sectioned:
                 stored.Composition = sectioned.Composition;
-                stored.Markdown = sectioned.SearchableText;
+                stored.CompositionSearchText = sectioned.SearchableText;
                 break;
             case MarkdownTextBlock text:
                 stored.Markdown = text.Markdown;

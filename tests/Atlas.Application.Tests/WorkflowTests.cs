@@ -34,9 +34,12 @@ public sealed class WorkflowTests
             {
               "version": 1,
               "layouts": [{"id":"full","slots":[{"id":"left","weight":1}]}],
-              "sections": [{"id":"s","layoutId":"full"}],
-              "blocks": [{"id":"b","kind":"text","text":"A searchable paragraph."}],
-              "assignments": [{"sectionId":"s","slotId":"left","blockId":"b"}]
+              "sections": [{"id":"s","layoutId":"full"},{"id":"s2","layoutId":"full"}],
+              "blocks": [
+                {"id":"b","kind":"text","text":"A searchable paragraph."},
+                {"id":"b2","kind":"gallery","photos":[{"id":"p","src":"https://example.test/photo.jpg","alt":"A kingfisher","caption":"Along the boardwalk"}]}
+              ],
+              "assignments": [{"sectionId":"s","slotId":"left","blockId":"b"},{"sectionId":"s2","slotId":"left","blockId":"b2"}]
             }
             """;
         var store = new Store();
@@ -45,7 +48,7 @@ public sealed class WorkflowTests
         var document = ((IDocumentRepository)store).GetById(new DocumentId(node.DescriptionId.Value))!;
         var block = (SectionedBlock)store.GetBlockById(document.BlockIds.Single())!;
         Assert.AreEqual(composition, block.Composition);
-        Assert.AreEqual("A searchable paragraph.", block.SearchableText);
+        Assert.AreEqual("A searchable paragraph.\nA kingfisher\nAlong the boardwalk", block.SearchableText);
     }
 
     [TestMethod]

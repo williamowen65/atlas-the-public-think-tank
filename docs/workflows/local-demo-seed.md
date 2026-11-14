@@ -88,4 +88,4 @@ The browser regression test uses intercepted API responses to check parent/type 
 
 The demo seed stores every node body as a sectioned composition. The fixtures include full-width prose, split layouts with photo or link blocks, grid and masonry galleries, a slideshow, and a custom-width network proposal. Existing node IDs, authors, votes, relationships, and moderation fixtures remain available.
 
-Generate and review `AddSectionedContentComposition` before initializing an empty local database. The migration adds nullable `BlockRows.Composition`. Keep `BlockRows.Markdown` while it serves legacy block readers and the extracted-text projection. A fresh demo seed does not create standalone Markdown blocks.
+Generate and review `AddSectionedContentComposition` before initializing an empty local database. The migration adds nullable composition and composition search-text columns and updates the computed block search column. `BlockRows.Markdown` serves legacy blocks only. A fresh demo seed does not create standalone Markdown blocks.

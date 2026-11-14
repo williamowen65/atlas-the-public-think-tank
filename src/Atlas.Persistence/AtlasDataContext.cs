@@ -378,6 +378,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             entity.Property<string?>("Markdown")
                 .HasColumnType("nvarchar(max)");
             entity.Property(row => row.Composition).HasColumnType("nvarchar(max)");
+            entity.Property(row => row.CompositionSearchText).HasColumnType("nvarchar(max)").UseCollation(DiscoveryTextCollation.Name);
             entity.Property<string?>("AltText")
                 .HasColumnType("nvarchar(max)");
             entity.Property<string?>("Caption")

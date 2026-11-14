@@ -95,7 +95,7 @@ public sealed class SectionedBlock : ContentBlock
                         text.Add(Optional(block.GetProperty("text").GetString(), 100_000, "text"));
                         break;
                     case "link":
-                        HttpUrl(Id(block, "url"), "url");
+                        text.Add(HttpUrl(Id(block, "url"), "url").AbsoluteUri);
                         break;
                     case "image":
                     case "gallery":

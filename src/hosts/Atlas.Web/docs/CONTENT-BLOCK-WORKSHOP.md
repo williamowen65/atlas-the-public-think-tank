@@ -664,7 +664,7 @@ optional text-wrapping will be supported. Related research is in PTT-183.
 
 ## Section editor integration
 
-New nodes publish a versioned section composition as part of the existing node creation transaction. Content owns the payload: layouts, ordered sections, block data, and slot assignments are stored together in the nullable `BlockRows.Composition` column. Atlas retains its document and block identities at the storage boundary. Section text and photo descriptions are projected into the Markdown storage field for later indexing. The current SQL full-text expression still indexes the existing block kinds.
+New nodes publish a versioned section composition as part of the existing node creation transaction. Content owns the payload: layouts, ordered sections, block data, and slot assignments are stored together in the nullable `BlockRows.Composition` column. Atlas retains its document and block identities at the storage boundary. Discovery and public search index section prose, photo captions and alternative text, and link URLs through `BlockRows.CompositionSearchText`. Each future block kind can add its public text to the Content domain projection.
 
 Existing flat documents require no backfill. Authors of Markdown-only nodes can choose **Use section editor** and publish the conversion as one Content transaction. Other legacy block kinds remain on the existing editor. Images continue to reference hosted HTTP(S) URLs.
 
@@ -676,10 +676,20 @@ From the solution root, configure `ATLAS_SQL_CONNECTION_STRING` with the shared 
 dotnet tool restore
 dotnet ef migrations add AddSectionedContentComposition --project src/Atlas.Persistence --context AtlasDataContext --output-dir Migrations
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence --context AtlasDataContext
-dotnet ef database update --project src/Atlas.Persistence --context AtlasDataContext
+dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database --seed-demo
 dotnet test tests/Atlas.Application.Tests
 dotnet test tests/Atlas.Persistence.Tests
 dotnet test tests/Atlas.Api.Tests
 ```
 
-The migration should add a nullable composition column without rewriting existing content. Commit the generated migration, designer, and model snapshot before deployment.
+The model adds nullable `Composition` and `CompositionSearchText` columns and updates the persisted computed `SearchText` column. If you already generated the composition migration, scaffold a follow-up named `IndexSectionedContent`.
+
+Before the generated migration changes `SearchText`, add the following guard in both `Up` and `Down`. SQL Server requires removing the existing full-text index before changing its indexed column.
+
+```csharp
+migrationBuilder.Sql(
+    "IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.BlockRows')) DROP FULLTEXT INDEX ON dbo.BlockRows;",
+    suppressTransaction: true);
+```
+
+Run Atlas database setup after migration to rebuild the search projection and recreate the full-text index. If you have already saved sectioned nodes, backfill `CompositionSearchText` from the old extracted text in `Markdown` before rebuilding. The empty seeded database gets the new projection directly. Commit the migration, designer, and model snapshot before deployment.

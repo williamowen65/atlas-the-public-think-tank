@@ -84,6 +84,7 @@ internal static partial class DemoData
         var validated = SectionedBlock.Reconstitute(new BlockId(row.Id), composition, row.CreatedAt, row.UpdatedAt);
         row.Kind = validated.Kind;
         row.Composition = validated.Composition;
-        row.Markdown = validated.SearchableText;
+        row.CompositionSearchText = validated.SearchableText;
+        row.Markdown = null;
     }
 }
