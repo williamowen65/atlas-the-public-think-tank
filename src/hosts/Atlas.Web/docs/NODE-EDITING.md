@@ -1,11 +1,17 @@
 # Editing an owned node
 
-When signed in as a node's author, use the pencil **Edit** control in its card header or full node page. Shared card layouts carry this control into discovery, profile and community feeds and node search results. Other visitors do not see it. A shared session check supplies identity; the API still authorizes each write.
+Sign in as the author and use the pencil on a feed card or the full node page. The editor reloads the current title and content. The API checks ownership and antiforgery on every write.
 
-The editor reloads the current node and content before editing. Title, short description and each existing Markdown block have individual Save actions. Every successful Save is immediately public and updates the displayed node. A failed request retains editable values for retry. Close or Escape asks before discarding unsaved changes. Existing block IDs are retained; non-Markdown blocks remain untouched. Block addition, deletion and reordering are outside this pass.
+- **Edit** opens the authoring view. Sectioned content supports layout presets, text, URL-backed images and galleries, and link previews. Use the editor sidebar to change the selected section or block.
+- **Preview in feed** shows the draft as a feed card. **Read More** opens the full draft preview. Narrow views stack section blocks in reading order and adapt gallery columns to the available width.
+- **Publish changes** sends the title and content changes to the API. The full node renders its Content document, and discovery and search derive text from content blocks.
 
-**Save private revision draft** stores current editor values under the signed-in participant and node in this browser. Reopen Edit on the same node and select **Restore private revision draft** to resume, then review and save changes individually. Deleted or replaced blocks are not recreated by restoring a draft. **Delete private revision draft** removes the saved browser copy. Drafts are not synchronized across devices or listed among new-node drafts. A session change closes the editor and clears its in-memory values.
+## Saving and recovery
 
-There is no public under-revision status or server-side revision history in this change. Existing content stays public while a private draft is prepared. Node and block saves use independent existing API operations, rather than one atomic document-wide save. Concurrent edits retain the backend's existing latest-save behavior. Full-text search indexing after content changes remains asynchronous.
+**Save private revision** stores the draft for this participant and node in the current browser. Use **Restore private revision** after reopening the editor, or **Delete private revision** to remove the browser copy. Private revisions leave the published node visible and are local to the device.
 
-No schema change or migration is needed. Restart the web/Storybook development server after pulling so its allowlisted session proxy accepts title, short-description and existing-block PUT requests. Backend owner checks, antiforgery protection and same-origin proxy checks remain in force.
+Publishing an edit can involve several independent calls. If a later call fails, earlier changes may already be public. The editor keeps the draft open. Reload the published node to confirm what saved before retrying. Search indexing runs asynchronously.
+
+## Local development
+
+Apply the checked-in sectioned-content and short-description removal migrations before running the API. To initialize and seed an empty local demo database, see the [local demo seed workflow](../../../../docs/workflows/local-demo-seed.md). Restart the web and Storybook dev servers after pulling changes to the session proxy.

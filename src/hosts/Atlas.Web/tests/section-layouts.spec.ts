@@ -38,7 +38,7 @@ test('the workbench creates a reusable layout and shows the same draft in feed a
   await page.getByRole('button', { name: 'Save as a new preset' }).click();
   await expect(page.getByRole('button', { name: 'Change layout' })).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('button', { name: 'Add section' }).click();
-  await page.getByLabel('Layout', { exact: true }).selectOption({ label: 'Pilot layout' });
+  await page.locator('.layout-panel select').first().selectOption({ label: 'Pilot layout' });
   await page.getByRole('button', { name: 'Add this layout' }).click();
 
   await page.getByText('Backend data preview').click();
@@ -132,7 +132,7 @@ test('confirms block removal and undoes block and empty section removal in order
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Remove block' }).click();
   await expect(text).toHaveCount(0);
-  await page.keyboard.press('Control+z');
+  await undo.press('ControlOrMeta+z');
   await expect(text).toBeVisible();
 
   await text.click();
@@ -211,7 +211,7 @@ test('layout choices preview immediately and cancel or click-away resolve the ch
   const change = async () => {
     await section.getByRole('textbox', { name: /Node content/ }).click();
     await page.getByRole('button', { name: 'Change layout' }).click();
-    await page.getByLabel('Layout', { exact: true }).selectOption('full');
+    await page.locator('.layout-panel select').first().selectOption('full');
     await expect(grid.locator('.edit-slot')).toHaveCount(1);
   };
   await change();
@@ -315,7 +315,7 @@ test('masonry image settings close within the gallery without moving its tiles',
   await expect(settings).toHaveCount(0);
   await page.getByRole('button', { name: 'Show editor controls' }).click();
   await expect(settings).toBeVisible();
-  await settings.getByLabel('Caption').fill('An evening walk');
+  await settings.getByRole('textbox', { name: 'Caption', exact: true }).fill('An evening walk');
   await gallery.getByText('An evening walk').dispatchEvent('pointerdown');
   await expect(settings).toHaveCount(0);
   await expect(gallery.getByText('An evening walk')).toBeVisible();
@@ -397,9 +397,9 @@ test('gallery columns update live and carry through both previews', async ({ pag
   await layout.selectOption('grid');
   await expect(grid).toHaveValue('4');
   await page.getByRole('button', { name: 'Feed preview' }).click();
-  await expect(gridColumns).toHaveCSS('--column-count', '4');
+  await expect(gridColumns).toHaveCSS('--column-count', '3');
   await page.getByRole('button', { name: 'Node page' }).click();
-  await expect(gridColumns).toHaveCSS('--column-count', '4');
+  await expect(gridColumns).toHaveCSS('--column-count', '3');
 
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Buildings along a city street' }).focus();

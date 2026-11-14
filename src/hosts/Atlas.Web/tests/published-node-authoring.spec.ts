@@ -37,7 +37,8 @@ test('the published-card story previews the current draft and keeps editing stat
 
   await canvas.getByRole('button', { name: 'Edit image in text' }).click();
   const imageSettings = page.getByRole('form', { name: 'Edit image in Markdown' });
-  await expect(imageSettings.getByLabel('Inline image URL')).toHaveValue(/images.unsplash.com/);
+  const imageUrl = await imageSettings.getByLabel('Inline image URL').inputValue();
+  expect(new URL(imageUrl).hostname).toBe('images.unsplash.com');
   await imageSettings.getByLabel('Inline image alternative text').fill('Buildings around the square');
   await imageSettings.getByRole('button', { name: 'Apply image' }).click();
   await expect(canvas.getByRole('img', { name: 'Buildings around the square' })).toHaveCount(1);
@@ -47,6 +48,7 @@ test('the published-card story previews the current draft and keeps editing stat
   await expect(card).toHaveAttribute('data-presentation', 'ribbon-corner');
   await expect(card.locator('.byline')).toContainText('Public spaces, Urban trees');
   await expect(card.locator('.reactions')).toContainText('Useful 3');
+  await card.getByRole('button', { name: 'Show reactions, comments, and subnodes' }).click();
   const footer = card.locator('.navigation-details');
   await expect(footer.getByRole('button')).toHaveText(['0 Comments', '0 Questions', '0 Evidence']);
   await expect(card).not.toContainText('Help develop this node with');
@@ -65,7 +67,7 @@ test('the published-card story previews the current draft and keeps editing stat
   await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('A revised public square');
 });
 
-test('the desktop feed carousel uses the voting dial height on short and long slides', async ({ page }) => {
+test('the legacy feed carousel keeps its controls steady across text slides', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 900 });
   await page.route('https://images.unsplash.com/**', (route) => route.abort());
   await page.goto(story);
@@ -74,11 +76,9 @@ test('the desktop feed carousel uses the voting dial height on short and long sl
   const feed = page.getByRole('region', { name: 'Feed preview of node content blocks' });
   const viewport = feed.getByRole('region', { name: 'Node content carousel, swipe or use arrows' });
   const readMore = feed.getByRole('button', { name: 'Read more' });
-  const dial = page.getByRole('complementary', { name: 'Importance rating' }).locator('.voting-dial');
-  await expect(dial).toBeVisible();
-  const bottom = async () => readMore.evaluate((button) => button.getBoundingClientRect().bottom);
-  const dialBottom = await dial.evaluate((element) => element.getBoundingClientRect().bottom);
-  await expect.poll(async () => Math.abs((await bottom()) - dialBottom)).toBeLessThan(2);
+  await expect(page.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
+  const bottom = async () => readMore.evaluate(button => button.getBoundingClientRect().bottom);
+  const initialBottom = await bottom();
   const longHeight = (await viewport.boundingBox())!.height;
   const arrowTop = (await feed.getByRole('button', { name: 'Next node content block' }).boundingBox())!.y;
   expect(await viewport.locator('.content-blocks').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
@@ -87,7 +87,7 @@ test('the desktop feed carousel uses the voting dial height on short and long sl
   await expect(viewport).toContainText('Start with a small pilot');
   expect((await viewport.boundingBox())!.height).toBeCloseTo(longHeight, 0);
   expect((await feed.getByRole('button', { name: 'Next node content block' }).boundingBox())!.y).toBeCloseTo(arrowTop, 0);
-  expect(await bottom()).toBeCloseTo(dialBottom, 0);
+  expect(await bottom()).toBeCloseTo(initialBottom, 0);
 });
 
 

@@ -186,9 +186,9 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article > header h2')).toHaveText('Question: Current child');
   await expect(page.locator('article > header .byline')).toContainText('Community: Local community');
   await expect(page.getByRole('button', { name: 'Read more' })).toBeEnabled();
-  await expect(page.locator('.description')).toContainText('Content from the API response.');
-  await expect(page.locator('.description')).not.toContainText('Actual API description.');
-  await expect(page.locator('.description')).toHaveCSS('max-height', 'none');
+  const content = page.locator('.feed-block-preview');
+  await expect(content).toContainText('Content from the API response.');
+  await expect(content).not.toContainText('Actual API description.');
   const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);

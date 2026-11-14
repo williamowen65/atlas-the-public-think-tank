@@ -110,7 +110,7 @@ test('custom type creation is reused on a failed node retry and the draft remain
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story');
   await fill(page); await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Evidence');
-  await page.getByLabel('Automatically pluralize this type').uncheck();
+  await page.getByRole('checkbox', { name: 'Automatically pluralize this type', exact: true }).uncheck();
   await page.getByRole('button', { name: 'Create node', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Your draft has been kept');
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Created through the frontend');

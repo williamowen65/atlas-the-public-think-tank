@@ -192,7 +192,7 @@ for (const width of [1024, 640, 320]) {
     await expect.poll(() => fixture.mutations.length).toBe(1);
     expect(fixture.mutations[0].method).toBe('PUT');
     await expect(picker).not.toBeVisible();
-    await expect(summary).toContainText(`Voted ${fixture.mutations[0].value}/10`);
+    await expect(summary).toHaveAccessibleName(new RegExp(`Voted ${fixture.mutations[0].value} out of 10`));
     await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
     await summary.click();
     await expect(dial).toHaveAttribute('aria-valuenow', String(fixture.mutations[0].value));

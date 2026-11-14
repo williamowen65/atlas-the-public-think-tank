@@ -138,7 +138,9 @@ test('failed changes retain the editor contents for a retry', async ({ page }) =
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
-  await editor.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('Unsaved edit');
+  const content = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
+  await content.press('ControlOrMeta+a');
+  await content.pressSequentially('Unsaved edit');
   fixture.fail(true);
   await editor.getByRole('button', { name: 'Publish changes' }).click();
   await expect(editor.getByRole('alert')).toContainText('Some changes may already be public');
@@ -150,7 +152,9 @@ test('private revisions remain unpublished and can be restored', async ({ page }
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
-  await editor.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('Private revision');
+  const content = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
+  await content.press('ControlOrMeta+a');
+  await content.pressSequentially('Private revision');
   await editor.getByRole('button', { name: 'Save private revision', exact: true }).click();
   expect(fixture.writes).toHaveLength(0);
   page.on('dialog', (dialog) => dialog.accept());

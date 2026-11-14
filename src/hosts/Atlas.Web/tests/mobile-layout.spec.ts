@@ -46,14 +46,13 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   const type = await card.locator('.mobile-type').boundingBox();
   expect(Math.abs((row!.y + row!.height / 2) - (type!.y + type!.height / 2))).toBeLessThan(2);
   expect(type!.x + type!.width).toBeLessThanOrEqual(row!.x);
+  const body = card.locator('.body');
+  const before = await body.boundingBox();
   await summary.click();
-  const dial = card.getByRole('spinbutton');
+  const picker = card.getByRole('dialog', { name: 'Rate node importance', exact: true });
+  const dial = picker.getByRole('spinbutton');
   await expect(dial).toBeVisible();
-  // The expanded dial belongs beside the introduction, rather than a row beneath it.
-  await expect(card.locator('.dial-content')).toHaveCSS('float', 'left');
-  const selector = await card.locator('.selector').boundingBox();
-  const introduction = await card.locator('.description').boundingBox();
-  expect(selector!.y).toBeLessThan(introduction!.y + introduction!.height);
+  expect(await body.boundingBox()).toEqual(before);
 
   await dial.focus();
   await page.keyboard.press('End');
@@ -61,7 +60,7 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await summary.click();
+  await picker.getByRole('button', { name: 'Close vote dial' }).click();
   await expect(dial).toHaveCount(0);
   expect(writes).toEqual([]);
 });
@@ -215,7 +214,8 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await expect(node.getByRole('heading', { name: 'Restore salmon habitat', exact: true })).toBeVisible();
   await expect(node.locator('.node-type')).toHaveText('Solution');
   await expect(node.locator('.relative-date')).toBeVisible();
-  await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toBeVisible();
+  await expect(node.getByRole('link', { name: 'Orca recovery', exact: true })).toHaveAttribute('href', `/communities/${communityId}`);
+  await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toHaveCount(0);
   const summary = node.getByRole('button', { name: /Rate node importance/ });
   await expect(summary).toBeEnabled();
   await expect(node.locator('.node-type-row .rating-summary')).toBeVisible();

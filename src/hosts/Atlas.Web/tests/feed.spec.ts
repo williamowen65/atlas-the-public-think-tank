@@ -9,7 +9,7 @@ async function mockFeed(page: Page, failSecond = false) {
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.includes('/communities/') || url.pathname.endsWith('/parents')) return route.fulfill({ json: [] });
-    if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     const current = Number(url.searchParams.get('Page'));
     requested.push(current);
     if (current === 2 && fail) { fail = false; return route.fulfill({ status: 503 }); }

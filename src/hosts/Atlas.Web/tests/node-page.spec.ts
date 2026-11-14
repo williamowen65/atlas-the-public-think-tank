@@ -62,12 +62,12 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await page.getByLabel('Title', { exact: true }).fill('A root idea');
   await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
-  await page.getByLabel('Edit Markdown').check();
-  await page.getByLabel('Text (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
-  await page.getByText('Preview text', { exact: true }).click();
+  const content = page.getByRole('textbox', { name: /Node content/ }).first();
+  await content.fill('Supporting content');
+  await page.getByRole('button', { name: 'Preview in feed' }).click();
   await expect(page.getByText('Supporting content', { exact: true })).toBeVisible();
-  await page.getByLabel('Text (Markdown)', { exact: true }).fill('## Revised content');
-  await expect(page.getByText('Revised content', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(content).toContainText('Supporting content');
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
   // Creation drafts have no voting interaction.
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -146,7 +146,7 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
 });
 
 
-test('node page keeps a full-width ribbon and wraps post content around the dial', async ({ page }) => {
+test('node page keeps a full-width ribbon and voting leaves content in place', async ({ page }) => {
   await mock(page);
   await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
   await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
@@ -156,38 +156,26 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
   await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    if (width <= 560) {
-      // Mobile keeps full content below the compact introduction/disclosure.
-      await expect(card.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
-      await expect(card.getByRole('spinbutton')).toHaveCount(0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-      continue;
-    }
-    const layout = await card.evaluate(el => {
-      const bounds = el.getBoundingClientRect();
-      const ribbon = el.querySelector('nav')!.getBoundingClientRect();
-      const dial = el.querySelector('.dial')!.getBoundingClientRect();
-      const text = el.querySelector('.content-blocks p')!.firstChild!;
-      const range = document.createRange();
-      range.setStart(text, 0); range.setEnd(text, 1);
-      const first = range.getBoundingClientRect();
-      let wrapsBelow = false;
-      for (let index = 0; index < text.textContent!.length; index++) {
-        range.setStart(text, index); range.setEnd(text, index + 1);
-        const rect = range.getBoundingClientRect();
-        if (rect.top > dial.bottom && rect.left < dial.right) { wrapsBelow = true; break; }
-      }
-      const content = el.querySelector('.content-blocks')!.getBoundingClientRect();
-      const reactions = el.querySelector('.node-reactions')!.getBoundingClientRect();
-      const actions = el.querySelector('.add')!.getBoundingClientRect();
-      return { left: ribbon.left - bounds.left, right: bounds.right - ribbon.right, startsBesideDial: first.top < dial.bottom && first.left >= dial.right, wrapsBelow, reactionsAfterContent: reactions.top >= content.bottom, actionsAfterReactions: actions.top >= reactions.bottom };
-    });
-    expect(layout.left).toBeCloseTo(1, 0);
-    expect(layout.right).toBeCloseTo(1, 0);
-    expect(layout.startsBesideDial).toBe(true);
-    expect(layout.wrapsBelow).toBe(true);
-    expect(layout.reactionsAfterContent).toBe(true);
-    expect(layout.actionsAfterReactions).toBe(true);
+    const body = card.locator('.post-body');
+    await expect(body).toContainText('Supporting detail.');
+    const before = await body.boundingBox();
+    await card.getByRole('button', { name: /Rate node importance/ }).click();
+    const picker = card.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    await expect(picker.getByRole('spinbutton')).toBeVisible();
+    expect(await body.boundingBox()).toEqual(before);
+    await picker.getByRole('button', { name: 'Close vote dial' }).click();
+    await expect(picker).toBeHidden();
+    const geometry = await card.evaluate(element => ({
+      card: element.getBoundingClientRect().width,
+      ribbon: element.querySelector('nav')!.getBoundingClientRect().width,
+      contentBottom: element.querySelector('.post-body')!.getBoundingClientRect().bottom,
+      reactionsTop: element.querySelector('.reaction-controls')!.getBoundingClientRect().top,
+      reactionsBottom: element.querySelector('.reaction-controls')!.getBoundingClientRect().bottom,
+      discussionTop: element.querySelector('.discussion-toolbar')!.getBoundingClientRect().top,
+    }));
+    expect(geometry.ribbon).toBeCloseTo(geometry.card - 2, 0);
+    expect(geometry.reactionsTop).toBeGreaterThanOrEqual(geometry.contentBottom);
+    expect(geometry.discussionTop).toBeGreaterThanOrEqual(geometry.reactionsBottom);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
 });
@@ -208,6 +196,7 @@ for (const destination of ['storybook', 'spa']) {
       await page.goto(destination === 'storybook'
         ? 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story'
         : 'http://127.0.0.1:4173');
+      await page.getByRole('button', { name: 'Show reactions, comments, and subnodes' }).first().click();
       const button = page.getByRole('button', { name: contribution.label, exact: true });
       await expect(button).toHaveCSS('cursor', 'pointer');
       await button.focus();
