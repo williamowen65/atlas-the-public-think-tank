@@ -580,7 +580,7 @@
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
            Archive state reaches LiveVotingDial, which also disables itself while loading/saving. -->
       {#snippet voting()}{#if node}<LiveVotingDial
-            mobileCompact
+            forceCompact
             nodeId={node.id}
             initialAverage={average}
             initialTotalVotes={totalVotes}

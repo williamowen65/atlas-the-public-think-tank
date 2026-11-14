@@ -80,7 +80,7 @@ for (const environment of ['storybook', 'spa']) {
       for (const id of communityIds) await communities.selectOption(id);
     }
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
     const save = writes.find(write => write.path.endsWith('/nodes'))!;
     expect(save.body).toMatchObject({ title: 'Created through the frontend', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
     expect(JSON.parse(String(save.body.composition))).toMatchObject({ version: 1, blocks: [{ kind: 'text', text: 'The full content' }] });
@@ -101,7 +101,7 @@ test('child creation keeps parent and selected type through sign-in', async ({ p
   await expect(page.getByLabel('Node type', { exact: true })).toHaveValue(idea);
   await expect(page.getByRole('form', { name: 'Create child node' }).getByRole('navigation')).toContainText('Parent node');
   await fill(page); await page.getByRole('button', { name: 'Create node', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
   expect(writes.find(write => write.path.endsWith('/nodes'))?.body.parentId).toBe(parent);
 });
 
@@ -116,7 +116,7 @@ test('custom type creation is reused on a failed node retry and the draft remain
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Created through the frontend');
   fixture.fail(false);
   await page.getByRole('button', { name: 'Create node', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
   expect(fixture.writes.filter(write => write.path.endsWith('/catalog/node-types'))).toHaveLength(1);
   expect(fixture.writes.find(write => write.path.endsWith('/catalog/node-types'))?.body.autoPluralize).toBe(false);
   expect(fixture.writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(2);
@@ -131,7 +131,7 @@ test('create explains missing fields before sending a request', async ({ page })
   expect(writes.some(write => write.path.endsWith('/nodes'))).toBe(false);
   await fill(page);
   await create.click();
-  await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
   expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
 });
 

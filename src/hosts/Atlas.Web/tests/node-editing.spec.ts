@@ -165,7 +165,7 @@ for (const participant of [null, 'another-participant']) {
   test(`edit control is hidden for ${participant ?? 'anonymous users'}`, async ({ page }) => {
     const fixture = await setup(page, participant);
     await page.goto(story);
-    await expect(page.getByRole('heading', { name: 'Idea: Editable node' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Editable node' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit your node', exact: true })).toHaveCount(0);
     expect(fixture.writes).toHaveLength(0);
   });

@@ -217,7 +217,7 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await page.goto('http://127.0.0.1:4173/nodes?id=' + id);
   const node = page.locator('article.node-page');
   await expect(node.getByRole('heading', { name: 'Restore salmon habitat', exact: true })).toBeVisible();
-  await expect(node.locator('.mobile-type')).toHaveText('Solution');
+  await expect(node.locator('.node-type')).toHaveText('Solution');
   await expect(node.locator('.relative-date')).toBeVisible();
   await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toBeVisible();
   const summary = node.getByRole('button', { name: /Rate node importance/ });
@@ -226,7 +226,7 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
   await summary.click();
   await expect(node.getByRole('spinbutton')).toBeVisible();
-  await expect(node.locator('.dial-content')).toHaveCSS('float', 'left');
-  await summary.click();
+  await expect(node.getByRole('dialog', { name: 'Rate node importance' })).toBeVisible();
+  await node.getByRole('button', { name: 'Close vote dial' }).click();
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
 });

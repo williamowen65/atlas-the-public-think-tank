@@ -50,6 +50,13 @@ async function setup(page: Page, anonymous = false) {
 
 test('node-page votes persist, use server totals, restore on reload and support keyboard undo', async ({ page }) => {
   const fixture = await setup(page); await page.goto(story);
+  const summary = page.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ });
+  await expect(summary).toBeEnabled();
+  const body = page.locator('.post-body');
+  const before = await body.boundingBox();
+  await summary.click();
+  await expect(page.getByRole('dialog', { name: 'Rate node importance', exact: true })).toBeVisible();
+  expect(await body.boundingBox()).toEqual(before);
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('5.0');
@@ -58,15 +65,18 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
   expect(fixture.mutations).toEqual([]);
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+  await page.getByRole('button', { name: /Voted 10.*Average 6.3/ }).click();
   await expect(page.locator('.average')).toHaveText('6.3');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
   await expect(page.locator('.voting-dial')).toHaveClass(/voted/);
   await expect(dial).toHaveAttribute('aria-valuenow', '10');
   expect(fixture.mutations).toEqual([{ method: 'PUT', value: 10 }]);
   await page.reload();
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   await expect(dial).toHaveAttribute('aria-valuenow', '10');
   await dial.focus(); await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+  await page.getByRole('button', { name: /Voted 0.*Rate node importance/ }).click();
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('3.8');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
@@ -74,6 +84,7 @@ test('node-page votes persist, use server totals, restore on reload and support 
   const undo = page.getByRole('button', { name: 'Undo your node importance vote' });
   await undo.focus(); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm undo', exact: true }).click();
+  await page.getByRole('button', { name: /^Vote\./ }).click();
   await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect(page.locator('.average')).toHaveText('5.0');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');
@@ -84,6 +95,7 @@ test('node-page votes persist, use server totals, restore on reload and support 
 
 test('anonymous rating rolls back and opens a dismissible sign-in prompt', async ({ page }) => {
   const fixture = await setup(page, true); await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
@@ -102,11 +114,12 @@ test('anonymous rating rolls back and opens a dismissible sign-in prompt', async
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
-  await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
+  await expect(page.locator('.summary-voters')).toHaveAccessibleName('4 votes');
 });
 
 test('failed voting returns the dial to its confirmed state without inventing totals', async ({ page }) => {
   const fixture = await setup(page); fixture.fail(true); await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
@@ -122,6 +135,7 @@ test('failed voting returns the dial to its confirmed state without inventing to
 test('cancelling a proposed rating leaves the confirmed vote and server totals unchanged', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus();
@@ -173,6 +187,7 @@ for (const width of [1024, 640, 320]) {
 test('keyboard adjustment waits for Enter before opening vote confirmation', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus();
@@ -230,6 +245,7 @@ test('touch vote waits for finger release and still requires confirmation', asyn
 test('wheel confirmation waits after the last adjustment', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.hover();

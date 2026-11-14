@@ -32,13 +32,13 @@ test('Read more opens the matching node story; tabs load child feeds and a paren
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
   await page.getByRole('button', { name: 'Read more', exact: true }).click();
   await expect(page).toHaveURL(/compositions-node-page/);
-  await expect(page.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A live question' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Full explanation' })).toBeVisible();
   await expect(page.getByText('A public comment', { exact: true })).toBeVisible();
   await expect(page.locator('.content-blocks script')).toHaveCount(0);
   expect(urls.some(url => url.searchParams.get('NodeId') === root)).toBe(true);
   await page.getByRole('tab', { name: '1 Idea', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
   expect(urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === idea)).toBe(true);
   await page.getByRole('button', { name: 'Add Idea', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Create child node' })).toBeVisible();
@@ -105,7 +105,7 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
   await page.route('**/atlas-public-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
   const card = page.locator('.node-page');
-  await expect(card.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
+  await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
     if (width <= 560) {
@@ -181,7 +181,7 @@ for (const destination of ['storybook', 'spa']) {
         await expect(page.getByRole('heading', { name: 'Be the first to create an evidence', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Create an evidence', exact: true })).toBeEnabled();
       }
-      else await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+      else await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
       await expect.poll(() => tabs.evaluate(element => {
         const top = element.getBoundingClientRect().top;
         const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);

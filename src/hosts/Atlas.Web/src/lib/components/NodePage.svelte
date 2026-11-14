@@ -5,7 +5,7 @@
 
   **Props**
   - `voting` (`Snippet`; optional): Renderable snippet for the voting region, replacing the
-    always-disabled plain VotingDial fallback. LiveNodePage supplies LiveVotingDial here to add
+    read-only vote summary. LiveNodePage supplies LiveVotingDial here to add
     API/session behavior.
   - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
     omitted, NodePage displays the static reaction summary from node.reactions.
@@ -53,7 +53,6 @@
   import CommunityLinks from './CommunityLinks.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
-  import VotingDial from './VotingDial.svelte';
   let {
     onOpenProfile,
     voting,
@@ -76,7 +75,7 @@
     children,
   }: {
     /**
-     * Renderable snippet for the voting region, replacing the always-disabled plain VotingDial
+     * Renderable snippet for the voting region, replacing the read-only vote summary
      * fallback. LiveNodePage supplies LiveVotingDial here to add API/session behavior.
      */
     voting?: Snippet;
@@ -292,8 +291,16 @@
       />
     </div>{/if}
   <header>
-    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-    <h1><span class="title-type">{`${node.typeName}: `}</span>{node.title}</h1>
+    <div class="node-type-row">
+      <p class="node-type">{node.typeName}</p>
+      {#if !inspectionOnly}
+        {#if voting}{@render voting()}
+        {:else}<button class="vote-summary" type="button" disabled>
+          {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+        </button>{/if}
+      {/if}
+    </div>
+    <h1>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
@@ -320,23 +327,7 @@
     </p>
     {#if node.status === 'Archived'}<p>Archived</p>{/if}
   </header>
-  <!--
-    Contains the floated voting dial so the introduction and content can flow beside it without
-    affecting later sections.
-  -->
   <div class="post-body">
-    <div class="introduction">
-    {#if !inspectionOnly}<aside class="dial" aria-label="Importance rating">
-      <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
-           Without one, show totals with an always-disabled VotingDial: there is no save handler.
-           The bare disabled attribute below means disabled={true}, regardless of archive status. -->
-      {#if voting}{@render voting()}{:else}<VotingDial
-          label="Node importance"
-          {average}
-          {totalVotes}
-          disabled
-        />{/if}
-    </aside>{/if}
     <div class="description">
       {#if blocks.some((block) => block.kind !== 'markdown' || !!block.content.markdown?.trim())}
         <ContentBlocks {blocks} />
@@ -346,7 +337,6 @@
       {:else}
         <ContentBlocks {blocks} />
       {/if}
-    </div>
     </div>
   </div>
   {#if !inspectionOnly}
@@ -404,7 +394,7 @@
 </article>
 
 <style lang="scss">
-  .mobile-type, .relative-date { display: none; }
+  .relative-date { display: none; }
   .introduction { display: contents; }
 
 
@@ -417,7 +407,6 @@
   .node-page {
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
-    --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     margin-inline: auto;
@@ -458,10 +447,6 @@
     display: flow-root;
     padding: 0.5rem var(--card-padding) 0;
     line-height: var(--atlas-line-height, 1.65);
-  }
-  .dial {
-    float: left;
-    margin: 0 var(--dial-text-gap) 0 -0.4rem;
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
@@ -565,55 +550,41 @@
   @media (max-width: 380px) {
     .node-page {
       --card-padding: var(--atlas-card-padding-narrow, 0.75rem);
-      --dial-text-gap: var(--atlas-dial-text-gap, 0.6rem);
     }
   }
   @media (max-width: 560px) {
     .node-page { --card-padding: 0.75rem; }
-    .mobile-type { display: block; margin: 0 0 0.25rem; font-size: 2.1rem; line-height: 0; font-weight: 700; color: var(--atlas-accent); }
-    .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
+    .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
     .byline { font-size: 0.75rem; line-height: 1.5; }
-    // Keep the dial in the same float context as every content block on mobile.
-    // A separate flow-root here forced blocks below the entire dial.
-    .introduction { display: contents; }
-    // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
-    // LiveVotingDial floats its expanded .dial-content with its own text gap.
-    // Avoid applying the same gap a second time on the outer aside.
-    .dial { margin-left: 0; margin-right: 0; }
-    // The collapsed mobile summary lives in the header; its empty floated aside
-    // must not reserve a margin or indent the introduction.
-    .dial:has(:global(.collapsed-mode)):not(:has(:global(.dial-content))) { display: none; }
-    .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
-  .node-type-row { display: none; }
-  @media (max-width: 560px) {
-    .node-type-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: nowrap;
-      min-width: 0;
-      container-type: inline-size;
-      gap: 0.4rem 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    // Scale with the available header width, not just the viewport. CSS cannot
-    // measure text and select an exact fitting font size, so truncate as a
-    // last resort rather than allowing the label to overlap the vote summary.
-    .node-type-row .mobile-type {
-      margin: 0;
-      min-width: 0;
-      flex: 0 1 auto;
-      max-width: 100%;
-      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .node-type-row :global(.header-summary) {
-      flex-shrink: 0;
-    }
+  .node-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem .75rem;
+    min-width: 0;
+    container-type: inline-size;
+    margin-bottom: .5rem;
+  }
+  .node-type {
+    margin: 0;
+    min-width: 0;
+    color: var(--atlas-accent);
+    font-weight: 700;
+    font-size: clamp(.95rem, 8.1cqi, 2.1rem);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-type-row :global(.live-voting), .vote-summary { flex-shrink: 0; }
+  .vote-summary {
+    font: inherit;
+    padding: .5rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    color: var(--atlas-muted);
   }
 </style>
