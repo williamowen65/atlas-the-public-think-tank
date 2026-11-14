@@ -123,6 +123,7 @@
         });
       } else {
         // Do not discard unrecognized blocks. They are reorderable but retain their original payload.
+        const currentOrder = original.map(({ id }) => id);
         const remainingIds = new Set(desired.map((block) => block.id).filter(Boolean));
         for (const block of desired) {
           if (!block.id) continue;
@@ -136,14 +137,22 @@
           if (block.id) continue;
           const saved = await write<ContentBlock>('/description/blocks', 'POST', blockRequest(block));
           block.id = saved.id;
+          currentOrder.push(saved.id);
         }
         for (const old of original) {
-          if (!remainingIds.has(old.id))
-            await write(`/description/blocks/${old.id}`, 'DELETE');
+          if (remainingIds.has(old.id)) continue;
+          await write(`/description/blocks/${old.id}`, 'DELETE');
+          currentOrder.splice(currentOrder.indexOf(old.id), 1);
         }
-        // Sequential moves preserve the author's order and each existing BlockId.
-        for (let index = 0; index < desired.length; index++)
-          await write(`/description/blocks/${desired[index].id}/position`, 'PUT', { index });
+        // Adds append and deletes keep the remaining order. Move only out-of-place blocks.
+        for (const [index, { id }] of desired.entries()) {
+          if (!id) continue;
+          const currentIndex = currentOrder.indexOf(id);
+          if (currentIndex === index) continue;
+          await write(`/description/blocks/${id}/position`, 'PUT', { index });
+          currentOrder.splice(currentIndex, 1);
+          currentOrder.splice(index, 0, id);
+        }
       }
 
       const persisted = await readJson<ContentBlock[]>(apiBase, `${path()}/description`, signal());

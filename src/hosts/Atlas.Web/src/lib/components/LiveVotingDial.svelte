@@ -27,12 +27,30 @@
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   /** Whether the mobile summary has been expanded by the visitor. */
   let expanded = $state(false);
+  let thanking = $state(false);
+  let thankYouTimer: ReturnType<typeof setTimeout> | undefined;
+  let backdropPressed = false;
   let dialDialog = $state<HTMLDialogElement>();
   $effect(() => {
     if (!dialDialog) return;
     if (expanded && !dialDialog.open) dialDialog.showModal();
     else if (!expanded && dialDialog.open) dialDialog.close();
   });
+  function closePicker() {
+    clearTimeout(thankYouTimer);
+    thanking = false;
+    backdropPressed = false;
+    expanded = false;
+    cancelPending();
+  }
+
+  function onBackdrop(event: PointerEvent) {
+    if (event.target !== dialDialog || !dialDialog) return false;
+    const bounds = dialDialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom;
+  }
+
   /** The disclosure remains focusable after moving into the card's type row. */
   let summaryButton = $state<HTMLButtonElement>();
   /**
@@ -219,6 +237,7 @@
     };
     window.addEventListener('atlas-session-changed', sessionChanged);
     return () => {
+      clearTimeout(thankYouTimer);
       controller.abort();
       window.removeEventListener('atlas-session-changed', sessionChanged);
     };
@@ -290,11 +309,11 @@
       confirmed = next;
       value = next;
       saved = true;
-      // Collapse only after the API accepts the write; failed writes keep the
-      // editor available. The summary uses confirmed state, including zero.
-      if (collapsedMode) {
+      if (forceCompact && expanded && next !== null) {
+        thanking = true;
+        thankYouTimer = setTimeout(closePicker, 1600);
+      } else if (collapsedMode) {
         expanded = false;
-
       }
       notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
       try {
@@ -320,7 +339,7 @@
       busy = false;
     }
     // Focus only after busy=false has re-enabled the summary button.
-    if (saved && collapsedMode && !controller.signal.aborted) {
+    if (saved && collapsedMode && !expanded && !controller.signal.aborted) {
       await tick();
       summaryButton?.focus({ preventScroll: true });
     }
@@ -358,13 +377,22 @@
   {/if}
   {#if forceCompact}
     <dialog bind:this={dialDialog} class="vote-login vote-picker" aria-label="Rate node importance"
-      onclose={() => { expanded = false; cancelPending(); }}>
+      onpointerdown={(event) => backdropPressed = onBackdrop(event)}
+      onpointerup={(event) => {
+        if (backdropPressed && onBackdrop(event)) closePicker();
+        backdropPressed = false;
+      }}
+      onclose={closePicker}>
       <div class="picker-heading">
         <h2>Rate node importance</h2>
-        <button type="button" aria-label="Close vote dial" onclick={() => expanded = false}>×</button>
+        <button type="button" aria-label="Close vote dial" onclick={closePicker}>×</button>
       </div>
-      {@render dialControls()}
-      {@render feedback()}
+      {#if thanking}
+        <p class="vote-thanks" role="status">Thank you for casting a vote on Atlas, the Public Think Tank.</p>
+      {:else}
+        {@render dialControls()}
+        {@render feedback()}
+      {/if}
     </dialog>
   {:else if !collapsedMode || expanded}
     {@render dialControls()}
@@ -540,7 +568,23 @@
   .collapsed-mode.inline-summary .rating-summary { position: static; }
   .collapsed-mode .vote-picker .dial-content { display: grid; justify-items: center; float: none; width: auto; margin: .5rem 0 0; }
   .picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  .picker-heading button { min-width: 2.75rem; min-height: 2.75rem; }
+  .vote-picker .picker-heading h2 { margin: 0; }
+  .picker-heading button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+    font: inherit;
+    font-size: 1.35rem;
+    cursor: pointer;
+  }
+  .picker-heading button:hover { background: var(--atlas-bg); }
+  .vote-thanks { margin: 0.85rem 0 0; }
   .collapsed-mode .dial-content {
     display: block;
     float: left;

@@ -82,6 +82,9 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
   expect(fixture.mutations).toEqual([]);
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+  await expect(picker.getByRole('status')).toHaveText('Thank you for casting a vote on Atlas, the Public Think Tank.');
+  await expect(picker).toBeHidden();
   await page.getByRole('button', { name: /Voted 10.*Average 6.3/ }).click();
   await expect(page.locator('.average')).toHaveText('6.3');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
@@ -108,6 +111,19 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await expect(page.locator('.voting-dial')).not.toHaveClass(/voted/);
   await expect(undo).toHaveCount(0);
   expect(fixture.mutations.at(-1)?.method).toBe('DELETE');
+});
+
+test('clicking outside the vote picker dismisses it without voting', async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(story);
+  const summary = page.getByRole('button', { name: /Rate node importance/ });
+  await summary.click();
+  const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+  await expect(picker).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(picker).toBeHidden();
+  await expect(summary).toBeFocused();
+  expect(fixture.mutations).toEqual([]);
 });
 
 test('anonymous rating rolls back and opens a dismissible sign-in prompt', async ({ page }) => {

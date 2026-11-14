@@ -65,7 +65,7 @@ test('root form previews a new type and never writes to the API', async ({ page 
   const content = page.getByRole('textbox', { name: /Node content/ }).first();
   await content.fill('Supporting content');
   await page.getByRole('button', { name: 'Preview in feed' }).click();
-  await expect(page.getByText('Supporting content', { exact: true })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'A root idea' }).getByText('Supporting content', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(content).toContainText('Supporting content');
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);

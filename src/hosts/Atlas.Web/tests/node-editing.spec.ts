@@ -112,7 +112,10 @@ for (const environment of ['storybook', 'spa']) {
     await expect(editor.getByRole('status')).toContainText('Changes published');
     expect(fixture.getBlocks().map((block) => block.id)).toEqual([addedBlock, originalBlock]);
     expect(fixture.writes.some((w) => w.method === 'POST' && w.path.endsWith('/description/blocks'))).toBe(true);
-    expect(fixture.writes.some((w) => w.method === 'PUT' && w.path.endsWith('/position'))).toBe(true);
+    const moves = fixture.writes.filter((w) => w.path.endsWith('/position'));
+    expect(moves).toHaveLength(1);
+    expect(moves[0].path).toContain(`/blocks/${addedBlock}/position`);
+    expect(moves[0].body).toEqual({ index: 0 });
     await editor.getByRole('button', { name: 'Close editor' }).click();
     await expect(page.getByAltText('A pedestrian square with trees')).toBeVisible();
   });
@@ -131,6 +134,17 @@ test('image blocks require valid HTTP(S) URL and alternative text before publish
   await editor.getByRole('button', { name: 'Publish changes' }).click();
   await expect(editor.getByRole('alert')).toContainText('screen readers');
   expect(fixture.writes).toHaveLength(0);
+});
+
+test('publishing a title edit sends no block position updates', async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(story);
+  await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  await editor.getByRole('textbox', { name: 'Title', exact: true }).fill('A revised title');
+  await editor.getByRole('button', { name: 'Publish changes' }).click();
+  await expect(editor.getByRole('status')).toContainText('Changes published');
+  expect(fixture.writes.map(({ path }) => path.split('/').at(-1))).toEqual(['title']);
 });
 
 test('failed changes retain the editor contents for a retry', async ({ page }) => {

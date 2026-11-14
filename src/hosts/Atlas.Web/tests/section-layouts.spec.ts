@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { applyLayout, blockAt, example, moveBlock } from '../src/lib/sections/sectionLayouts';
 
 test('a smaller layout keeps overflow blocks in reading order', () => {
@@ -262,18 +262,28 @@ test('an image wraps at a selected paragraph in the editor and previews', async 
 
   const image = section.getByRole('button', { name: 'Edit Buildings along a city street' });
   const paragraph = section.getByText(/^Start with the places/);
-  await image.dragTo(paragraph, { targetPosition: { x: 8, y: 8 } });
+  const editor = section.locator('.atlas-story-text');
+  async function dropOn(target: Locator, side: 'left' | 'right') {
+    const bounds = (await editor.boundingBox())!;
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    const event = { dataTransfer, clientX: bounds.x + bounds.width * (side === 'left' ? 0.25 : 0.75) };
+    await image.dispatchEvent('dragstart', event);
+    await target.dispatchEvent('dragover', event);
+    await target.dispatchEvent('drop', event);
+    await dataTransfer.dispose();
+  }
+
+  await dropOn(paragraph, 'left');
   const anchoredImage = section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image');
   await expect(anchoredImage).toHaveCSS('float', 'left');
-  const paragraphBox = await paragraph.boundingBox();
-  await image.dragTo(paragraph, { targetPosition: { x: paragraphBox!.width - 8, y: 8 } });
+  await dropOn(paragraph, 'right');
   await expect(anchoredImage).toHaveCSS('float', 'right');
 
-  await image.dragTo(section.getByText(/^A public square can be/));
+  await dropOn(section.getByText(/^A public square can be/), 'right');
   await expect(section.locator('.atlas-story-text > .ProseMirror-widget:first-child').getByRole('button', {
     name: 'Edit Buildings along a city street',
   })).toBeVisible();
-  await image.dragTo(paragraph, { targetPosition: { x: paragraphBox!.width - 8, y: 8 } });
+  await dropOn(paragraph, 'right');
   await image.click();
   await expect(page.getByRole('complementary', { name: 'Editor controls' }).getByRole('group', { name: 'Image settings' })).toBeVisible();
   await page.getByLabel('Crop shape').selectOption('1 / 1');
