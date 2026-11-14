@@ -144,7 +144,13 @@ for (const width of [1024, 640, 320]) {
     await page.goto('http://127.0.0.1:4173');
     const card = page.locator('article').first();
     const summary = card.getByRole('button', { name: /Rate node importance/ });
-    if (width <= 560) await summary.click();
+    const body = card.locator('.body');
+    const before = await body.boundingBox();
+    await expect(card.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ })).toBeVisible();
+    await summary.click();
+    const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    await expect(picker).toBeVisible();
+    expect(await body.boundingBox()).toEqual(before);
     const dial = card.getByRole('spinbutton', { name: 'Node importance', exact: true });
     await expect(dial).toHaveAttribute('aria-disabled', 'false');
     // Click above the selected row using real pointer input: an overlay makes this time out.
@@ -154,12 +160,10 @@ for (const width of [1024, 640, 320]) {
     await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
     await expect.poll(() => fixture.mutations.length).toBe(1);
     expect(fixture.mutations[0].method).toBe('PUT');
-    if (width <= 560) {
-      await expect(dial).toHaveCount(0);
-      await expect(summary).toContainText(`Voted ${fixture.mutations[0].value}/10`);
-      await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
-      await summary.click();
-    }
+    await expect(picker).not.toBeVisible();
+    await expect(summary).toContainText(`Voted ${fixture.mutations[0].value}/10`);
+    await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
+    await summary.click();
     await expect(dial).toHaveAttribute('aria-valuenow', String(fixture.mutations[0].value));
     await expect(card.locator('.vote-count')).toHaveAccessibleName('4 votes');
   });

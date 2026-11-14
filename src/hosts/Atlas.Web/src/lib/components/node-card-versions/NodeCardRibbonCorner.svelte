@@ -48,8 +48,7 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let expandedContent = $state(false);
-  let dialHeight = $state(0);
+  let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
     cornerControl,
@@ -127,8 +126,25 @@
     {#if headerFields}
       <div id={`${instance}-title`}>{@render headerFields()}</div>
     {:else}
-      <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-      <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
+      <div class="node-type-row">
+        <p class="mobile-type">{node.typeName}</p>
+        {#if !authoringBody}
+          {#if voting}
+            {@render voting(true)}
+          {:else}
+            <button class="fallback-vote" type="button" aria-haspopup="dialog"
+              disabled={draft || node.status === 'Archived' || node.isHidden}
+              onclick={() => fallbackDialog?.showModal()}>
+              {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+            </button>
+            <dialog bind:this={fallbackDialog} class="fallback-vote-dialog" aria-label="Rate node importance">
+              <button type="button" onclick={() => fallbackDialog?.close()}>Close</button>
+              <VotingDial label="Node importance" {value} {average} {totalVotes} onChange={onVote} />
+            </dialog>
+          {/if}
+        {/if}
+      </div>
+      <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
@@ -164,24 +180,12 @@
     <div class="body authoring-body">{@render authoringBody()}</div>
     {@render authoringFooter?.()}
   {:else}
-    <div class="body" class:expanded-content={expandedContent && !!voting}>
-      <aside class="dial" bind:offsetHeight={dialHeight} aria-label="Importance rating">
-        {#if voting}{@render voting(expandedContent)}{:else}<VotingDial
-            label="Node importance"
-            {value}
-            {average}
-            {totalVotes}
-            disabled={draft || node.status === 'Archived'}
-            onChange={onVote}
-          />{/if}
-      </aside>
+    <div class="body">
       {#if node.isHidden}
         {@render legacyDescription(node.description)}
       {:else}
-        <div class="section-preview-sizing" style:--atlas-section-preview-height={!expandedContent && dialHeight > 80 ? `max(8.5rem, calc(${dialHeight}px - 3.25rem))` : undefined}>
-        <FeedBlockPreview onExpandedChange={(expanded) => expandedContent = expanded} nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
+        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
-        </div>
       {/if}
     </div>
     <div class="card-details">
@@ -241,7 +245,7 @@
 <style lang="scss">
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
-  .mobile-type { display: none; }
+
 
 
   // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
@@ -288,9 +292,7 @@
     }
   }
 
-  .title-type {
-    color: var(--atlas-accent);
-  }
+
 
   [data-presentation] {
     .card-details {
@@ -379,34 +381,12 @@
 
   .authoring-body { padding-bottom: var(--card-padding); }
 
-  .section-preview-sizing { display: contents; }
-  .body.expanded-content:not(:has(:global(.vote-open))) { grid-template-columns: minmax(0, 1fr); row-gap: .5rem; }
-  .body:has(:global(.has-slides)), .body:has(:global(.has-sections)) {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 0 var(--dial-text-gap);
-    margin-bottom: var(--atlas-paragraph-gap, 0.65rem);
-    .dial { float: none; margin-right: 0; margin-bottom: 0; }
+  .fallback-vote, .fallback-vote-dialog {
+    color: var(--atlas-text); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius);
+    padding: .5rem; font: inherit;
   }
-
-  .body:has(:global(.has-sections)) :global(.has-sections) { align-self: stretch; display: flex; }
-
-  // Let the dial set the grid row height. Slide contents are clipped inside
-  // that row and cannot make the card grow when the active block changes.
-  @media (min-width: 561px) {
-    .body:has(:global(.has-slides)) :global(.has-slides) {
-      align-self: stretch;
-      display: flex;
-      contain: size;
-      min-block-size: calc(var(--atlas-feed-preview-height, 8.5rem) + 2.75rem);
-    }
-  }
-
-  .dial {
-    float: left;
-    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
-  }
+  .fallback-vote-dialog::backdrop { background: #0006; }
 
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
@@ -463,51 +443,36 @@
   @media (max-width: 560px) {
     .mobile-layout {
       --card-padding: 0.75rem;
-      .mobile-type { display: block; margin: 0 0 0.25rem; color: var(--atlas-accent); font-size: 2.1rem; line-height: 0; font-weight: 700; }
       h2 { font-size: 1.2rem; }
-      .title-type, .by-prefix, .community-prefix { display: none; }
+      .by-prefix, .community-prefix { display: none; }
       .byline { font-size: 0.75rem; line-height: 1.5; }
       // Keep the description and Read more in one text flow, as on desktop.
       // The button's existing right float lets text occupy the remaining width.
       .body { display: flow-root; }
       .description { display: block; }
-      .body:has(:global(.has-slides)), .body:has(:global(.has-sections)) { display: block; }
-      .dial { display: contents; }
-      .expanded-content .dial { display: block; margin-bottom: .5rem; }
-      .section-preview-sizing { --atlas-section-preview-height: 8.5rem !important; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
 
-  .node-type-row { display: none; }
-  @media (max-width: 560px) {
-    .mobile-layout .node-type-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: nowrap;
-      min-width: 0;
-      container-type: inline-size;
-      gap: 0.4rem 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    // Scale with the available header width, not just the viewport. CSS cannot
-    // measure text and select an exact fitting font size, so truncate as a
-    // last resort rather than allowing the label to overlap the vote summary.
-    .node-type-row .mobile-type {
-      margin: 0;
-      min-width: 0;
-      flex: 0 1 auto;
-      max-width: 100%;
-      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .node-type-row :global(.header-summary) {
-      flex-shrink: 0;
-    }
-    
+  .node-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem .75rem;
+    min-width: 0;
+    container-type: inline-size;
+    margin-bottom: .5rem;
   }
+  .node-type-row .mobile-type {
+    margin: 0;
+    min-width: 0;
+    color: var(--atlas-accent);
+    font-weight: 700;
+    font-size: clamp(.95rem, 8.1cqi, 2.1rem);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-type-row :global(.live-voting), .fallback-vote { flex-shrink: 0; }
 </style>

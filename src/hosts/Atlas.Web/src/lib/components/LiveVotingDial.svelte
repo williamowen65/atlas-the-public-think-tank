@@ -27,6 +27,12 @@
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   /** Whether the mobile summary has been expanded by the visitor. */
   let expanded = $state(false);
+  let dialDialog = $state<HTMLDialogElement>();
+  $effect(() => {
+    if (!dialDialog) return;
+    if (expanded && !dialDialog.open) dialDialog.showModal();
+    else if (!expanded && dialDialog.open) dialDialog.close();
+  });
   /** The disclosure remains focusable after moving into the card's type row. */
   let summaryButton = $state<HTMLButtonElement>();
   /**
@@ -334,10 +340,10 @@
   confirmation and sign-in.
 -->
 
-<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} class:inline-summary={forceCompact} class:vote-open={forceCompact && expanded} aria-busy={busy}>
+<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} class:inline-summary={forceCompact} aria-busy={busy}>
   {#if collapsedMode}
     {#key forceCompact}
-    <button class="rating-summary" bind:this={summaryButton} use:placeSummary={forceCompact} type="button" aria-expanded={expanded}
+    <button class="rating-summary" bind:this={summaryButton} use:placeSummary={forceCompact} type="button" aria-expanded={expanded} aria-haspopup={forceCompact ? 'dialog' : undefined}
       disabled={preview || archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
@@ -350,7 +356,30 @@
     </button>
     {/key}
   {/if}
-  {#if !collapsedMode || expanded}
+  {#if forceCompact}
+    <dialog bind:this={dialDialog} class="vote-login vote-picker" aria-label="Rate node importance"
+      onclose={() => { expanded = false; cancelPending(); }}>
+      <div class="picker-heading">
+        <h2>Rate node importance</h2>
+        <button type="button" aria-label="Close vote dial" onclick={() => expanded = false}>×</button>
+      </div>
+      {@render dialControls()}
+      {@render feedback()}
+    </dialog>
+  {:else if !collapsedMode || expanded}
+    {@render dialControls()}
+  {/if}
+  {#if !forceCompact || !expanded}{@render feedback()}{/if}
+</div>
+{#snippet feedback()}
+  {#if busy}<small role="status">Saving…</small>{/if}
+  {#if notice}<small role="status">{notice}</small>{/if}
+  {#if error}<small role="alert">{error}</small>{/if}
+  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
+      >Retry totals</button
+    >{/if}
+{/snippet}
+{#snippet dialControls()}
   <div class="dial-content">
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
@@ -372,14 +401,7 @@
       aria-label="Undo your node importance vote">Undo vote</button
     >{/if}
   </div>
-  {/if}
-  {#if busy}<small role="status">Saving…</small>{/if}
-  {#if notice}<small role="status">{notice}</small>{/if}
-  {#if error}<small role="alert">{error}</small>{/if}
-  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
-      >Retry totals</button
-    >{/if}
-</div>
+{/snippet}
 <!--
   Confirmation is a separate native dialog so its modal behavior is independent of the inline
   dial.
@@ -509,7 +531,9 @@
   }
   .live-voting.inline-summary { display: block; width: auto; }
   .collapsed-mode.inline-summary .rating-summary { position: static; }
-  .collapsed-mode.inline-summary .dial-content { float: none; margin: .4rem 0 0; }
+  .collapsed-mode .vote-picker .dial-content { display: grid; justify-items: center; float: none; width: auto; margin: .5rem 0 0; }
+  .picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .picker-heading button { min-width: 2.75rem; min-height: 2.75rem; }
   .collapsed-mode .dial-content {
     display: block;
     float: left;

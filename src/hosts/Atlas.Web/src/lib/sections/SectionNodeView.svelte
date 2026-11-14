@@ -9,11 +9,10 @@
   import { publicUrl } from '../api/nodePage';
   import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
-  let { draft, feed = false, onReadMore, onExpandedChange }: {
+  let { draft, feed = false, onReadMore }: {
     draft: Draft;
     feed?: boolean;
     onReadMore?: () => void;
-    onExpandedChange?: (expanded: boolean) => void;
   } = $props();
 
   let expanded = $state(false);
@@ -84,7 +83,7 @@
   <div class="feed-actions">
     {#if truncated || expanded}
       <button type="button" aria-expanded={expanded} aria-controls={instance}
-        onclick={() => { expanded = !expanded; onExpandedChange?.(expanded); }}>{expanded ? 'Collapse' : 'Expand'}</button>
+        onclick={() => expanded = !expanded}>{expanded ? 'Collapse' : 'Expand'}</button>
     {/if}
     {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
