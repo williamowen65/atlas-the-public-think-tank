@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { example } from '../src/lib/sections/sectionLayouts';
+import { writeComposition } from '../src/lib/sections/composition';
 const root = 'b1000000-0000-4000-8000-000000000001';
 const child = 'b1000000-0000-4000-8000-000000000002';
 const idea = 'a1000000-0000-4000-8000-000000000001';
@@ -83,6 +85,28 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await page.setViewportSize({ width: 320, height: 720 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   expect(writes).toEqual([]);
+});
+
+test('a published node stacks section columns in slot order on narrow screens', async ({ page }) => {
+  await mock(page);
+  await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({
+    json: [{ id: 'composition', kind: 'sectioned', content: { composition: writeComposition(example('editorial')) } }],
+  }));
+  await page.route('https://images.unsplash.com/**', route => route.abort());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`http://127.0.0.1:4173/nodes?id=${root}`);
+  const slots = page.locator('.post-body .sections > .section').first().locator(':scope > .slot');
+  await expect(slots).toHaveCount(2);
+  const first = (await slots.first().boundingBox())!;
+  const second = (await slots.last().boundingBox())!;
+  expect(second.x).toBeCloseTo(first.x);
+  expect(second.y).toBeGreaterThanOrEqual(first.y + first.height);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const desktopFirst = (await slots.first().boundingBox())!;
+  const desktopSecond = (await slots.last().boundingBox())!;
+  expect(desktopSecond.x).toBeGreaterThan(desktopFirst.x);
+  expect(desktopSecond.y).toBeCloseTo(desktopFirst.y);
 });
 
 test('SPA Read more opens a node page and child tabs support keyboard navigation', async ({ page }) => {

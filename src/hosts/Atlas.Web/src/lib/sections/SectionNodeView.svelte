@@ -103,6 +103,7 @@
 
 <style>
   .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
+  .viewport { container: section-content / inline-size; }
   .viewport.feed {
     /* Reserve space for the card itself and the shared navigation bars. */
     max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem - var(--atlas-navigation-height, 0px))));
@@ -125,9 +126,8 @@
     border-radius: var(--atlas-radius, .5rem); color: var(--atlas-text); background: var(--atlas-surface); cursor: pointer;
   }
   .feed-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent, white); border-color: var(--atlas-accent); }
-  @container (max-width: 37rem) {
+  @container section-content (max-width: 37rem) {
     .section { grid-template-columns: minmax(0, 1fr); }
     .slot:empty { display: none; }
-
   }
 </style>
