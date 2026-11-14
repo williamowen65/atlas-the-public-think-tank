@@ -126,9 +126,9 @@
   .reverse:not(.single) .feature { grid-area: 1 / 2; }
   .reverse .mosaic-stack { grid-area: 1 / 1; }
   .mosaic-row:not(.single) :global(figure) { position: relative; width: 100% !important; margin: 0; }
-  .mosaic-row:not(.single) :global(figure > button) { display: block; width: 100%; }
-  .mosaic-row:not(.single) :global(figure > button > .frame) { width: 100%; aspect-ratio: 1 !important; }
-  .mosaic-row:not(.single) :global(figure > button > .frame > img) {
+  .mosaic-row:not(.single) :global(figure > .photo-button) { display: block; width: 100%; }
+  .mosaic-row:not(.single) :global(figure > .photo-button > .frame) { width: 100%; aspect-ratio: 1 !important; }
+  .mosaic-row:not(.single) :global(figure > .photo-button > .frame > img) {
     width: 100%; height: 100%; object-fit: cover;
     object-position: var(--focus-x) var(--focus-y);
     transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
@@ -137,8 +137,8 @@
   .paired .feature :global(figure) {
     position: absolute; inset: 0; display: grid; grid-template: minmax(0, 1fr) auto / minmax(0, 1fr);
   }
-  .paired .feature :global(figure > button) { min-width: 0; min-height: 0; height: 100%; }
-  .paired .feature :global(figure > button > .frame) { height: 100%; aspect-ratio: auto !important; }
+  .paired .feature :global(figure > .photo-button) { min-width: 0; min-height: 0; height: 100%; }
+  .paired .feature :global(figure > .photo-button > .frame) { height: 100%; aspect-ratio: auto !important; }
   .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
   :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette]) { clip-path: none; border-radius: var(--atlas-radius, .5rem) !important; }
   :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].square) { border-radius: 0 !important; }
@@ -169,15 +169,15 @@
   .next :global(figure) { inset-inline-start: 0; }
   .current-slide { position: relative; z-index: 1; }
   .slide-stage :global(figure) { width: 100% !important; margin: 0; min-width: 0; }
-  .slide-stage :global(figure > :is(button, .neighbor-frame)) { display: block; width: 100%; height: var(--slide-height); }
-  .slide-stage :global(figure > :is(button, .neighbor-frame)) { background-color: var(--atlas-bg); }
-  .slide-stage :global(figure > :is(button, .neighbor-frame) > .frame) {
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame)) { display: block; width: 100%; height: var(--slide-height); }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame)) { background-color: var(--atlas-bg); }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame) > .frame) {
     width: 100%; height: 100%; aspect-ratio: auto !important; background: var(--atlas-bg);
   }
-  .slide-stage :global(figure > :is(button, .neighbor-frame) > .frame > img) {
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame) > .frame > img) {
     width: 100%; height: 100%; object-fit: contain; transform: none;
   }
-  .fill :global(figure > :is(button, .neighbor-frame) > .frame > img) {
+  .fill :global(figure > :is(.photo-button, .neighbor-frame) > .frame > img) {
     object-fit: cover; object-position: var(--focus-x) var(--focus-y);
     transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
   }

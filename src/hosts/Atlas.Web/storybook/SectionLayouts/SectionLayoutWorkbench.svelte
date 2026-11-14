@@ -826,6 +826,24 @@
           <option value="slideshow">Slideshow</option>
         </select>
       </label>
+      {#if block.galleryStyle === 'slideshow' && block.photos.length > 1}
+        <fieldset class="slide-order">
+          <legend>Slide order</legend>
+          <ol>
+            {#each block.photos as photo, index (photo.id)}
+              {@const name = photo.alt.trim() || photo.caption.trim() || 'Image'}
+              <li>
+                <button class="slide-select" type="button" aria-pressed={photoDetails === photo.id}
+                  onclick={() => photoDetails = photo.id}>{name}</button>
+                <button type="button" aria-label={`Move slide ${index + 1} earlier: ${name}`} disabled={index === 0}
+                  onclick={() => { reorderPhoto(block, index, index - 1); photoDetails = photo.id; }}>↑</button>
+                <button type="button" aria-label={`Move slide ${index + 1} later: ${name}`} disabled={index === block.photos.length - 1}
+                  onclick={() => { reorderPhoto(block, index, index + 1); photoDetails = photo.id; }}>↓</button>
+              </li>
+            {/each}
+          </ol>
+        </fieldset>
+      {/if}
       <label>Gallery width
         <select value={block.galleryWidth ?? 'full'} onchange={(event) => {
           remember();
@@ -1037,6 +1055,12 @@
     display: grid; gap: .65rem; padding-block: .75rem;
     border-top: 1px solid color-mix(in srgb, var(--atlas-border) 40%, transparent);
   }
+  .slide-order { margin: 0; padding: .5rem; min-width: 0; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .45rem); }
+  .slide-order ol { margin: 0; padding-inline-start: 1.5rem; }
+  .slide-order li + li { margin-block-start: .25rem; }
+  .slide-order li { padding-inline-start: .2rem; }
+  .slide-order button { min-height: 2.25rem; }
+  .slide-select { width: calc(100% - 5rem); text-align: start; overflow-wrap: anywhere; }
   .gallery-tools .add-gallery-image, .photo-actions { justify-self: start; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }

@@ -93,7 +93,7 @@
   {@const src = publicUrl(photo.src)}
   {#if src}
     <figure style:width={width + '%'}>
-      <button type="button" aria-label={`View ${photo.alt || 'photo'}`}
+      <button class="photo-button" type="button" aria-label={`View ${photo.alt || 'photo'}`}
         onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
         <PhotoFrame {photo} {src} gallery={inGallery} />
       </button>
