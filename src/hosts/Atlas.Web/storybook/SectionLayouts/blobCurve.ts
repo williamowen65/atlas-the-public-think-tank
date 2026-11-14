@@ -5,10 +5,12 @@ const anchors = [
   { x: .09, y: .52, angle: 270, name: 'Left' },
 ] as const;
 
-export type BlobTangent = { angle: number; incoming: number; outgoing: number };
+export type BlobTangent = { x?: number; y?: number; angle: number; incoming: number; outgoing: number };
 export type BlobSide = 'incoming' | 'outgoing';
 
-function bounded(value: unknown, min: number, max: number, fallback: number) {
+export const blobLimits = { anchorTravel: .07, angle: 35, minLength: .06, maxLength: .34 };
+
+export function bounded(value: unknown, min: number, max: number, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
 }
 
@@ -17,16 +19,18 @@ export function blobCurve(tangents?: BlobTangent[], previousRadii?: number[]) {
     const tangent = tangents?.[index];
     const previousLength = bounded(previousRadii?.[index * 2], 30, 70, 50) / 250;
     const value = {
-      angle: bounded(tangent?.angle, -20, 20, [8, -7, 9, -6][index]),
-      incoming: bounded(tangent?.incoming, .09, .25, previousLength),
-      outgoing: bounded(tangent?.outgoing, .09, .25, previousLength),
+      x: bounded(tangent?.x, anchor.x - blobLimits.anchorTravel, anchor.x + blobLimits.anchorTravel, anchor.x),
+      y: bounded(tangent?.y, anchor.y - blobLimits.anchorTravel, anchor.y + blobLimits.anchorTravel, anchor.y),
+      angle: bounded(tangent?.angle, -blobLimits.angle, blobLimits.angle, [8, -7, 9, -6][index]),
+      incoming: bounded(tangent?.incoming, blobLimits.minLength, blobLimits.maxLength, previousLength),
+      outgoing: bounded(tangent?.outgoing, blobLimits.minLength, blobLimits.maxLength, previousLength),
     };
     const radians = (anchor.angle + value.angle) * Math.PI / 180;
     const point = (distance: number) => ({
-      x: anchor.x + Math.cos(radians) * distance,
-      y: anchor.y + Math.sin(radians) * distance,
+      x: value.x + Math.cos(radians) * distance,
+      y: value.y + Math.sin(radians) * distance,
     });
-    return { ...anchor, value, incoming: point(-value.incoming), outgoing: point(value.outgoing) };
+    return { ...anchor, origin: anchor, x: value.x, y: value.y, value, incoming: point(-value.incoming), outgoing: point(value.outgoing) };
   });
 }
 

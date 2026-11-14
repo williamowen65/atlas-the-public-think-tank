@@ -458,8 +458,11 @@ test('creative crop presets update the photo in the editor and both previews', a
   const handles = page.getByRole('group', { name: 'Blob shape handles' });
   const handle = handles.getByRole('button', { name: 'Adjust top outgoing blob handle' });
   const path = frame.locator('clipPath path');
-  await expect(handles.getByRole('button')).toHaveCount(8);
+  await expect(handles.getByRole('button')).toHaveCount(12);
   const initialPath = await path.getAttribute('d');
+  const anchor = handles.getByRole('button', { name: 'Move top blob anchor' });
+  await anchor.press('ArrowDown');
+  await expect(path).toHaveAttribute('d', /^M 0\.50000 0\.10200 /);
   await handle.press('ArrowRight');
   await expect(path).not.toHaveAttribute('d', initialPath!);
   const keyboardPath = await path.getAttribute('d');
