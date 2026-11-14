@@ -154,3 +154,30 @@ test('a photo missing alt text is flagged before publishing', async ({ page }) =
   await expect(page.getByText('Alternative text is required.', { exact: true })).toHaveCount(0);
   expect(writes.some(write => write.path.endsWith('/nodes'))).toBe(false);
 });
+
+test('editor controls fit the available viewport and close on an outside click', async ({ page }) => {
+  await setup(page, true);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('http://127.0.0.1:4173/new');
+  const toggle = page.getByRole('button', { name: 'Editor settings' });
+  const sidebar = page.getByRole('complementary', { name: 'Editor controls' });
+  await toggle.click();
+  await expect(sidebar).toBeVisible();
+  await expect.poll(async () => {
+    const header = (await page.getByRole('banner').boundingBox())!;
+    const panel = (await sidebar.boundingBox())!;
+    return Math.abs(panel.y - Math.max(0, header.y + header.height));
+  }).toBeLessThan(1);
+  await sidebar.getByRole('heading').click();
+  await expect(sidebar).toBeVisible();
+  await page.getByRole('textbox', { name: 'Title', exact: true }).click();
+  await expect(sidebar).toBeHidden();
+  await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 740 });
+  await toggle.click();
+  await expect(sidebar).toBeVisible();
+  const mobile = (await sidebar.boundingBox())!;
+  expect(mobile.y).toBeCloseTo(0);
+  expect(mobile.height).toBeCloseTo(740);
+});

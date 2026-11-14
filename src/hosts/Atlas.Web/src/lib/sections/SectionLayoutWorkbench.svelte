@@ -42,7 +42,29 @@
   let draggedSection = $state<string | null>(null);
   let dropParagraph = $state<HTMLElement | null>(null);
   let sidebarOpen = $state(untrack(() => !embedded));
-  let sidebarToggle: HTMLButtonElement;
+  let sidebarToggle = $state<HTMLButtonElement>();
+  let sidebarTop = $state(0);
+
+  $effect(() => {
+    if (!embedded || !sidebarOpen) return;
+    const header = document.querySelector<HTMLElement>('.atlas-header');
+    if (!header) return;
+    function measure() {
+      sidebarTop = Math.max(0, header?.getBoundingClientRect().bottom ?? 0);
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    window.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    header.addEventListener('transitionend', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      header.removeEventListener('transitionend', measure);
+    };
+  });
 
   async function closeSidebar() {
     sidebarOpen = false;
@@ -191,6 +213,15 @@
     picker = null;
     photoDetails = null;
     message = status;
+  }
+
+  function handlePointerDown(event: PointerEvent) {
+    const target = event.target;
+    if (embedded && sidebarOpen && target instanceof Element &&
+      !sidebarToggle?.contains(target) && target.closest('.editor-sidebar')?.id !== sidebarId) {
+      sidebarOpen = false;
+    }
+    updateFocus(target);
   }
 
   function updateFocus(target: EventTarget | null, keyboard = false) {
@@ -421,7 +452,7 @@
 </script>
 
 <svelte:window ondragovercapture={previewImageDrop} ondropcapture={dropWrappedImage} ondragend={clearImageDrag}
-  onpointerdowncapture={(event) => updateFocus(event.target)}
+  onpointerdowncapture={handlePointerDown}
   onfocusin={(event) => updateFocus(event.target, true)} onkeydowncapture={(event) => {
   if (event.key === 'Escape' && movingBlock) cancelMove();
   if (event.key === 'Escape') photoMove = undefined;
@@ -655,7 +686,7 @@
   {#if view === 'edit' && sidebarOpen}
     {@const index = draft.sections.findIndex(({ id }) => id === activeSection)}
     {@const section = draft.sections[index]}
-    <aside class="editor-sidebar" id={sidebarId} aria-label="Editor controls">
+    <aside class="editor-sidebar" id={sidebarId} aria-label="Editor controls" style:--editor-sidebar-top={`${sidebarTop}px`}>
       <div class="sidebar-heading">
         <h2>Editor controls</h2>
         <button type="button" aria-label="Collapse editor controls" onclick={closeSidebar}>×</button>
@@ -1020,11 +1051,14 @@
   .embedded .formatting { flex: 1 1 0; min-width: 0; padding-inline: 0; }
   .sidebar-icon { order: 1; margin-inline-start: auto; flex: none; width: 2.75rem; height: 2.75rem; display: grid; place-items: center; }
   .workbench.embedded .editor-sidebar {
-    position: fixed; inset: 0 0 0 auto; z-index: 65;
+    position: fixed; inset: var(--editor-sidebar-top, 0px) 0 0 auto; z-index: 65;
     box-sizing: border-box; width: min(22rem, 85vw); max-height: none;
     padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
     border: 0; border-inline-start: 1px solid var(--atlas-border); border-radius: 0;
     box-shadow: -.35rem 0 1.25rem #0002; overscroll-behavior: contain;
+  }
+  @media (max-width: 560px) {
+    .workbench.embedded .editor-sidebar { inset-block-start: 0; }
   }
   .workbench.narrow { max-width: 25rem; padding-inline: 0; }
   .narrow .node { padding-inline: .65rem; }
