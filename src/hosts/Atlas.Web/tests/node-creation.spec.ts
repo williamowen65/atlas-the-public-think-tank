@@ -3,13 +3,20 @@ const parent = 'b1000000-0000-4000-8000-000000000001';
 const created = 'b1000000-0000-4000-8000-000000000002';
 const idea = 'a1000000-0000-4000-8000-000000000001';
 const custom = 'a1000000-0000-4000-8000-000000000002';
+const communityIds = ['e1000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002'];
+
 async function setup(page: Page, initiallySignedIn = false) {
   let signedIn = initiallySignedIn; let failNode = false;
+  const seedId = 'd1000000-0000-4000-8000-000000000001';
+  let seedPresent = false;
   const writes: { path: string; body: Record<string, unknown> }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [{ id: idea, name: 'Idea', pluralName: 'Ideas' }] });
-    if (url.pathname.endsWith('/reactions') || url.pathname.endsWith('/description')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/communities'))
+      return route.fulfill({ json: communityIds.map((id, i) => ({ id, name: `Community ${i + 1}`, status: 'Active' })) });
+    if (url.pathname.endsWith('/description')) return route.fulfill({ json: seedPresent ? [{ id: seedId, kind: 'markdown', content: { markdown: 'The full content' } }] : [] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${parent}`) || url.pathname.endsWith(`/nodes/${created}`)) return route.fulfill({ json: { id: parent, requestedTypeIds: [idea] } });
     const id = url.searchParams.get('NodeId') ?? parent;
@@ -30,7 +37,11 @@ async function setup(page: Page, initiallySignedIn = false) {
     if (path.endsWith('/auth/logout')) { signedIn = false; return route.fulfill({ status: 204 }); }
     if (path.endsWith('/catalog/node-types')) return route.fulfill({ json: { id: custom, name: body.name } });
     if (failNode) return route.fulfill({ status: 400, json: {} });
-    return route.fulfill({ status: 201, json: { id: created } });
+    if (path.endsWith('/nodes')) { seedPresent = true; return route.fulfill({ status: 201, json: { id: created } }); }
+    if (path.endsWith('/description/blocks') && request.method() === 'POST')
+      return route.fulfill({ status: 201, json: { id: 'd1000000-0000-4000-8000-000000000002', kind: body.kind, content: { markdown: body.text } } });
+    if (request.method() === 'DELETE') { seedPresent = false; return route.fulfill({ status: 204 }); }
+    return route.fulfill({ status: 204 });
   });
   return { writes, fail: (value: boolean) => failNode = value };
 }
@@ -42,8 +53,7 @@ async function login(page: Page) {
 }
 async function fill(page: Page) {
   await page.getByLabel('Title', { exact: true }).fill('Created through the frontend');
-  await page.getByLabel('Short description', { exact: true }).fill('An introduction');
-  await page.getByLabel('Content (Markdown)', { exact: true }).fill('The full content');
+  await page.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('The full content');
 }
 for (const environment of ['storybook', 'spa']) {
   test(`${environment} root creation prompts sign-in and opens the saved node`, async ({ page }) => {
@@ -55,11 +65,17 @@ for (const environment of ['storybook', 'spa']) {
     if (environment === 'spa') await expect(page).toHaveURL('http://127.0.0.1:4173/new');
     await fill(page);
     await page.getByLabel('Requested contributions', { exact: true }).selectOption(idea);
+    if (environment === 'spa') {
+      const communities = page.getByRole('combobox', { name: 'Communities (optional)' });
+      for (const id of communityIds) await communities.selectOption(id);
+    }
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
     const save = writes.find(write => write.path.endsWith('/nodes'))!;
-    expect(save.body).toEqual({ title: 'Created through the frontend', shortDescription: 'An introduction', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
+    expect(save.body).toEqual({ title: 'Created through the frontend', shortDescription: 'The full content', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
     expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
+    expect(writes.filter(write => write.path.includes('/communities/')).map(write => write.path))
+      .toEqual(environment === 'spa' ? communityIds.map(id => `/atlas-session-api/communities/${id}/nodes/${created}`) : []);
   });
 }
 

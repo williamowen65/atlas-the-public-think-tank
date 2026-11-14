@@ -77,6 +77,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
                 stored.Url = image.Url;
                 stored.AltText = image.AltText;
                 stored.Caption = ForStorage(image.Caption);
+                // Description is a kind-specific slot. Image blocks use it for their layout.
+                stored.Description = image.Layout;
                 break;
             case VideoBlock video:
                 stored.Url = video.Url;
@@ -128,7 +130,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
                 block.AltText ?? string.Empty,
                 block.Caption,
                 block.CreatedAt,
-                block.UpdatedAt
+                block.UpdatedAt,
+                block.Description
             ),
             "video" => VideoBlock.Reconstitute(
                 id,

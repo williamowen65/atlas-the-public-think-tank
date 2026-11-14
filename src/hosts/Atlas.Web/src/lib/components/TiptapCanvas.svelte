@@ -1,0 +1,1482 @@
+<script lang="ts">
+  import { onMount, untrack, mount, unmount, type Component, type Snippet } from 'svelte';
+  import { Editor, Extension, Node, getMarkRange } from '@tiptap/core';
+  import StarterKit from '@tiptap/starter-kit';
+  import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
+  import { Decoration, DecorationSet } from '@tiptap/pm/view';
+  import ImageLayoutFields from './ImageLayoutFields.svelte';
+  import { defaultImageLayout, imageLayout, imageLayoutStyle } from '../markdown/imageLayout';
+  import { publicUrl } from '../api/nodePage';
+  import type { AuthorBlock } from '../api/contentAuthoring';
+  import { blocksToTiptapHtml, equivalentMarkdown, tiptapDocumentToBlocks } from './tiptapBlocks';
+
+  let {
+    initialBlocks,
+    onChange,
+    styleMode = 'atlas',
+    disabled = false,
+    workshop = false,
+    singleText = false,
+    onActivate,
+    onUnsupportedMarkdown,
+    inset,
+  }: {
+    initialBlocks: AuthorBlock[];
+    onChange?: (blocks: AuthorBlock[], insetAnchor?: number) => void;
+    styleMode?: 'atlas' | 'editorial';
+    disabled?: boolean;
+    workshop?: boolean;
+    singleText?: boolean;
+    onActivate?: () => void;
+    inset?: { component: Component<{ content: Snippet }>; content: Snippet; anchor: number };
+    onUnsupportedMarkdown?: () => void;
+  } = $props();
+
+  // Focus is separate from ProseMirror's retained selection: a click elsewhere
+  // in the node or on the page removes BOTH the gutter and block indentation.
+  const instance = $props.id();
+  const startingBlocks = untrack(() => initialBlocks);
+  let editorFocused = false;
+  let controlsVisible = $state(false);
+
+  // The document may only hold real Atlas blocks. StarterKit's generic doc
+  // otherwise lets Backspace create anonymous top-level paragraphs (phantom IDs).
+  const AtlasDocument = Node.create({
+    name: 'doc',
+    topNode: true,
+    content: '(atlasText | atlasImage | atlasUnsupported)+',
+  });
+
+  // Render the active block class through ProseMirror's decoration system.
+  // DOM classList edits done in onTransaction are overwritten when a text node
+  // rerenders, which made the rail overlap active Markdown while images worked.
+  const ActiveBlockDecoration = Extension.create({
+    name: 'atlasActiveBlockDecoration',
+    addProseMirrorPlugins() {
+      return [new Plugin({
+        props: {
+          decorations(state) {
+            if (!editorFocused && !deleteTarget) return DecorationSet.empty;
+            // Keep the exact block highlighted while its delete confirmation
+            // owns keyboard focus. ProseMirror retains the block's stable key.
+            let index = state.selection.$from.index(0);
+            if (deleteTarget) {
+              index = -1;
+              for (let i = 0; i < state.doc.childCount; i++) {
+                if (String(state.doc.child(i).attrs.key) === deleteTarget.key) {
+                  index = i;
+                  break;
+                }
+              }
+            }
+            if (index < 0 || index >= state.doc.childCount) return DecorationSet.empty;
+            let from = 0;
+            for (let i = 0; i < index; i++) from += state.doc.child(i).nodeSize;
+            return DecorationSet.create(state.doc, [
+              Decoration.node(from, from + state.doc.child(index).nodeSize, {
+                class: deleteTarget
+                  ? 'atlas-story-active-block atlas-story-pending-delete'
+                  : 'atlas-story-active-block',
+              }),
+            ]);
+          },
+        },
+      })];
+    },
+  });
+
+  // A Markdown block stays one Atlas block even when it contains multiple
+  // paragraphs/headings. This wrapper carries its stable key through editing,
+  // reordering and conversion back into the existing AuthorBlock[] model.
+  const AtlasText = Node.create({
+    name: 'atlasText',
+    group: 'block',
+    // Top-level image blocks remain siblings; inline images are allowed in a Markdown paragraph.
+    content: '(paragraph | heading | bulletList | orderedList | blockquote | codeBlock | horizontalRule)+',
+    defining: true,
+    addAttributes() {
+      return { key: { default: '' } };
+    },
+    parseHTML() {
+      return [{
+        tag: 'div[data-atlas-text]',
+        getAttrs: element => typeof element === 'string' ? false :
+          { key: element.getAttribute('data-atlas-key') || '' },
+      }];
+    },
+    renderHTML({ node }) {
+      return ['div', {
+        'data-atlas-text': 'true',
+        'data-atlas-key': node.attrs.key,
+        class: 'atlas-story-text',
+      }, 0];
+    },
+  });
+
+  function imageEditButton(label: string) {
+    return ['button', {
+      type: 'button', contenteditable: 'false', draggable: 'false',
+      'data-atlas-edit-image': 'true', class: 'atlas-story-image-action',
+      'aria-label': label, title: label,
+    }, '✎'];
+  }
+
+  // Inline images remain part of their containing Markdown block.
+  const AtlasInlineImage = Node.create({
+    name: 'atlasInlineImage',
+    group: 'inline',
+    inline: true,
+    atom: true,
+    draggable: true,
+    selectable: true,
+    addAttributes() {
+      return {
+        src: { default: '' },
+        title: { default: '' },
+        alt: { default: '' },
+        width: { default: 'half' },
+        placement: { default: 'left' },
+      };
+    },
+    parseHTML() {
+      return [{
+        tag: 'span[data-atlas-inline-image]',
+        getAttrs: (element) => {
+          if (typeof element === 'string') return false;
+          const image = element.querySelector('img');
+          return image ? { src: image.getAttribute('src') ?? '', alt: image.getAttribute('alt') ?? '', title: image.getAttribute('title') ?? '',
+            ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')) } : false;
+        },
+      }, {
+        tag: 'img:not([data-atlas-image])',
+        getAttrs: (element) => typeof element === 'string' ? false : {
+          src: element.getAttribute('src') ?? '', alt: element.getAttribute('alt') ?? '', title: element.getAttribute('title') ?? '',
+          ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')),
+        },
+      }];
+    },
+    renderHTML({ node }) {
+      const src = publicUrl(String(node.attrs.src ?? ''));
+      const layout = imageLayout(node.attrs.width, node.attrs.placement);
+      return ['span', { class: 'atlas-story-inline-image', 'data-atlas-inline-image': 'true', contenteditable: 'false',
+        'data-image-width': layout.width, 'data-image-placement': layout.placement,
+        style: imageLayoutStyle(layout) },
+        ['img', { src, alt: String(node.attrs.alt ?? ''), referrerpolicy: 'no-referrer', title: node.attrs.title || undefined }],
+        imageEditButton('Edit image in text'),
+      ];
+    },
+  });
+
+  // Preserve future/unsupported block kinds without pretending to edit them.
+  const AtlasUnsupported = Node.create({
+    name: 'atlasUnsupported',
+    group: 'block',
+    atom: true,
+    selectable: true,
+    addAttributes() {
+      return { key: { default: '' }, kind: { default: 'unknown' } };
+    },
+    parseHTML() {
+      return [{
+        tag: 'div[data-atlas-unsupported]',
+        getAttrs: element => typeof element === 'string' ? false : {
+          key: element.getAttribute('data-atlas-key') || '',
+          kind: element.getAttribute('data-atlas-kind') || 'unknown',
+        },
+      }];
+    },
+    renderHTML({ node }) {
+      return ['div', {
+        'data-atlas-unsupported': 'true',
+        'data-atlas-key': node.attrs.key,
+        'data-atlas-kind': node.attrs.kind,
+        class: 'atlas-story-unsupported',
+        contenteditable: 'false',
+      }, 'Unsupported ' + node.attrs.kind + ' block (preserved)'];
+    },
+  });
+
+  // A purpose-built image atom is closer to our server-side image block than
+  // Tiptap's default inline <img>. It also keeps alt text and caption together.
+  const AtlasImage = Node.create({
+    name: 'atlasImage',
+    group: 'block',
+    atom: true,
+    draggable: true,
+    selectable: true,
+    addAttributes() {
+      return {
+        src: { default: '' },
+        alt: { default: '' },
+        width: { default: 'half' },
+        placement: { default: 'left' },
+        caption: { default: '' },
+        key: { default: '' },
+      };
+    },
+    parseHTML() {
+      return [{
+        tag: 'figure[data-atlas-image]',
+        getAttrs: element => {
+          if (typeof element === 'string') return false;
+          return {
+            src: element.getAttribute('data-src') || element.querySelector('img')?.getAttribute('src') || '',
+            alt: element.getAttribute('data-alt') || element.querySelector('img')?.getAttribute('alt') || '',
+            caption: element.getAttribute('data-caption') || element.querySelector('figcaption')?.textContent || '',
+            key: element.getAttribute('data-atlas-key') || '',
+            ...imageLayout(element.getAttribute('data-image-width'), element.getAttribute('data-image-placement')),
+          };
+        },
+      }];
+    },
+    renderHTML({ node }) {
+      const src = publicUrl(String(node.attrs.src ?? '')) || '';
+      const layout = imageLayout(node.attrs.width, node.attrs.placement);
+      const figureAttrs = {
+        'data-image-width': layout.width,
+        'data-image-placement': layout.placement,
+        style: imageLayoutStyle(layout),
+        'data-atlas-image': 'true',
+        'data-atlas-key': node.attrs.key,
+        'data-src': node.attrs.src,
+        'data-alt': node.attrs.alt,
+        'data-caption': node.attrs.caption,
+        class: 'atlas-story-figure',
+      };
+      const editButton = imageEditButton(src ? 'Edit image details' : 'Add image details');
+      // A new image has a real, in-flow placeholder at its intended position.
+      // Its editor panel is anchored inside this reserved image slot.
+      if (!src) return ['figure', figureAttrs,
+        ['div', { class: 'atlas-story-image-placeholder', 'aria-label': 'Unfinished image block' },
+          'Image details will appear here'],
+        editButton,
+      ];
+      return ['figure', figureAttrs,
+        ['div', { class: 'atlas-story-image-frame' },
+          ['img', { src, alt: node.attrs.alt, referrerpolicy: 'no-referrer' }],
+          editButton,
+        ],
+        ['figcaption', {}, node.attrs.caption || ''],
+      ];
+    },
+  });
+
+  let canvasEl: HTMLDivElement;
+  let shellEl = $state<HTMLDivElement>();
+  let blockLayout = $state({ top: 0, bottom: 0, right: 0, center: 0, showBottomActions: false });
+  let insertMenuLayout = $state({ top: 0, left: 0 });
+  let activeIndex = $state(0);
+  let activeSupported = $state(true);
+  let blockCount = $state(startingBlocks.length);
+  let deleteTarget = $state<{ key: string; kind: string; summary: string } | null>(null);
+  let deleteConfirmPosition = $state({ top: 0, left: 0 });
+  let railFrame = 0;
+  let linkIndicator = $state<{ left: number; top: number } | null>(null);
+  let editingLink = $state(false);
+  let linkFormOpen = $state(false);
+  let linkHref = $state('');
+  let linkText = $state('');
+  let linkError = $state('');
+  let linkSelection = $state<{ from: number; to: number } | null>(null);
+  let linkFormPosition = $state({ top: 0, left: 0 });
+  let editingInlineImage = $state(false);
+  let inlineImageOriginal: import('@tiptap/pm/model').Node | null = null;
+  let inlineImageOpen = $state(false);
+  let inlineImageAt: number | null = null;
+  let inlineImageUrl = $state('');
+  let inlineImageAlt = $state('');
+  let inlineLayout = $state({ ...defaultImageLayout });
+  let inlineImageError = $state('');
+  let inlineImageFormPosition = $state({ top: 0, left: 0 });
+  let editorState = $state<{ editor: Editor | null }>({ editor: null });
+  let floatingOptionsOpen = $state(false);
+  let insertSide = $state<'before' | 'after'>('after');
+  let insertAnchorKey = $state('');
+  let selectionPopup = $state<{ left: number; top: number } | null>(null);
+  let imageFormOpen = $state(false);
+  let imageError = $state('');
+  let editingExisting = $state(false);
+  let imageDraft = $state({ url: '', alt: '', caption: '', ...defaultImageLayout });
+  let imageFormAnchorKey = $state<string | null>(null);
+  let provisionalImageKey: string | null = null;
+  let imageFormPosition = $state({ top: 0, left: 0 });
+  let latestBlocks: AuthorBlock[] = startingBlocks;
+
+  // The forms are positioned against the document, not the full node footer.
+  // The node and forms therefore scroll together, including on long nodes.
+  function findBlock(key: string): { from: number; nodeSize: number; attrs: Record<string, unknown> } | null {
+    const editor = currentEditor();
+    if (!editor) return null;
+    let from = 0;
+    for (let i = 0; i < editor.state.doc.childCount; i++) {
+      const node = editor.state.doc.child(i);
+      if (String(node.attrs.key) === key)
+        return { from, nodeSize: node.nodeSize, attrs: node.attrs };
+      from += node.nodeSize;
+    }
+    return null;
+  }
+
+  function selectedLink(editor: Editor) {
+    const { selection, schema, doc } = editor.state;
+    if (!(selection instanceof TextSelection) || !selection.$from.sameParent(selection.$to)) return;
+    const range = getMarkRange(selection.$from, schema.marks.link);
+    if (!range || range.from > selection.from || range.to < selection.to) return;
+    const mark = doc.resolve(range.from).nodeAfter?.marks.find((mark) => mark.type === schema.marks.link);
+    if (mark) return { ...range, href: String(mark.attrs.href ?? '') };
+  }
+
+  function positionAnchoredForms() {
+    const editor = currentEditor();
+    if (!shellEl || !editor || editor.isDestroyed) return;
+    const shell = shellEl.getBoundingClientRect();
+    const leftBound = Math.max(0, shellEl.clientWidth - 350);
+
+    const link = singleText && (editorFocused || shellEl.contains(document.activeElement) && document.activeElement?.classList.contains('link-indicator')) && !linkFormOpen ? selectedLink(editor) : undefined;
+    if (link) {
+      const edge = editor.view.coordsAtPos(editor.state.selection.head);
+      linkIndicator = {
+        top: edge.bottom - shell.top + 6,
+        left: Math.max(0, Math.min(shellEl.clientWidth - 100, edge.left - shell.left)),
+      };
+    } else linkIndicator = null;
+
+    if (linkFormOpen && linkSelection) {
+      try {
+        const start = editor.view.coordsAtPos(linkSelection.from);
+        const end = editor.view.coordsAtPos(linkSelection.to);
+        linkFormPosition = {
+          top: Math.max(0, Math.round(Math.max(start.bottom, end.bottom) - shell.top + 9)),
+          left: Math.max(0, Math.min(leftBound,
+            Math.round((start.left + end.right) / 2 - shell.left - 160))),
+        };
+      } catch { /* Keep last valid position during a document remount. */ }
+    }
+
+    if (inlineImageOpen && inlineImageAt !== null) {
+      try {
+        const caret = editor.view.coordsAtPos(inlineImageAt);
+        inlineImageFormPosition = {
+          top: Math.max(0, Math.round(caret.bottom - shell.top + 9)),
+          left: Math.max(0, Math.min(leftBound, Math.round(caret.left - shell.left - 18))),
+        };
+      } catch { /* Retain the last position if the document remounts. */ }
+    }
+
+    if (deleteTarget) {
+      const block = Array.from(editor.view.dom.children)
+        .find(element => element.getAttribute('data-atlas-key') === deleteTarget?.key);
+      if (block) {
+        const rect = block.getBoundingClientRect();
+        // Align to the selected block (not to the entire document's bottom).
+        // Clamp horizontally so the confirmation also fits on phone width.
+        const maxLeft = Math.max(0, shellEl.clientWidth - 310);
+        deleteConfirmPosition = {
+          top: Math.max(0, Math.round(rect.top - shell.top + 5)),
+          left: Math.max(0, Math.min(maxLeft, Math.round(rect.left - shell.left + 10))),
+        };
+      }
+    }
+
+    if (imageFormOpen && imageFormAnchorKey) {
+      const figure = Array.from(shellEl.querySelectorAll('figure[data-atlas-image]'))
+        .find(element => element.getAttribute('data-atlas-key') === imageFormAnchorKey);
+      if (figure) {
+        const rect = figure.getBoundingClientRect();
+        imageFormPosition = {
+          top: Math.max(0, Math.round(rect.top - shell.top + 2)),
+          left: Math.max(0, Math.min(leftBound, Math.round(rect.left - shell.left + 4))),
+        };
+      }
+    }
+  }
+
+  // The popover remembers the selected Atlas block's key. Changing the
+  // Before/After choice or focusing the image form must not move the anchor.
+  function insertionPoint(editor: Editor): number {
+    let from = 0;
+    const children = editor.state.doc;
+    for (let i = 0; i < children.childCount; i++) {
+      const node = children.child(i);
+      if (String(node.attrs.key) === insertAnchorKey)
+        return insertSide === 'before' ? from : from + node.nodeSize;
+      from += node.nodeSize;
+    }
+    // Selection is the fallback when a block has been removed while a menu is open.
+    const index = Math.min(editor.state.selection.$from.index(0), children.childCount - 1);
+    from = 0;
+    for (let i = 0; i < index; i++) from += children.child(i).nodeSize;
+    return insertSide === 'before' ? from : from + children.child(index).nodeSize;
+  }
+
+  function openInsertChoices(side: 'before' | 'after') {
+    const editor = currentEditor();
+    if (!editor) return;
+    const anchorKey = String(editor.state.doc.child(activeIndex)?.attrs.key || '');
+    if (floatingOptionsOpen && insertSide === side && insertAnchorKey === anchorKey) {
+      floatingOptionsOpen = false;
+      return;
+    }
+    insertAnchorKey = anchorKey;
+    insertSide = side;
+    // The menu opens from the chosen plus and can cover the document by design.
+    const offset = side === 'before' ? blockLayout.top : blockLayout.bottom;
+    insertMenuLayout = {
+      top: offset + 8,
+      left: Math.max(0, Math.min((shellEl?.clientWidth ?? 282) - 282, blockLayout.center - 18)),
+    };
+    selectionPopup = null;
+    floatingOptionsOpen = true;
+  }
+
+  function insertTextBlock() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const position = insertionPoint(editor);
+    const key = crypto.randomUUID();
+    editor.chain().focus().insertContentAt(position, {
+      type: 'atlasText',
+      attrs: { key },
+      content: [{ type: 'paragraph' }],
+    }).setTextSelection(position + 2).run();
+    floatingOptionsOpen = false;
+  }
+
+
+  function currentEditor(): Editor | null { return editorState.editor; }
+
+  export function selectedTextBlockIndex() {
+    const selection = editorState.editor?.state.selection.$from;
+    return selection && selection.depth > 1 ? selection.index(1) : 0;
+  }
+
+  $effect(() => {
+    const anchor = inset?.anchor;
+    const component = inset?.component;
+    const content = inset?.content;
+    const editor = untrack(() => editorState.editor);
+    if (editor && !editor.isDestroyed) {
+      editor.view.dispatch(editor.state.tr.setMeta('sectionInset', { anchor, component, content }));
+    }
+  });
+
+  export function dismissControls() {
+    linkFormOpen = false;
+    linkSelection = null;
+    currentEditor()?.commands.blur();
+  }
+
+  export function textFormatting() {
+    const editor = currentEditor();
+    return {
+      heading: [2, 3, 4, 5, 6].find((level) => editor?.isActive('heading', { level })),
+      bold: editor?.isActive('bold') ?? false,
+      italic: editor?.isActive('italic') ?? false,
+      underline: editor?.isActive('underline') ?? false,
+    };
+  }
+
+  export function setTextHeading(level: 0 | 2 | 3 | 4 | 5 | 6) {
+    const editor = currentEditor();
+    if (!editor) return;
+    const command = editor.chain().focus();
+    if (level === 0) command.setParagraph().run();
+    else command.setHeading({ level }).run();
+  }
+
+  export function formatText(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
+    if (kind === 'link') openLinkForm();
+    else format(kind, level);
+  }
+
+  function format(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList', level: 2 | 3 | 4 | 5 | 6 = 2) {
+    const editor = currentEditor();
+    if (!editor) return;
+    if (kind === 'bold') editor.chain().focus().toggleBold().run();
+    else if (kind === 'italic') editor.chain().focus().toggleItalic().run();
+    else if (kind === 'underline') editor.chain().focus().toggleUnderline().run();
+    else if (kind === 'heading') editor.chain().focus().toggleHeading({ level }).run();
+    else editor.chain().focus().toggleBulletList().run();
+  }
+
+  // Controls are anchored to the actual top/bottom/right of the selected
+  // Atlas block. No gutter, caret tracking, or scroll chasing. Both images and
+  // Markdown receive the identical selected decoration and actions.
+  function repositionGutter(editor: Editor) {
+    if (!shellEl || !editor.view?.dom?.isConnected) return;
+    const index = Math.min(editor.state.selection.$from.index(0), editor.state.doc.childCount - 1);
+    activeIndex = Math.max(0, index);
+    activeSupported = editor.state.doc.maybeChild(index)?.type.name !== 'atlasUnsupported';
+    blockCount = editor.state.doc.childCount;
+
+    cancelAnimationFrame(railFrame);
+    if (!editorFocused) {
+      selectionPopup = null;
+      return;
+    }
+
+    railFrame = requestAnimationFrame(() => {
+      if (!shellEl || editor.isDestroyed || !editor.view.dom.isConnected || !editorFocused) return;
+      const active = editor.view.dom.children.item(editor.state.selection.$from.index(0));
+      if (!active) return;
+      const bounds = active.getBoundingClientRect();
+      const shell = shellEl.getBoundingClientRect();
+      blockLayout = {
+        top: Math.round(bounds.top - shell.top),
+        bottom: Math.round(bounds.bottom - shell.top),
+        right: Math.round(bounds.right - shell.left),
+        center: Math.round((bounds.left + bounds.right) / 2 - shell.left),
+        // A second attached control tab is useful only for unusually tall
+        // text/code sections, not ordinary text or image blocks.
+        showBottomActions: active.matches('.atlas-story-text') && bounds.height >= 640,
+      };
+
+      const selection = editor.state.selection;
+      if (selection instanceof TextSelection && !selection.empty && !linkFormOpen) {
+        try {
+          const start = editor.view.coordsAtPos(selection.from);
+          const end = editor.view.coordsAtPos(selection.to);
+          selectionPopup = {
+            left: Math.max(0, Math.min(shellEl.clientWidth - 285,
+              (start.left + end.right) / 2 - shell.left - 137)),
+            top: Math.max(-42, Math.min(start.top, end.top) - shell.top - 48),
+          };
+        } catch {
+          selectionPopup = null;
+        }
+      } else {
+        selectionPopup = null;
+      }
+    });
+  }
+
+  // Reorder an entire top-level Atlas section (not one paragraph inside it).
+  // The selection follows the moved section so the rail stays beside it.
+  function moveCurrentBlock(direction: -1 | 1) {
+    const editor = currentEditor();
+    if (!editor) return;
+    const { state } = editor;
+    const index = state.selection.$from.index(0);
+    const other = index + direction;
+    if (other < 0 || other >= state.doc.childCount) return;
+    const node = state.doc.child(index);
+    const neighbor = state.doc.child(other);
+    let from = 0;
+    for (let i = 0; i < index; i++) from += state.doc.child(i).nodeSize;
+    const destination = direction === -1 ? from - neighbor.nodeSize : from + neighbor.nodeSize;
+    const transaction = state.tr.delete(from, from + node.nodeSize).insert(destination, node);
+    if (node.type.name === 'atlasImage') {
+      transaction.setSelection(NodeSelection.create(transaction.doc, destination));
+    } else {
+      transaction.setSelection(TextSelection.near(transaction.doc.resolve(destination + 1)));
+    }
+    editor.view.dispatch(transaction);
+    editor.commands.focus();
+    repositionGutter(editor);
+  }
+
+  // An in-page link form is safer than window.prompt in the Storybook iframe.
+  // Capture the document selection BEFORE the input field takes focus.
+  function openLinkForm() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const existing = selectedLink(editor);
+    const { from, to } = existing ?? editor.state.selection;
+    editingLink = !!existing;
+    linkIndicator = null;
+    linkSelection = { from, to };
+    linkText = editor.state.doc.textBetween(from, to, ' ');
+    linkHref = existing?.href ?? '';
+    linkError = '';
+    linkFormOpen = true;
+    selectionPopup = null;
+    positionAnchoredForms();
+  }
+
+  function applyOnEnter(event: KeyboardEvent, apply: () => void) {
+    if (event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      apply();
+    }
+  }
+
+  function saveLink() {
+    const editor = currentEditor();
+    if (!editor || !linkSelection) return;
+    const url = linkHref.trim();
+    let valid = false;
+    try { valid = ['http:', 'https:'].includes(new URL(url).protocol); } catch { /* Invalid URL. */ }
+    if (!valid) {
+      linkError = 'Enter a full HTTP(S) URL.';
+      return;
+    }
+    const original = editor.state.doc.textBetween(linkSelection.from, linkSelection.to, ' ');
+    const label = linkText.trim() || url;
+    if (editingLink && linkText !== original) {
+      const { from, to } = linkSelection;
+      const { schema, doc } = editor.state;
+      const marks = doc.resolve(from).nodeAfter?.marks.filter((mark) => mark.type !== schema.marks.link) ?? [];
+      editor.chain().focus().command(({ tr }) => {
+        tr.replaceWith(from, to, schema.text(label, [...marks, schema.marks.link.create({ href: url })]));
+        return true;
+      }).run();
+    } else if (linkSelection.from === linkSelection.to) {
+      editor.chain().focus().setTextSelection(linkSelection).insertContent({
+        type: 'text', text: label,
+        marks: [{ type: 'link', attrs: { href: url } }],
+      }).run();
+    } else {
+      editor.chain().focus().setTextSelection(linkSelection).setLink({ href: url }).run();
+    }
+    linkFormOpen = false;
+    linkSelection = null;
+  }
+
+  function unlink() {
+    const editor = currentEditor();
+    if (editor && linkSelection)
+      editor.chain().focus().setTextSelection(linkSelection).unsetLink().run();
+    linkFormOpen = false;
+    linkSelection = null;
+  }
+
+  function openInlineImageForm(position?: number) {
+    const editor = currentEditor();
+    if (!editor) return;
+    const block = editor.state.doc.maybeChild(editor.state.selection.$from.index(0));
+    // Inline media only belongs inside a Markdown section, not an image block.
+    const existing = position === undefined ? null : editor.state.doc.nodeAt(position);
+    if (position !== undefined && existing?.type.name !== 'atlasInlineImage') return;
+    if (!existing && block?.type.name !== 'atlasText') return;
+    inlineImageOriginal = existing;
+    editingInlineImage = !!existing;
+    inlineImageAt = position ?? editor.state.selection.from;
+    inlineImageUrl = String(existing?.attrs.src ?? '');
+    inlineImageAlt = String(existing?.attrs.alt ?? '');
+    inlineLayout = imageLayout(existing?.attrs.width, existing?.attrs.placement);
+    inlineImageError = '';
+    inlineImageOpen = true;
+    positionAnchoredForms();
+  }
+
+  function applyInlineImage() {
+    const editor = currentEditor();
+    if (!editor || inlineImageAt === null) return;
+    const safe = publicUrl(inlineImageUrl.trim());
+    if (!safe) {
+      inlineImageError = 'Enter an absolute HTTP(S) image URL.';
+      return;
+    }
+    if (!inlineImageAlt.trim()) {
+      inlineImageError = 'Describe the image for screen readers.';
+      return;
+    }
+    const attrs = { src: safe, alt: inlineImageAlt.trim(), title: inlineImageOriginal?.attrs.title ?? '', ...inlineLayout };
+    if (inlineImageOriginal) {
+      if (editor.state.doc.nodeAt(inlineImageAt) !== inlineImageOriginal) {
+        inlineImageError = 'The image moved. Select it again to edit it.';
+        return;
+      }
+      editor.view.dispatch(editor.state.tr.setNodeMarkup(inlineImageAt, undefined, attrs));
+      editor.commands.focus();
+    } else {
+      editor.chain().focus().insertContentAt(inlineImageAt, { type: 'atlasInlineImage', attrs }).run();
+    }
+    inlineImageOpen = false;
+    inlineImageAt = null;
+  }
+
+  // Capture the selected block's stable key before the confirmation takes
+  // keyboard focus. Confirmation is required for text AND images.
+  function requestDeleteBlock() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const index = editor.state.selection.$from.index(0);
+    const node = editor.state.doc.maybeChild(index);
+    if (!node || (!workshop && node.type.name === 'atlasUnsupported')) return;
+    const kind = node.type.name === 'atlasImage' ? 'image' :
+      node.type.name === 'atlasText' ? 'text' : 'unsupported';
+    deleteTarget = {
+      key: String(node.attrs.key),
+      kind,
+      summary: kind === 'image' ? String(node.attrs.caption || node.attrs.alt || 'image') :
+        node.textContent.slice(0, 90) || '(empty block)',
+    };
+    floatingOptionsOpen = false;
+    // Refresh decorations even if the selection itself did not change.
+    editor.view.dispatch(editor.state.tr.setMeta('atlasDeleteDialog', 'open'));
+    requestAnimationFrame(positionAnchoredForms);
+  }
+
+  function cancelDeleteBlock() {
+    deleteTarget = null;
+    const editor = currentEditor();
+    if (editor && !editor.isDestroyed) {
+      editor.chain().focus().run();
+      editor.view.dispatch(editor.state.tr.setMeta('atlasDeleteDialog', 'cancel'));
+    }
+  }
+
+  function confirmDeleteBlock() {
+    const editor = currentEditor();
+    const target = deleteTarget;
+    if (!editor || !target) return;
+    const { state } = editor;
+    let from = 0;
+    for (let index = 0; index < state.doc.childCount; index++) {
+      const node = state.doc.child(index);
+      if (String(node.attrs.key) === target.key) {
+        const transaction = state.tr;
+        if (state.doc.childCount === 1) {
+          // The custom document schema requires at least one Atlas block.
+          // Replace the final section with a new empty text landing place.
+          const empty = state.schema.nodes.atlasText.create(
+            { key: crypto.randomUUID() }, state.schema.nodes.paragraph.create(),
+          );
+          transaction.replaceWith(from, from + node.nodeSize, empty);
+        } else {
+          transaction.delete(from, from + node.nodeSize);
+        }
+        transaction.setSelection(TextSelection.near(transaction.doc.resolve(
+          Math.min(from, transaction.doc.content.size),
+        )));
+        editor.view.dispatch(transaction);
+        editor.commands.focus();
+        break;
+      }
+      from += node.nodeSize;
+    }
+    deleteTarget = null;
+  }
+
+  function insertDivider() {
+    const editor = currentEditor();
+    if (!editor) return;
+    const position = insertionPoint(editor);
+    editor.chain().focus().insertContentAt(position, {
+      type: 'atlasText',
+      attrs: { key: crypto.randomUUID() },
+      content: [{ type: 'horizontalRule' }, { type: 'paragraph' }],
+    }).run();
+    floatingOptionsOpen = false;
+  }
+
+  // A new image is staged as an actual Atlas image node at the chosen
+  // Before/After position. The placeholder reserves space for its editor.
+  // Cancel removes this temporary node; Apply fills its metadata by stable key.
+  function openImageForm(mode: 'new' | 'existing' = 'new') {
+    const editor = currentEditor();
+    if (!editor) return;
+    if (imageFormOpen) cancelImageForm();
+    editingExisting = mode === 'existing';
+    imageError = '';
+    const existing = editingExisting
+      ? editor.state.doc.maybeChild(editor.state.selection.$from.index(0))
+      : null;
+    if (editingExisting && existing?.type.name !== 'atlasImage') return;
+
+    if (existing) {
+      imageFormAnchorKey = String(existing.attrs.key);
+      imageDraft = {
+        url: String(existing.attrs.src ?? ''),
+        alt: String(existing.attrs.alt ?? ''),
+        caption: String(existing.attrs.caption ?? ''),
+        ...imageLayout(existing.attrs.width, existing.attrs.placement),
+      };
+    } else {
+      const key = crypto.randomUUID();
+      const position = insertionPoint(editor);
+      provisionalImageKey = key;
+      imageFormAnchorKey = key;
+      imageDraft = { url: '', alt: '', caption: '', ...defaultImageLayout };
+      editor.chain().focus().insertContentAt(position, {
+        type: 'atlasImage',
+        attrs: { key, src: '', alt: '', caption: '' },
+      }).setNodeSelection(position).run();
+    }
+    imageFormOpen = true;
+    floatingOptionsOpen = false;
+    requestAnimationFrame(positionAnchoredForms);
+  }
+
+  function cancelImageForm() {
+    const editor = currentEditor();
+    const key = provisionalImageKey;
+    provisionalImageKey = null;
+    imageFormOpen = false;
+    imageFormAnchorKey = null;
+    imageError = '';
+    if (!editor || !key) return;
+    const block = findBlock(key);
+    if (!block) return;
+    const { state } = editor;
+    if (state.doc.childCount > 1) {
+      editor.view.dispatch(state.tr.delete(block.from, block.from + block.nodeSize));
+    } else {
+      editor.view.dispatch(state.tr.replaceWith(block.from, block.from + block.nodeSize,
+        state.schema.nodes.atlasText.create({ key: crypto.randomUUID() },
+          state.schema.nodes.paragraph.create())));
+    }
+  }
+
+  function saveImage() {
+    const editor = currentEditor();
+    if (!editor || !imageFormAnchorKey) return;
+    if (!publicUrl(imageDraft.url)) {
+      imageError = 'Enter a complete HTTP(S) image URL.';
+      return;
+    }
+    if (!imageDraft.alt.trim()) {
+      imageError = 'Alternative text is required.';
+      return;
+    }
+    const block = findBlock(imageFormAnchorKey);
+    if (!block) {
+      imageError = 'This image block is no longer present.';
+      return;
+    }
+    provisionalImageKey = null;
+    editor.chain().focus().setNodeSelection(block.from).updateAttributes('atlasImage', {
+      src: imageDraft.url.trim(), alt: imageDraft.alt.trim(), caption: imageDraft.caption.trim(),
+      ...imageLayout(imageDraft.width, imageDraft.placement),
+    }).run();
+    imageFormOpen = false;
+    imageFormAnchorKey = null;
+    imageError = '';
+  }
+
+  $effect(() => {
+    const editable = !disabled;
+    const editor = editorState.editor;
+    if (editor && editor.isEditable !== editable) editor.setEditable(editable, false);
+  });
+
+  onMount(() => {
+    const startingByKey = new Map(startingBlocks.map((block) => [block.key, block]));
+    // Assign a stable key to pasted or split blocks, and preserve kinds that
+    // the editor cannot modify even during a multi-block keyboard deletion.
+    const keys = new Plugin({
+      filterTransaction(transaction) {
+        if (workshop || !transaction.docChanged) return true;
+        const retained = new Set<string>();
+        transaction.doc.forEach((node) => {
+          if (node.type.name === 'atlasUnsupported') retained.add(String(node.attrs.key));
+        });
+        return startingBlocks.every((block) => block.kind === 'markdown'
+          || block.kind === 'image' || retained.has(block.key));
+      },
+      appendTransaction(transactions, _previous, state) {
+        if (!transactions.some((transaction) => transaction.docChanged)) return null;
+        const seen = new Set<string>();
+        const fix = state.tr;
+        state.doc.forEach((node, position) => {
+          const key = String(node.attrs.key ?? '');
+          if (key && !seen.has(key)) seen.add(key);
+          else fix.setNodeMarkup(position, undefined, { ...node.attrs, key: crypto.randomUUID() });
+        });
+        return fix.docChanged ? fix : null;
+      },
+    });
+    const mountedInsets = new WeakMap<HTMLElement, ReturnType<typeof mount>>();
+    const insetPlugin = new Plugin<{ anchor?: number; component?: Component<{ content: Snippet }>; content?: Snippet }>({
+      state: {
+        init: () => inset ?? {},
+        apply(tr, previous) {
+          const settings = tr.getMeta('sectionInset');
+          if (settings) return settings;
+          const oldText = tr.before.firstChild;
+          const text = tr.doc.firstChild;
+          if (!tr.docChanged || !previous.component || !oldText || !text) return previous;
+          const oldIndex = Math.min(previous.anchor ?? 0, oldText.childCount - 1);
+          let position = 1;
+          for (let i = 0; i < oldIndex; i++) position += oldText.child(i).nodeSize;
+          const mapped = Math.min(text.nodeSize - 1, tr.mapping.map(position, 1));
+          return { ...previous, anchor: Math.min(tr.doc.resolve(mapped).index(1), text.childCount - 1) };
+        },
+      },
+      props: {
+        decorations(state) {
+          const settings = insetPlugin.getState(state);
+          const component = settings?.component;
+          const text = state.doc.firstChild;
+          if (!component || !settings.content || !text) return DecorationSet.empty;
+          const content = settings.content;
+          const index = Math.min(settings.anchor ?? 0, text.childCount - 1);
+          let position = 1;
+          for (let i = 0; i < index; i++) position += text.child(i).nodeSize;
+          return DecorationSet.create(state.doc, [Decoration.widget(position, () => {
+            const host = document.createElement('div');
+            host.contentEditable = 'false';
+            mountedInsets.set(host, mount(component, { target: host, props: { content } }));
+            return host;
+          }, {
+            key: 'section-image-inset',
+            side: -1,
+            stopEvent: () => true,
+            ignoreSelection: true,
+            destroy(node) {
+              const instance = mountedInsets.get(node as HTMLElement);
+              if (instance) void unmount(instance);
+            },
+          })]);
+        },
+      },
+    });
+    const editor = new Editor({
+      element: canvasEl,
+      extensions: [
+        StarterKit.configure({ document: false, trailingNode: false, underline: singleText ? {} : false, link: { openOnClick: false, autolink: false } }),
+        singleText ? AtlasDocument.extend({ content: 'atlasText' }) : AtlasDocument,
+        AtlasText,
+        ...(singleText ? [Extension.create({ name: 'sectionInset', addProseMirrorPlugins: () => [insetPlugin] })] : []),
+        ...(singleText ? [] : [AtlasInlineImage, AtlasImage, AtlasUnsupported, ActiveBlockDecoration]),
+        Extension.create({ name: 'atlasBlockKeys', addProseMirrorPlugins: () => [keys] }),
+      ],
+      content: blocksToTiptapHtml(startingBlocks),
+      editable: !disabled,
+      editorProps: {
+        attributes: {
+          class: 'atlas-story-rich-document',
+          'aria-label': 'Node content: editable rich-text document',
+          role: 'textbox',
+          'aria-multiline': 'true',
+        },
+        handleDOMEvents: {
+          pointerup: () => {
+            // The browser updates ProseMirror's caret as the click finishes.
+            // Pin the rail to that location; future scrolling never moves it.
+            requestAnimationFrame(() => {
+              if (!editor.isDestroyed && editorFocused) repositionGutter(editor);
+            });
+            return false;
+          },
+          pointerdown: (_view, event) => {
+            if (!(event.target instanceof Element) || !event.target.closest('[data-atlas-edit-image]')) return false;
+            event.preventDefault();
+            return true;
+          },
+          click: (view, event) => {
+            const target = event.target;
+            if (!view.editable || !(target instanceof Element)) return false;
+            const action = target.closest('[data-atlas-edit-image]');
+            if (!action) return false;
+            const inline = action.closest('[data-atlas-inline-image]');
+            if (inline?.parentNode) {
+              const index = Array.from(inline.parentNode.childNodes).indexOf(inline);
+              openInlineImageForm(view.posAtDOM(inline.parentNode, index));
+              return true;
+            }
+            const key = action.closest('figure[data-atlas-key]')?.getAttribute('data-atlas-key');
+            const block = key && findBlock(key);
+            if (!block) return false;
+            view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, block.from)));
+            openImageForm('existing');
+            return true;
+          },
+        },
+      },
+      onFocus: ({ editor }) => {
+        onActivate?.();
+        editorFocused = true;
+        controlsVisible = true;
+        editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', true));
+        repositionGutter(editor);
+      },
+      onBlur: ({ editor }) => {
+        editorFocused = false;
+        controlsVisible = false;
+        floatingOptionsOpen = false;
+        selectionPopup = null;
+        editor.view.dispatch(editor.state.tr.setMeta('atlasEditorFocus', false));
+      },
+      onTransaction: ({ editor }) => {
+        editorState = { editor };
+        repositionGutter(editor);
+        requestAnimationFrame(positionAnchoredForms);
+      },
+      onUpdate: ({ editor }) => {
+        const next = tiptapDocumentToBlocks(editor.getJSON(), latestBlocks, baseline)
+          .filter((block) => block.key !== provisionalImageKey);
+        latestBlocks = next;
+        onChange?.(next, insetPlugin.getState(editor.state)?.anchor);
+      },
+    });
+    const baseline = new Map(tiptapDocumentToBlocks(editor.getJSON(), startingBlocks)
+      .filter((block) => block.kind === 'markdown')
+      .map((block) => [block.key, { serialized: block.text, source: startingByKey.get(block.key)?.text ?? block.text }]));
+    if (!workshop && startingBlocks.some((block) => block.kind === 'markdown'
+      && !equivalentMarkdown(block.text, baseline.get(block.key)?.serialized ?? ''))) onUnsupportedMarkdown?.();
+    editorState = { editor };
+    repositionGutter(editor);
+    const reposition = () => {
+      // Link/image/delete forms remain anchored to their source content.
+      // Do not reposition the section rail on scroll or resize.
+      requestAnimationFrame(positionAnchoredForms);
+    };
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+      cancelAnimationFrame(railFrame);
+      editor.destroy();
+    };
+  });
+</script>
+
+
+<fieldset class="tiptap-prototype" class:single-text={singleText} class:editorial={styleMode === 'editorial'} {disabled}>
+  {#if workshop}<div class="editor-hint">
+    <span>Click into the node and write. Press Enter to start another paragraph.</span>
+  </div>{/if}
+
+  <!-- Persistent toolbar: never moves, expands, or disappears as the selection changes. -->
+  {#if !singleText}<div class="format-toolbar" role="toolbar" aria-label="Text formatting">
+    <button type="button" aria-label="Bold selected text" title="Bold"
+      onpointerdown={(event) => event.preventDefault()} onclick={() => format('bold')}>
+      <strong>B</strong>
+    </button>
+    <button type="button" aria-label="Italicize selected text" title="Italic"
+      onpointerdown={(event) => event.preventDefault()} onclick={() => format('italic')}>
+      <em>I</em>
+    </button>
+    <button type="button" aria-label="Add or edit link"
+      onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
+    <button type="button" aria-label="Insert image within text" title="Inline image within this Markdown section"
+      onpointerdown={(event) => event.preventDefault()} onclick={() => openInlineImageForm()}>Image in text</button>
+    <span class="toolbar-separator" aria-hidden="true"></span>
+    <button type="button" aria-label="Toggle heading" onpointerdown={(event) => event.preventDefault()}
+      onclick={() => format('heading')}>H2</button>
+    <button type="button" aria-label="Toggle bulleted list" onpointerdown={(event) => event.preventDefault()}
+      onclick={() => format('bulletList')}>List</button>
+  </div>{/if}
+
+
+  <!-- Controls are overlays tied to the whole selected block. They never
+       indent, resize, or change the text/image content layout. -->
+  <div class="document-shell" bind:this={shellEl}>
+    {#if deleteTarget}
+      <div class="delete-confirm" role="alertdialog" aria-label="Confirm delete block"
+        aria-describedby={`${instance}-delete-description`}
+        style:top={deleteConfirmPosition.top + 'px'}
+        style:left={deleteConfirmPosition.left + 'px'}>
+        <strong>Delete this {deleteTarget.kind} block?</strong>
+        <p id={`${instance}-delete-description`}>
+          This removes the entire block from this draft: {deleteTarget.summary}
+        </p>
+        <div class="form-actions">
+          <button type="button" onclick={cancelDeleteBlock}>Cancel</button>
+          <button type="button" class="destructive" onclick={confirmDeleteBlock}>Delete block</button>
+        </div>
+      </div>
+    {/if}
+    {#if linkIndicator && !linkFormOpen}
+      <button type="button" class="link-indicator" style:top={linkIndicator.top + 'px'}
+        style:left={linkIndicator.left + 'px'} onpointerdown={(event) => event.preventDefault()}
+        onclick={openLinkForm}>Edit link</button>
+    {/if}
+    {#if linkFormOpen}
+      <div class="link-form" role="form" aria-label="Insert or edit link"
+        style:top={linkFormPosition.top + 'px'} style:left={linkFormPosition.left + 'px'}>
+        <label for={`${instance}-link-url`}>Link URL</label>
+        <input id={`${instance}-link-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkHref}
+          placeholder="https://example.org/article" />
+        {#if editingLink || linkSelection?.from === linkSelection?.to}
+          <label for={`${instance}-link-text`}>Link text{editingLink ? '' : ' (optional)'}</label>
+          <input id={`${instance}-link-text`} onkeydown={(event) => applyOnEnter(event, saveLink)} bind:value={linkText} placeholder="Text to insert" />
+        {/if}
+        {#if linkError}<p class="input-error" role="alert">{linkError}</p>{/if}
+        <div class="form-actions">
+          <button type="button" onclick={() => { linkFormOpen = false; linkSelection = null; }}>Cancel</button>
+          <button type="button" onclick={unlink}>Remove link</button>
+          <button type="button" class="primary" onclick={saveLink}>Apply link</button>
+        </div>
+      </div>
+    {/if}
+
+    {#if inlineImageOpen}
+      <div class="inline-image-form" role="form" aria-label={editingInlineImage ? 'Edit image in Markdown' : 'Insert image into Markdown'}
+        style:top={inlineImageFormPosition.top + 'px'}
+        style:left={inlineImageFormPosition.left + 'px'}>
+        <label for={`${instance}-inline-image-url`}>Inline image URL</label>
+        <input id={`${instance}-inline-image-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, applyInlineImage)} bind:value={inlineImageUrl}
+          placeholder="https://example.org/photo.jpg"/>
+        <label for={`${instance}-inline-image-alt`}>Inline image alternative text</label>
+        <input id={`${instance}-inline-image-alt`} onkeydown={(event) => applyOnEnter(event, applyInlineImage)} bind:value={inlineImageAlt}
+          placeholder="Describe the image"/>
+        <ImageLayoutFields inline bind:width={inlineLayout.width} bind:placement={inlineLayout.placement} />
+        {#if inlineImageError}<p class="input-error" role="alert">{inlineImageError}</p>{/if}
+        <div class="form-actions">
+          <button type="button" onclick={() => { inlineImageOpen = false; inlineImageAt = null; }}>Cancel</button>
+          <button type="button" class="primary" onclick={applyInlineImage}>{editingInlineImage ? 'Apply image' : 'Insert image'}</button>
+        </div>
+      </div>
+    {/if}
+
+    {#if !singleText && selectionPopup && controlsVisible}
+      <div class="selection-bubble" role="toolbar" aria-label="Selected text formatting"
+        style:left={selectionPopup.left + 'px'} style:top={selectionPopup.top + 'px'}>
+        <button type="button" aria-label="Bold highlighted text" title="Bold"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('bold')}><strong>B</strong></button>
+        <button type="button" aria-label="Italicize highlighted text" title="Italic"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('italic')}><em>I</em></button>
+        <button type="button" aria-label="Link highlighted text" title="Link"
+          onpointerdown={(event) => event.preventDefault()} onclick={openLinkForm}>Link</button>
+        <span class="toolbar-separator" aria-hidden="true"></span>
+        <button type="button" aria-label="Heading for highlighted text" title="Heading 2"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('heading')}>H2</button>
+        <button type="button" aria-label="List for highlighted text" title="Bulleted list"
+          onpointerdown={(event) => event.preventDefault()} onclick={() => format('bulletList')}>List</button>
+      </div>
+    {/if}
+
+    {#if !singleText && controlsVisible}
+      <button type="button" class="boundary-add before" aria-label="Insert block before"
+        style:top={blockLayout.top - 5 + 'px'} style:left={blockLayout.center + 'px'}
+        aria-expanded={floatingOptionsOpen && insertSide === 'before'}
+        onpointerdown={(event) => event.preventDefault()}
+        onclick={() => openInsertChoices('before')}>+</button>
+
+      <div class="block-corner-controls top" role="group" aria-label="Selected block actions"
+        style:top={blockLayout.top - 5 + 'px'}
+        style:right={Math.max(0, (shellEl?.clientWidth ?? 0) - blockLayout.right - 5) + 'px'}>
+        <button type="button" aria-label="Move current block up" title="Move block up"
+          disabled={activeIndex === 0}
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(-1)}>↑</button>
+        <button type="button" aria-label="Move current block down" title="Move block down"
+          disabled={activeIndex >= blockCount - 1}
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={() => moveCurrentBlock(1)}>↓</button>
+        <button type="button" class="corner-delete" disabled={!workshop && !activeSupported} aria-label="Delete current block" title="Delete block"
+          onpointerdown={(event) => event.preventDefault()}
+          onclick={requestDeleteBlock}>×</button>
+      </div>
+
+      {#if blockLayout.showBottomActions}
+        <div class="block-corner-controls bottom" role="group" aria-label="Selected block actions at end"
+          style:top={blockLayout.bottom + 5 + 'px'}
+          style:right={Math.max(0, (shellEl?.clientWidth ?? 0) - blockLayout.right - 5) + 'px'}>
+          <button type="button" aria-label="Move current block up" title="Move block up"
+            disabled={activeIndex === 0}
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => moveCurrentBlock(-1)}>↑</button>
+          <button type="button" aria-label="Move current block down" title="Move block down"
+            disabled={activeIndex >= blockCount - 1}
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => moveCurrentBlock(1)}>↓</button>
+          <button type="button" class="corner-delete" disabled={!workshop && !activeSupported} aria-label="Delete current block" title="Delete block"
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={requestDeleteBlock}>×</button>
+        </div>
+      {/if}
+
+      <button type="button" class="boundary-add after" aria-label="Insert block after"
+        style:top={blockLayout.bottom + 5 + 'px'} style:left={blockLayout.center + 'px'}
+        aria-expanded={floatingOptionsOpen && insertSide === 'after'}
+        onpointerdown={(event) => event.preventDefault()}
+        onclick={() => openInsertChoices('after')}>+</button>
+
+      {#if floatingOptionsOpen}
+        <div class="insert-choices" role="group" aria-label="Insert a content block"
+          style:top={insertMenuLayout.top + 'px'} style:left={insertMenuLayout.left + 'px'}>
+          <span class="insert-label">Insert {insertSide} this block</span>
+          <div class="insert-types">
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={insertTextBlock}>Text block</button>
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={() => openImageForm('new')}>Image</button>
+            <button type="button" onpointerdown={(event) => event.preventDefault()}
+              onclick={insertDivider}>Section break</button>
+          </div>
+          <button type="button" class="close-insert" aria-label="Close insert choices"
+            onpointerdown={(event) => event.preventDefault()}
+            onclick={() => floatingOptionsOpen = false}>×</button>
+        </div>
+      {/if}
+    {/if}
+    <div class="editor-canvas" bind:this={canvasEl}></div>
+  {#if imageFormOpen}
+    <div class="image-form" role="form" aria-label={editingExisting ? 'Edit image' : 'Insert image'}
+      style:top={imageFormPosition.top + 'px'} style:left={imageFormPosition.left + 'px'}>
+      <h3>{editingExisting ? 'Edit image' : 'Insert an image'}</h3>
+      <label for={`${instance}-image-url`}>Image URL</label>
+      <input id={`${instance}-image-url`} inputmode="url" onkeydown={(event) => applyOnEnter(event, saveImage)} bind:value={imageDraft.url}
+        placeholder="https://example.org/photo.jpg"/>
+      <label for={`${instance}-image-alt`}>Alternative text <span>(required)</span></label>
+      <textarea id={`${instance}-image-alt`} rows="2" bind:value={imageDraft.alt}
+        placeholder="Describe the photograph for someone who cannot see it"></textarea>
+      <label for={`${instance}-image-caption`}>Caption <span>(optional)</span></label>
+      <input id={`${instance}-image-caption`} onkeydown={(event) => applyOnEnter(event, saveImage)} bind:value={imageDraft.caption} placeholder="Optional caption"/>
+      <ImageLayoutFields bind:width={imageDraft.width} bind:placement={imageDraft.placement} />
+      {#if imageError}<p role="alert" class="input-error">{imageError}</p>{/if}
+      <div class="form-actions">
+        <button type="button" onclick={cancelImageForm}>Cancel</button>
+        <button type="button" class="primary" onclick={saveImage}>Apply image</button>
+      </div>
+    </div>
+  {/if}
+
+  </div>
+
+
+
+
+  {#if workshop}<p class="editor-note">Select a text or image block to reveal its top-right move/delete controls and + buttons before and after it. Enter adds a paragraph inside the same text block. Editing stays inside this Storybook draft.</p>{/if}
+</fieldset>
+
+<style>
+  .link-indicator { position: absolute; z-index: 4; background: var(--atlas-surface); }
+
+  .single-text .editor-canvas { padding: 0; min-height: 0; }
+  .single-text :global(.atlas-story-rich-document) { min-height: 2.5rem; line-height: 1.65; }
+  .single-text :global(.atlas-story-rich-document > [data-atlas-key]) { margin-block: 0; }
+  .single-text :global(.atlas-story-text > .ProseMirror-widget) { display: contents; }
+  .single-text :global(.atlas-story-text > :first-child),
+  .single-text :global(.atlas-story-text > .ProseMirror-widget:first-child + *) { margin-block-start: 0; }
+  .single-text :global(.atlas-story-text > :last-child) { margin-block-end: 0; }
+  .single-text :global(.atlas-story-text > p:only-child:has(> br.ProseMirror-trailingBreak)::before) {
+    content: 'Start writing…';
+    float: left;
+    height: 0;
+    color: var(--atlas-muted);
+    pointer-events: none;
+  }
+  .tiptap-prototype {
+    border: 0; margin: 0; padding: 0;
+    color: var(--atlas-text);
+    container-type: inline-size;
+    min-width: 0;
+  }
+  .editor-hint { color: var(--atlas-muted); font-size: .84rem; padding: .4rem 0 .7rem; }
+  .format-toolbar {
+    display: flex; align-items: center; gap: .3rem; flex-wrap: wrap;
+    padding: .3rem .45rem; border: 1px solid var(--atlas-border);
+    border-radius: .6rem; background: var(--atlas-surface);
+    margin: 0 0 1rem; min-height: 2.65rem;
+  }
+  .format-toolbar button {
+    color: var(--atlas-text); font: inherit; cursor: pointer; padding: .3rem .65rem;
+    border: 0; border-radius: .4rem; background: transparent; min-height: 2rem;
+  }
+  .format-toolbar button:hover { background: var(--atlas-bg); }
+  .toolbar-separator { height: 1.35rem; border-left: 1px solid var(--atlas-border); margin-inline: .2rem; }
+  .document-shell {
+    position: relative; min-width: 0; background: transparent; border: 0;
+  }
+  /* Overlaid at the *selected block's boundaries*, never a permanent gutter.
+     The content retains the exact same width whether focused or not. */
+  .boundary-add {
+    position: absolute; z-index: 18;
+    display: grid; place-items: center; box-sizing: border-box;
+    width: 1.85rem; height: 1.85rem; padding: 0; border-radius: 50%;
+    border: 1px solid var(--atlas-border);
+    background: var(--atlas-surface); color: var(--atlas-text);
+    font: 600 1.2rem/1 system-ui, sans-serif; cursor: pointer;
+    box-shadow: 0 2px 8px #0001;
+  }
+  /* The circles sit completely OUTSIDE the selected border, vertically
+     aligned with the attached top-right/bottom-right action tabs.
+     Keep their horizontal center at the middle of the selected block. */
+  .boundary-add.before { transform: translate(-50%, -100%); }
+  .boundary-add.after { transform: translate(-50%, 0); }
+  .boundary-add:hover { color: var(--atlas-accent); border-color: var(--atlas-accent); }
+  .block-corner-controls {
+    position: absolute; z-index: 20;
+    display: flex; align-items: center; gap: .12rem;
+    padding: .15rem; border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
+    background: var(--atlas-surface); color: var(--atlas-text);
+    box-shadow: 0 2px 6px #0001;
+  }
+  /* Like Atlas's node edit tab, these controls JOIN the selection border
+     rather than hovering over text. No padding or indentation is needed. */
+  .block-corner-controls.top {
+    transform: translateY(-100%);
+    border-bottom: 0;
+    border-radius: .45rem .45rem 0 0;
+  }
+  .block-corner-controls.bottom {
+    border-top: 0;
+    border-radius: 0 0 .45rem .45rem;
+  }
+  .block-corner-controls button {
+    display: grid; place-items: center; box-sizing: border-box;
+    width: 1.75rem; height: 1.75rem; padding: 0;
+    border: 0; border-radius: .35rem; background: transparent;
+    color: inherit; cursor: pointer; font: 600 1.05rem/1 system-ui, sans-serif;
+  }
+  .block-corner-controls button:hover { background: var(--atlas-bg); }
+  .block-corner-controls button:disabled { opacity: .3; cursor: default; }
+  .block-corner-controls .corner-delete:hover { color: #b32318; }
+  /* Insert menu opens directly from the clicked above/below button. */
+  .insert-choices {
+    position: absolute; z-index: 30;
+    width: min(18rem, 95%); max-width: 95%; box-sizing: border-box;
+    display: grid; gap: .55rem; padding: .75rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    box-shadow: 0 8px 26px #0002; font-size: .86rem;
+  }
+  .insert-label { font-weight: 600; color: var(--atlas-muted); padding-right: 1.5rem; }
+  .insert-types { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .insert-choices button, .form-actions button {
+    cursor: pointer; border: 1px solid var(--atlas-border); border-radius: .4rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    padding: .45rem .65rem; font: inherit; font-size: .85rem;
+  }
+  .insert-choices .close-insert {
+    position: absolute; top: .22rem; right: .25rem;
+    padding: .15rem .42rem; border: 0;
+  }
+  .selection-bubble {
+    position: absolute; z-index: 25; display: flex; align-items: center;
+    width: max-content; max-width: 100%; gap: .15rem; padding: .25rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface); box-shadow: 0 7px 26px #0002;
+  }
+  .selection-bubble button {
+    cursor: pointer; background: transparent; border: 0;
+    color: var(--atlas-text); border-radius: .3rem;
+    padding: .38rem .55rem; font: inherit; font-size: .85rem;
+  }
+  .selection-bubble button:hover { background: var(--atlas-bg); }
+  .editor-canvas { padding: 1.3rem 0 1.5rem; min-height: 11rem; }
+  .editorial .editor-canvas { font-family: Georgia, 'Times New Roman', serif; font-size: 1.14rem; line-height: 1.8; }
+  :global(.atlas-story-rich-document) {
+    min-height: 10rem; outline: none; overflow-wrap: anywhere; line-height: 1.7;
+  }
+  :global(.atlas-story-rich-document:focus-visible) { outline: none; }
+  :global(.atlas-story-rich-document > [data-atlas-key]) {
+    /* Space for the border-attached tabs between neighboring blocks.
+       Text and image widths are unchanged and controls never cover text. */
+    margin-block: 1.2rem 2.4rem;
+  }
+  :global(.atlas-story-rich-document > .atlas-story-active-block) {
+    box-sizing: border-box; position: relative; isolation: isolate;
+    /* Identical styling for Markdown and image blocks, with no indentation
+       or change to text position. The image itself keeps its original size. */
+    margin-left: 0;
+  }
+  :global(.atlas-story-rich-document > .atlas-story-active-block::before) {
+    content: ''; position: absolute; pointer-events: none; z-index: -1;
+    inset: -.28rem -.28rem;
+    background: color-mix(in srgb, var(--atlas-accent) 5%, var(--atlas-surface));
+    border: 1px solid color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
+    border-radius: .45rem;
+  }
+  :global(.atlas-story-text) { min-width: 0; display: flow-root; }
+  :global(.atlas-story-inline-image) {
+    position: relative;
+    float: inline-start;
+    width: calc(var(--atlas-image-width, 50%) - .5rem);
+    margin: 0.2rem .5rem .45rem 0;
+  }
+  :global(.atlas-story-inline-image img),
+  :global(.atlas-story-image-frame img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--atlas-radius);
+  }
+  :global(.atlas-story-inline-image[data-image-placement='right']) {
+    float: right; margin-inline: .5rem 0;
+  }
+  :global(.atlas-story-inline-image[data-image-placement='center']) {
+    display: block; float: none; clear: both; margin-inline: auto;
+  }
+  :global(.atlas-story-image-frame) { position: relative; width: var(--atlas-image-width, 50%); }
+  :global([data-image-placement='center'] > .atlas-story-image-frame) { margin-inline: auto; }
+  :global([data-image-placement='right'] > .atlas-story-image-frame) { margin-inline-start: auto; }
+  :global(.atlas-story-rich-document p:not(li p)) { margin: 0 0 .85rem; }
+  :global(.atlas-story-rich-document li p) { margin: 0; }
+  :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
+  :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
+  :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }
+  :global(.atlas-story-rich-document a) { color: var(--atlas-accent); text-decoration: underline; }
+  :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }
+  :global(.atlas-story-figure) {
+    position: relative; margin: 1rem 0; padding: .15rem;
+    box-sizing: border-box; width: 100%; max-width: 100%;
+  }
+  :global(.atlas-story-image-placeholder) {
+    width: min(28rem, 100%); min-height: 27rem; box-sizing: border-box;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 1rem; border: 1px dashed var(--atlas-border);
+    border-radius: var(--atlas-radius); color: var(--atlas-muted);
+    font-size: .85rem;
+  }
+  :global(.atlas-story-image-action) {
+    position: absolute; top: .4rem; right: .4rem; z-index: 2;
+    border: 1px solid var(--atlas-border); border-radius: .45rem;
+    background: var(--atlas-surface); color: var(--atlas-text);
+    width: 2rem; height: 2rem; padding: 0; cursor: pointer; font: 1.1rem/1 system-ui, sans-serif;
+    box-shadow: 0 2px 9px #0002;
+  }
+  /* Image configuration is discoverable only on the selected image block.
+     The active decoration is shared with selected Markdown blocks. */
+  :global(.atlas-story-figure .atlas-story-image-action) {
+    opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  :global(.atlas-story-figure.atlas-story-active-block .atlas-story-image-action) {
+    opacity: 1; visibility: visible; pointer-events: auto;
+  }
+  :global(.atlas-story-image-action:hover) { border-color: var(--atlas-accent); }
+  :global(.atlas-story-figure.ProseMirror-selectednode) {
+    /* Avoid default ProseMirror outline competing with the Atlas highlight. */
+    outline: none;
+  }
+  :global(.atlas-story-figure figcaption) {
+    color: var(--atlas-muted); margin-top: .5rem; font: .85rem/1.5 system-ui, sans-serif;
+  }
+  :global(.atlas-story-unsupported) {
+    border: 1px dashed var(--atlas-border); border-radius: .4rem;
+    color: var(--atlas-muted); padding: .65rem; margin-block: .7rem; font-size: .85rem;
+  }
+  .image-form, .link-form, .inline-image-form, .delete-confirm {
+    display: grid; gap: .45rem; padding: .8rem; margin: .5rem 0 1rem;
+    border: 1px solid var(--atlas-border); border-radius: .6rem;
+    background: var(--atlas-surface);
+  }
+  .link-form, .image-form, .inline-image-form {
+    position: absolute; z-index: 35; width: min(21rem, 100%);
+    max-width: 100%; box-sizing: border-box; margin: 0;
+    box-shadow: 0 9px 30px #0003;
+  }
+  .image-form { width: min(22rem, 100%); }
+  .delete-confirm {
+    position: absolute; z-index: 45;
+    width: min(19rem, 100%); max-width: 100%;
+    box-sizing: border-box; margin: 0;
+    box-shadow: 0 9px 30px #0003;
+    border-color: var(--atlas-focus);
+  }
+  :global(.atlas-story-rich-document > .atlas-story-pending-delete) {
+    outline: 2px solid var(--atlas-focus);
+    outline-offset: 2px;
+    border-radius: .3rem;
+  }
+  .delete-confirm p { margin: .1rem 0; color: var(--atlas-muted); overflow-wrap: anywhere; }
+  .form-actions .destructive { color: #b32318; border-color: #b32318; }
+  .image-form h3 { margin: 0 0 .25rem; }
+  .image-form label, .link-form label, .inline-image-form label { font-size: .85rem; font-weight: 600; }
+  .image-form label span { font-weight: 400; color: var(--atlas-muted); }
+  .image-form input, .image-form textarea, .link-form input, .inline-image-form input {
+    box-sizing: border-box; width: 100%; padding: .6rem;
+    border-radius: .4rem; border: 1px solid var(--atlas-border);
+    background: var(--atlas-bg); color: var(--atlas-text); font: inherit;
+  }
+  .input-error { margin: 0; color: #b32318; font-size: .85rem; }
+  .form-actions { display: flex; justify-content: flex-end; gap: .4rem; flex-wrap: wrap; }
+  .form-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent); }
+  .editor-note { margin: .6rem 0 0; color: var(--atlas-muted); font-size: .75rem; line-height: 1.5; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--atlas-focus); outline-offset: 2px;
+  }
+  @container (max-width: 430px) {
+    .boundary-add { width: 1.85rem; height: 1.85rem; }
+    .block-corner-controls { gap: 0; padding: .1rem; }
+    .block-corner-controls button { width: 1.75rem; height: 1.9rem; }
+    .format-toolbar { gap: .1rem; }
+    .format-toolbar button { min-height: 2.5rem; padding: .4rem .65rem; }
+  }
+</style>

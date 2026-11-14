@@ -124,6 +124,8 @@ export const sessionApiGuard: Plugin = {
       const nodeEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/(?:title|short-description)$`, 'i').test(path);
       const blockAdd = method === 'POST' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks$`, 'i').test(path);
       const blockEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}$`, 'i').test(path);
+      const blockMove = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}/position$`, 'i').test(path);
+      const blockRemove = method === 'DELETE' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}$`, 'i').test(path);
       const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
       const commentVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}/vote$`, 'i').test(path);
       const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/nodes/${guid}/vote$`, 'i').test(path);
@@ -139,7 +141,7 @@ export const sessionApiGuard: Plugin = {
 
       const globeWrite = method === 'POST' && path === '/atlas-session-api/globe/activity'
         || method === 'PUT' && path === '/atlas-session-api/globe/location';
-      const writable = globeWrite || nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
+      const writable = globeWrite || nodeEdit || blockAdd || blockEdit || blockMove || blockRemove || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
         || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation|confirm-email|forgot-password|reset-password)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))

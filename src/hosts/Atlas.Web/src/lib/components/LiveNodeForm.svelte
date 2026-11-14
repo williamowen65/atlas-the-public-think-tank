@@ -29,12 +29,14 @@
     succeeded; it does not itself close the form.
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { putDraft, deleteDraft, listDrafts } from '../api/privateDrafts';
+  import type { Community } from '../api/communities';
   import NodeForm, { type NodeDraft } from './NodeForm.svelte';
   import SessionControl from './SessionControl.svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
-  import { readTypes, type NodeType } from '../api/nodePage';
+  import { readTypes, readJson, type ContentBlock, type NodeType } from '../api/nodePage';
+  import { blockRequest, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readDiscovery, discoveryCard } from '../api/discovery';
   let {
@@ -120,6 +122,17 @@
    * Successfully created node ID; nonempty text switches to the success/open-node view.
    */
   let createdId = $state('');
+  // If block composition fails after node creation, retry the same node, never create a duplicate.
+  let pendingNodeId = $state('');
+  let communities = $state<Community[]>([]);
+  let communitiesLoaded = $state(false);
+  let communityError = $state(false);
+  let loadingCommunities = $state(false);
+  const attemptedCommunities = new Set<string>();
+  const linkedCommunities = new Set<string>();
+  let seedBlockId = '';
+  let seedRemoved = false;
+  let publishedBlocks: Record<number, string> = {};
   /**
    * Saved custom-type ID plus its input key, reused on unchanged retries after node
    * creation fails.
@@ -238,6 +251,32 @@
     void load();
     return () => controller?.abort();
   });
+  async function loadCommunities() {
+    const request = signal();
+    loadingCommunities = true;
+    communityError = false;
+    try {
+      const available: Community[] = [];
+      for (let offset = 0; ; offset += 50) {
+        const page = await readJson<Community[]>(apiBase, `communities?offset=${offset}&size=50`, request);
+        if (!Array.isArray(page)) throw new Error('Invalid community catalog.');
+        available.push(...page.filter((entry) => entry.status === 'Active'));
+        if (page.length < 50) break;
+      }
+      communitiesLoaded = true;
+      communities = available.sort((left, right) => left.name.localeCompare(right.name));
+    } catch {
+      if (!controller.signal.aborted) communityError = true;
+    } finally {
+      loadingCommunities = false;
+    }
+  }
+  $effect(() => {
+    if (participantId && !loading && !error && !communitiesLoaded && !loadingCommunities && !communityError) {
+      // Read independently so an unavailable catalog never blocks node authoring.
+      untrack(() => void loadCommunities());
+    }
+  });
   const openCreated = () => {
     if (onCreated) onCreated(createdId);
     else window.location.assign(`/nodes?id=${encodeURIComponent(createdId)}`);
@@ -245,6 +284,11 @@
   // Custom-type creation and node creation are separate writes. Reuse a saved type on an unchanged retry.
   async function save(draft: NodeDraft) {
     if (!participantId || submitting || createdId) return;
+    const desired: AuthorBlock[] = draft.blocks?.length
+      ? draft.blocks
+      : [{ key: 'legacy', kind: 'markdown', text: draft.markdown, url: '', caption: '' }];
+    const validation = validateAuthorBlocks(desired);
+    if (validation) { saveError = validation; return; }
     submitting = true;
     saveError = '';
     try {
@@ -266,31 +310,73 @@
         }
       }
       if (!typeId) throw new Error('Select a node type.');
-      const result = await apiRequest<{ id: string }>(
-        sessionBase,
-        'nodes',
-        'POST',
-        {
-          title: draft.title,
-          shortDescription: draft.shortDescription,
-          markdown: draft.markdown,
-          typeId,
-          parentId: draft.parentId ?? null,
-          requestedTypeIds: draft.requestedTypeIds,
-        },
-        signal(),
-      );
-      if (!result.id) throw new Error('The node response did not contain an ID.');
-      if (!controller.signal.aborted) {
-        createdId = result.id;
-        if (participantId && ownerDraftId) deleteDraft(participantId, ownerDraftId);
+      if (!pendingNodeId) {
+        // Node creation is currently atomic for its initial Markdown block. Additional typed
+        // blocks use existing author/CSRF-protected API mutations after that transaction.
+        const result = await apiRequest<{ id: string }>(
+          sessionBase, 'nodes', 'POST',
+          {
+            title: draft.title,
+            shortDescription: derivedExcerpt(desired, draft.title),
+            markdown: draft.markdown.trim() || derivedExcerpt(desired, draft.title) || draft.title,
+            typeId,
+            parentId: draft.parentId ?? null,
+            requestedTypeIds: draft.requestedTypeIds,
+          },
+          signal(),
+        );
+        if (!result.id) throw new Error('The node response did not contain an ID.');
+        pendingNodeId = result.id;
+      }
+      const contentPath = `nodes/${pendingNodeId}/description`;
+      if (!seedBlockId && !seedRemoved) {
+        const seed = await readJson<ContentBlock[]>(apiBase, contentPath, signal());
+        if (!seed[0]?.id) throw new Error('Could not load the initial content block.');
+        seedBlockId = seed[0].id;
+      }
+      // Use an ordered block sequence, not a second description. Remember each successful
+      // insertion so a retry after a network failure does not add duplicate blocks.
+      for (let index = 0; index < desired.length; index++) {
+        if (publishedBlocks[index]) continue;
+        const block = await apiRequest<ContentBlock>(
+          sessionBase, `${contentPath}/blocks`, 'POST',
+          blockRequest(desired[index], index),
+          signal(),
+        );
+        publishedBlocks[index] = block.id;
+      }
+      // Only remove the transitional node-creation Markdown after every desired block exists.
+      if (seedBlockId) {
+        await apiRequest(sessionBase, `${contentPath}/blocks/${seedBlockId}`, 'DELETE', undefined, signal());
+        seedBlockId = '';
+        seedRemoved = true;
+      }
+      const desiredCommunities = new Set(draft.communityIds ?? []);
+      const association = (id: string) =>
+        `communities/${encodeURIComponent(id)}/nodes/${encodeURIComponent(pendingNodeId)}`;
+      // A request can succeed before its response is lost. Remember attempts
+      // so retry can also remove a link the author has since deselected.
+      for (const id of attemptedCommunities) {
+        if (desiredCommunities.has(id)) continue;
+        await apiRequest(sessionBase, association(id), 'DELETE', undefined, signal());
+        linkedCommunities.delete(id);
+        attemptedCommunities.delete(id);
+      }
+      for (const id of desiredCommunities) {
+        if (linkedCommunities.has(id)) continue;
+        attemptedCommunities.add(id);
+        await apiRequest(sessionBase, association(id), 'PUT', undefined, signal());
+        linkedCommunities.add(id);
+      }
+      createdId = pendingNodeId;
+      if (participantId && ownerDraftId) {
+        try { deleteDraft(participantId, ownerDraftId); }
+        catch { /* Private draft cleanup is best-effort after successful publication. */ }
       }
     } catch (cause) {
       if (!controller.signal.aborted) {
-        saveError =
-          cause instanceof Error
-            ? cause.message
-            : 'Could not create node. Your draft has been kept.';
+        saveError = cause instanceof Error ? cause.message : 'Could not publish node.';
+        if (pendingNodeId) saveError += ' The node was created; retry will finish publishing without creating a duplicate.';
         if (cause instanceof ApiRequestError && cause.status === 401) {
           participantId = null;
           window.dispatchEvent(new Event('atlas-session-changed'));
@@ -332,6 +418,7 @@
       <fieldset class="draft-fields" disabled={submitting || !participantId}>
         <NodeForm
           {types}
+          {communities}
           parentId={savedDraft?.parentId ?? parentId}
           parentTitle={savedParentTitle ?? parentTitle}
           {initialTypeId}
@@ -346,6 +433,10 @@
           onSubmit={save}
         />
       </fieldset>
+      {#if communityError}
+        <p role="status">Could not load optional communities.</p>
+        <button type="button" onclick={() => void loadCommunities()}>Retry communities</button>
+      {/if}
       {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}
           >Save private draft</button
         > <a href="/my-drafts">My drafts</a>{/if}

@@ -43,6 +43,8 @@
 </script>
 
 <script lang="ts">
+  import NodeEditControl from './NodeEditControl.svelte';
+  import type { ContentBlock } from '../api/nodePage';
   import NodeCardContextBelow from './node-card-versions/NodeCardContextBelow.svelte';
   import NodeCardRibbon from './node-card-versions/NodeCardRibbon.svelte';
   import NodeCardRibbonCorner from './node-card-versions/NodeCardRibbonCorner.svelte';
@@ -57,6 +59,11 @@
     /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
   } = $props();
+  let saved = $state<{ id: string; title: string; shortDescription: string; blocks: ContentBlock[] }>();
+  const current = $derived(saved?.id === props.node.id ? saved : undefined);
+  const node = $derived(current
+    ? { ...props.node, title: current.title, description: current.shortDescription }
+    : props.node);
 </script>
 
 <!--
@@ -66,10 +73,13 @@
 
 {#if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
-{:else if presentation === 'mobile-experiment'}
-  <NodeCardRibbonCorner {...props} mobileLayout />
-{:else if presentation === 'ribbon-corner'}
-  <NodeCardRibbonCorner {...props} />
+{:else if presentation === 'mobile-experiment' || presentation === 'ribbon-corner'}
+  <NodeCardRibbonCorner {...props} {node} blocks={current?.blocks} mobileLayout={presentation === 'mobile-experiment'}>
+    {#snippet cornerControl()}
+      <NodeEditControl corner {node} apiBase={props.apiBase} average={props.average} totalVotes={props.totalVotes}
+        onSaved={(update) => saved = { id: node.id, ...update }} />
+    {/snippet}
+  </NodeCardRibbonCorner>
 {:else if presentation === 'ribbon-split'}
   <NodeCardRibbonSplit {...props} />
 {:else if presentation === 'ribbon-responsive'}

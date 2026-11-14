@@ -58,13 +58,14 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story');
   await page.getByLabel('Title', { exact: true }).fill('A root idea');
-  await page.getByLabel('Short description', { exact: true }).fill('A short authored summary.');
   await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
-  await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
-  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Supporting content');
-  await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Revised content');
-  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Revised content');
+  await page.getByLabel('Edit Markdown').check();
+  await page.getByLabel('Text (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
+  await page.getByText('Preview text', { exact: true }).click();
+  await expect(page.getByText('Supporting content', { exact: true })).toBeVisible();
+  await page.getByLabel('Text (Markdown)', { exact: true }).fill('## Revised content');
+  await expect(page.getByText('Revised content', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
   // Creation drafts have no voting interaction.
   await expect(page.getByRole('spinbutton')).toHaveCount(0);

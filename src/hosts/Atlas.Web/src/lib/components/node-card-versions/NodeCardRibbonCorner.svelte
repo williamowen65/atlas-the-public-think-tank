@@ -39,7 +39,9 @@
 <script lang="ts">
   import { relativeDate } from '../../format/relativeDate';
   import { bottomCornerAction } from '../../actions/bottomCornerAction';
-  import NodeEditControl from '../NodeEditControl.svelte';
+  import type { Snippet } from 'svelte';
+  import type { ContentBlock } from '../../api/nodePage';
+  import FeedBlockPreview from '../FeedBlockPreview.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -48,6 +50,12 @@
   import type { NodeCardProps } from './types';
   let {
     mobileLayout = false,
+    cornerControl,
+    headerFields,
+    authoringBody,
+    authoringFooter,
+    blocks,
+    draft = false,
     reactionControls,
     onOpenProfile,
     voting,
@@ -67,6 +75,14 @@
   }: NodeCardProps & {
     /** Experimental mobile feed layout; desktop and full node detail remain unchanged. */
     mobileLayout?: boolean;
+    /** Feed owner actions are supplied by NodeCard. */
+    cornerControl?: Snippet;
+    headerFields?: Snippet;
+    authoringBody?: Snippet;
+    authoringFooter?: Snippet;
+    /** Draft content or freshly saved content, when already available. */
+    blocks?: ContentBlock[];
+    draft?: boolean;
   } = $props();
   const instance = $props.id();
   // Prefer structured contribution types; use the text summary only for older projections.
@@ -88,24 +104,16 @@
 -->
 
 <article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
-    {#if editOpensDetail}
-      <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
-    {:else}
-      <NodeEditControl
-        corner
-        nodeId={node.id}
-        authorId={node.authorId}
-        {apiBase}
-        onSaved={(update) => {
-          node = { ...node, title: update.title, description: update.shortDescription };
-        }}
-      />
-    {/if}
+  {#if editOpensDetail}
+    <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
+  {:else}
+    {@render cornerControl?.()}
+  {/if}
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
       <Breadcrumb
-        items={node.breadcrumb}
-        originId={node.id}
+        items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
+        originId={draft ? undefined : node.id}
         {apiBase}
         {onNavigate}
         hasMore={hasMoreAncestors}
@@ -114,12 +122,16 @@
     </div>
   {/if}
   <header>
-    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-    <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
+    {#if headerFields}
+      <div id={`${instance}-title`}>{@render headerFields()}</div>
+    {:else}
+      <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
+      <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
+    {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
       <span
-        ><span class="by-prefix">By </span>{#if node.authorId}<a
+        ><span class="by-prefix">{'By '}</span>{#if node.authorId && !draft}<a
             href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
             onclick={(event) => {
               if (onOpenProfile && node.authorId) {
@@ -137,58 +149,68 @@
         })}</time
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span>
-        <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span><CommunityLinks
+        <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span>
+        {#if draft}{node.communities.join(', ')}{:else}<CommunityLinks
           nodeId={node.id}
           allowJoin={mobileLayout}
           names={node.communities}
-        />{/if}
+        />{/if}{/if}
     </p>
   </header>
 
-  <div class="body">
-    <aside class="dial" aria-label="Importance rating">
-      {#if voting}{@render voting()}{:else}<VotingDial
-          label="Node importance"
-          {value}
-          {average}
-          {totalVotes}
-          disabled={node.status === 'Archived'}
-          onChange={onVote}
-        />{/if}
-    </aside>
-    <p class="description" id={`${instance}-description`} use:bottomCornerAction>
-      <span class="read-more"
-        ><ActionButton
-          label="Read more"
-          disabled={!onReadMore}
-          onActivate={() => onReadMore?.(node.id)}
-        /></span
-      >{node.description}
-    </p>
-    {#if node.requestedTypes.length}
-      <p class="invitation">
-        Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
-      </p>
-    {/if}
-  </div>
-  <div class="card-details">
-    {@render reactions()}
-    <div class="navigation-details">
-      {@render comments()}
-      {#each node.childTypes ?? [] as contribution}<span
-          class="navigation-separator"
-          aria-hidden="true">·</span
-        ><button
-          class="text-action connection-summary"
-          type="button"
-          disabled={!onChildType}
-          onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
-        >{/each}
-      {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
-        ><span class="text-action connection-summary">{label}</span>{/each}
+  {#if authoringBody}
+    <div class="body authoring-body">{@render authoringBody()}</div>
+    {@render authoringFooter?.()}
+  {:else}
+    <div class="body">
+      <aside class="dial" aria-label="Importance rating">
+        {#if voting}{@render voting()}{:else}<VotingDial
+            label="Node importance"
+            {value}
+            {average}
+            {totalVotes}
+            disabled={draft || node.status === 'Archived'}
+            onChange={onVote}
+          />{/if}
+      </aside>
+      {#if node.isHidden}
+        {@render legacyDescription(node.description)}
+      {:else}
+        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} {apiBase} {blocks}
+          onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
+      {/if}
     </div>
-  </div>
+    <div class="card-details">
+      {@render reactions()}
+      <div class="navigation-details">
+        {@render comments()}
+        {#each node.childTypes ?? [] as contribution}<span
+            class="navigation-separator"
+            aria-hidden="true">·</span
+          ><button
+            class="text-action connection-summary"
+            type="button"
+            disabled={!onChildType}
+            onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
+          >{/each}
+        {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
+          ><span class="text-action connection-summary">{label}</span>{/each}
+      </div>
+    </div>
+  {/if}
 </article>
+
+{#snippet legacyDescription(text: string)}
+  <div class="description" id={`${instance}-description`} use:bottomCornerAction>
+    <span class="read-more"
+      ><ActionButton
+        label="Read more"
+        disabled={!onReadMore}
+        onActivate={() => onReadMore?.(node.id)}
+      /></span
+    >{text}
+  </div>
+{/snippet}
 
 {#snippet reactions()}
   {#if reactionControls}{@render reactionControls()}{:else}
@@ -351,6 +373,28 @@
     display: flow-root;
   }
 
+  .authoring-body { padding-bottom: var(--card-padding); }
+
+  .body:has(> :global(.has-slides)) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0 var(--dial-text-gap);
+    margin-bottom: var(--atlas-paragraph-gap, 0.65rem);
+    .dial { float: none; margin-right: 0; margin-bottom: 0; }
+  }
+
+  // Let the dial set the grid row height. Slide contents are clipped inside
+  // that row and cannot make the card grow when the active block changes.
+  @media (min-width: 561px) {
+    .body:has(> :global(.has-slides)) > :global(.has-slides) {
+      align-self: stretch;
+      display: flex;
+      contain: size;
+      min-block-size: calc(var(--atlas-feed-preview-height, 8.5rem) + 2.75rem);
+    }
+  }
+
   .dial {
     float: left;
     margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
@@ -368,12 +412,6 @@
     margin: var(--corner-top, 0px) 0 0 0.75rem;
     shape-outside: inset(var(--corner-top, 0px) 0 0 0);
     white-space: normal;
-  }
-
-  .invitation {
-    clear: both;
-    font-size: 0.9rem;
-    color: var(--atlas-muted);
   }
 
   .text-action {
@@ -425,6 +463,7 @@
       // The button's existing right float lets text occupy the remaining width.
       .body { display: flow-root; }
       .description { display: block; }
+      .body:has(> :global(.has-slides)) { display: block; }
       .dial { display: contents; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }

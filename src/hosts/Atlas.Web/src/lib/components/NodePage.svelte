@@ -272,8 +272,9 @@
 <article class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
         node = { ...node, title: update.title, description: update.shortDescription };
@@ -294,7 +295,7 @@
     <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
     <h1><span class="title-type">{`${node.typeName}: `}</span>{node.title}</h1>
     <p class="byline">
-      <span class="by-prefix">By </span>{#if node.authorId}<a
+      <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {
@@ -336,9 +337,17 @@
           disabled
         />{/if}
     </aside>{/if}
-    <p class="description">{node.description}</p>
+    <div class="description">
+      {#if blocks.some((block) => block.kind !== 'markdown' || !!block.content.markdown?.trim())}
+        <ContentBlocks {blocks} />
+      {:else if node.description}
+        <!-- Compatibility for older nodes whose Content document is blank. -->
+        <p>{node.description}</p>
+      {:else}
+        <ContentBlocks {blocks} />
+      {/if}
     </div>
-    <ContentBlocks {blocks} />
+    </div>
   </div>
   {#if !inspectionOnly}
   {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div

@@ -29,11 +29,15 @@
 <script lang="ts">
   import type { NodeDraft } from './nodeDraft.types';
   import { untrack } from 'svelte';
-  import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
-  import MarkdownContent from './MarkdownContent.svelte';
+  import type { BreadcrumbItem } from './Breadcrumb.svelte';
+  import NodeAuthoringCard from './NodeAuthoringCard.svelte';
+  import type { NodeCardData } from './node-card-versions/types';
+  import { derivedExcerpt, newAuthorBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import type { NodeType } from '../api/nodePage';
   let {
     initialDraft,
+    communities = [],
+    previewReactions = [],
     types,
     parentId,
     parentTitle,
@@ -46,6 +50,8 @@
   }: {
     /** Available node types and their singular/plural display labels. */
     types: NodeType[];
+    communities?: { id: string; name: string }[];
+    previewReactions?: NodeCardData['reactions'];
     /**
      * Seed values for editable fields. Captured once when the form is created; later prop changes
      * do not overwrite user edits.
@@ -82,13 +88,14 @@
    */
   let title = $state(startingDraft?.title ?? '');
   /**
-   * Working plain-text introduction shown on cards.
+   * Ordered editor blocks are the node body; no separately authored introduction.
    */
-  let shortDescription = $state(startingDraft?.shortDescription ?? '');
-  /**
-   * Working Markdown source used by the content preview and submission snapshot.
-   */
-  let markdown = $state(startingDraft?.markdown ?? '');
+  let blocks = $state<AuthorBlock[]>(
+    startingDraft?.blocks?.length
+      ? startingDraft.blocks
+      : [newAuthorBlock('markdown', startingDraft?.markdown ?? '')],
+  );
+  let blockError = $state('');
   /**
    * Selected catalog type ID, or new for custom-type creation.
    */
@@ -101,6 +108,7 @@
    * Current contribution-type picker value, reset after adding a choice.
    */
   let requestedType = $state('');
+  let communityIds = $state<string[]>(startingDraft?.communityIds ?? []);
   /**
    * Parent ancestry plus the immediate parent, used by the child-draft breadcrumb.
    */
@@ -135,14 +143,42 @@
   $effect(() => {
     if (!typeId && types.length) typeId = initialTypeId || types[0].id;
   });
+  const newTypeOption = 'Define a new node type…';
+  const selectedTypeName = $derived(types.find((type) => type.id === typeId)?.name);
+  const selectedTypeLabel = $derived(typeId === 'new' ? newTypeOption : selectedTypeName ?? '');
+  const createdAt = new Date().toISOString();
+  const preview = $derived<NodeCardData>({
+    id: instance,
+    title: title.trim() || 'Untitled node',
+    typeName: typeId === 'new'
+      ? typeName.trim() || 'New node type'
+      : selectedTypeName ?? 'Node',
+    authorName: 'You',
+    createdAt,
+    description: '',
+    breadcrumb: path,
+    communities: communityIds.map((id) => communities.find((community) => community.id === id)?.name ?? 'Unavailable community'),
+    related: [],
+    requestedTypes: [],
+    childTypes: types.filter((type) => requestedTypeIds.includes(type.id)).map((type) => ({
+      typeId: type.id,
+      label: `0 ${type.pluralName ?? type.name}`,
+      count: 0,
+    })),
+    reactions: previewReactions,
+    commentCount: 0,
+    status: 'Active',
+  });
   // Build a normalized snapshot for preview/submission without mutating the caller’s initial draft.
   function draft(): NodeDraft {
     return {
       title: title.trim(),
-      shortDescription: shortDescription.trim(),
-      markdown,
+      shortDescription: derivedExcerpt(blocks, title),
+      markdown: blocks.find((block) => block.kind === 'markdown')?.text ?? derivedExcerpt(blocks, title),
+      blocks,
       typeId: typeId === 'new' ? null : typeId,
       requestedTypeIds,
+      communityIds,
       parentId,
       ...(typeId === 'new'
         ? { newType: { name: typeName.trim(), description: typeDescription.trim(), autoPluralize } }
@@ -155,35 +191,43 @@
 </script>
 
 <!--
-  Layout: Optional parent context leads into type/title, introduction and Markdown editing;
+  Layout: Optional parent context leads into type/title and sequential block editing;
   preview and contribution requests precede the submit actions.
 -->
 
 <form
-  class="node-form atlas-panel"
+  class="node-form"
   aria-label={parentId ? 'Create child node' : 'Create root node'}
   onsubmit={(event) => {
     event.preventDefault();
+    blockError = validateAuthorBlocks(blocks) ?? '';
+    if (blockError) return;
     onSubmit(draft());
   }}
 >
-  {#if path.length}<div class="ribbon-context"><Breadcrumb items={path} /></div>{/if}
-  <header>
-    <p class="note">{parentId ? 'Add a child node' : 'Create a root node'} · Draft</p>
+  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions}
+    disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
+  {#if blockError}<p role="alert">{blockError}</p>{/if}
+</form>
+
+{#snippet titleFields()}
     <div class="title-row">
       <div class="type-field">
-        <label for={`${instance}-type`}>Node type</label><select
+        <span aria-hidden="true">{selectedTypeLabel}</span>
+        <select
+          aria-label="Node type"
           use:focusAndScrollOnMount
           id={`${instance}-type`}
           bind:value={typeId}
           required
           >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
-            value="new">Define a new node type…</option
+            value="new">{newTypeOption}</option
           ></select
         >
       </div>
       <div class="title-field">
-        <label for={`${instance}-title`}>Title</label><input
+        <input
+          aria-label="Title"
           id={`${instance}-title`}
           bind:value={title}
           placeholder="Give your node a title"
@@ -205,37 +249,36 @@
           ><input type="checkbox" bind:checked={autoPluralize} /> Automatically pluralize this type</label
         >
       </fieldset>{/if}
-  </header>
-  <!-- Groups the short introduction separately from the full Markdown editor and preview. -->
-  <div class="intro">
-    <div class="summary">
-      <label for={`${instance}-short`}>Short description</label><textarea
-        id={`${instance}-short`}
-        bind:value={shortDescription}
-        placeholder="Introduce your idea…"
-        required
-        maxlength="280"
-        rows="5"
-        aria-describedby={`${instance}-remaining`}></textarea><small id={`${instance}-remaining`}
-        >{shortDescription.length}/280 characters</small
-      >
-    </div>
-  </div>
-  <div class="content-editor">
-    <label for={`${instance}-content`}>Content (Markdown)</label><textarea
-      id={`${instance}-content`}
-      bind:value={markdown}
-      placeholder="Develop your node here…"
-      required
-      maxlength="32000"
-      rows="6"></textarea>
-    <section aria-label="Content preview"><MarkdownContent text={markdown} /></section>
-  </div>
-  <!--
-    Contribution requests describe desired child types; they are separate from this node’s own
-    type.
-  -->
+{/snippet}
+
+{#snippet creationActions()}
   <footer>
+    {#if communities.length || communityIds.length}
+      <div class="contributions">
+        <label for={`${instance}-community`}>Communities (optional)</label>
+        <select id={`${instance}-community`} aria-describedby={`${instance}-community-help`}
+          onchange={(event) => {
+            const id = event.currentTarget.value;
+            if (id && !communityIds.includes(id)) communityIds = [...communityIds, id];
+            event.currentTarget.value = '';
+          }}>
+          <option value="">Add a community…</option>
+          {#each communities as community (community.id)}
+            <option value={community.id} disabled={communityIds.includes(community.id)}>{community.name}</option>
+          {/each}
+        </select>
+        <small id={`${instance}-community-help`}>Link to any number of communities, or leave this blank.</small>
+        {#if communityIds.length}
+          <ul aria-label="Linked communities">
+            {#each communityIds as id (id)}
+              {@const name = communities.find((community) => community.id === id)?.name ?? 'Unavailable community'}
+              <li>{name}<button type="button" aria-label={`Remove ${name}`}
+                onclick={() => communityIds = communityIds.filter((entry) => entry !== id)}>×</button></li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    {/if}
     <div class="contributions">
       <label for={`${instance}-requested`}>Requested contributions</label><select
         id={`${instance}-requested`}
@@ -266,7 +309,7 @@
   <div class="actions">
     <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
   </div>
-</form>
+{/snippet}
 
 <style lang="scss">
   .plural-choice {
@@ -286,21 +329,9 @@
     overflow-wrap: anywhere;
     scroll-margin-top: 1rem;
   }
-  .ribbon-context {
-    min-width: 0;
-    padding: 0.75rem 0 0;
-    margin-bottom: var(--atlas-card-padding, 1.25rem);
-    --atlas-breadcrumb-bottom-space: 0px;
-  }
-  header,
-  .intro,
-  .content-editor,
   footer,
   .actions {
     padding-inline: var(--atlas-card-padding, 1.25rem);
-  }
-  header {
-    padding-top: 0.75rem;
   }
   label {
     display: block;
@@ -311,19 +342,55 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    align-items: end;
+    align-items: center;
   }
   .type-field {
-    flex: 1 1 10rem;
+    position: relative;
+    flex: 0 0 auto;
     min-width: 0;
+    max-width: 100%;
+  }
+  /* Size the closed native select from its current label. The options stay
+     in the native popup, which can size independently of the control. */
+  .title-row :is(.type-field span, .type-field select, .title-field input) {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-field :is(span, select) {
+    /* Match the measured label's insets to the select's actual insets. */
+    padding: 0.6rem 2.6rem 0.6rem 0.6rem;
+  }
+  .type-field span {
+    display: block;
+    visibility: hidden;
+    white-space: nowrap;
+    overflow: hidden;
+    border: 1px solid transparent;
+  }
+  .type-field select {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    appearance: none;
+    color: var(--atlas-accent);
+  }
+  .type-field::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: 0.95rem;
+    top: 50%;
+    width: 0.48rem;
+    height: 0.48rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    color: var(--atlas-accent);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
   }
   .title-field {
     flex: 3 1 16rem;
     min-width: 0;
-  }
-  .title-field input {
-    font-size: 1.3rem;
-    font-weight: 600;
   }
   input,
   textarea,
@@ -351,25 +418,6 @@
     border: 1px solid var(--atlas-border);
     padding: 0.75rem;
     margin-top: 0.75rem;
-  }
-  .intro {
-    display: flex;
-    align-items: start;
-    gap: var(--atlas-dial-text-gap, 1rem);
-    margin-block: 1rem;
-  }
-  .summary {
-    flex: 1;
-    min-width: 0;
-  }
-  .content-editor {
-    min-width: 0;
-  }
-  section:empty {
-    display: none;
-  }
-  section {
-    margin-block: 1rem;
   }
   footer {
     display: flex;
@@ -411,19 +459,11 @@
   button:disabled {
     cursor: default;
   }
-  .note,
-  small {
-    color: var(--atlas-muted);
-    font-size: 0.85rem;
-  }
   :focus-visible {
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
   }
   @media (max-width: 380px) {
-    header,
-    .intro,
-    .content-editor,
     footer,
     .actions {
       padding-inline: var(--atlas-card-padding-narrow, 0.75rem);

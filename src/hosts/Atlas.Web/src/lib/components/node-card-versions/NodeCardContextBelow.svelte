@@ -70,8 +70,9 @@
 <article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
   <header>
     <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
         node = { ...node, title: update.title, description: update.shortDescription };
@@ -83,7 +84,7 @@
     </div>
     <h2 id={`${instance}-title`}>{node.title}</h2>
     <p class="byline">
-      By {#if node.authorId}<a
+      {'By '}{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {

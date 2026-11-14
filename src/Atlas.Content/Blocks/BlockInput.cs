@@ -14,10 +14,10 @@ public sealed record MarkdownInput(string Markdown) : BlockInput
     internal override ContentBlock Create(DateTimeOffset at) => new MarkdownTextBlock(Markdown, at);
     internal override void Apply(ContentBlock block, DateTimeOffset at) => Require<MarkdownTextBlock>(block).Update(Markdown, at);
 }
-public sealed record ImageInput(string Url, string AltText, string? Caption) : BlockInput
+public sealed record ImageInput(string Url, string AltText, string? Caption, string? Layout = null) : BlockInput
 {
-    internal override ContentBlock Create(DateTimeOffset at) => new ImageBlock(Url, AltText, Caption, at);
-    internal override void Apply(ContentBlock block, DateTimeOffset at) => Require<ImageBlock>(block).Update(Url, AltText, Caption, at);
+    internal override ContentBlock Create(DateTimeOffset at) => new ImageBlock(Url, AltText, Caption, at, Layout);
+    internal override void Apply(ContentBlock block, DateTimeOffset at) => Require<ImageBlock>(block).Update(Url, AltText, Caption, at, Layout);
 }
 public sealed record VideoInput(string Url, string? Caption) : BlockInput
 {

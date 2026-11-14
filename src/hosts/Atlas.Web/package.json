@@ -7,9 +7,12 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "predev": "npm run check:dev-proxy",
     "dev": "vite dev --host 0.0.0.0",
     "build": "npm run check && vite build",
+    "prestorybook": "npm run check:dev-proxy",
     "storybook": "storybook dev -p 6006 --host 127.0.0.1 --no-open --disable-telemetry",
+    "prebuild-storybook": "npm run check:dev-proxy",
     "build-storybook": "storybook build --disable-telemetry",
     "test": "playwright test",
     "test:ci": "npm run build && npm run build-storybook && npm test",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@floating-ui/dom": "^1.6.12",
     "@playwright/test": "1.58.2",
     "@storybook/addon-a11y": "10.6.3",
     "@storybook/addon-docs": "10.6.3",
@@ -33,6 +37,11 @@
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@tiptap/core": "^3.10.0",
+    "@tiptap/extension-bubble-menu": "^3.10.0",
+    "@tiptap/extension-floating-menu": "^3.10.0",
+    "@tiptap/pm": "^3.10.0",
+    "@tiptap/starter-kit": "^3.10.0",
     "@types/d3-geo": "^3.1.1",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^24.19.2",

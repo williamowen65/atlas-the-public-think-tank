@@ -64,6 +64,7 @@
     initialTotalVotes = 0,
     archived = false,
     mobileCompact = false,
+    preview = false,
     sessionBase = '/atlas-session-api',
   }: {
     /** ID of the node this component reads, displays, or modifies. */
@@ -79,6 +80,8 @@
     archived?: boolean;
     /** Collapse the mobile feed dial behind a rating summary; full node pages keep the dial. */
     mobileCompact?: boolean;
+    /** Render the same controls with supplied counts and without live actions. */
+    preview?: boolean;
     /**
      * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
      * control. The API returns the authoritative count and average.
@@ -192,6 +195,7 @@
   onMount(() => {
     average = initialAverage;
     totalVotes = initialTotalVotes;
+    if (preview) { loading = false; return; }
     void refresh()
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -330,7 +334,7 @@
 <div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
   {#if collapsedMode}
     <button class="rating-summary" bind:this={summaryButton} use:placeSummary type="button" aria-expanded={expanded}
-      disabled={archived || busy || loading}
+      disabled={preview || archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
       <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
@@ -350,7 +354,7 @@
     {average}
     {totalVotes}
     hasVoted={confirmed !== null}
-    disabled={archived || busy || loading}
+    disabled={preview || archived || busy || loading}
     onChange={choose}
     onCommit={requestRating}
     onCancel={cancelPending}
