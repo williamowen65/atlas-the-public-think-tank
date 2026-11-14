@@ -466,6 +466,24 @@
     currentEditor()?.commands.blur();
   }
 
+  export function textFormatting() {
+    const editor = currentEditor();
+    return {
+      heading: [2, 3, 4, 5, 6].find((level) => editor?.isActive('heading', { level })),
+      bold: editor?.isActive('bold') ?? false,
+      italic: editor?.isActive('italic') ?? false,
+      underline: editor?.isActive('underline') ?? false,
+    };
+  }
+
+  export function setTextHeading(level: 0 | 2 | 3 | 4 | 5 | 6) {
+    const editor = currentEditor();
+    if (!editor) return;
+    const command = editor.chain().focus();
+    if (level === 0) command.setParagraph().run();
+    else command.setHeading({ level }).run();
+  }
+
   export function formatText(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
     if (kind === 'link') openLinkForm();
     else format(kind, level);

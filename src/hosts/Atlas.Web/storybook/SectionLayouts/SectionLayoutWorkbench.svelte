@@ -36,6 +36,7 @@
   let sidebarOpen = $state(true);
   let photoDetails = $state<string | null>(null);
   let activeEditor = $state<ReturnType<typeof TiptapCanvas>>();
+  const textFormatting = $derived(activeEditor?.textFormatting());
   let workbench = $state<HTMLDivElement>();
   let alignmentMenu = $state<HTMLDivElement>();
   const alignmentMenuId = $props.id();
@@ -406,18 +407,19 @@
           <button type="button" disabled={!history.length} onclick={undo}>Undo</button>
         {:else}
           <div class="formatting" role="group" aria-label="Text formatting">
-            <select class="heading-select" aria-label="Heading level" title="Heading level" disabled={!activeEditor} onchange={(event) => {
-              const level = Number(event.currentTarget.value) as 2 | 3 | 4 | 5 | 6;
-              activeEditor?.formatText('heading', level);
-              event.currentTarget.value = '';
-            }}>
-              <option value="" disabled selected>Heading</option>
+            <select class="heading-select" class:active-heading={!!textFormatting?.heading}
+              aria-label="Heading level" title="Heading level" disabled={!activeEditor}
+              value={activeEditor ? textFormatting?.heading ?? 0 : ''}
+              onchange={(event) => activeEditor?.setTextHeading(Number(event.currentTarget.value) as 0 | 2 | 3 | 4 | 5 | 6)}>
+              <option value="" disabled>Heading</option>
+              <option value={0}>Paragraph</option>
               {#each [2, 3, 4, 5, 6] as level}<option value={level}>H{level}</option>{/each}
             </select>
             <div class="format-group" role="group" aria-label="Inline formatting">
               {#each formats as [command, label, short]}
                 <button class:italic={command === 'italic'} class:underline={command === 'underline'}
                   type="button" aria-label={label} title={label} disabled={!activeEditor}
+                  aria-pressed={command === 'link' ? undefined : textFormatting?.[command] ?? false}
                   onpointerdown={(event) => event.preventDefault()}
                   onclick={() => activeEditor?.formatText(command)}>
                   {#if command === 'link'}
@@ -583,28 +585,33 @@
         <button type="button" aria-label="Collapse editor controls" onclick={() => sidebarOpen = false}>×</button>
       </div>
       {#if !movingBlock && section}
-        <h3>Section {index + 1}</h3>
-        <div class="section-tools">
+        <div class="action-heading">
+          <h3>Section {index + 1}</h3>
+          <div class="reorder-actions" role="group" aria-label="Section order">
+            <button type="button" aria-label={`Move section ${index + 1} up`} title="Move section up"
+              disabled={index === 0} onclick={() => moveSection(section.id, -1)}>↑</button>
+            <button type="button" aria-label={`Move section ${index + 1} down`} title="Move section down"
+              disabled={index === draft.sections.length - 1} onclick={() => moveSection(section.id, 1)}>↓</button>
+          </div>
+        </div>
+        <div class="sidebar-actions" role="group" aria-label="Section actions">
+          <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
+          <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
           {#if index > 0}
             <button type="button" onclick={() => {
               remember();
               section.breakBefore = !section.breakBefore;
             }}>{section.breakBefore ? 'Remove section break' : 'Add section break'}</button>
           {/if}
-          <button type="button" aria-label={`Move section ${index + 1} up`} disabled={index === 0}
-            onclick={() => moveSection(section.id, -1)}>↑</button>
-          <button type="button" aria-label={`Move section ${index + 1} down`} disabled={index === draft.sections.length - 1}
-            onclick={() => moveSection(section.id, 1)}>↓</button>
-          <button type="button" onclick={() => { remember(); draft = duplicateSection(draft, section.id); }}>Duplicate section</button>
           {#if draft.sections.length > 1 && !draft.assignments.some((entry) => entry.sectionId === section.id)}
             <button type="button" onclick={() => deleteEmptySection(section.id)}>Delete empty section</button>
           {/if}
-          <button type="button" aria-expanded={layoutSection === section.id} onclick={() => openLayout(section.id)}>Change layout</button>
         </div>
         {#if layoutSection === section.id}{@render layoutEditor()}{/if}
       {/if}
       {#if !movingBlock && activeBlock && selectedAssignment}
-        <div class="block-tools">
+        <div class="sidebar-actions block-actions" role="group" aria-label="Block actions">
+          <h3>Block</h3>
           <button class="move-block" type="button"
             disabled={!!(mediaSection && mediaRow && rowWrap(draft, mediaSection, mediaRow.slots)) ||
               (draft.sections.length === 1 && !!mediaSection && !!mediaLayout &&
@@ -837,7 +844,7 @@
     .workbench { padding-inline: 0; }
     .node, .toolbar, .inspector { padding-inline: .65rem; }
   }
-  .toolbar, .buttons, .section-tools, .empty-slot, .block-tools { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+  .toolbar, .buttons, .empty-slot { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
   .toolbar { margin-bottom: .75rem; }
   .phone { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
   .node { container-type: inline-size; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius, .75rem); background: var(--atlas-surface); padding: clamp(.8rem, 3vw, 2.5rem); }
@@ -889,7 +896,11 @@
   .formatting button:hover:not(:disabled), .formatting button:focus-visible {
     background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
   }
-  .formatting button, .heading-select, .section-tools button, .block-tools button { min-width: 2rem; min-height: 2.5rem; }
+  .formatting button, .heading-select { min-width: 2rem; min-height: 2.5rem; }
+  .formatting button[aria-pressed="true"], .heading-select.active-heading {
+    color: var(--atlas-accent); border-color: var(--atlas-accent);
+    background: color-mix(in srgb, var(--atlas-accent) 15%, var(--atlas-surface));
+  }
   .formatting .italic { font-style: italic; }
   .formatting .underline { text-decoration: underline; }
   .formatting svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -915,14 +926,12 @@
     border-top: 1px solid color-mix(in srgb, var(--atlas-border) 40%, transparent);
   }
   .gallery-tools .add-gallery-image, .photo-actions { justify-self: start; }
-  .section-tools { margin-block-end: .75rem; }
   .grid { display: grid; grid-template-columns: var(--columns); gap: .75rem; align-items: stretch; }
   .edit-slot { position: relative; min-width: 0; border-radius: .25rem; }
   .edit-slot.active, .edit-slot:focus-within { outline: 1px solid var(--atlas-border); outline-offset: .2rem; }
   .edit-slot { display: grid; align-items: var(--slot-alignment); }
   .slot-content { min-width: 0; }
   .destination { position: absolute; inset-block-start: 0; inset-inline-end: 0; z-index: 4; border-color: var(--atlas-accent); }
-  .block-tools { margin-block-end: .75rem; }
   .photo-button { display: block; width: var(--photo-width, 100%); margin-inline: auto; padding: 0; border: 0; text-align: start; }
   .draggable-photo { cursor: grab; }
   .edit-slot :global(.image-drop-left) { box-shadow: inset 3px 0 var(--atlas-accent); }
@@ -938,7 +947,24 @@
   .sidebar-heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .65rem; }
   .editor-sidebar h2 { font-size: 1rem; margin: 0; }
   .editor-sidebar h3 { font-size: .9rem; margin: 0; }
-  .editor-sidebar > h3 { margin-bottom: .45rem; }
+  .action-heading, .reorder-actions, .sidebar-actions { display: flex; align-items: center; }
+  .action-heading { justify-content: space-between; gap: .5rem; }
+  .reorder-actions { gap: .15rem; }
+  .sidebar-actions { flex-wrap: wrap; gap: .15rem .35rem; padding-block: .15rem .45rem; }
+  .sidebar-actions button, .reorder-actions button {
+    border-color: transparent; min-height: 2.5rem; padding: .25rem .4rem;
+    font-size: .85rem; color: var(--atlas-accent);
+  }
+  .reorder-actions button { min-width: 2.5rem; font-size: 1rem; }
+  .sidebar-actions button:hover:not(:disabled), .reorder-actions button:hover:not(:disabled),
+  .sidebar-actions button[aria-expanded="true"] {
+    background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
+  }
+  .block-actions {
+    gap: .15rem .45rem;
+    border-top: 1px solid color-mix(in srgb, var(--atlas-border) 40%, transparent);
+  }
+  .block-actions h3 { margin-inline-end: auto; }
   .editor-sidebar p { margin: 0; }
   .editor-sidebar :global(label) { font-size: .875rem; font-weight: 600; }
   .editor-sidebar :global(input:not([type="range"])),
@@ -962,7 +988,7 @@
   .narrow .editor-frame.with-sidebar { display: block; padding-bottom: 39dvh; }
   .narrow .editor-sidebar { position: fixed; inset: auto .5rem .5rem; max-height: 38dvh; z-index: 10; }
   .edit-slot label, .editor-sidebar label, .layout-panel label { display: grid; gap: .25rem; }
-  .block-tools { align-items: end; font-size: .85rem; }
+
   .empty-slot { min-height: 4rem; justify-content: center; }
   .custom { display: grid; gap: .6rem; }
   .edit-photo { position: relative; min-width: 0; }
@@ -981,6 +1007,6 @@
   pre { overflow: auto; max-height: 28rem; padding: .75rem; background: var(--atlas-surface); border: 1px solid var(--atlas-border); }
   @container (max-width: 37rem) {
     .grid { grid-template-columns: minmax(0, 1fr); }
-    .formatting button, .section-tools button, .block-tools button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
+    .formatting button, .empty-slot button { min-height: 2.75rem; min-width: 2.75rem; }
   }
 </style>

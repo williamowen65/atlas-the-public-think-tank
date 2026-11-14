@@ -73,6 +73,19 @@ test('the editor formats a text slot and swaps blocks using the destination on t
   });
   await page.getByRole('button', { name: 'Bold', exact: true }).click();
   await expect(text.locator('strong')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await text.locator('strong').click();
+  for (const name of ['Italic', 'Underline']) {
+    const control = page.getByRole('button', { name, exact: true });
+    await expect(control).toHaveAttribute('aria-pressed', 'false');
+    await control.click();
+    await expect(control).toHaveAttribute('aria-pressed', 'true');
+  }
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await text.locator('strong').click();
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
 
   await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(1);
@@ -173,8 +186,14 @@ test('clicking away dismisses block controls and H6 survives preview', async ({ 
   await editor.locator('p').first().click();
   await expect(page.getByLabel('Image URL')).toHaveCount(0);
   const headings = page.getByRole('combobox', { name: 'Heading level' });
+  await expect(headings).toHaveValue('0');
   await headings.selectOption('6');
   await expect(editor.locator('h6')).toHaveCount(1);
+  await expect(headings).toHaveValue('6');
+  await headings.selectOption('0');
+  await expect(editor.locator('h6')).toHaveCount(0);
+  await headings.selectOption('6');
+  await expect(headings).toHaveValue('6');
   await page.getByRole('textbox', { name: 'Node title' }).click();
   await expect(headings).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(0);
