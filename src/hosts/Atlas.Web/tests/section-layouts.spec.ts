@@ -477,6 +477,14 @@ test('creative crop presets update the photo in the editor and both previews', a
   await expect(path).toHaveAttribute('d', keyboardPath!);
   await expect(handles).toHaveCount(0);
   await editPhoto.click();
+  const blobBounds = (await frame.boundingBox())!;
+  const edgePoint = await handles.locator('.edge').first().evaluate((edge: SVGPathElement) => {
+    const { x, y } = edge.getPointAtLength(edge.getTotalLength() / 2);
+    return { x, y };
+  });
+  await page.mouse.dblclick(blobBounds.x + edgePoint.x * blobBounds.width, blobBounds.y + edgePoint.y * blobBounds.height);
+  await expect(handles.getByRole('button')).toHaveCount(15);
+  await handles.getByRole('button', { name: 'Move added 2 blob anchor' }).press('ArrowLeft');
   await shape.selectOption('pill');
   await expect(handles).toHaveCount(0);
   await expect(frame).toHaveCSS('aspect-ratio', '2 / 1');

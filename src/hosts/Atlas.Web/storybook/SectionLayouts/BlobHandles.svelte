@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { blobCurve, blobLimits, bounded, type BlobSide, type BlobTangent } from './blobCurve';
+  import { blobCurve, blobLimits, blobSegment, bounded, insertBlobNode, type BlobSide, type BlobTangent } from './blobCurve';
   import { blobRadii, type PhotoFrame } from './sectionLayouts';
 
   let { frame, onChange }: {
@@ -38,7 +38,7 @@
     const boundedAngle = Math.abs(dx) + Math.abs(dy) < .001 ? node.value.angle : bounded(angle, -blobLimits.angle, blobLimits.angle, node.value.angle);
     // Project onto the allowed tangent so pulling across the anchor shortens the handle.
     const radians = (node.angle + boundedAngle) * Math.PI / 180;
-    const length = bounded(dx * Math.cos(radians) + dy * Math.sin(radians), blobLimits.minLength, blobLimits.maxLength, node.value[side]);
+    const length = bounded(dx * Math.cos(radians) + dy * Math.sin(radians), Math.min(blobLimits.minLength, node.value[side]), blobLimits.maxLength, node.value[side]);
     if (Math.abs(length - node.value[side]) < .0001 && Math.abs(boundedAngle - node.value.angle) < .01) return false;
     emitChange(index, { angle: boundedAngle, [side]: length }, first);
     return true;
@@ -66,7 +66,23 @@
       (event.clientY - bounds.top) / bounds.height + drag.offsetY, !drag.changed)) drag.changed = true;
   }
 
+  function addAnchor(event: MouseEvent, index: number) {
+    const bounds = overlay.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const next = insertBlobNode(nodes, index, {
+      x: (event.clientX - bounds.left) / bounds.width,
+      y: (event.clientY - bounds.top) / bounds.height,
+    });
+    if (next) onChange(next, true);
+  }
+
   function keydown(event: KeyboardEvent, index: number, side: Control) {
+    if (side === 'anchor' && event.shiftKey && event.key === 'Enter') {
+      event.preventDefault();
+      const next = insertBlobNode(nodes, index);
+      if (next) onChange(next, true);
+      return;
+    }
     const dx = event.key === 'ArrowLeft' ? -.012 : event.key === 'ArrowRight' ? .012 : 0;
     const dy = event.key === 'ArrowUp' ? -.012 : event.key === 'ArrowDown' ? .012 : 0;
     if (!dx && !dy) return;
@@ -78,6 +94,12 @@
 
 <div class="blob-handles" bind:this={overlay} role="group" aria-label="Blob shape handles">
   <svg viewBox="0 0 1 1" aria-hidden="true">
+    {#if nodes.length < blobLimits.maxNodes}
+      {#each nodes as node, index (node.name)}
+        <!-- svelte-ignore a11y_no_static_element_interactions (Shift+Enter on an anchor inserts on its outgoing edge.) -->
+        <path class="edge" d={blobSegment(nodes, index)} ondblclick={(event) => addAnchor(event, index)} />
+      {/each}
+    {/if}
     {#each nodes as node (node.name)}
       <line x1={node.incoming.x} y1={node.incoming.y} x2={node.outgoing.x} y2={node.outgoing.y} />
     {/each}
@@ -93,6 +115,7 @@
 {#snippet control(index: number, kind: Control, label: string)}
   {@const point = controlPoint(index, kind)}
   <button type="button" class:anchor={kind === 'anchor'} aria-label={label}
+    aria-keyshortcuts={kind === 'anchor' ? 'Shift+Enter' : undefined}
     style:left={point.x * 100 + '%'} style:top={point.y * 100 + '%'}
     onpointerdown={(event) => start(event, index, kind)}
     onpointermove={(event) => move(event, index, kind)}
@@ -105,6 +128,8 @@
 <style>
   .blob-handles { position: absolute; inset: 0 0 auto; margin-inline: auto; width: var(--photo-width, 100%); aspect-ratio: 1; pointer-events: none; }
   svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .edge { fill: none; stroke: transparent; stroke-width: 14px; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: copy; }
+  .edge:hover { stroke: #766aff80; }
   line { stroke: #766aff; stroke-width: 2px; vector-effect: non-scaling-stroke; }
   button { position: absolute; transform: translate(-50%, -50%); }
   button.anchor { z-index: 1; }

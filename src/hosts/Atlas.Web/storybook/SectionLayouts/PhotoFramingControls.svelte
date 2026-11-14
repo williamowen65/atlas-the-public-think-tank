@@ -44,7 +44,7 @@
     </label>
   {/if}
   {#if !layoutSetsFrame && crop.id === 'blob' && src}
-    <small>Drag the round handles to adjust the curve. Move the squares to reposition the anchors. Use arrow keys when a handle is focused.</small>
+    <small>Drag the round handles to adjust the curve. Move the squares to reposition the anchors. Double-click the outline to add an anchor, or press Shift+Enter on a focused square. Use arrow keys when a handle is focused.</small>
   {/if}
   {#if layoutSetsFrame || !('silhouette' in crop)}
     <label>Corners
