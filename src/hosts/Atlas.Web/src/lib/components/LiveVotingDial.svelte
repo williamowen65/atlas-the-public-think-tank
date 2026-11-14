@@ -352,7 +352,7 @@
         <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
         <span class="summary-count" aria-hidden="true">{formatVoteCount(totalVotes)}</span>
       </span>
-      <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
+      <span class="summary-label">{#if confirmed === null}Vote{:else}Voted<br />{confirmed}/10{/if}</span>
     </button>
     {/key}
   {/if}
@@ -484,6 +484,10 @@
     font: inherit;
     font-size: 0.8rem;
     cursor: pointer;
+  }
+  .summary-label {
+    line-height: 1.15;
+    text-align: center;
   }
   .summary-average {
     padding: 0.3rem 0.5rem;

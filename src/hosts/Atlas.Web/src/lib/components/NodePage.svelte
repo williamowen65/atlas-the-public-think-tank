@@ -321,7 +321,6 @@
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span> <span class="community-prefix">Community: </span> <CommunityLinks
           nodeId={node.id}
-          allowJoin
           names={node.communities}
         />{/if}
     </p>

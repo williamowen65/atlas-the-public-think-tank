@@ -171,7 +171,6 @@
         <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span>
         {#if draft}{node.communities.join(', ')}{:else}<CommunityLinks
           nodeId={node.id}
-          allowJoin={mobileLayout}
           names={node.communities}
         />{/if}{/if}
     </p>

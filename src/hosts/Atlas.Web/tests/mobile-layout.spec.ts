@@ -5,7 +5,7 @@ const communityId = 'a1000000-0000-4000-8000-000000000001';
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  // Real UI behavior with fixed API projections: membership writes are recorded below.
+  // Exercise the feed with fixed API responses.
   await page.route('**/atlas-public-api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.includes('/communities/node/')) return route.fulfill({ json: [
@@ -90,30 +90,19 @@ test('bottom navigation hides while reading down and returns when scrolling up',
   await expect(nav).toBeVisible();
 });
 
-test('joining from a card uses membership transport and updates other controls', async ({ page }) => {
-  let joined = false;
-  const writes: string[] = [];
-  await page.route('**/atlas-session-api/**', route => {
-    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
-    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
-    const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'demo' } });
-    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
-    if (path.endsWith('/communities/mine')) return route.fulfill({ json: joined ? [{ id: communityId, name: 'Orca recovery', isMember: true }] : [] });
-    if (path.endsWith('/membership')) {
-      writes.push(route.request().method());
-      expect(route.request().headers()['x-csrf-token']).toBeTruthy();
-      joined = true;
-      return route.fulfill({ status: 204 });
-    }
-    return route.fallback();
+for (const isMember of [false, true]) {
+  test(`mobile feed links to the community without membership controls (member: ${isMember})`, async ({ page }) => {
+    await page.route('**/atlas-session-api/auth/session', route => route.fulfill({ json: { participantId: 'demo' } }));
+    await page.route('**/atlas-session-api/communities/mine', route => route.fulfill({
+      json: isMember ? [{ id: communityId, name: 'Orca recovery', isMember: true }] : [],
+    }));
+    await page.goto('http://127.0.0.1:4173/');
+    const card = page.locator('article.node-card').first();
+    await expect(card.getByRole('link', { name: 'Orca recovery' })).toHaveAttribute('href', `/communities/${communityId}`);
+    await expect(card.getByRole('button', { name: 'Join Orca recovery' })).toHaveCount(0);
+    await expect(card.getByText('Joined', { exact: true })).toHaveCount(0);
   });
-  await page.goto('http://127.0.0.1:4173/');
-  const card = page.locator('article.node-card').first();
-  await card.getByRole('button', { name: 'Join Orca recovery', exact: true }).click();
-  await expect(card.getByText('Joined', { exact: true })).toBeVisible();
-  expect(writes).toEqual(['PUT']);
-});
+}
 
 for (const rating of [0, 6]) {
   test(`saved mobile rating ${rating} collapses the dial and remains available for editing`, async ({ page }) => {
@@ -142,7 +131,7 @@ for (const rating of [0, 6]) {
     for (let i = 0; i < rating; i++) await page.keyboard.press('ArrowUp');
     await page.keyboard.press('Enter');
     await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
-    await expect(summary).toContainText(`Voted ${rating}/10`);
+    await expect(summary.locator('.summary-label')).toHaveText(new RegExp(`^Voted\n${rating}/10$`), { useInnerText: true });
     await expect(summary).toHaveAttribute('aria-expanded', 'false');
     await expect(dial).toHaveCount(0);
     await expect(summary).toBeFocused();
