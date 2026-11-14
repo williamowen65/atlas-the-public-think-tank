@@ -146,7 +146,6 @@
             <span class="draft-type">{typeName(draft)}</span>
             <span class="draft-title">{draft.data.title || 'Untitled draft'}</span>
           </h2>
-          <p>{draft.data.shortDescription || 'No description yet.'}</p>
           <small>Saved {new Date(draft.updatedAt).toLocaleString()}</small>
           <div class="actions">
             <button onclick={() => void goto('/new?draft=' + encodeURIComponent(draft.id))}

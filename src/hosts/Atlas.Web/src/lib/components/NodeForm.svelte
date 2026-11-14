@@ -176,7 +176,6 @@
   function draft(): NodeDraft {
     return {
       title: title.trim(),
-      shortDescription: derivedExcerpt(blocks, title),
       markdown: blocks.find((block) => block.kind === 'markdown')?.text ?? derivedExcerpt(blocks, title),
       blocks,
       typeId: typeId === 'new' ? null : typeId,

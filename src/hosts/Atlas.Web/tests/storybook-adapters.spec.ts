@@ -169,7 +169,7 @@ test('application breadcrumb still switches API-loaded parents without story pro
                 authorName: 'Author',
                 createdAt: '2026-10-21T12:00:00Z',
                 status: 'Active',
-                shortDescription: 'Application breadcrumb regression.',
+                description: 'Application breadcrumb regression.',
                 commentCount: 0,
                 communities: '',
                 isHidden: false,

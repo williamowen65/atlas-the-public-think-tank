@@ -59,10 +59,10 @@
     /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
   } = $props();
-  let saved = $state<{ id: string; title: string; shortDescription: string; blocks: ContentBlock[] }>();
+  let saved = $state<{ id: string; title: string; blocks: ContentBlock[] }>();
   const current = $derived(saved?.id === props.node.id ? saved : undefined);
   const node = $derived(current
-    ? { ...props.node, title: current.title, description: current.shortDescription }
+    ? { ...props.node, title: current.title }
     : props.node);
 </script>
 

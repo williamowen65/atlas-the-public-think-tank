@@ -277,7 +277,7 @@
       {totalVotes}
       {apiBase}
       onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
+        node = { ...node, title: update.title };
         blocks = update.blocks;
       }}
     />{/if}

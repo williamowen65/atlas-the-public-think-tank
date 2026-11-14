@@ -77,7 +77,6 @@ export function validateAuthorBlocks(blocks: AuthorBlock[]): string | null {
   return null;
 }
 
-/** The legacy API still requires shortDescription; authors never manage a duplicate field. */
 export function derivedExcerpt(blocks: AuthorBlock[], title = ''): string {
   for (const block of blocks) {
     let value = block.kind === 'markdown' || block.kind === 'sectioned'

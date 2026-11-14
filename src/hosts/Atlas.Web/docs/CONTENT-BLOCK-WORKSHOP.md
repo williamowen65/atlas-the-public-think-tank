@@ -693,3 +693,29 @@ migrationBuilder.Sql(
 ```
 
 Run Atlas database setup after migration to rebuild the search projection and recreate the full-text index. If you have already saved sectioned nodes, backfill `CompositionSearchText` from the old extracted text in `Markdown` before rebuilding. The empty seeded database gets the new projection directly. Commit the migration, designer, and model snapshot before deployment.
+
+### Remove the short description
+
+After the sectioned content and search migrations, scaffold the removal from the solution root:
+
+```bash
+dotnet tool restore
+dotnet ef migrations add RemoveNodeShortDescription --project src/Atlas.Persistence --context AtlasDataContext --output-dir Migrations
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence --context AtlasDataContext
+```
+
+Review the generated drops for `NodeRows.ShortDescription` and `ModerationReportedSnapshotRows.ShortDescription`. Before dropping the node column in `Up`, drop its full-text index:
+
+```csharp
+migrationBuilder.Sql(
+    "IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.NodeRows')) DROP FULLTEXT INDEX ON dbo.NodeRows;",
+    suppressTransaction: true);
+```
+
+Run Atlas Admin database setup after migration to recreate the title-only node index, install the updated search procedure, and refresh the search projection. Discovery and public search use titles and searchable content blocks, including section prose, captions, and alt text. Run setup and seed together against a fresh local database:
+
+```bash
+dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database --seed-demo
+dotnet test tests/Atlas.Persistence.Tests
+dotnet test tests/Atlas.Api.Tests
+```

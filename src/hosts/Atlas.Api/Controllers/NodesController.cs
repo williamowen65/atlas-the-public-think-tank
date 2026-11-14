@@ -88,7 +88,6 @@ public sealed class NodesController(
             actor.ParticipantId,
             request.RequestedTypeIds.Select(x => new NodeTypeId(x)),
             request.ParentId is { } parent ? new NodeId(parent) : null,
-            request.ShortDescription,
             request.Composition
         );
 
@@ -101,14 +100,6 @@ public sealed class NodesController(
     public IActionResult Rename(Guid id, TextRequest request)
     {
         workflow.Rename(Load(id), actor.ParticipantId, request.Text);
-        return NoContent();
-    }
-
-    /// <summary>Update the authored card introduction without editing the content document.</summary>
-    [Authorize(Policy = AtlasPolicies.Member), HttpPut("{id:guid}/short-description")]
-    public IActionResult ChangeShortDescription(Guid id, ShortDescriptionRequest request)
-    {
-        workflow.ChangeShortDescription(Load(id), actor.ParticipantId, request.Text);
         return NoContent();
     }
 
@@ -212,7 +203,6 @@ public sealed class NodesController(
             publicReason = visibility.IsHidden ? visibility.PublicReason.ToString() : null,
             reviewRequested = visibility.IsHidden && visibility.ReviewRequested,
             title = node.Title.Value,
-            node.ShortDescription,
             typeId = node.TypeId.Value,
             authorId = node.AuthorId.Value,
             status = node.Status.ToString(),
@@ -231,10 +221,8 @@ public sealed record CreateNodeRequest(
     Guid TypeId,
     Guid? ParentId,
     [Required, MaxLength(50)] Guid[] RequestedTypeIds,
-    [Required, MaxLength(Node.ShortDescriptionMaxLength)] string ShortDescription,
     [MaxLength(512_000)] string? Composition = null
 );
 
-public sealed record ShortDescriptionRequest([Required, MaxLength(Node.ShortDescriptionMaxLength)] string Text);
 
 public sealed record TextRequest([Required, MaxLength(32000)] string Text);

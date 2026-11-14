@@ -11,7 +11,7 @@ namespace Atlas.Application;
 public sealed class NodeCreationService(INodeRepository nodes, IDocumentRepository documents)
 {
     public Node Create(string title, string markdown, NodeTypeId typeId, Guid authorId,
-        IEnumerable<NodeTypeId> requestedTypes, NodeId? parentId = null, string shortDescription = "", string? composition = null) =>
+        IEnumerable<NodeTypeId> requestedTypes, NodeId? parentId = null, string? composition = null) =>
         NodeTopologyBoundary.Execute(nodes, () =>
         {
             var at = AtlasTime.UtcNow;
@@ -21,7 +21,7 @@ public sealed class NodeCreationService(INodeRepository nodes, IDocumentReposito
             // while Content owns block/document construction. One timestamp is shared.
             var draft = composition is null ? content.PrepareMarkdown(markdown, at) : content.Prepare(new SectionedInput(composition), at);
             var node = graph.Prepare(title, new NodeDescriptionId(draft.Document.Id.Value),
-                typeId, authorId, requestedTypes, at, parentId, shortDescription);
+                typeId, authorId, requestedTypes, at, parentId);
             content.Save(draft);
             graph.Save(node);
             // The outer boundary commits before returning. The caller may then publish

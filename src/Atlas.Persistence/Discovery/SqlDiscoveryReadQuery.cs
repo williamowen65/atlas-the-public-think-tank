@@ -265,7 +265,6 @@ public sealed class SqlDiscoveryReadQuery(
                     .Select(type => type.Name).FirstOrDefault() ?? "Unknown",
                 AuthorName = db.ParticipantRows.Where(author => author.Id == node.AuthorId)
                     .Select(author => author.DisplayName).FirstOrDefault() ?? "Unknown",
-                node.ShortDescription,
                 node.Status,
                 node.CreatedAt,
                 CommentCount = db.CommentRows.Count(comment =>
@@ -301,7 +300,6 @@ public sealed class SqlDiscoveryReadQuery(
                 row.IsHidden)
             {
                 AuthorId = row.IsHidden && !showHidden ? null : metadata[row.NodeId].AuthorId,
-                ShortDescription = row.IsHidden && !showHidden ? row.Description : metadata[row.NodeId].ShortDescription,
                 ChildTypes = row.IsHidden && !showHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });

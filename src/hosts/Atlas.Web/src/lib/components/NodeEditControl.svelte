@@ -3,7 +3,7 @@
   import { editorSession } from '../api/editorSession';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readJson, type NodeDetail, type ContentBlock } from '../api/nodePage';
-  import { authorBlock, blockRequest, derivedExcerpt, supportedBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
+  import { authorBlock, blockRequest, supportedBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
   import type { NodeCardData } from './node-card-versions/types';
 
@@ -13,7 +13,7 @@
     average?: number | null;
     totalVotes?: number;
     apiBase?: string;
-    onSaved?: (update: { title: string; shortDescription: string; blocks: ContentBlock[] }) => void;
+    onSaved?: (update: { title: string; blocks: ContentBlock[] }) => void;
   } = $props();
 
   const instance = $props.id();
@@ -146,13 +146,9 @@
           await write(`/description/blocks/${desired[index].id}/position`, 'PUT', { index });
       }
 
-      // Compatibility only: the API/SQL projection still requires a short description.
-      // It is derived, never a second author-maintained text field.
-      const excerpt = derivedExcerpt(desired, nextTitle);
-      await write('/short-description', 'PUT', { text: excerpt });
       const persisted = await readJson<ContentBlock[]>(apiBase, `${path()}/description`, signal());
       setSaved(nextTitle, persisted);
-      onSaved?.({ title: nextTitle, shortDescription: excerpt, blocks: persisted });
+      onSaved?.({ title: nextTitle, blocks: persisted });
       notice = 'Changes published. Block order and identities are preserved.';
       try { localStorage.removeItem(draftKey()); draftAvailable = false; } catch { /* private storage optional */ }
     } catch (cause) {

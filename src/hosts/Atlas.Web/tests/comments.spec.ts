@@ -20,7 +20,7 @@ async function setup(page: Page) {
     if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/reactions') || url.pathname.endsWith('/description')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith(`/nodes/${node}`)) return route.fulfill({ json: { id: node, requestedTypeIds: [] } });
-    return route.fulfill({ json: { items: [{ nodeId: node, averageVote: null, voteCount: 0, card: { title: 'Comment discussion', shortDescription: 'A place to discuss', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', subNodes: 'None', communities: '', commentCount: 3, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ nodeId: node, averageVote: null, voteCount: 0, card: { title: 'Comment discussion', description: 'A place to discuss', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', subNodes: 'None', communities: '', commentCount: 3, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.route('**/atlas-session-api/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });

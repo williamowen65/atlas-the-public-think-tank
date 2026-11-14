@@ -54,8 +54,6 @@ public static class NodeCreationWorkflow
         Console.Write("Title: ");
         var title = Console.ReadLine();
 
-        Console.Write($"Short description (up to {Node.ShortDescriptionMaxLength} characters): ");
-        var shortDescription = Console.ReadLine();
 
         Console.Write("Full content (Markdown, optional): ");
         var description = Console.ReadLine();
@@ -84,7 +82,6 @@ public static class NodeCreationWorkflow
 
         try
         {
-            if (string.IsNullOrWhiteSpace(shortDescription)) throw new ArgumentException("A short description is required.");
             var node = new NodeCreationCoordinator(
                 nodes,
                 eventPublisher
@@ -95,8 +92,7 @@ public static class NodeCreationWorkflow
                 nodeType.Id,
                 authorParticipantId,
                 requestedSubNodeTypes.Select(type => type.Id),
-                parent?.Id,
-                shortDescription ?? string.Empty
+                parent?.Id
             );
 
             Console.WriteLine(

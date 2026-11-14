@@ -317,7 +317,6 @@
           sessionBase, 'nodes', 'POST',
           {
             title: draft.title,
-            shortDescription: derivedExcerpt(desired, draft.title),
             markdown: (!composition && draft.markdown.trim()) || derivedExcerpt(desired, draft.title) || draft.title,
             composition,
             typeId,

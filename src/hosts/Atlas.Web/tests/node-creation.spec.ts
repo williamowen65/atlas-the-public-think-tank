@@ -21,7 +21,7 @@ async function setup(page: Page, initiallySignedIn = false) {
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${parent}`) || url.pathname.endsWith(`/nodes/${created}`)) return route.fulfill({ json: { id: parent, requestedTypeIds: [idea] } });
     const id = url.searchParams.get('NodeId') ?? parent;
-    return route.fulfill({ json: { items: [{ nodeId: id, averageVote: null, voteCount: 0, card: { title: id === created ? 'Saved node' : 'Parent node', shortDescription: 'Introduction', typeName: 'Idea', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', childTypes: [{ typeId: idea, count: 0, label: '0 Ideas' }], communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ nodeId: id, averageVote: null, voteCount: 0, card: { title: id === created ? 'Saved node' : 'Parent node', typeName: 'Idea', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', childTypes: [{ typeId: idea, count: 0, label: '0 Ideas' }], communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.route('**/atlas-session-api/**', route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
@@ -82,7 +82,7 @@ for (const environment of ['storybook', 'spa']) {
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
     const save = writes.find(write => write.path.endsWith('/nodes'))!;
-    expect(save.body).toMatchObject({ title: 'Created through the frontend', shortDescription: 'The full content', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
+    expect(save.body).toMatchObject({ title: 'Created through the frontend', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
     expect(JSON.parse(String(save.body.composition))).toMatchObject({ version: 1, blocks: [{ kind: 'text', text: 'The full content' }] });
     expect(writes.some(write => write.path.includes('/description/blocks'))).toBe(false);
     expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);

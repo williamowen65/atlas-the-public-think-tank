@@ -9,7 +9,6 @@ const story = `http://127.0.0.1:6006/iframe.html?id=compositions-node-page--play
 
 async function setup(page: Page, participant: string | null = author) {
   let title = 'Editable node';
-  let shortDescription = 'Original introduction';
   let fail = false;
   let blocks = [{ id: originalBlock, kind: 'markdown', content: { markdown: 'Original Markdown' } }] as {
     id: string; kind: string;
@@ -25,13 +24,13 @@ async function setup(page: Page, participant: string | null = author) {
     if (path.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (path.endsWith(`/nodes/${node}`))
       return route.fulfill({ json: {
-        id: node, authorId: author, title, shortDescription, requestedTypeIds: [], status: 'Active',
+        id: node, authorId: author, title, requestedTypeIds: [], status: 'Active',
       } });
     return route.fulfill({ json: {
       items: [{
         nodeId: node, averageVote: null, voteCount: 0,
         card: {
-          title, shortDescription, typeName: 'Idea', authorName: 'Sam', authorId: author,
+          title, typeName: 'Idea', authorName: 'Sam', authorId: author,
           status: 'Active', createdAt: '2026-10-22T12:00:00Z',
           breadcrumb: '', childTypes: [], communities: '', commentCount: 0, isHidden: false,
         },
@@ -61,7 +60,6 @@ async function setup(page: Page, participant: string | null = author) {
     const body = (request.postDataJSON() ?? {}) as Record<string, unknown>;
     writes.push({ path, method, body });
     if (fail) return route.fulfill({ status: 403, json: {} });
-    if (path.endsWith('/short-description')) shortDescription = String(body.text);
     if (path.endsWith('/title')) title = String(body.text);
     if (path.endsWith('/description/blocks') && method === 'POST') {
       const saved = {

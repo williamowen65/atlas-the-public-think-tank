@@ -44,7 +44,7 @@ public sealed class WorkflowTests
             """;
         var store = new Store();
         var node = new Creation(store, store).Create("Sectioned node", "Fallback", store.Type.Id,
-            store.Actor, [], shortDescription: "A searchable paragraph.", composition: composition);
+            store.Actor, [], composition: composition);
         var document = ((IDocumentRepository)store).GetById(new DocumentId(node.DescriptionId.Value))!;
         var block = (SectionedBlock)store.GetBlockById(document.BlockIds.Single())!;
         Assert.AreEqual(composition, block.Composition);

@@ -7,7 +7,6 @@ export interface NodeDraft {
   title: string;
 
   /** Short introduction displayed on the node card and above full content. */
-  shortDescription: string;
 
   /** Markdown source for the node’s main content block. */
   markdown: string;

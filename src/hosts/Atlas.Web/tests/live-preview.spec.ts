@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story&args=presentation:ribbon-responsive';
 const item = (id: string, title: string, hidden = false) => ({
   nodeId: id, rank: 1, rankingScore: 1, voteCount: 12, averageVote: 7.5,
-  card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Full content that belongs on the detail page.', shortDescription: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
+  card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
 });
 
 test('live nodes support selection, search, paging and refresh without submitting votes', async ({ page }) => {
@@ -247,7 +247,7 @@ test('reaction pills are separate and absent reactions leave no container or gap
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
     ] });
-    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question', shortDescription: 'A longer introduction with useful context. '.repeat(5) } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question', description: 'A longer introduction with useful context. '.repeat(5) } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto(preview);
   const pills = page.locator('article .reaction-pill');
@@ -290,7 +290,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     if (path.includes('/communities/') || path.endsWith('/parents')) return route.fulfill({ json: [] });
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     const entry = item('b1000000-0000-4000-8000-000000000001', 'Layout comparison');
-    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, description: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.setViewportSize({ width: 1024, height: 1000 });
   await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:ribbon`);
@@ -417,7 +417,7 @@ test('corner action shares dial height and wraps text without blocking pointer i
     if (path.includes('/communities/') || path.endsWith('/parents')) return route.fulfill({ json: [] });
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     const entry = item('corner-node', 'Corner layout');
-    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: description } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, description } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto(preview.replace('&args=presentation:ribbon-responsive', ''));
   const card = page.locator('article');

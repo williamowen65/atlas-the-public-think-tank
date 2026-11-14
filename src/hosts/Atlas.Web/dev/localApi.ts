@@ -121,7 +121,7 @@ export const sessionApiGuard: Plugin = {
         || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
 
       // Permitted writes, grouped by feature. Login/register can be anonymous.
-      const nodeEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/(?:title|short-description)$`, 'i').test(path);
+      const nodeEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/title$`, 'i').test(path);
       const blockAdd = method === 'POST' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks$`, 'i').test(path);
       const blockEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}$`, 'i').test(path);
       const blockMove = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}/position$`, 'i').test(path);

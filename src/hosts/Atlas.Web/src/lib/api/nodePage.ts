@@ -71,7 +71,6 @@ export interface NodeDetail {
   title: string;
 
   /** Short introduction shown before full node content. */
-  shortDescription: string;
 
   /** Type IDs the author requests as contributions to this node. */
   requestedTypeIds: string[];

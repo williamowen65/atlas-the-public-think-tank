@@ -161,7 +161,6 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
         {
             Id = node.Id.Value,
             Title = node.Title.Value,
-            ShortDescription = node.ShortDescription,
             DescriptionId = node.DescriptionId.Value,
             TypeId = node.TypeId.Value,
             AuthorId = node.AuthorId.Value,
@@ -209,8 +208,7 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
             (storedNode.ParentNodeIds ?? [])
                 .Select(id => new NodeId(id)),
             storedNode.CreatedAt,
-            storedNode.UpdatedAt,
-            storedNode.ShortDescription
+            storedNode.UpdatedAt
         );
     }
 

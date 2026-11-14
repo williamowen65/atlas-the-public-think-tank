@@ -78,7 +78,6 @@
   type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string; publicReason?: string | null };
   let hiddenDetail = $state<HiddenDetail | null>(null);
   let hiddenTitle = $state('');
-  let hiddenIntro = $state('');
   let hiddenMarkdown = $state('');
   let hiddenComposition = $state('');
   let hiddenBlocks = $state<ContentBlock[]>([]);
@@ -96,7 +95,7 @@
   let hiddenHistory = $state<ReportHistory[]>([]);
   let hiddenPreview = $state<NodeCardData | null>(null);
   let hiddenPreviewError = $state(false);
-  type TextRevision = { title: string; shortDescription: string; markdown: string; composition?: string };
+  type TextRevision = { title: string; markdown: string; composition?: string };
   let hiddenRevisions = $state<{ reported: TextRevision | null; revised: TextRevision } | null>(null);
   let revisionTab = $state<'reported' | 'revised'>('reported');
   let revisionError = $state('');
@@ -124,7 +123,6 @@
   }
   const hiddenRevisionChanged = $derived(!!hiddenDetail && (
     hiddenTitle.trim() !== hiddenDetail.title.trim() ||
-    hiddenIntro.trim() !== hiddenDetail.shortDescription.trim() ||
     (hiddenSectioned ? hiddenComposition !== hiddenSectioned.content.composition : hiddenMarkdown.trim() !== (hiddenBlocks.find(block =>
       block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown'
     )?.content.markdown ?? '').trim())
@@ -132,7 +130,7 @@
   async function saveHiddenRevision() {
     if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
     if (!hiddenRevisionChanged) {
-      hiddenMessage = 'Make a change to the title, introduction, or description before saving a revision.';
+      hiddenMessage = 'Make a change to the title or content before saving a revision.';
       return;
     }
     if (hiddenSectioned) {
@@ -143,7 +141,6 @@
     try {
       const id = encodeURIComponent(hiddenDetail.id);
       if (hiddenTitle.trim() !== hiddenDetail.title) await apiRequest('/atlas-session-api', `nodes/${id}/title`, 'PUT', { text: hiddenTitle.trim() });
-      if (hiddenIntro.trim() !== hiddenDetail.shortDescription) await apiRequest('/atlas-session-api', `nodes/${id}/short-description`, 'PUT', { text: hiddenIntro.trim() });
       if (hiddenSectioned) {
         if (hiddenComposition !== hiddenSectioned.content.composition)
           await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(hiddenSectioned.id)}`, 'PUT', { kind: 'sectioned', text: hiddenComposition });
@@ -218,7 +215,6 @@
   const draftChanged = (draft: NodeDraft) =>
     !!(
       draft.title ||
-      draft.shortDescription ||
       draft.markdown ||
       draft.newType?.name ||
       draft.newType?.description ||
@@ -362,7 +358,6 @@
                   moderatorMessage = 'Moderation tools could not be loaded.';
               }
               hiddenTitle = detail.title;
-              hiddenIntro = detail.shortDescription ?? '';
               hiddenBlocks = await apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal);
               hiddenComposition = hiddenBlocks.find(({ kind }) => kind === 'sectioned')?.content.composition ?? '';
               hiddenMarkdown = hiddenBlocks.filter(b => ['markdown', 'markdowntext'].includes(b.kind.toLowerCase())).map(b => b.content.markdown ?? '').join('\n\n');
@@ -440,7 +435,6 @@
         {/if}
         <form onsubmit={(event) => { event.preventDefault(); void saveHiddenRevision(); }}>
           <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
-          <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
           {#if hiddenSectionDraft}
             {#key hiddenSectioned?.content.composition}
               <SectionLayoutWorkbench initialDraft={{ ...hiddenSectionDraft, title: '' }}
@@ -469,7 +463,7 @@
 
           <NodePage
             node={hiddenRevisions?.reported && revisionTab === 'reported'
-              ? { ...hiddenPreview, title: hiddenRevisions.reported.title, description: hiddenRevisions.reported.shortDescription }
+              ? { ...hiddenPreview, title: hiddenRevisions.reported.title }
               : hiddenPreview}
             blocks={hiddenRevisions?.reported && revisionTab === 'reported'
               ? hiddenBlocks.map(block => ['markdown', 'markdowntext'].includes(block.kind.toLowerCase())

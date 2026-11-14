@@ -101,7 +101,7 @@
       {totalVotes}
       {apiBase}
       onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
+        node = { ...node, title: update.title };
       }}
     />
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>

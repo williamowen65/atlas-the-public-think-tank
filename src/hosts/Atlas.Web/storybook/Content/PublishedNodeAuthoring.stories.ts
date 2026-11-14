@@ -26,7 +26,6 @@ type Story = StoryObj<typeof meta>;
 
 const draft = {
   title: 'A greener public square',
-  shortDescription: '',
   markdown: '',
   typeId,
   requestedTypeIds: ['question', 'evidence'],

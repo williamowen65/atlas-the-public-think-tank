@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
       items: [{ nodeId: id, averageVote: 7.5, voteCount: 12, card: {
         title: 'Restore salmon habitat', typeName: 'Solution', authorName: 'Demo author',
         createdAt: '2026-10-01T12:00:00Z', status: 'Active',
-        shortDescription: 'A fuller introduction that should use the available mobile card width.',
+        description: 'A fuller introduction that should use the available mobile card width.',
         communities: 'Orca recovery', commentCount: 2, childTypes: [], isHidden: false,
       } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false,
     } });

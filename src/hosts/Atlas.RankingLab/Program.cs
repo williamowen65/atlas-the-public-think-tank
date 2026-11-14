@@ -45,7 +45,7 @@ app.MapPost("/run", (SearchRequest request) =>
             .Where(d => ids.Contains(d.ResultId)).ToDictionary(d => d.ResultId, d => d.SearchText);
         var nodeIds = explained.Evidence.Where(e => e.Kind == "node").Select(e => e.NodeId).ToArray();
         var nodes = db.NodeRows.AsNoTracking().Where(n => nodeIds.Contains(n.Id))
-            .Select(n => new { n.Id, n.Title, n.ShortDescription, n.DescriptionId }).ToDictionary(n => n.Id);
+            .Select(n => new { n.Id, n.Title, n.DescriptionId }).ToDictionary(n => n.Id);
         var documentIds = nodes.Values.Where(n => n.DescriptionId.HasValue).Select(n => n.DescriptionId!.Value).ToArray();
         var blocks = (from link in db.Set<DocumentBlockRow>().AsNoTracking()
                       join block in db.BlockRows.AsNoTracking() on link.BlockId equals block.Id
@@ -60,7 +60,7 @@ app.MapPost("/run", (SearchRequest request) =>
         {
             if (evidence.Kind == "comment") return [new("Comment body", comments.GetValueOrDefault(evidence.Id, ""))];
             if (!nodes.TryGetValue(evidence.NodeId, out var node)) return [];
-            return new[] { new TextSource("Title", node.Title), new TextSource("Short description", node.ShortDescription) }
+            return new[] { new TextSource("Title", node.Title) }
                 .Concat(blocks.Where(b => b.DocumentId == node.DescriptionId)
                     .Select(b => new TextSource($"Block {b.Position + 1} ({b.Kind})", b.Text ?? "", b.Id))).ToArray();
         }

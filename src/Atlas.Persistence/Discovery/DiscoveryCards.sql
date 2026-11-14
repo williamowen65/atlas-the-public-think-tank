@@ -53,6 +53,7 @@ FROM Selected s
 -- Hidden nodes do not expose their description blocks.
 OUTER APPLY (
     SELECT STRING_AGG(CONVERT(nvarchar(max), CASE b.Kind
+        WHEN N'sectioned' THEN COALESCE(b.CompositionSearchText, N'') COLLATE Latin1_General_100_CI_AI_SC
         WHEN N'markdown' THEN COALESCE(b.Markdown, N'') COLLATE Latin1_General_100_CI_AI_SC
         WHEN N'image' THEN CONCAT(N'Image: ', b.AltText, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')
         WHEN N'video' THEN CONCAT(N'Video: ', b.Caption, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')

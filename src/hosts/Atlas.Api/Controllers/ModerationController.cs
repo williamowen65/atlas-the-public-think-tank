@@ -76,7 +76,6 @@ public sealed class ModerationController(
             NodeId = id,
             CapturedAt = report.CreatedAt,
             Title = current.Title,
-            ShortDescription = current.ShortDescription,
             ContentJson = JsonSerializer.Serialize(content)
         });
         transactionDb.ModerationAuditEventRows.Add(new ModerationAuditEventRow
@@ -228,12 +227,10 @@ public sealed class ModerationController(
         {
             reported = snapshot is null ? null : new {
                 title = snapshot.Title,
-                shortDescription = snapshot.ShortDescription,
                 markdown = reportedMarkdown, composition = reportedComposition
             },
             revised = new {
                 current.Title,
-                current.ShortDescription,
                 markdown = block?.Markdown ?? "", composition = block?.Composition
             }
         });
