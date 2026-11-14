@@ -34,6 +34,7 @@
   const media = $derived<GalleryMedia[]>(photos.map((photo) => ({ kind: 'image', ...photo })));
 </script>
 
+<div class:feed-layout={feed}>
 <div class="viewport" class:feed class:expanded class:truncated id={instance} bind:clientHeight={viewportHeight}>
   <div class="sections" bind:offsetHeight={contentHeight}>
     {#each draft.sections as section, index (section.id)}
@@ -87,6 +88,7 @@
     {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
 {/if}
+</div>
 {#if media.length}<NodeMediaGallery bind:this={gallery} items={media} />{/if}
 
 {#snippet photoView(photo: Photo, inGallery: boolean, width = photo.frame?.width ?? 100)}
@@ -103,8 +105,9 @@
 {/snippet}
 
 <style>
-  .viewport.feed { max-height: 19rem; overflow: clip; }
-  .viewport.feed.expanded { max-height: 38rem; }
+  .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
+  .viewport.feed { max-height: var(--atlas-feed-preview-height, 8.5rem); overflow: clip; }
+  .viewport.feed.expanded { max-height: none; }
   .viewport.truncated { mask-image: linear-gradient(black calc(100% - 1.6rem), transparent); }
   .sections { display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
   .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
@@ -116,7 +119,7 @@
   figcaption, .cutoff { color: var(--atlas-muted); }
   figcaption { text-align: center; font-size: .85rem; margin-top: .25rem; }
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
-  .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: .5rem; }
+  .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; padding-block-start: .5rem; }
   .feed-actions button {
     font: inherit; padding: .5rem .85rem; border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius, .5rem); color: var(--atlas-text); background: var(--atlas-surface); cursor: pointer;
@@ -125,7 +128,6 @@
   @container (max-width: 37rem) {
     .section { grid-template-columns: minmax(0, 1fr); }
     .slot:empty { display: none; }
-    .viewport.feed { max-height: 15rem; }
-    .viewport.feed.expanded { max-height: 30rem; }
+
   }
 </style>
