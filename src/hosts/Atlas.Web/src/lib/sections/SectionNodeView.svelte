@@ -4,15 +4,15 @@
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import SectionBreak from './SectionBreak.svelte';
-  import MarkdownContent from '../../src/lib/components/MarkdownContent.svelte';
-  import NodeMediaGallery, { type GalleryMedia } from '../../src/lib/components/NodeMediaGallery.svelte';
-  import { publicUrl } from '../../src/lib/api/nodePage';
+  import MarkdownContent from '../components/MarkdownContent.svelte';
+  import NodeMediaGallery, { type GalleryMedia } from '../components/NodeMediaGallery.svelte';
+  import { publicUrl } from '../api/nodePage';
   import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
   let { draft, feed = false, onReadMore }: {
     draft: Draft;
     feed?: boolean;
-    onReadMore: () => void;
+    onReadMore?: () => void;
   } = $props();
 
   let expanded = $state(false);

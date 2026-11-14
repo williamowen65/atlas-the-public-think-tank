@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { applyLayout, blockAt, example, moveBlock } from '../storybook/SectionLayouts/sectionLayouts';
+import { applyLayout, blockAt, example, moveBlock } from '../src/lib/sections/sectionLayouts';
 
 test('a smaller layout keeps overflow blocks in reading order', () => {
   const original = example('editorial');
@@ -99,7 +99,7 @@ test('the editor formats a text slot and swaps blocks using the destination on t
 });
 
 test('duplicates a section with independent blocks, photos and slot alignment', async () => {
-  const { duplicateSection } = await import('../storybook/SectionLayouts/sectionLayouts');
+  const { duplicateSection } = await import('../src/lib/sections/sectionLayouts');
   const draft = example('editorial');
   draft.assignments[0].vertical = 'center';
   const original = draft.sections[0];

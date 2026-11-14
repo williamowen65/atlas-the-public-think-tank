@@ -6,10 +6,10 @@
   import WrappedImage from './WrappedImage.svelte';
   import PhotoFrame from './PhotoFrame.svelte';
   import { tick, untrack } from 'svelte';
-  import { publicUrl } from '../../src/lib/api/nodePage';
+  import { publicUrl } from '../api/nodePage';
   import SectionTextEditor from './SectionTextEditor.svelte';
-  import type TiptapCanvas from '../../src/lib/components/TiptapCanvas.svelte';
-  import type { AuthorBlock } from '../../src/lib/api/contentAuthoring';
+  import type TiptapCanvas from '../components/TiptapCanvas.svelte';
+  import type { AuthorBlock } from '../api/contentAuthoring';
   import SectionBreak from './SectionBreak.svelte';
   import SectionNodeView from './SectionNodeView.svelte';
   import {
@@ -17,8 +17,15 @@
     type Block, linkPreviewSamples, type Example, type GalleryStyle, type GalleryColumns, type SlideshowSettings, type Section, type Slot, type Layout, type Photo, type Draft,
   } from './sectionLayouts';
 
-  let { start = 'editorial' }: { start?: Example } = $props();
-  let draft = $state(untrack(() => example(start)));
+  let { start = 'editorial', initialDraft, onDraftChange, embedded = false }: {
+    start?: Example; initialDraft?: Draft; onDraftChange?: (draft: Draft) => void; embedded?: boolean;
+  } = $props();
+  let draft = $state(untrack(() => structuredClone(initialDraft ?? example(start))));
+  $effect(() => {
+    if (!onDraftChange) return;
+    const snapshot = $state.snapshot(draft);
+    untrack(() => onDraftChange(snapshot));
+  });
   let view = $state<'edit' | 'feed' | 'node'>('edit');
   let narrow = $state(false);
   let layoutSection = $state<string | null>(null);
@@ -416,27 +423,29 @@
   if (undoShortcut) undo();
   else redo();
 }} />
-<div class="workbench" class:narrow bind:this={workbench}>
+<div class="workbench" class:embedded class:narrow bind:this={workbench}>
   <div class="toolbar" role="group" aria-label="Workbench view">
-    <button type="button" aria-pressed={view === 'edit'} onclick={() => selectView('edit')}>Edit</button>
-    <button type="button" aria-pressed={view === 'feed'} onclick={() => selectView('feed')}>Feed preview</button>
-    <button type="button" aria-pressed={view === 'node'} onclick={() => selectView('node')}>Node page</button>
+    {#if !embedded}
+      <button type="button" aria-pressed={view === 'edit'} onclick={() => selectView('edit')}>Edit</button>
+      <button type="button" aria-pressed={view === 'feed'} onclick={() => selectView('feed')}>Feed preview</button>
+      <button type="button" aria-pressed={view === 'node'} onclick={() => selectView('node')}>Node page</button>
+    {/if}
     {#if view === 'edit'}
       <button class="sidebar-toggle" type="button" aria-expanded={sidebarOpen}
         onclick={() => sidebarOpen = !sidebarOpen}>{sidebarOpen ? 'Hide editor controls' : 'Show editor controls'}</button>
     {/if}
-    <label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>
+    {#if !embedded}<label class="phone"><input type="checkbox" bind:checked={narrow} /> Phone width</label>{/if}
   </div>
 
   <div class="editor-frame" class:with-sidebar={view === 'edit' && sidebarOpen}>
   <article class="node">
-    <header>
+    {#if !embedded}<header>
       {#if view === 'edit'}
         <input class="title" aria-label="Node title" placeholder="Give your node a title" value={draft.title} oninput={(event) => { remember(); draft.title = event.currentTarget.value; }} />
       {:else}
         <h1>{draft.title || 'Untitled node'}</h1>
       {/if}
-    </header>
+    </header>{/if}
 
     {#if view === 'edit'}
       <div class="editing-tools">
@@ -675,10 +684,10 @@
   {/if}
   </div>
 
-  <details class="inspector">
+  {#if !embedded}<details class="inspector">
     <summary>Backend data preview</summary>
     <pre>{JSON.stringify(draft, null, 2)}</pre>
-  </details>
+  </details>{/if}
 </div>
 
 {#snippet editPhotos(block: Extract<Block, { photos: Photo[] }>, wrappedSection?: string)}
@@ -967,6 +976,15 @@
     .workbench:not(.narrow):has(.with-sidebar) { max-width: none; padding-inline-end: 0; }
   }
   .workbench { max-width: 72rem; margin: 0 auto; padding: clamp(.65rem, 2vw, 1.5rem); color: var(--atlas-text); }
+  .workbench.embedded { padding: 0; max-width: none; }
+  .embedded .node { padding: .75rem; }
+  @media (min-width: 65.001rem) {
+    .embedded .editor-frame.with-sidebar { grid-template-columns: minmax(0, 1fr) minmax(13rem, 32%); }
+  }
+  @media (max-width: 65rem) {
+    .embedded .editor-sidebar { position: static; max-height: none; }
+    .embedded .editor-frame.with-sidebar { padding-bottom: 0; }
+  }
   .workbench.narrow { max-width: 25rem; padding-inline: 0; }
   .narrow .node { padding-inline: .65rem; }
   .narrow .toolbar, .narrow .inspector { padding-inline: .65rem; }

@@ -9,6 +9,12 @@ public abstract record BlockInput
         ?? throw new InvalidOperationException("The input does not match the stored block kind.");
 }
 
+public sealed record SectionedInput(string Composition) : BlockInput
+{
+    internal override ContentBlock Create(DateTimeOffset at) => new SectionedBlock(Composition, at);
+    internal override void Apply(ContentBlock block, DateTimeOffset at) => Require<SectionedBlock>(block).Update(Composition, at);
+}
+
 public sealed record MarkdownInput(string Markdown) : BlockInput
 {
     internal override ContentBlock Create(DateTimeOffset at) => new MarkdownTextBlock(Markdown, at);

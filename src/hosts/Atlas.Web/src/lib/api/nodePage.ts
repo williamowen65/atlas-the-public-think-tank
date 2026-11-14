@@ -31,6 +31,7 @@ export interface ContentBlock {
   content: {
     /** Markdown source rendered as formatted text. */
     markdown?: string;
+    composition?: string;
 
     /** Image or link URL; callers must apply their URL-safety policy. */
     url?: string;

@@ -40,12 +40,17 @@ public sealed class ContentController(
 
     /// <summary>Translate an allowlisted JSON block kind and delegate author-checked insertion.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpPost("blocks")]
-    public object Add(Guid node, BlockRequest request) => View(workflow.Add(
-        new NodeId(node),
-        actor.ParticipantId,
-        request.Input(),
-        request.Index
-    ));
+    public object Add(Guid node, BlockRequest request)
+    {
+        var input = request.Input();
+        if (request.ReplaceMarkdownIds is { } ids)
+        {
+            if (input is not SectionedInput sectioned || ids.Length > 100) throw new ArgumentException("Invalid conversion.");
+            return View(workflow.ConvertMarkdown(new NodeId(node), actor.ParticipantId, sectioned, ids.Select(id => new BlockId(id)).ToArray()));
+        }
+
+        return View(workflow.Add(new NodeId(node), actor.ParticipantId, input, request.Index));
+    }
 
     /// <summary>Update an existing block through the node’s owning description workflow.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("blocks/{block:guid}")]
@@ -93,6 +98,7 @@ public sealed class ContentController(
         b.UpdatedAt,
         content = b switch
         {
+            SectionedBlock sectioned => (object)new { sectioned.Composition },
             MarkdownTextBlock m => (object)new
             {
                 m.Markdown
@@ -138,11 +144,13 @@ public sealed record BlockRequest(
     string? Title,
     string? Caption,
     int? Index,
-    string? Layout = null
+    string? Layout = null,
+    Guid[]? ReplaceMarkdownIds = null
 )
 {
     public BlockInput Input() => Kind switch
     {
+        "sectioned" => new SectionedInput(Text!),
         "markdown" => new MarkdownInput(Text!),
         "image" => new ImageInput(Url!, Text!, Caption, Layout),
         "video" => new VideoInput(Url!, Caption),

@@ -9,6 +9,7 @@ async function setup(page: Page, initiallySignedIn = false) {
   let signedIn = initiallySignedIn; let failNode = false;
   const seedId = 'd1000000-0000-4000-8000-000000000001';
   let seedPresent = false;
+  let composition: string | undefined;
   const writes: { path: string; body: Record<string, unknown> }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
@@ -16,7 +17,7 @@ async function setup(page: Page, initiallySignedIn = false) {
     if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/communities'))
       return route.fulfill({ json: communityIds.map((id, i) => ({ id, name: `Community ${i + 1}`, status: 'Active' })) });
-    if (url.pathname.endsWith('/description')) return route.fulfill({ json: seedPresent ? [{ id: seedId, kind: 'markdown', content: { markdown: 'The full content' } }] : [] });
+    if (url.pathname.endsWith('/description')) return route.fulfill({ json: seedPresent ? [{ id: seedId, kind: composition ? 'sectioned' : 'markdown', content: composition ? { composition } : { markdown: 'The full content' } }] : [] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${parent}`) || url.pathname.endsWith(`/nodes/${created}`)) return route.fulfill({ json: { id: parent, requestedTypeIds: [idea] } });
     const id = url.searchParams.get('NodeId') ?? parent;
@@ -37,7 +38,7 @@ async function setup(page: Page, initiallySignedIn = false) {
     if (path.endsWith('/auth/logout')) { signedIn = false; return route.fulfill({ status: 204 }); }
     if (path.endsWith('/catalog/node-types')) return route.fulfill({ json: { id: custom, name: body.name } });
     if (failNode) return route.fulfill({ status: 400, json: {} });
-    if (path.endsWith('/nodes')) { seedPresent = true; return route.fulfill({ status: 201, json: { id: created } }); }
+    if (path.endsWith('/nodes')) { seedPresent = true; composition = typeof body.composition === 'string' ? body.composition : undefined; return route.fulfill({ status: 201, json: { id: created } }); }
     if (path.endsWith('/description/blocks') && request.method() === 'POST')
       return route.fulfill({ status: 201, json: { id: 'd1000000-0000-4000-8000-000000000002', kind: body.kind, content: { markdown: body.text } } });
     if (request.method() === 'DELETE') { seedPresent = false; return route.fulfill({ status: 204 }); }
@@ -72,7 +73,9 @@ for (const environment of ['storybook', 'spa']) {
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
     const save = writes.find(write => write.path.endsWith('/nodes'))!;
-    expect(save.body).toEqual({ title: 'Created through the frontend', shortDescription: 'The full content', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
+    expect(save.body).toMatchObject({ title: 'Created through the frontend', shortDescription: 'The full content', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
+    expect(JSON.parse(String(save.body.composition))).toMatchObject({ version: 1, blocks: [{ kind: 'text', text: 'The full content' }] });
+    expect(writes.some(write => write.path.includes('/description/blocks'))).toBe(false);
     expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
     expect(writes.filter(write => write.path.includes('/communities/')).map(write => write.path))
       .toEqual(environment === 'spa' ? communityIds.map(id => `/atlas-session-api/communities/${id}/nodes/${created}`) : []);

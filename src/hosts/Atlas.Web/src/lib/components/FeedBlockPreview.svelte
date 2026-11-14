@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { readJson, publicUrl, type ContentBlock } from '../api/nodePage';
+  import { readComposition, type Composition } from '../sections/composition';
   import FeedNodeCarousel from './FeedNodeCarousel.svelte';
 
   let { nodeId, fallback, renderFallback, apiBase = '/atlas-public-api', blocks, onReadMore }: {
@@ -14,10 +15,28 @@
 
   let host = $state<HTMLDivElement>();
   let loaded = $state<ContentBlock[]>([]);
-  const pages = $derived((blocks ?? loaded).filter((block) => {
-    if (block.kind === 'markdown') return !!block.content.markdown?.trim();
-    if (block.kind === 'image') return !!publicUrl(block.content.url);
-    return true;
+  function sectionPages(block: ContentBlock, composition: Composition): ContentBlock[] {
+    return composition.sections.flatMap((section) => {
+      const assignments = composition.assignments.filter(({ sectionId }) => sectionId === section.id);
+      if (!assignments.length) return [];
+      const ids = new Set(assignments.map(({ blockId }) => blockId));
+      return [{
+        ...block, id: `${block.id}/${section.id}`,
+        content: { composition: JSON.stringify({
+          ...composition, sections: [section], assignments, blocks: composition.blocks.filter(({ id }) => ids.has(id)),
+        }) },
+      }];
+    });
+  }
+
+  const pages = $derived((blocks ?? loaded).flatMap((block) => {
+    if (block.kind === 'markdown' && !block.content.markdown?.trim()) return [];
+    if (block.kind === 'image' && !publicUrl(block.content.url)) return [];
+    if (block.kind === 'sectioned') {
+      const composition = readComposition(block.content.composition);
+      return composition ? sectionPages(block, composition) : [];
+    }
+    return [block];
   }));
 
   $effect(() => {

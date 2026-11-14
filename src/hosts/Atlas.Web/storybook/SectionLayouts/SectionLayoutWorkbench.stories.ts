@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import SectionLayoutWorkbench from './SectionLayoutWorkbench.svelte';
+import SectionLayoutWorkbench from '../../src/lib/sections/SectionLayoutWorkbench.svelte';
 
 const meta = {
   title: 'Content/Section layout workbench',

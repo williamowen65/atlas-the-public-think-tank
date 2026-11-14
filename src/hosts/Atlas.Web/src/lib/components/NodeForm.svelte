@@ -30,6 +30,7 @@
   import type { NodeDraft } from './nodeDraft.types';
   import { untrack } from 'svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
+  import { fromMarkdown, writeComposition } from '../sections/composition';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
   import type { NodeCardData } from './node-card-versions/types';
   import { derivedExcerpt, newAuthorBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
@@ -93,7 +94,7 @@
   let blocks = $state<AuthorBlock[]>(
     startingDraft?.blocks?.length
       ? startingDraft.blocks
-      : [newAuthorBlock('markdown', startingDraft?.markdown ?? '')],
+      : [{ ...newAuthorBlock(), kind: 'sectioned', text: writeComposition(fromMarkdown([startingDraft?.markdown ?? ''])) }],
   );
   let blockError = $state('');
   /**
@@ -322,7 +323,7 @@
     width: auto;
   }
   .node-form {
-    max-width: 48rem;
+    max-width: 78rem;
     width: 100%;
     margin-inline: auto;
     padding: 0;

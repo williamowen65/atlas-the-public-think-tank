@@ -9,9 +9,9 @@ namespace Atlas.Application;
 public sealed class NodeWorkflowService(INodeRepository nodes, IEventPublisher events)
 {
     public Node Create(IDocumentRepository documents, string title, string markdown, NodeTypeId typeId,
-        Guid actorId, IEnumerable<NodeTypeId> requested, NodeId? parentId = null, string shortDescription = "")
+        Guid actorId, IEnumerable<NodeTypeId> requested, NodeId? parentId = null, string shortDescription = "", string? composition = null)
     {
-        var node = new NodeCreationService(nodes, documents).Create(title, markdown, typeId, actorId, requested, parentId, shortDescription);
+        var node = new NodeCreationService(nodes, documents).Create(title, markdown, typeId, actorId, requested, parentId, shortDescription, composition);
         Dispatch(node);
         return node;
     }

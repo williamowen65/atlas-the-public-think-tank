@@ -7,9 +7,11 @@ public sealed class DocumentService(IDocumentRepository documents)
 {
     // Preparing has no storage side effects, allowing a cross-domain coordinator to
     // validate every proposed aggregate before it starts writing.
-    public DocumentDraft PrepareMarkdown(string markdown, DateTimeOffset at)
+    public DocumentDraft PrepareMarkdown(string markdown, DateTimeOffset at) => Prepare(new MarkdownInput(markdown), at);
+
+    public DocumentDraft Prepare(BlockInput input, DateTimeOffset at)
     {
-        var block = new MarkdownTextBlock(markdown, at);
+        var block = input.Create(at);
         return new DocumentDraft(new Document([block.Id], at), block);
     }
 
@@ -30,6 +32,25 @@ public sealed class DocumentService(IDocumentRepository documents)
             documents.SaveBlock(block);
             documents.Save(document);
             return block;
+        });
+
+    public ContentBlock ConvertMarkdown(DocumentId id, SectionedInput input, IReadOnlyList<BlockId> expected, DateTimeOffset at) =>
+        OperationBoundary.Execute(documents, () =>
+        {
+            var document = Load(id);
+            var existing = documents.GetBlocks(document);
+            if (existing.Count == 1 && existing.Single() is SectionedBlock converted && converted.Composition == input.Composition)
+                return converted;
+
+            if (!document.BlockIds.SequenceEqual(expected) || existing.Any(block => block is not MarkdownTextBlock))
+                throw new InvalidOperationException("The description changed. Reload before converting it.");
+
+            var sectioned = input.Create(at);
+            documents.SaveBlock(sectioned);
+            foreach (var old in expected) document.RemoveBlock(old, at);
+            document.AddBlock(sectioned.Id, at);
+            documents.Save(document);
+            return sectioned;
         });
 
     public ContentBlock Update(DocumentId id, BlockId blockId, BlockInput input, DateTimeOffset at) =>

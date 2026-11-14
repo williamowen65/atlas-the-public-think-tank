@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { publicUrl } from '../../src/lib/api/nodePage';
+  import { publicUrl } from '../api/nodePage';
   import { linkPreviewSamples } from './sectionLayouts';
 
   let { url, editable = false }: { url: string; editable?: boolean } = $props();

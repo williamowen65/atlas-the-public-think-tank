@@ -3,7 +3,7 @@
   import { editorSession } from '../api/editorSession';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readJson, type NodeDetail, type ContentBlock } from '../api/nodePage';
-  import { authorBlock, blockRequest, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
+  import { authorBlock, blockRequest, derivedExcerpt, supportedBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
   import type { NodeCardData } from './node-card-versions/types';
 
@@ -115,28 +115,36 @@
       if (nextTitle !== originalTitle)
         await write('/title', 'PUT', { text: nextTitle });
 
-      // Do not discard unrecognized blocks. They are reorderable but retain their original payload.
-      const remainingIds = new Set(desired.map((block) => block.id).filter(Boolean));
-      for (const block of desired) {
-        if (!block.id) continue;
-        const old = original.find((entry) => entry.id === block.id);
-        if (!old || (block.kind !== 'markdown' && block.kind !== 'image')) continue;
-        const oldFields = authorBlock(old);
-        if (oldFields.text !== block.text || oldFields.url !== block.url || oldFields.caption !== block.caption || oldFields.width !== block.width || oldFields.placement !== block.placement)
-          await write(`/description/blocks/${block.id}`, 'PUT', blockRequest(block));
+      const converting = desired.length === 1 && desired[0].kind === 'sectioned' && !desired[0].id;
+      if (converting) {
+        await write('/description/blocks', 'POST', {
+          ...blockRequest(desired[0]),
+          replaceMarkdownIds: original.map(({ id }) => id),
+        });
+      } else {
+        // Do not discard unrecognized blocks. They are reorderable but retain their original payload.
+        const remainingIds = new Set(desired.map((block) => block.id).filter(Boolean));
+        for (const block of desired) {
+          if (!block.id) continue;
+          const old = original.find((entry) => entry.id === block.id);
+          if (!old || !supportedBlock(block)) continue;
+          const oldFields = authorBlock(old);
+          if (oldFields.text !== block.text || oldFields.url !== block.url || oldFields.caption !== block.caption || oldFields.width !== block.width || oldFields.placement !== block.placement)
+            await write(`/description/blocks/${block.id}`, 'PUT', blockRequest(block));
+        }
+        for (const block of desired) {
+          if (block.id) continue;
+          const saved = await write<ContentBlock>('/description/blocks', 'POST', blockRequest(block));
+          block.id = saved.id;
+        }
+        for (const old of original) {
+          if (!remainingIds.has(old.id))
+            await write(`/description/blocks/${old.id}`, 'DELETE');
+        }
+        // Sequential moves preserve the author's order and each existing BlockId.
+        for (let index = 0; index < desired.length; index++)
+          await write(`/description/blocks/${desired[index].id}/position`, 'PUT', { index });
       }
-      for (const block of desired) {
-        if (block.id) continue;
-        const saved = await write<ContentBlock>('/description/blocks', 'POST', blockRequest(block));
-        block.id = saved.id;
-      }
-      for (const old of original) {
-        if (!remainingIds.has(old.id))
-          await write(`/description/blocks/${old.id}`, 'DELETE');
-      }
-      // Sequential moves preserve the author's order and each existing BlockId.
-      for (let index = 0; index < desired.length; index++)
-        await write(`/description/blocks/${desired[index].id}/position`, 'PUT', { index });
 
       // Compatibility only: the API/SQL projection still requires a short description.
       // It is derived, never a second author-maintained text field.
@@ -172,7 +180,7 @@
         (!block.id || known.has(block.id)));
       if (!restored.length) throw new Error();
       for (const old of original) {
-        if (old.kind !== 'markdown' && old.kind !== 'image' && !restored.some((block: AuthorBlock) => block.id === old.id))
+        if (!supportedBlock(authorBlock(old)) && !restored.some((block: AuthorBlock) => block.id === old.id))
           restored.push(authorBlock(old));
       }
       blocks = restored;
@@ -231,7 +239,7 @@
   .edit-node { color: var(--atlas-accent); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); font-size: .85rem; }
   .edit-node.corner { position: absolute; top: 0; right: 0; z-index: 2; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: 0; padding: 0; border: 0; border-left: 1px solid var(--atlas-border); border-bottom: 1px solid var(--atlas-border); border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); font-size: 1.3rem; }
   .edit-node:focus-visible { outline: 3px solid var(--atlas-focus); outline-offset: -4px; }
-  dialog { box-sizing: border-box; width: min(48rem, 96vw); max-height: 94dvh; overflow-y: auto; padding: clamp(.75rem, 3vw, 1.5rem); color: var(--atlas-text); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  dialog { box-sizing: border-box; width: min(78rem, 96vw); max-height: 94dvh; overflow-y: auto; padding: clamp(.75rem, 3vw, 1.5rem); color: var(--atlas-text); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   dialog::backdrop { background: rgb(0 0 0 / .55); }
   .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
   .title-row strong { color: var(--atlas-accent); }

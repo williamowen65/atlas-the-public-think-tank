@@ -28,6 +28,27 @@ public sealed class WorkflowTests
     }
 
     [TestMethod]
+    public void SectionedDescriptionIsCreatedWithTheNode()
+    {
+        const string composition = """
+            {
+              "version": 1,
+              "layouts": [{"id":"full","slots":[{"id":"left","weight":1}]}],
+              "sections": [{"id":"s","layoutId":"full"}],
+              "blocks": [{"id":"b","kind":"text","text":"A searchable paragraph."}],
+              "assignments": [{"sectionId":"s","slotId":"left","blockId":"b"}]
+            }
+            """;
+        var store = new Store();
+        var node = new Creation(store, store).Create("Sectioned node", "Fallback", store.Type.Id,
+            store.Actor, [], shortDescription: "A searchable paragraph.", composition: composition);
+        var document = ((IDocumentRepository)store).GetById(new DocumentId(node.DescriptionId.Value))!;
+        var block = (SectionedBlock)store.GetBlockById(document.BlockIds.Single())!;
+        Assert.AreEqual(composition, block.Composition);
+        Assert.AreEqual("A searchable paragraph.", block.SearchableText);
+    }
+
+    [TestMethod]
     public void InvalidNodeProposalWritesNoContent()
     {
         var store = new Store();

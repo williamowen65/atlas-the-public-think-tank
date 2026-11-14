@@ -17,6 +17,9 @@ public sealed class NodeDescriptionService(INodeRepository nodes, IDocumentRepos
     /// <returns>The newly created and saved content block.</returns>
     public ContentBlock Add(NodeId nodeId, Guid actorId, BlockInput input, int? index = null) =>
         Execute(nodeId, actorId, (id, at) => new DocumentService(documents).Add(id, input, at, index));
+    public ContentBlock ConvertMarkdown(NodeId nodeId, Guid actorId, SectionedInput input, IReadOnlyList<BlockId> expected) =>
+        Execute(nodeId, actorId, (id, at) => new DocumentService(documents).ConvertMarkdown(id, input, expected, at));
+
     /// <summary>Update an existing description block while preserving its identity.</summary>
     /// <remarks>Content verifies document membership and that the input matches the block kind.</remarks>
     /// <param name="nodeId">The node whose description owns the block.</param>

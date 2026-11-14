@@ -1,3 +1,4 @@
+import { compositionExcerpt, validateComposition } from '../sections/composition';
 import { imageLayout, type ImageLayout } from '../markdown/imageLayout';
 import { publicUrl, type ContentBlock } from './nodePage';
 
@@ -22,7 +23,7 @@ export function authorBlock(block: ContentBlock): AuthorBlock {
     key: block.id,
     id: block.id,
     kind: block.kind,
-    text: block.kind === 'image' ? (block.content.altText ?? '') : (block.content.markdown ?? ''),
+    text: block.kind === 'image' ? (block.content.altText ?? '') : (block.content.markdown ?? block.content.composition ?? ''),
     url: block.content.url ?? '',
     caption: block.content.caption ?? '',
     ...(block.kind === 'image' ? standaloneImageLayout(block.content.layout) : {}),
@@ -41,7 +42,7 @@ function serializedImageLayout(block: AuthorBlock) {
 }
 
 export function supportedBlock(block: AuthorBlock): boolean {
-  return block.kind === 'markdown' || block.kind === 'image';
+  return block.kind === 'markdown' || block.kind === 'image' || block.kind === 'sectioned';
 }
 
 /** Server-compatible block mutation payload; image Text is accessible alternative text. */
@@ -60,6 +61,10 @@ export function blockRequest(block: AuthorBlock, index?: number) {
 export function validateAuthorBlocks(blocks: AuthorBlock[]): string | null {
   if (!blocks.length) return 'Add at least one content block.';
   for (const [i, block] of blocks.entries()) {
+    if (block.kind === 'sectioned') {
+      const error = validateComposition(block.text);
+      if (error) return error;
+    }
     if (block.kind === 'image') {
       if (!publicUrl(block.url)) return `Block ${i + 1}: use an absolute HTTP(S) image URL.`;
       if (!block.text.trim()) return `Block ${i + 1}: describe the image for screen readers.`;
@@ -75,8 +80,8 @@ export function validateAuthorBlocks(blocks: AuthorBlock[]): string | null {
 /** The legacy API still requires shortDescription; authors never manage a duplicate field. */
 export function derivedExcerpt(blocks: AuthorBlock[], title = ''): string {
   for (const block of blocks) {
-    let value = block.kind === 'markdown'
-      ? block.text
+    let value = block.kind === 'markdown' || block.kind === 'sectioned'
+      ? (block.kind === 'sectioned' ? compositionExcerpt(block.text) : block.text)
           .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
           .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
           .replace(/[#*_~\x60>]/g, '')
@@ -98,6 +103,6 @@ export function contentForPreview(blocks: AuthorBlock[]): ContentBlock[] {
       kind: block.kind,
       content: block.kind === 'image'
         ? { url: block.url, altText: block.text, caption: block.caption, layout: serializedImageLayout(block) }
-        : { markdown: block.text },
+        : block.kind === 'sectioned' ? { composition: block.text } : { markdown: block.text },
     });
 }

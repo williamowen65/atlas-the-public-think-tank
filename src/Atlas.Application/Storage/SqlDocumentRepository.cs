@@ -70,6 +70,10 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
 
         switch (block)
         {
+            case SectionedBlock sectioned:
+                stored.Composition = sectioned.Composition;
+                stored.Markdown = sectioned.SearchableText;
+                break;
             case MarkdownTextBlock text:
                 stored.Markdown = text.Markdown;
                 break;
@@ -118,6 +122,7 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         // than running a public constructor that represents new creation.
         return block.Kind switch
         {
+            "sectioned" => SectionedBlock.Reconstitute(id, block.Composition ?? string.Empty, block.CreatedAt, block.UpdatedAt),
             "markdown" => MarkdownTextBlock.Reconstitute(
                 id,
                 block.Markdown ?? string.Empty,

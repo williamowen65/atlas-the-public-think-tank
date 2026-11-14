@@ -88,7 +88,8 @@ public sealed class NodesController(
             actor.ParticipantId,
             request.RequestedTypeIds.Select(x => new NodeTypeId(x)),
             request.ParentId is { } parent ? new NodeId(parent) : null,
-            request.ShortDescription
+            request.ShortDescription,
+            request.Composition
         );
 
         // Return the new resource location with its visibility-aware projection.
@@ -230,7 +231,8 @@ public sealed record CreateNodeRequest(
     Guid TypeId,
     Guid? ParentId,
     [Required, MaxLength(50)] Guid[] RequestedTypeIds,
-    [Required, MaxLength(Node.ShortDescriptionMaxLength)] string ShortDescription
+    [Required, MaxLength(Node.ShortDescriptionMaxLength)] string ShortDescription,
+    [MaxLength(512_000)] string? Composition = null
 );
 
 public sealed record ShortDescriptionRequest([Required, MaxLength(Node.ShortDescriptionMaxLength)] string Text);

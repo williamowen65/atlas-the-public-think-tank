@@ -8,6 +8,8 @@
     type definition for its fields.
 -->
 <script lang="ts">
+  import SectionNodeView from '../sections/SectionNodeView.svelte';
+  import { readComposition } from '../sections/composition';
   import NodeMediaGallery, { type GalleryMedia } from './NodeMediaGallery.svelte';
   import { markdownImages } from '../markdown/renderMarkdown';
   import { standaloneImageLayout } from '../api/contentAuthoring';
@@ -51,7 +53,10 @@
 <section aria-label="Node content" class="content-blocks">
   <!-- Match supported block kinds; unsupported interactive kinds retain a plain fallback. -->
   {#each blocks as block (block.id)}
-    {#if block.kind.toLowerCase().includes('markdown')}<MarkdownContent
+    {@const composition = block.kind === 'sectioned' ? readComposition(block.content.composition) : undefined}
+    {#if composition}
+      <SectionNodeView draft={{ ...composition, title: '' }} />
+    {:else if block.kind.toLowerCase().includes('markdown')}<MarkdownContent
         images
         {preview}
         onImage={(index, trigger) => showMedia(block.id, index, trigger)}

@@ -310,15 +310,16 @@
         }
       }
       if (!typeId) throw new Error('Select a node type.');
+      const composition = desired.length === 1 && desired[0].kind === 'sectioned' ? desired[0].text : undefined;
       if (!pendingNodeId) {
-        // Node creation is currently atomic for its initial Markdown block. Additional typed
-        // blocks use existing author/CSRF-protected API mutations after that transaction.
+        // Persist the sectioned document in the same transaction as the new node.
         const result = await apiRequest<{ id: string }>(
           sessionBase, 'nodes', 'POST',
           {
             title: draft.title,
             shortDescription: derivedExcerpt(desired, draft.title),
-            markdown: draft.markdown.trim() || derivedExcerpt(desired, draft.title) || draft.title,
+            markdown: (!composition && draft.markdown.trim()) || derivedExcerpt(desired, draft.title) || draft.title,
+            composition,
             typeId,
             parentId: draft.parentId ?? null,
             requestedTypeIds: draft.requestedTypeIds,
@@ -328,28 +329,30 @@
         if (!result.id) throw new Error('The node response did not contain an ID.');
         pendingNodeId = result.id;
       }
-      const contentPath = `nodes/${pendingNodeId}/description`;
-      if (!seedBlockId && !seedRemoved) {
-        const seed = await readJson<ContentBlock[]>(apiBase, contentPath, signal());
-        if (!seed[0]?.id) throw new Error('Could not load the initial content block.');
-        seedBlockId = seed[0].id;
-      }
-      // Use an ordered block sequence, not a second description. Remember each successful
-      // insertion so a retry after a network failure does not add duplicate blocks.
-      for (let index = 0; index < desired.length; index++) {
-        if (publishedBlocks[index]) continue;
-        const block = await apiRequest<ContentBlock>(
-          sessionBase, `${contentPath}/blocks`, 'POST',
-          blockRequest(desired[index], index),
-          signal(),
-        );
-        publishedBlocks[index] = block.id;
-      }
-      // Only remove the transitional node-creation Markdown after every desired block exists.
-      if (seedBlockId) {
-        await apiRequest(sessionBase, `${contentPath}/blocks/${seedBlockId}`, 'DELETE', undefined, signal());
-        seedBlockId = '';
-        seedRemoved = true;
+      if (!composition) {
+        const contentPath = `nodes/${pendingNodeId}/description`;
+        if (!seedBlockId && !seedRemoved) {
+          const seed = await readJson<ContentBlock[]>(apiBase, contentPath, signal());
+          if (!seed[0]?.id) throw new Error('Could not load the initial content block.');
+          seedBlockId = seed[0].id;
+        }
+        // Use an ordered block sequence, not a second description. Remember each successful
+        // insertion so a retry after a network failure does not add duplicate blocks.
+        for (let index = 0; index < desired.length; index++) {
+          if (publishedBlocks[index]) continue;
+          const block = await apiRequest<ContentBlock>(
+            sessionBase, `${contentPath}/blocks`, 'POST',
+            blockRequest(desired[index], index),
+            signal(),
+          );
+          publishedBlocks[index] = block.id;
+        }
+        // Only remove the transitional node-creation Markdown after every desired block exists.
+        if (seedBlockId) {
+          await apiRequest(sessionBase, `${contentPath}/blocks/${seedBlockId}`, 'DELETE', undefined, signal());
+          seedBlockId = '';
+          seedRemoved = true;
+        }
       }
       const desiredCommunities = new Set(draft.communityIds ?? []);
       const association = (id: string) =>

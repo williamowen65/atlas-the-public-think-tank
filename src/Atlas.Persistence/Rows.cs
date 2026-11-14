@@ -78,6 +78,7 @@ public sealed class BlockRow
     public Guid Id { get; set; }
     public string Kind { get; set; } = string.Empty;
     public string? Markdown { get; set; }
+    public string? Composition { get; set; }
     public string? AltText { get; set; }
     public string? Caption { get; set; }
     public string? Url { get; set; }
