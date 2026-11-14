@@ -544,10 +544,6 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid>("NodeId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ShortDescription")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -674,13 +670,6 @@ namespace Atlas.Persistence.Migrations
 
                     b.Property<Guid?>("DescriptionId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ShortDescription")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(280)
-                        .HasColumnType("nvarchar(280)")
-                        .HasDefaultValue("");
 
                     b.Property<string>("Status")
                         .IsRequired()
