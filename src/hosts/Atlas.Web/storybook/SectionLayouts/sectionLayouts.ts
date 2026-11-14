@@ -19,7 +19,7 @@ export type SlideshowSettings = {
   fit?: 'contain' | 'cover';
   neighbors?: boolean;
 };
-export type GalleryColumns = 2 | 3 | 4;
+export type GalleryColumns = 1 | 2 | 3 | 4;
 export type GalleryStyle = 'grid' | 'mosaic' | 'masonry' | 'slideshow';
 export type Example = 'blank' | 'editorial' | 'photoEssay' | 'linkPreviews' | GalleryStyle;
 export type Block =

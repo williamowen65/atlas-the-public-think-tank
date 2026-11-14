@@ -800,6 +800,7 @@
                 ? { ...block, [masonry ? 'masonryColumns' : 'gridColumns']: count }
                 : item);
             }}>
+            <option value={1}>1 column</option>
             <option value={2}>2 columns</option>
             <option value={3}>3 columns</option>
             <option value={4}>4 columns</option>

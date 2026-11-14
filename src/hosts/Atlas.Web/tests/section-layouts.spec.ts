@@ -383,12 +383,16 @@ test('gallery columns update live and carry through both previews', async ({ pag
   const gridColumns = page.locator('.tiles');
 
   await expect(grid).toHaveValue('2');
+  await grid.selectOption('1');
+  await expect(gridColumns).toHaveCSS('--column-count', '1');
   await grid.selectOption('4');
   await expect(gridColumns).toHaveCSS('--column-count', '4');
   await layout.selectOption('masonry');
   await expect(masonry).toHaveValue('3');
   await masonry.selectOption('4');
   await expect(masonryColumns).toHaveCount(4);
+  await masonry.selectOption('1');
+  await expect(masonryColumns).toHaveCount(1);
   await masonry.selectOption('2');
   await expect(masonryColumns).toHaveCount(2);
   await layout.selectOption('grid');
