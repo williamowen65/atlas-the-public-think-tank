@@ -199,16 +199,20 @@
 <form
   class="node-form"
   aria-label={parentId ? 'Create child node' : 'Create root node'}
+  novalidate
   onsubmit={(event) => {
     event.preventDefault();
-    blockError = validateAuthorBlocks(blocks) ?? '';
+    if (submitting) return;
+    blockError = !title.trim() ? 'Enter a node title.'
+      : typeId === 'new' && !typeName.trim() ? 'Enter a name for the new node type.'
+      : typeId !== 'new' && !selectedTypeName ? 'Select a node type.'
+      : validateAuthorBlocks(blocks) ?? '';
     if (blockError) return;
     onSubmit(draft());
   }}
 >
   <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions}
     disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
-  {#if blockError}<p role="alert">{blockError}</p>{/if}
 </form>
 
 {#snippet titleFields()}
@@ -308,6 +312,7 @@
     </div>
   </footer>
   <div class="actions">
+    {#if blockError}<p role="alert">{blockError}</p>{/if}
     <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
   </div>
 {/snippet}

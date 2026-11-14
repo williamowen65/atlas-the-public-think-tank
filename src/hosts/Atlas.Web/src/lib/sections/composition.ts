@@ -44,8 +44,12 @@ export function validateComposition(value: string): string | null {
   if (value.length > 512000) return 'This composition is too large.';
   for (const block of composition.blocks) {
     if (block.kind === 'link' && !publicUrl(block.url)) return 'Use a valid HTTP or HTTPS link.';
-    if ('photos' in block && (!block.photos.length || block.photos.some((photo) => !publicUrl(photo.src) || !photo.alt.trim())))
-      return 'Each photo needs an HTTP or HTTPS URL and alternative text.';
+    if ('photos' in block) {
+      if (!block.photos.length || block.photos.some((photo) => !publicUrl(photo.src)))
+        return 'Enter an HTTP or HTTPS URL for each photo, or remove the unfinished photo.';
+      if (block.photos.some((photo) => !photo.alt.trim()))
+        return 'Enter alternative text for each photo.';
+    }
   }
   return null;
 }

@@ -121,3 +121,35 @@ test('custom type creation is reused on a failed node retry and the draft remain
   expect(fixture.writes.find(write => write.path.endsWith('/catalog/node-types'))?.body.autoPluralize).toBe(false);
   expect(fixture.writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(2);
 });
+
+test('create explains missing fields before sending a request', async ({ page }) => {
+  const { writes } = await setup(page, true);
+  await page.goto('http://127.0.0.1:4173/new');
+  const create = page.getByRole('button', { name: 'Create node', exact: true });
+  await create.click();
+  await expect(page.getByRole('alert')).toHaveText('Enter a node title.');
+  expect(writes.some(write => write.path.endsWith('/nodes'))).toBe(false);
+  await fill(page);
+  await create.click();
+  await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
+  expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
+});
+
+test('a photo missing alt text is flagged before publishing', async ({ page }) => {
+  const { writes } = await setup(page, true);
+  await page.route('https://example.test/photo.jpg', route => route.abort());
+  await page.goto('http://127.0.0.1:4173/new');
+  await fill(page);
+  await page.getByRole('button', { name: 'Add section', exact: true }).click();
+  await page.getByRole('button', { name: 'Add this layout' }).click();
+  await page.getByRole('button', { name: /Add block · Section 2/ }).click();
+  await page.getByRole('button', { name: 'Image', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit image', exact: true }).click();
+  await page.getByRole('button', { name: 'Editor settings' }).click();
+  await page.getByLabel('Image URL').fill('https://example.test/photo.jpg');
+  await expect(page.getByText('Alternative text is required.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Alternative text (required)')).toHaveAttribute('aria-invalid', 'true');
+  await page.getByLabel('Alternative text (required)').fill('Trees along a walkway');
+  await expect(page.getByText('Alternative text is required.', { exact: true })).toHaveCount(0);
+  expect(writes.some(write => write.path.endsWith('/nodes'))).toBe(false);
+});

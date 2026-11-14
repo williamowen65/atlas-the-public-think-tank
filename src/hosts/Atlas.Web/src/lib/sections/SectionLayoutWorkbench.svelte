@@ -716,6 +716,7 @@
         {#if src}<PhotoFrame {photo} {src} gallery />{/if}
       </div></figure>
     {:else}
+      {@const missingAlt = !!photo.src.trim() && !photo.alt.trim()}
       <figure class="edit-photo"
         data-gallery-photo={block.kind === 'gallery' ? photo.id : undefined}
         data-gallery-block={block.kind === 'gallery' ? block.id : undefined}
@@ -726,6 +727,7 @@
           title={wrappedSection ? 'Drag to another paragraph, or click to edit image' : undefined}
           ondragstart={(event) => { if (wrappedSection) startImageDrag(event, wrappedSection); }} type="button" aria-label={`Edit ${photo.alt || 'image'}`}
           aria-pressed={photoDetails === photo.id}
+          aria-describedby={missingAlt ? `${alignmentMenuId}-alt-${photo.id}` : undefined}
           onclick={() => {
             activeBlock = block.id;
             activeEditor = undefined;
@@ -766,6 +768,9 @@
             photo.frame = { ...photo.frame, blobTangents };
           }} />
         {/if}
+        {#if missingAlt}
+          <p class="alt-warning" id={`${alignmentMenuId}-alt-${photo.id}`}>Alternative text is required.</p>
+        {/if}
         {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
       </figure>
     {/if}
@@ -778,10 +783,18 @@
 {/snippet}
 
 {#snippet photoSettings(photo: Photo, block: Extract<Block, { photos: Photo[] }>, section: Section, slots: Slot[])}
+  {@const missingAlt = !!photo.src.trim() && !photo.alt.trim()}
   <div class="photo-details" role="group" aria-labelledby={`${alignmentMenuId}-image`}>
     <h3 id={`${alignmentMenuId}-image`}>Image settings</h3>
     <label>Image URL<input type="url" value={photo.src} oninput={(event) => { remember(); photo.src = event.currentTarget.value; }} /></label>
-    <label>Alternative text<input value={photo.alt} oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} /></label>
+    <label>Alternative text (required)
+      <input value={photo.alt} aria-required="true" aria-invalid={missingAlt}
+        aria-describedby={missingAlt ? `${alignmentMenuId}-alt-input-${photo.id}` : undefined}
+        oninput={(event) => { remember(); photo.alt = event.currentTarget.value; }} />
+    </label>
+    {#if missingAlt}
+      <p class="alt-warning" id={`${alignmentMenuId}-alt-input-${photo.id}`}>Describe the photo for people who can’t see it.</p>
+    {/if}
     <label>Caption<input value={photo.caption} oninput={(event) => { remember(); photo.caption = event.currentTarget.value; }} /></label>
     <label>Caption placement
       <select value={photo.captionPlacement ?? 'below'} onchange={(event) => {
@@ -1120,6 +1133,8 @@
   .edit-slot :global(.image-drop-left) { box-shadow: inset 3px 0 var(--atlas-accent); }
   .edit-slot :global(.image-drop-right) { box-shadow: inset -3px 0 var(--atlas-accent); }
   figure { margin: 0; }
+  .alt-warning { color: light-dark(#a32323, #ffabab); font-size: .85rem; font-weight: 600; margin: .25rem auto 0; }
+  .edit-photo .alt-warning { width: var(--photo-width, 100%); }
   figcaption { text-align: center; font-size: .85rem; color: var(--atlas-muted); width: var(--photo-width); margin: .25rem auto 0; }
   .editor-frame.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 24rem); gap: 1rem; align-items: start; }
   .editor-sidebar {
