@@ -1391,6 +1391,11 @@
   :global(.atlas-story-rich-document li p) { margin: 0; }
   :global(.atlas-story-rich-document h2) { font-size: 1.4em; line-height: 1.3; margin: 1.25rem 0 .5rem; }
   :global(.atlas-story-rich-document ul), :global(.atlas-story-rich-document ol) { padding-left: 1.5rem; }
+  :global(.atlas-story-rich-document pre) {
+    overflow-x: auto;
+    padding: 1rem;
+    background: var(--atlas-bg);
+  }
   :global(.atlas-story-rich-document blockquote) { padding-left: 1rem; border-left: 3px solid var(--atlas-border); }
   :global(.atlas-story-rich-document a) { color: var(--atlas-accent); text-decoration: underline; }
   :global(.atlas-story-rich-document hr) { border: 0; border-top: 1px solid var(--atlas-border); margin: 1.5rem 0; }

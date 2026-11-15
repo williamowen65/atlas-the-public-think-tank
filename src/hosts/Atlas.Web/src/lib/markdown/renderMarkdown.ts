@@ -105,6 +105,14 @@ for (const renderer of [sectionMarkdown, editorMarkdown]) {
 // ProseMirror collapses soft breaks to spaces when it loads HTML. Render
 // them the same way for the round-trip check while preserving hard breaks.
 editorMarkdown.renderer.rules.softbreak = () => ' ';
+// MarkdownIt adds a final newline to the HTML code text. The editor preserves
+// whitespace verbatim, so remove the structural newline before loading it.
+editorMarkdown.core.ruler.push('atlas_editor_code_whitespace', ({ tokens }) => {
+  for (const token of tokens) {
+    if (token.type === 'fence' || token.type === 'code_block')
+      token.content = token.content.replace(/\n$/, '');
+  }
+});
 
 /** Render user Markdown using the fixed policy above; never pass arbitrary HTML through. */
 export function renderMarkdown(source: string, images = false, preview = false, gallery = false): string {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fromMarkdown, writeComposition } from '../src/lib/sections/composition';
 
 const node = 'b1000000-0000-4000-8000-000000000001';
 const author = 'c1000000-0000-4000-8000-000000000001';
@@ -225,4 +226,21 @@ test('the published feed uses the same ordered slides after editing from the car
   await carousel.getByRole('button', { name: 'Read more' }).click();
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${node}`));
   await expect(page.locator('article.node-page')).toContainText('Original Markdown revised');
+});
+
+test('a fenced code block opens in the section rich-text editor', async ({ page }) => {
+  await setup(page);
+  const code = 'river | baseline\nexample | pending';
+  const markdown = ['### Questions to investigate', '1. Record baseline counts.\n2. Compare outcomes.', '```text\n' + code + '\n```'].join('\n\n');
+  await page.route('**/nodes/*/description', route => route.fulfill({
+    json: [{ id: originalBlock, kind: 'sectioned', content: { composition: writeComposition(fromMarkdown([markdown])) } }],
+  }));
+  await page.goto(story);
+  await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const body = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
+  await expect(body.getByRole('heading', { name: 'Questions to investigate' })).toBeVisible();
+  await expect(body.locator('pre > code')).toHaveClass('language-text');
+  expect(await body.locator('pre > code').textContent()).toBe(code);
+  await expect(editor.getByLabel('Section Markdown')).toHaveCount(0);
 });
