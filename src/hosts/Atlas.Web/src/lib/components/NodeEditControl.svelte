@@ -20,7 +20,8 @@
   const nodeId = $derived(node.id);
   const authorId = $derived(node.authorId);
   let editorRevision = $state(0);
-  let dialog = $state<HTMLDialogElement>();
+  let editorHeading = $state<HTMLHeadingElement>();
+  let editButton = $state<HTMLButtonElement>();
   let opened = $state(false);
   let busy = $state(false);
   let loaded = $state(false);
@@ -62,7 +63,7 @@
     controller?.abort();
     controller = new AbortController();
     await tick();
-    dialog?.showModal();
+    editorHeading?.focus();
     try {
       const [detail, content] = await Promise.all([
         readJson<NodeDetail>(apiBase, path(), signal()),
@@ -80,19 +81,22 @@
     } finally { busy = false; }
   }
 
-  function close() {
-    if (busy || (dirty && !window.confirm('Discard unsaved edits? Changes already saved remain public.'))) return;
+  function finishEditing() {
     controller?.abort();
-    dialog?.close();
     opened = false;
     loaded = false;
     blocks = [];
+    void tick().then(() => editButton?.focus());
+  }
+
+  function close() {
+    if (busy || (loaded && dirty && !window.confirm('Discard unsaved edits? Changes already saved remain public.'))) return;
+    finishEditing();
   }
 
   $effect(() => {
     if (opened && (!permitted || $editorSession !== owner)) {
       controller?.abort();
-      dialog?.close();
       opened = false;
       loaded = false;
       blocks = [];
@@ -160,6 +164,7 @@
       onSaved?.({ title: nextTitle, blocks: persisted });
       notice = 'Changes published. Block order and identities are preserved.';
       try { localStorage.removeItem(draftKey()); draftAvailable = false; } catch { /* private storage optional */ }
+      finishEditing();
     } catch (cause) {
       error = `${cause instanceof Error ? cause.message : 'Save failed.'} Some changes may already be public. Your editor remains open; reload before retrying if necessary.`;
       if (cause instanceof ApiRequestError && cause.status === 401)
@@ -172,6 +177,7 @@
       localStorage.setItem(draftKey(), JSON.stringify({ title, blocks }));
       draftAvailable = true;
       notice = 'Private revision saved in this browser; public content is unchanged.';
+      finishEditing();
     } catch { error = 'Could not save a private revision on this device.'; }
   }
   function restoreDraft() {
@@ -200,14 +206,14 @@
   }
 </script>
 
-{#if permitted}
-  <button class="edit-node" class:corner type="button" aria-label="Edit your node" title="Edit your node" onclick={() => void open()}>
+{#if permitted && !opened}
+  <button bind:this={editButton} class="edit-node" class:corner type="button" aria-label="Edit your node" title="Edit your node" onclick={() => void open()}>
     <span aria-hidden="true">✎</span>{#if !corner} Edit{/if}
   </button>
 {/if}
 {#if opened}
-  <dialog bind:this={dialog} aria-label="Edit node" oncancel={(event) => { event.preventDefault(); close(); }}>
-    <h2>Edit your node</h2>
+  <section class="inline-node-editor" aria-label="Edit node">
+    <h2 bind:this={editorHeading} tabindex="-1">Edit your node</h2>
     {#if busy}<p role="status">Saving or loading…</p>{/if}
     {#if error}<p role="alert">{error}</p>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
@@ -228,7 +234,9 @@
       </fieldset>
     {:else if !busy}<button type="button" onclick={() => void open()}>Retry loading editor</button>{/if}
     <button type="button" disabled={busy} onclick={close}>Close editor</button>
-  </dialog>
+  </section>
+{:else if permitted && notice}
+  <p class="edit-result" role="status">{notice}</p>
 {/if}
 
 {#snippet titleField()}
@@ -244,8 +252,18 @@
   .edit-node { color: var(--atlas-accent); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); font-size: .85rem; }
   .edit-node.corner { position: absolute; top: 0; right: 0; z-index: 2; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: 0; padding: 0; border: 0; border-left: 1px solid var(--atlas-border); border-bottom: 1px solid var(--atlas-border); border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); font-size: 1.3rem; }
   .edit-node:focus-visible { outline: 3px solid var(--atlas-focus); outline-offset: -4px; }
-  dialog { box-sizing: border-box; width: min(78rem, 96vw); max-height: 94dvh; overflow-y: auto; padding: clamp(.75rem, 3vw, 1.5rem); color: var(--atlas-text); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
-  dialog::backdrop { background: rgb(0 0 0 / .55); }
+  .inline-node-editor {
+    box-sizing: border-box; width: 100%; max-width: 48rem; margin-inline: auto;
+    padding: clamp(.75rem, 2vw, 1.25rem); color: var(--atlas-text);
+    scroll-margin-block-start: calc(var(--atlas-navigation-height, 0px) + .5rem);
+  }
+  .inline-node-editor h2 { margin-block: 0 .75rem; }
+  .edit-result { margin: .75rem 1.25rem; }
+  :global(article:is(.node-page, .node-card):has(> .inline-node-editor) > :not(.inline-node-editor)),
+  :global(article.node-card:has(> header > .inline-node-editor) > :not(header)),
+  :global(article.node-card > header:has(> .inline-node-editor) > :not(.inline-node-editor)) {
+    display: none;
+  }
   .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
   .title-row strong { color: var(--atlas-accent); }
   fieldset { border: 0; padding: 0; min-width: 0; }

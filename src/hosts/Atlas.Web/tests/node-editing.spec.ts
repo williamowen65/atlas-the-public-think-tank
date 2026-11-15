@@ -95,7 +95,7 @@ for (const environment of ['storybook', 'spa']) {
     const fixture = await setup(page);
     await page.goto(environment === 'storybook' ? story : `http://127.0.0.1:4173/nodes?id=${node}`);
     await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-    const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+    const editor = page.getByRole('region', { name: 'Edit node', exact: true });
     await editor.getByRole('textbox', { name: 'Node content: editable rich-text document' }).click();
     await editor.getByRole('button', { name: 'Insert block before' }).click();
     await editor.getByRole('button', { name: 'Image', exact: true }).click();
@@ -110,14 +110,14 @@ for (const environment of ['storybook', 'spa']) {
     expect(fixture.writes).toHaveLength(0);
     await editor.getByRole('button', { name: 'Edit', exact: true }).click();
     await editor.getByRole('button', { name: 'Publish changes' }).click();
-    await expect(editor.getByRole('status')).toContainText('Changes published');
+    await expect(page.getByText(/Changes published/)).toBeVisible();
     expect(fixture.getBlocks().map((block) => block.id)).toEqual([addedBlock, originalBlock]);
     expect(fixture.writes.some((w) => w.method === 'POST' && w.path.endsWith('/description/blocks'))).toBe(true);
     const moves = fixture.writes.filter((w) => w.path.endsWith('/position'));
     expect(moves).toHaveLength(1);
     expect(moves[0].path).toContain(`/blocks/${addedBlock}/position`);
     expect(moves[0].body).toEqual({ index: 0 });
-    await editor.getByRole('button', { name: 'Close editor' }).click();
+    await expect(editor).toBeHidden();
     await expect(page.getByAltText('A pedestrian square with trees')).toBeVisible();
   });
 }
@@ -126,7 +126,7 @@ test('image blocks require valid HTTP(S) URL and alternative text before publish
   const fixture = await setup(page);
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   await editor.getByLabel('Edit Markdown').check();
   await editor.getByRole('button', { name: '+ Image' }).click();
   await editor.getByRole('button', { name: 'Publish changes' }).click();
@@ -141,10 +141,10 @@ test('publishing a title edit sends no block position updates', async ({ page })
   const fixture = await setup(page);
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   await editor.getByRole('textbox', { name: 'Title', exact: true }).fill('A revised title');
   await editor.getByRole('button', { name: 'Publish changes' }).click();
-  await expect(editor.getByRole('status')).toContainText('Changes published');
+  await expect(page.getByText(/Changes published/)).toBeVisible();
   expect(fixture.writes.map(({ path }) => path.split('/').at(-1))).toEqual(['title']);
 });
 
@@ -152,7 +152,7 @@ test('failed changes retain the editor contents for a retry', async ({ page }) =
   const fixture = await setup(page);
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   const content = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await content.press('ControlOrMeta+a');
   await content.pressSequentially('Unsaved edit');
@@ -166,14 +166,14 @@ test('private revisions remain unpublished and can be restored', async ({ page }
   const fixture = await setup(page);
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   const content = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await content.press('ControlOrMeta+a');
   await content.pressSequentially('Private revision');
   await editor.getByRole('button', { name: 'Save private revision', exact: true }).click();
   expect(fixture.writes).toHaveLength(0);
-  page.on('dialog', (dialog) => dialog.accept());
-  await editor.getByRole('button', { name: 'Close editor' }).click();
+  await expect(editor).toBeHidden();
+  await expect(page.getByText(/Private revision saved/)).toBeVisible();
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
   await expect(editor.getByRole('textbox', { name: 'Node content: editable rich-text document' })).toHaveText('Original Markdown');
   await editor.getByRole('button', { name: 'Restore private revision' }).click();
@@ -212,14 +212,14 @@ test('the published feed uses the same ordered slides after editing from the car
   await expect(carousel).toContainText('Original Markdown');
 
   await card.getByRole('button', { name: 'Edit your node' }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   const canvas = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await canvas.getByText('Original Markdown', { exact: true }).click();
   await page.keyboard.press('End');
   await page.keyboard.insertText(' revised');
   await editor.getByRole('button', { name: 'Publish changes' }).click();
-  await expect(editor.getByRole('status')).toContainText('Changes published');
-  await editor.getByRole('button', { name: 'Close editor' }).click();
+  await expect(page.getByText(/Changes published/)).toBeVisible();
+  await expect(editor).toBeHidden();
 
   await expect(carousel).toContainText('Original Markdown revised');
   expect(fixture.getBlocks().map((block) => block.id)).toEqual([originalBlock]);
@@ -237,10 +237,16 @@ test('a fenced code block opens in the section rich-text editor', async ({ page 
   }));
   await page.goto(story);
   await page.getByRole('button', { name: 'Edit your node', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit node', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit node', exact: true });
   const body = editor.getByRole('textbox', { name: 'Node content: editable rich-text document' });
   await expect(body.getByRole('heading', { name: 'Questions to investigate' })).toBeVisible();
   await expect(body.locator('pre > code')).toHaveClass('language-text');
   expect(await body.locator('pre > code').textContent()).toBe(code);
   await expect(editor.getByLabel('Section Markdown')).toHaveCount(0);
+  await body.locator('pre > code').click();
+  const toolbar = editor.getByRole('group', { name: 'Text formatting', exact: true });
+  const codeButton = toolbar.getByRole('button', { name: 'Code block', exact: true });
+  await expect(codeButton).toHaveAttribute('aria-pressed', 'true');
+  await codeButton.click();
+  await expect(body.locator('pre')).toHaveCount(0);
 });

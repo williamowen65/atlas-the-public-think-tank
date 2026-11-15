@@ -551,6 +551,12 @@
                 onclick={() => activeEditor?.formatText('bulletList')}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
               </button>
+              <button type="button" aria-label="Code block" title="Code block" disabled={!activeEditor}
+                aria-pressed={textFormatting?.codeBlock ?? false}
+                onpointerdown={(event) => event.preventDefault()}
+                onclick={() => activeEditor?.formatText('codeBlock')}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-2-15-4 18" /></svg>
+              </button>
             </div>
             <button type="button" aria-label="Undo" title="Undo" disabled={!history.length && !layoutBefore} onclick={undo}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5m-5-5h10a5 5 0 0 1 0 10" /></svg>

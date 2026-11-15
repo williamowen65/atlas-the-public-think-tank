@@ -473,6 +473,7 @@
       bold: editor?.isActive('bold') ?? false,
       italic: editor?.isActive('italic') ?? false,
       underline: editor?.isActive('underline') ?? false,
+      codeBlock: editor?.isActive('codeBlock') ?? false,
     };
   }
 
@@ -484,18 +485,19 @@
     else command.setHeading({ level }).run();
   }
 
-  export function formatText(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
+  export function formatText(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'codeBlock' | 'link', level: 2 | 3 | 4 | 5 | 6 = 2) {
     if (kind === 'link') openLinkForm();
     else format(kind, level);
   }
 
-  function format(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList', level: 2 | 3 | 4 | 5 | 6 = 2) {
+  function format(kind: 'bold' | 'italic' | 'underline' | 'heading' | 'bulletList' | 'codeBlock', level: 2 | 3 | 4 | 5 | 6 = 2) {
     const editor = currentEditor();
     if (!editor) return;
     if (kind === 'bold') editor.chain().focus().toggleBold().run();
     else if (kind === 'italic') editor.chain().focus().toggleItalic().run();
     else if (kind === 'underline') editor.chain().focus().toggleUnderline().run();
     else if (kind === 'heading') editor.chain().focus().toggleHeading({ level }).run();
+    else if (kind === 'codeBlock') editor.chain().focus().toggleCodeBlock().run();
     else editor.chain().focus().toggleBulletList().run();
   }
 
@@ -1049,6 +1051,9 @@
       onclick={() => format('heading')}>H2</button>
     <button type="button" aria-label="Toggle bulleted list" onpointerdown={(event) => event.preventDefault()}
       onclick={() => format('bulletList')}>List</button>
+    <button type="button" aria-label="Code block" title="Code block"
+      aria-pressed={textFormatting().codeBlock} onpointerdown={(event) => event.preventDefault()}
+      onclick={() => format('codeBlock')}>{'</>'}</button>
   </div>{/if}
 
 
