@@ -1,4 +1,4 @@
-import { compositionExcerpt, validateComposition } from '../sections/composition';
+import { compositionExcerpt, readComposition, validateComposition } from '../sections/composition';
 import { imageLayout, type ImageLayout } from '../markdown/imageLayout';
 import { publicUrl, type ContentBlock } from './nodePage';
 
@@ -75,6 +75,28 @@ export function validateAuthorBlocks(blocks: AuthorBlock[]): string | null {
       return `Block ${i + 1}: Markdown must be under 32000 characters.`;
   }
   return null;
+}
+
+export function publicationMarkdown(blocks: AuthorBlock[]): string {
+  return blocks.flatMap(block => {
+    if (block.kind === 'markdown') return [block.text];
+    if (block.kind !== 'sectioned') return [];
+    return (readComposition(block.text)?.blocks ?? [])
+      .flatMap(sectionBlock => sectionBlock.kind === 'text' ? [sectionBlock.text] : []);
+  }).join('\n\n');
+}
+
+export function validateNodePublication(blocks: AuthorBlock[]): string | null {
+  const error = validateAuthorBlocks(blocks);
+  if (error) return error;
+  const text = publicationMarkdown(blocks)
+    .replace(/!\[[^\[\]\r\n]*\](?:\([^)]*\)|\[[^\[\]\r\n]*\])/g, '')
+    .replace(/\[([^\[\]\r\n]+)\]\([^)]*\)/g, '$1')
+    .replace(/[#*_~`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length >= 200 && /[\p{L}\p{N}]/u.test(text)
+    ? null : 'Add at least 200 characters of text to publish this node.';
 }
 
 export function derivedExcerpt(blocks: AuthorBlock[], title = ''): string {

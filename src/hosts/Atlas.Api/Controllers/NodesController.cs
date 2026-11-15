@@ -79,6 +79,9 @@ public sealed class NodesController(
     [Authorize(Policy = AtlasPolicies.Member), HttpPost]
     public IActionResult Create(CreateNodeRequest request)
     {
+        if (!NodePublicationText.MeetsMinimum(request.Markdown, request.Composition))
+            return Problem(detail: NodePublicationText.MinimumMessage, statusCode: 400);
+
         // Translate requested identifiers and create the node/description in one workflow.
         var node = workflow.Create(
             documents,

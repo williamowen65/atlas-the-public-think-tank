@@ -36,7 +36,7 @@
   import SessionControl from './SessionControl.svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { readTypes, readJson, type ContentBlock, type NodeType } from '../api/nodePage';
-  import { blockRequest, derivedExcerpt, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
+  import { blockRequest, derivedExcerpt, publicationMarkdown, validateNodePublication, type AuthorBlock } from '../api/contentAuthoring';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readDiscovery, discoveryCard } from '../api/discovery';
   let {
@@ -287,7 +287,7 @@
     const desired: AuthorBlock[] = draft.blocks?.length
       ? draft.blocks
       : [{ key: 'legacy', kind: 'markdown', text: draft.markdown, url: '', caption: '' }];
-    const validation = validateAuthorBlocks(desired);
+    const validation = validateNodePublication(desired);
     if (validation) { saveError = validation; return; }
     submitting = true;
     saveError = '';
@@ -317,7 +317,7 @@
           sessionBase, 'nodes', 'POST',
           {
             title: draft.title,
-            markdown: (!composition && draft.markdown.trim()) || derivedExcerpt(desired, draft.title) || draft.title,
+            markdown: composition ? derivedExcerpt(desired, draft.title) : publicationMarkdown(desired).trim().slice(0, 32000),
             composition,
             typeId,
             parentId: draft.parentId ?? null,

@@ -6,6 +6,8 @@ Sign in as the author and use the pencil on a feed card or the full node page. T
 - **Preview in feed** shows the draft as a feed card. **Read More** opens the full draft preview. Narrow views stack section blocks in reading order and adapt gallery columns to the available width.
 - **Publish changes** sends the title and content changes to the API. The full node renders its Content document, and discovery and search derive text from content blocks.
 
+New nodes need at least 200 characters of body text to publish. The title, image captions, and alternative text do not count. You can save an incomplete node as a private draft.
+
 ## Saving and recovery
 
 **Save private revision** stores the draft for this participant and node in the current browser. Use **Restore private revision** after reopening the editor, or **Delete private revision** to remove the browser copy. Private revisions leave the published node visible and are local to the device.

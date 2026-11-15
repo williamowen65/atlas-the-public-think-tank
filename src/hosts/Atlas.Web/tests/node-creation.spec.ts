@@ -52,9 +52,11 @@ async function login(page: Page) {
   await form.getByLabel('Password', { exact: true }).fill('fixture-password');
   await form.getByRole('button', { name: 'Sign in', exact: true }).click();
 }
+const publishableBody = 'This contribution describes the issue and asks readers to share their experience. '.repeat(3).trim();
+
 async function fill(page: Page) {
   await page.getByLabel('Title', { exact: true }).fill('Created through the frontend');
-  await page.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('The full content');
+  await page.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill(publishableBody);
 }
 for (const environment of ['storybook', 'spa']) {
   test(`${environment} root creation prompts sign-in and opens the saved node`, async ({ page }) => {
@@ -82,8 +84,8 @@ for (const environment of ['storybook', 'spa']) {
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
     const save = writes.find(write => write.path.endsWith('/nodes'))!;
-    expect(save.body).toMatchObject({ title: 'Created through the frontend', markdown: 'The full content', typeId: idea, parentId: null, requestedTypeIds: [idea] });
-    expect(JSON.parse(String(save.body.composition))).toMatchObject({ version: 1, blocks: [{ kind: 'text', text: 'The full content' }] });
+    expect(save.body).toMatchObject({ title: 'Created through the frontend', markdown: publishableBody, typeId: idea, parentId: null, requestedTypeIds: [idea] });
+    expect(JSON.parse(String(save.body.composition))).toMatchObject({ version: 1, blocks: [{ kind: 'text', text: publishableBody }] });
     expect(writes.some(write => write.path.includes('/description/blocks'))).toBe(false);
     expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
     expect(writes.filter(write => write.path.includes('/communities/')).map(write => write.path))
@@ -133,6 +135,21 @@ test('create explains missing fields before sending a request', async ({ page })
   await create.click();
   await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
   expect(writes.filter(write => write.path.endsWith('/nodes'))).toHaveLength(1);
+});
+
+test('an incomplete node can be saved privately but needs 200 characters to publish', async ({ page }) => {
+  const { writes } = await setup(page, true);
+  await page.goto('http://127.0.0.1:4173/new');
+  await page.getByLabel('Title', { exact: true }).fill('A short draft');
+  const create = page.getByRole('button', { name: 'Create node', exact: true });
+  await create.click();
+  await expect(page.getByRole('alert')).toContainText('Add at least 200 characters');
+  await page.getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill('x');
+  await create.click();
+  await expect(page.getByRole('alert')).toContainText('Add at least 200 characters');
+  await page.getByRole('button', { name: 'Save private draft', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Saved privately');
+  expect(writes.some(write => write.path.endsWith('/nodes'))).toBe(false);
 });
 
 test('a photo missing alt text is flagged before publishing', async ({ page }) => {

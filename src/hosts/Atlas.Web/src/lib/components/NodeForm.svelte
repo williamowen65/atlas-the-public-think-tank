@@ -33,7 +33,7 @@
   import { fromMarkdown, writeComposition } from '../sections/composition';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
   import type { NodeCardData } from './node-card-versions/types';
-  import { derivedExcerpt, newAuthorBlock, validateAuthorBlocks, type AuthorBlock } from '../api/contentAuthoring';
+  import { derivedExcerpt, newAuthorBlock, validateNodePublication, type AuthorBlock } from '../api/contentAuthoring';
   import type { NodeType } from '../api/nodePage';
   let {
     initialDraft,
@@ -207,7 +207,7 @@
     blockError = !title.trim() ? 'Enter a node title.'
       : typeId === 'new' && !typeName.trim() ? 'Enter a name for the new node type.'
       : typeId !== 'new' && !selectedTypeName ? 'Select a node type.'
-      : validateAuthorBlocks(blocks) ?? '';
+      : validateNodePublication(blocks) ?? '';
     if (blockError) return;
     onSubmit(draft());
   }}
