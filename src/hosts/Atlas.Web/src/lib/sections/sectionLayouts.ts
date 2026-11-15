@@ -72,7 +72,9 @@ export type Block =
   | { id: string; kind: 'link'; url: string }
   | { id: string; kind: 'text'; text: string; alignment?: TextAlignment }
   | { id: string; kind: 'image' | 'gallery'; photos: Photo[]; galleryStyle?: GalleryStyle; galleryWidth?: 'full' | 'centered'; gridColumns?: GalleryColumns; masonryColumns?: GalleryColumns; masonryAlignment?: 'top' | 'center'; slideshow?: SlideshowSettings };
+export type FeedPresentation = 'opening-content' | 'title-only';
 export type Draft = {
+  feedPresentation?: FeedPresentation;
   title: string;
   layouts: Layout[];
   sections: Section[];

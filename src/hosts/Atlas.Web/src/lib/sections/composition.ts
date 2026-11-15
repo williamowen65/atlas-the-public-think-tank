@@ -12,8 +12,9 @@ export function readComposition(value?: string): Composition | undefined {
 }
 
 export function writeComposition(draft: Draft): string {
-  const { layouts, sections, blocks, assignments } = draft;
-  return JSON.stringify({ version: 1, layouts, sections, blocks, assignments });
+  const { layouts, sections, blocks, assignments, feedPresentation } = draft;
+  return JSON.stringify({ version: 1, layouts, sections, blocks, assignments,
+    feedPresentation: feedPresentation === 'title-only' ? feedPresentation : undefined });
 }
 
 export function fromMarkdown(texts: string[]): Draft {

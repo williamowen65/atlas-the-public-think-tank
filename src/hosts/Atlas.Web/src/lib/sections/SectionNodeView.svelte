@@ -21,7 +21,21 @@
   let contentHeight = $state(0);
   let gallery = $state<ReturnType<typeof NodeMediaGallery>>();
   const truncated = $derived(feed && contentHeight > viewportHeight + 1);
-  const sections = $derived(feed ? draft.sections.slice(0, 1) : draft.sections);
+  const sections = $derived.by(() => {
+    if (!feed) return draft.sections;
+    if (draft.feedPresentation === 'title-only') return [];
+    const opening = draft.sections.find(section => {
+      const layout = draft.layouts.find(({ id }) => id === section.layoutId);
+      return layout && sectionRows(section, layout).some(({ slots }) => slots.some(({ id }) => {
+        const block = blockAt(draft, section.id, id);
+        if (!block) return false;
+        if (block.kind === 'text') return !!block.text.trim();
+        if (block.kind === 'link') return !!publicUrl(block.url);
+        return block.photos.some(photo => !!publicUrl(photo.src));
+      }));
+    });
+    return opening ? [opening] : [];
+  });
   const photos = $derived(sections.flatMap((section) => {
     const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
     return sectionRows(section, layout).flatMap(({ slots }) => slots).flatMap((slot) => {
@@ -40,7 +54,7 @@
   <div class="sections" bind:offsetHeight={contentHeight}>
     {#each sections as section, index (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
-      {#if index > 0 && section.breakBefore}<SectionBreak />{/if}
+      {#if !feed && index > 0 && section.breakBefore}<SectionBreak />{/if}
       {#each sectionRows(section, layout) as row (row.id)}
         {@const wrap = rowWrap(draft, section, row.slots)}
         {#if row.slots.some((slot) => blockAt(draft, section.id, slot.id))}

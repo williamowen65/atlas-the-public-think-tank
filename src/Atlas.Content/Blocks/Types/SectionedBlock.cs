@@ -35,6 +35,7 @@ public sealed class SectionedBlock : ContentBlock
             using var json = JsonDocument.Parse(composition, new JsonDocumentOptions { MaxDepth = 24 });
             var root = json.RootElement;
             if (root.GetProperty("version").GetInt32() != 1) throw new ArgumentException("Unknown composition version.");
+            Choice(root, "feedPresentation", "opening-content", "title-only");
             var layouts = root.GetProperty("layouts").EnumerateArray().ToDictionary(
                 layout => Id(layout, "id"),
                 layout => layout.GetProperty("slots").EnumerateArray().ToDictionary(slot => Id(slot, "id"), slot =>

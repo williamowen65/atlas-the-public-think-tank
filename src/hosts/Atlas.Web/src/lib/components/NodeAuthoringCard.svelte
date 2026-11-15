@@ -4,7 +4,7 @@
   import { untrack } from 'svelte';
   import SectionLayoutWorkbench from '../sections/SectionLayoutWorkbench.svelte';
   import { fromMarkdown, readComposition, writeComposition } from '../sections/composition';
-  import type { Draft } from '../sections/sectionLayouts';
+  import type { Draft, FeedPresentation } from '../sections/sectionLayouts';
   import BlockComposer from './BlockComposer.svelte';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import ContentBlocks from './ContentBlocks.svelte';
@@ -31,6 +31,11 @@
     const composition = readComposition(saved?.text);
     return composition ? { ...composition, title: '' } : undefined;
   }));
+  let feedPresentation = $state<FeedPresentation>(untrack(() =>
+    sectionDraft?.feedPresentation === 'title-only' ? 'title-only' : 'opening-content'));
+  let feedHelp = $state(false);
+  const feedHelpId = $props.id();
+  let currentSectionDraft = untrack(() => sectionDraft);
   const canConvert = $derived(!sectionDraft && blocks.every(({ kind }) => kind === 'markdown'));
   let lastComposition = untrack(() => sectionDraft ? writeComposition(sectionDraft) : undefined);
 
@@ -39,7 +44,8 @@
   }
 
   function updateSections(draft: Draft) {
-    const text = writeComposition(draft);
+    currentSectionDraft = draft;
+    const text = writeComposition({ ...draft, feedPresentation });
     if (text === lastComposition) return;
     lastComposition = text;
     const original = blocks.find(({ kind }) => kind === 'sectioned');
@@ -54,10 +60,31 @@
   <div class="view-controls" role="group" aria-label="Node draft view">
     <button type="button" aria-pressed={view === 'edit'} onclick={() => view = 'edit'}>Edit</button>
     <button type="button" aria-pressed={view === 'feed'} onclick={() => view = 'feed'}>Preview in feed</button>
+    {#if sectionDraft}
+      <div class="feed-setting">
+        <label>Show in feed
+          <select value={feedPresentation} {disabled} onchange={(event) => {
+            feedPresentation = event.currentTarget.value === 'title-only' ? 'title-only' : 'opening-content';
+            if (currentSectionDraft) updateSections(currentSectionDraft);
+          }}>
+            <option value="opening-content">Title and opening content</option>
+            <option value="title-only">Title only</option>
+          </select>
+        </label>
+        <button class="feed-help-button" type="button" aria-label="About what appears in the feed"
+          aria-expanded={feedHelp} aria-controls={feedHelpId} onclick={() => feedHelp = !feedHelp}>i</button>
+      </div>
+    {/if}
     {#if view === 'full'}
       <span class="full-label">Full node preview</span>
     {/if}
   </div>
+
+  {#if sectionDraft}
+    <p class="feed-help" id={feedHelpId} hidden={!feedHelp}>
+      Opening content is the first section with text, an image, or a link. Title only hides the body in the feed. Read More opens the full node with either option.
+    </p>
+  {/if}
 
   {#if view === 'feed'}
     <NodeCardRibbonCorner {node} blocks={content} draft mobileLayout {average} {totalVotes}
@@ -108,7 +135,17 @@
   .authoring-card.sectioned { max-width: 78rem; }
   .sectioned .editor :global(.node-card) { max-width: none; }
   .editor { min-width: 0; border: 0; margin: 0; padding: 0; }
-  .view-controls { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+  .view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+  .feed-setting, .feed-setting label { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+  .feed-setting select {
+    max-width: 100%; padding: .35rem; border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; font: inherit;
+  }
+  .feed-setting .feed-help-button {
+    display: inline-grid; place-items: center; width: 1.5rem; aspect-ratio: 1;
+    border-radius: 50%; padding: 0; color: var(--atlas-accent); font-weight: 600;
+  }
+  .feed-help { color: var(--atlas-muted); font-size: .875rem; margin: 0 0 .6rem; }
   button {
     font: inherit;
     background: var(--atlas-surface);

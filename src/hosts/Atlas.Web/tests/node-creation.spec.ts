@@ -202,3 +202,32 @@ test('editor controls fit the available viewport and close on an outside click',
   expect(mobile.y).toBeCloseTo(0);
   expect(mobile.height).toBeCloseTo(740);
 });
+
+test('feed presentation skips an empty opening section and saves a deliberate title-only choice', async ({ page }) => {
+  const { writes } = await setup(page, true);
+  await page.goto('http://127.0.0.1:4173/new');
+  await page.getByLabel('Title', { exact: true }).fill('A feed presentation example');
+  await page.getByRole('button', { name: 'Add section', exact: true }).click();
+  await page.getByRole('button', { name: 'Add this layout' }).click();
+  await page.getByRole('button', { name: /Add block · Section 2/ }).click();
+  await page.getByRole('button', { name: 'Text', exact: true }).click();
+  await page.getByRole('region', { name: 'Section 2', exact: true })
+    .getByRole('textbox', { name: 'Node content: editable rich-text document' }).fill(publishableBody);
+
+  const setting = page.getByLabel('Show in feed');
+  await expect(setting).toHaveValue('opening-content');
+  await page.getByRole('button', { name: 'About what appears in the feed' }).click();
+  await expect(page.getByText(/Opening content is the first section/)).toBeVisible();
+  await page.getByRole('button', { name: 'Preview in feed' }).click();
+  const preview = page.getByRole('article', { name: 'A feed presentation example' });
+  await expect(preview).toContainText(publishableBody);
+  await setting.selectOption('title-only');
+  await expect(preview).not.toContainText(publishableBody);
+  await preview.getByRole('button', { name: 'Read More' }).click();
+  await expect(preview).toContainText(publishableBody);
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByRole('button', { name: 'Create node', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Saved node' })).toBeVisible();
+  const created = writes.find(write => write.path.endsWith('/nodes'))!;
+  expect(JSON.parse(String(created.body.composition))).toMatchObject({ feedPresentation: 'title-only' });
+});
