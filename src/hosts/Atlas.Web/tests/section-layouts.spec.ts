@@ -154,7 +154,7 @@ test('confirms block removal and undoes block and empty section removal in order
   await expect(undo).toBeDisabled();
 });
 
-test('only authored section breaks appear in the editor and previews', async ({ page }) => {
+test('feed previews show both first-section blocks and Read More reveals later sections and breaks', async ({ page }) => {
   await page.route('https://images.unsplash.com/**', (route) => route.abort());
   await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
   const rule = page.locator('hr.section-break');
@@ -164,8 +164,11 @@ test('only authored section breaks appear in the editor and previews', async ({ 
   await page.getByRole('button', { name: 'Add section break' }).click();
   await expect(second.locator('hr.section-break')).toHaveCount(1);
   await page.getByRole('button', { name: 'Feed preview' }).click();
-  await expect(rule).toHaveCount(1);
-  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(page.locator('.sections > .section')).toHaveCount(1);
+  await expect(page.locator('.sections > .section > .slot')).toHaveCount(2);
+  await expect(rule).toHaveCount(0);
+  await page.getByRole('button', { name: 'Read More', exact: true }).click();
+  await expect(page.locator('.sections > .section')).toHaveCount(2);
   await expect(rule).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await second.getByRole('textbox', { name: /Node content/ }).first().click();

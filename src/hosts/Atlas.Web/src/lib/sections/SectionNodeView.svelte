@@ -21,7 +21,8 @@
   let contentHeight = $state(0);
   let gallery = $state<ReturnType<typeof NodeMediaGallery>>();
   const truncated = $derived(feed && contentHeight > viewportHeight + 1);
-  const photos = $derived(draft.sections.flatMap((section) => {
+  const sections = $derived(feed ? draft.sections.slice(0, 1) : draft.sections);
+  const photos = $derived(sections.flatMap((section) => {
     const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
     return sectionRows(section, layout).flatMap(({ slots }) => slots).flatMap((slot) => {
       const block = blockAt(draft, section.id, slot.id);
@@ -37,7 +38,7 @@
 <div class:feed-layout={feed}>
 <div class="viewport" class:feed class:truncated bind:clientHeight={viewportHeight}>
   <div class="sections" bind:offsetHeight={contentHeight}>
-    {#each draft.sections as section, index (section.id)}
+    {#each sections as section, index (section.id)}
       {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
       {#if index > 0 && section.breakBefore}<SectionBreak />{/if}
       {#each sectionRows(section, layout) as row (row.id)}
