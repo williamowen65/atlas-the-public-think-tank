@@ -332,8 +332,10 @@ test('top and bottom plus controls insert before or after the selected block wit
   await expect(menu.getByRole('button', { name: 'After' })).toHaveCount(0);
   await menu.getByRole('button', { name: 'Text block' }).click();
   await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
+  await expect(root).toBeFocused();
 
   await image.click();
+  await expect(image).toHaveClass(/atlas-story-active-block/);
   await page.getByRole('button', { name: 'Insert block after' }).click();
   await expect(menu).toContainText('Insert after this block');
   await menu.getByRole('button', { name: 'Section break' }).click();
