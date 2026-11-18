@@ -119,3 +119,16 @@ test('collapsed header still restores a URL search before its input is opened', 
   await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
   await expect(input).toHaveValue('salmon');
 });
+
+test('footer section links land below the sticky header', async ({ page }) => {
+  await page.route('**/atlas-session-api/**', (route) => route.fulfill({ status: 401, json: {} }));
+  await page.route('**/atlas-public-api/**', (route) => route.fulfill({ json: [] }));
+  await page.goto('http://127.0.0.1:4173/about');
+  await page.locator('footer a[href="/about#how-it-works"]').click();
+  await expect(page).toHaveURL(/\/about#how-it-works$/);
+  const heading = page.getByRole('heading', { name: 'How Atlas Works', exact: true });
+  await expect(heading).toBeInViewport();
+  await expect.poll(() => heading.evaluate((element) =>
+    element.getBoundingClientRect().top - document.querySelector('.atlas-header')!.offsetHeight,
+  )).toBeGreaterThanOrEqual(0);
+});
