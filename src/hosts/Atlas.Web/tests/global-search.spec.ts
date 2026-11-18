@@ -285,16 +285,6 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
   await expect(page.locator(`[data-comment-id="${parent}"]`)).toContainText('Ancestor reply');
 });
 
-/** Mobile uses the real input; desktop retains its disclosure button. */
 async function openSearch(page: Page) {
-  const toggle = page.getByRole('button', { name: 'Toggle search', exact: true });
-  // Choose from the known viewport, not a pre-hydration visibility snapshot.
-  if (page.viewportSize()!.width > 560) {
-    await expect(toggle).toBeVisible();
-    await toggle.click();
-  } else {
-    const input = page.getByRole('textbox', { name: 'Search nodes and filters' });
-    await expect(input).toBeVisible();
-    await input.click();
-  }
+  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
 }
