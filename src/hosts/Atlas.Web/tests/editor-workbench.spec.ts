@@ -659,6 +659,7 @@ test('long Markdown block stays one selected section with fixed boundary control
       marker: getComputedStyle(block, '::before').borderLeftStyle,
     };
   });
+  await expect(page.getByRole('group', { name: 'Selected block actions at end' })).toBeVisible();
   const initial = await bounds();
   expect(initial).not.toBeNull();
   expect(Math.abs(initial!.blockLeft - initial!.rootLeft)).toBeLessThanOrEqual(3);
@@ -669,7 +670,6 @@ test('long Markdown block stays one selected section with fixed boundary control
   expect(Math.abs(initial!.actionRight - initial!.blockRight)).toBeLessThanOrEqual(8);
   expect(initial!.actionBottomDoc).toBeLessThan(initial!.blockTopDoc);
   expect(initial!.bottomActionsDoc).toBeGreaterThan(initial!.blockBottomDoc);
-  await expect(page.getByRole('group', { name: 'Selected block actions at end' })).toBeVisible();
   expect(initial!.marker).toBe('solid');
 
   const beforeScroll = await page.evaluate(() => window.scrollY);
