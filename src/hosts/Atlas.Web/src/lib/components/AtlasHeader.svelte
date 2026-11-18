@@ -52,15 +52,6 @@
   $effect(() => setModeratorVisibility(authenticated && canModerate));
   /** Whether the desktop header search is expanded inline. */
   let searchOpen = $state(false);
-  /** Keep the real search input mounted on phones instead of a second lookalike. */
-  let phone = $state(false);
-  onMount(() => {
-    const media = matchMedia('(max-width: 560px)');
-    const update = () => { phone = media.matches; };
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  });
   /** Mounted disclosure button, used to restore focus when Escape closes search. */
   let searchToggle = $state<HTMLButtonElement>();
   /** Mounted inline search region; its input receives focus after opening. */
@@ -232,8 +223,7 @@
       // The first Escape closes an open filter toolbox; a subsequent one closes search.
       if (searchOpen && !filtersOpen) {
         searchOpen = false;
-        if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
-        else void tick().then(() => searchToggle?.focus());
+        void tick().then(() => searchToggle?.focus());
       }
       if (menuOpen) {
         menuOpen = false;
@@ -336,15 +326,13 @@
     >
       <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
     </svg>
-    {#if mobileExperiment}<span class="search-placeholder">Atlas: The Public Think Tank</span>{/if}
   </button>
-  {#if searchOpen || (mobileExperiment && phone)}
+  {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
         canModerate={authenticated && canModerate}
         active={searchOpen}
-        onActivate={() => { searchOpen = true; headerVisible = true; }}
-        placeholder={mobileExperiment ? 'Atlas: The Public Think Tank' : undefined}
+        placeholder="Search Atlas"
         onResultSelected={() => {
           searchOpen = false;
           filtersOpen = false;
@@ -449,20 +437,9 @@
 {/if}
 
 <style lang="scss">
-  .search-placeholder, .bottom-navigation { display: none; }
+  .bottom-navigation { display: none; }
+  .atlas-header.search-open .search-toggle { display: none; }
   @media (max-width: 560px) {
-    .mobile-experiment {
-      padding-block: 0.5rem;
-      grid-template-columns: minmax(0, 1fr) auto;
-      .brand { grid-row: 1; grid-column: 1; }
-      .brand strong { font-size: 1.35rem; }
-      .brand span { font-size: 0.7rem; }
-      .right-group { grid-column: 2; }
-      .search-toggle { grid-row: 2; grid-column: 1 / -1; width: 100%; justify-content: flex-start; gap: 0.6rem; padding-inline: 1rem; color: var(--atlas-muted); }
-      .search-placeholder { display: inline; }
-      &.search-open .search-toggle { display: none; }
-      .search-panel { grid-row: 2; grid-column: 1 / -1; }
-    }
     .bottom-navigation {
       position: fixed; inset: auto 0 0; z-index: 35;
       display: flex; flex-wrap: nowrap; justify-content: space-around; margin: 0;
@@ -486,7 +463,6 @@
 
   // Open search uses the desktop navigation space while keeping the brand and menu visible.
   @media (min-width: 561px) {
-    .atlas-header.search-open .search-toggle,
     .atlas-header.search-open .right-group { display: none; }
     .atlas-header.search-open { grid-template-columns: auto minmax(0, 1fr); }
     // Animate the inline field into the available header space.
@@ -776,11 +752,6 @@
       gap: 0.65rem;
     }
   }
-  @media (min-width: 561px) and (max-width: 720px) {
-    .brand span {
-      display: none;
-    }
-  }
   @media (max-width: 560px) {
     .atlas-header {
       grid-template-columns: minmax(0, 1fr) auto auto;
@@ -812,17 +783,19 @@
     .explore-sidebar { grid-column: 1; grid-row: 1; }
   }
   @media (max-width: 560px) {
-    // A single header row: menu on the left, search occupying the remaining width.
+    // Keep the wordmark beside the menu and give open search its own full-width row.
     .atlas-header.mobile-experiment {
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) auto;
       padding-block: 0.5rem;
-      .brand { display: none; }
+      .brand { grid-column: 2; grid-row: 1; }
+      .brand strong { font-size: 1.35rem; }
+      .brand span { font-size: 0.7rem; }
       .explore-sidebar { grid-column: 1; grid-row: 1; justify-self: start; }
       .right-group { display: none; }
-      .search-toggle { grid-column: 2; grid-row: 1; min-width: 0; padding-inline: 0.65rem; }
-      .search-toggle svg { flex-shrink: 0; }
-      .search-placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
-      .search-panel { grid-column: 2; grid-row: 1; }
+      .search-toggle { grid-column: 3; grid-row: 1; }
+      .search-panel { grid-column: 1 / -1; grid-row: 2; }
+      &.search-open { grid-template-columns: auto minmax(0, 1fr); }
+      &.filters-open .brand { grid-column: 2; }
       .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
       .explore-sidebar nav {
         // Global nav uses flex-wrap; a fixed-height column must not wrap
@@ -889,17 +862,6 @@
     .atlas-header.mobile-experiment .explore-sidebar nav { transition: none; }
   }
   @media (max-width: 560px) {
-    .atlas-header.mobile-experiment {
-      .search-placeholder { font-size: 0.95rem; font-weight: 700; }
-      &.search-open {
-        grid-template-columns: minmax(0, 1fr);
-        .right-group { display: none; }
-        .search-panel { grid-column: 1 / -1; }
-      }
-    }
-  }
-  @media (max-width: 560px) {
-    .atlas-header.mobile-experiment .search-toggle { display: none; }
     .atlas-header.mobile-experiment .explore-sidebar.entering nav { transform: translateX(-110%); }
   }
   // The sidebar is a direct header child, so its toggle stays left of the logo.
@@ -917,6 +879,10 @@
       // Avoid transforms here: they turn the fixed drawer into a header-relative element.
       transform: none;
     }
+  }
+  @media (min-width: 561px) and (max-width: 720px) {
+    .atlas-header { column-gap: 0.5rem; padding-left: 2rem; }
+    .right-group, .primary, .auth { gap: 0.45rem; }
   }
   // Shared drawer wins over generic account dropdown and old phone-only styles.
   .atlas-header .explore-sidebar nav {
