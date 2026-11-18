@@ -102,8 +102,8 @@ test('uncast fixture selections reset to neutral and accepted simulations stay s
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });
 
-test('expandable ancestry shows the parent, retries paging and stops at root', async ({ page, request }) => {
-  const ids = Array.from({ length: 5 }, (_, i) => `b1000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
+test('expandable ancestry retries paging and shows the complete path', async ({ page, request }) => {
+  const ids = Array.from({ length: 6 }, (_, i) => `b1000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
   let failed = false;
   let calls = 0;
   await page.route('**/atlas-public-api/**', async route => {
@@ -112,9 +112,10 @@ test('expandable ancestry shows the parent, retries paging and stops at root', a
     if (route.request().url().includes('/ancestors')) {
       calls++;
       if (!failed) { failed = true; return route.fulfill({ status: 503 }); }
-      return route.fulfill({ json: { items: [{ id: ids[0], title: 'Oldest ancestor' }], hasMore: false } });
+      if (calls === 2) return route.fulfill({ json: { items: [{ id: ids[4], title: 'Second oldest ancestor' }], hasMore: true } });
+      return route.fulfill({ json: { items: [{ id: ids[0], title: 'Root ancestor' }], hasMore: false } });
     }
-    const entry = item(ids[4], 'Paged breadcrumb node');
+    const entry = item(ids[5], 'Paged breadcrumb node');
     await route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, breadcrumbSegment: {
       items: [{ nodeId: ids[3], label: 'Nearest ancestor' }, { nodeId: ids[2], label: 'Middle ancestor' }, { nodeId: ids[1], label: 'Older ancestor' }],
       continuationNodeId: ids[1], hasAlternativeRoutes: false, cycleDetected: false,
@@ -127,21 +128,22 @@ test('expandable ancestry shows the parent, retries paging and stops at root', a
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(preview.replace('presentation:ribbon-responsive', 'presentation:ribbon-corner'));
   const nav = page.getByRole('navigation', { name: 'Node ancestry' });
-  await expect(nav.getByRole('button', { name: 'Nearest ancestor' })).toBeVisible();
-  await expect(nav.getByText('Middle ancestor')).toHaveCount(0);
-  await nav.getByRole('button', { name: 'Show ancestry' }).press('Enter');
-  await expect(nav.getByRole('button', { name: 'Hide ancestry' })).toHaveAttribute('aria-expanded', 'true');
-  await nav.getByRole('button', { name: 'Load older ancestors' }).click();
+  const toggle = page.locator('button.ancestry-toggle');
+  await expect(toggle).toHaveAccessibleName('Show ancestry');
+  await expect(nav).toBeHidden();
+  await expect(toggle.locator('xpath=following-sibling::*[1]')).toHaveText('Question');
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(nav.getByRole('alert')).toContainText('HTTP 503');
   await nav.getByRole('button', { name: 'Retry' }).click();
-  await expect(nav).toContainText('Oldest ancestor');
-  await expect(nav.getByRole('button', { name: 'Load older ancestors' })).toHaveCount(0);
-  expect(calls).toBe(2);
-  expect((await nav.locator('li').allTextContents()).map(text => text.trim())).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
+  await expect(nav).toContainText('Root ancestor');
+  await expect(nav.getByRole('link', { name: 'Nearest ancestor' })).toHaveCount(1);
+  expect(calls).toBe(3);
+  expect((await nav.getByRole('link').allTextContents()).map(text => text.trim())).toEqual(['Root ancestor', 'Second oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  await nav.getByRole('button', { name: 'Hide ancestry' }).click();
-  await expect(nav.getByText('Oldest ancestor')).toHaveCount(0);
-  await expect(nav.getByRole('button', { name: 'Nearest ancestor' })).toBeVisible();
+  await expect(nav.locator('.ancestry-arrow')).toHaveCount(4);
+  await toggle.click();
+  await expect(nav).toBeHidden();
   const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');

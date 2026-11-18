@@ -22,10 +22,11 @@
 </script>
 
 <script lang="ts">
+  import { untrack, type Snippet } from 'svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
-    expandable = false,
+    heading,
     onNavigate,
     hasMore = false,
     loadOlder,
@@ -36,8 +37,8 @@
      * Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied.
      */
     items: BreadcrumbItem[];
-    /** Show the immediate parent and expand a vertical path in place. */
-    expandable?: boolean;
+    /** Render the heading row with an optional inline ancestry toggle. */
+    heading?: Snippet<[Snippet?]>;
     /**
      * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
      * navigation.
@@ -55,6 +56,7 @@
   /**
    * Older ancestor items prepended by the current path’s pager.
    */
+  const expandable = $derived(!!heading);
   const panelId = $props.id();
   let expanded = $state(false);
   let older = $state<BreadcrumbItem[]>([]);
@@ -172,7 +174,6 @@
   let generation = 0;
   /** Displayed path: an API-selected alternative, or older items followed by supplied items. */
   const allItems = $derived(livePath ?? [...older, ...items]);
-  const immediateParent = $derived(allItems.at(-1));
   $effect(() => {
     originId;
     expanded = false;
@@ -241,6 +242,11 @@
       if (current === generation) loading = false;
     }
   }
+
+  $effect(() => {
+    if (expandable && expanded && more && !loading && !liveBusy && !error)
+      untrack(() => void requestOlder());
+  });
 
   // Measure after insertion; a detached element has no usable scrollWidth.
   function revealNewest(viewport: HTMLElement, path: BreadcrumbItem[]) {
@@ -323,42 +329,21 @@
   }}
 />
 
-{#if expandable && (allItems.length || more)}
-  <nav class="ancestry" aria-label="Node ancestry">
-    <div class="ancestry-summary">
-      {#if immediateParent}
-        <span class="parent-label">Parent</span>
-        {#if immediateParent.id && onNavigate}
-          <button
-            type="button"
-            class="parent-title"
-            onclick={() => onNavigate?.(immediateParent.id!)}
-          >
-            {immediateParent.title}
-          </button>
-        {:else}
-          <span class="parent-title">{immediateParent.title}</span>
+{#if heading}
+  {#if allItems.length || more}
+    <div class="ancestry">
+      <nav id={panelId} aria-label="Node ancestry" hidden={!expanded}>
+        {#if expanded}
+          {#if loading}<p role="status">Loading older ancestors…</p>{/if}
+          <ol>{@render ancestorItems()}</ol>
+          {@render loadError()}
         {/if}
-      {/if}
-      <button
-        type="button"
-        class="ancestry-toggle"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onclick={() => {
-          expanded = !expanded;
-          if (!expanded) openRouteMenu = false;
-        }}>{expanded ? 'Hide ancestry' : 'Show ancestry'}</button
-      >
+      </nav>
+      {@render heading(ancestryToggle)}
     </div>
-    <div id={panelId} class="ancestry-panel" hidden={!expanded}>
-      {#if expanded}
-        {#if more && loadOlder}{@render olderButton()}{/if}
-        <ol>{@render ancestorItems()}</ol>
-        {@render loadError()}
-      {/if}
-    </div>
-  </nav>
+  {:else}
+    {@render heading()}
+  {/if}
 {:else if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
@@ -401,10 +386,50 @@
   </nav>
 {/if}
 
+{#snippet ancestryToggle()}
+  <button
+    type="button"
+    class="ancestry-toggle"
+    aria-label={expanded ? 'Hide ancestry' : 'Show ancestry'}
+    aria-expanded={expanded}
+    aria-controls={panelId}
+    onclick={() => {
+      expanded = !expanded;
+      if (!expanded) openRouteMenu = false;
+    }}
+  >
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m3 10 5-5 5 5" />
+    </svg>
+  </button>
+{/snippet}
+
 {#snippet ancestorItems()}
   {#each allItems as item, index (item.id ?? index)}
     <li style:z-index={expandable ? undefined : allItems.length - index}>
-      {#if item.id && onNavigate}
+      {#if expandable && index > 0}<span class="ancestry-arrow" aria-hidden="true">↓</span>{/if}
+      {#if expandable && item.id}
+        {@const id = item.id}
+        <a
+          href={`/nodes?id=${encodeURIComponent(id)}`}
+          onclick={(event) => {
+            if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+              return;
+            event.preventDefault();
+            onNavigate(id);
+          }}>{item.title}</a
+        >
+      {:else if item.id && onNavigate}
         <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
       {:else}
         <span>{item.title}</span>
@@ -490,33 +515,31 @@
       outline-color: var(--atlas-accent);
     }
 
-    .ancestry-summary {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 0.2rem 0.35rem;
+    background: var(--atlas-tinted-surface);
+    border-radius: var(--atlas-radius) var(--atlas-radius) 0 0;
+    border-bottom: 1px solid var(--atlas-border);
+    margin-inline: calc(-1 * var(--card-padding));
+    margin-bottom: 0.5rem;
+    padding: var(--ancestry-top-padding, 0.65rem) var(--card-padding) 0.45rem;
+
+    nav {
+      padding-bottom: 0.45rem;
     }
 
-    .parent-label {
-      color: var(--atlas-muted);
-      padding-inline: 0;
+    nav[hidden] {
+      display: none;
     }
 
-    .parent-title {
-      padding-inline: 0;
-      min-width: 0;
-    }
-
-    .ancestry-toggle {
-      border: 1px solid var(--atlas-border);
-      border-radius: var(--atlas-radius);
+    a {
       color: var(--atlas-accent);
+      font-size: 0.9rem;
+      font-weight: 600;
+      overflow-wrap: anywhere;
     }
 
-    .ancestry-panel {
-      margin-top: 0.4rem;
-      padding: 0.35rem 0.5rem;
-      border-inline-start: 2px solid var(--atlas-border);
+    .ancestry-arrow {
+      color: var(--atlas-muted);
+      padding: 0;
     }
 
     ol {
@@ -537,10 +560,6 @@
       &:first-child span {
         padding-inline-start: 0.5rem;
       }
-
-      & + li {
-        border-top: 1px solid var(--atlas-border);
-      }
     }
 
     .route-choice {
@@ -556,6 +575,23 @@
       max-width: none;
       margin-block: 0.2rem;
       box-shadow: none;
+    }
+  }
+
+  .ancestry-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+
+    &[aria-expanded='true'] svg {
+      transform: rotate(180deg);
     }
   }
 

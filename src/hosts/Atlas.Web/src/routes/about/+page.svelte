@@ -85,7 +85,6 @@
 <style>
   .about-page {
     --about-banner-bg: color-mix(in srgb, var(--atlas-bg) 93%, var(--atlas-accent));
-    --about-card-bg: color-mix(in srgb, var(--atlas-surface) 97%, var(--atlas-accent));
     --about-border: color-mix(in srgb, var(--atlas-bg) 70%, var(--atlas-border));
     width: min(100% - 2rem, 860px);
     margin: 0 auto;
@@ -160,7 +159,7 @@
     padding: 1.25rem;
     border: 1px solid var(--about-border);
     border-radius: 0.75rem;
-    background: var(--about-card-bg);
+    background: var(--atlas-tinted-surface);
   }
 
   .emphasis {

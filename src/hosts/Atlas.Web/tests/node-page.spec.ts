@@ -155,13 +155,13 @@ test('node page expands ancestry in place and voting leaves content in place', a
   const card = page.locator('.node-page');
   await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
   const ancestry = card.getByRole('navigation', { name: 'Node ancestry' });
-  await expect(ancestry.getByText('A parent question')).toBeVisible();
+  await expect(ancestry).toBeHidden();
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const body = card.locator('.post-body');
     await expect(body).toContainText('Supporting detail.');
     const collapsed = await body.boundingBox();
-    await ancestry.getByRole('button', { name: 'Show ancestry' }).click();
+    await card.getByRole('button', { name: 'Show ancestry' }).click();
     await expect(ancestry.getByRole('listitem')).toHaveText('A parent question');
     const before = await body.boundingBox();
     expect(before!.y).toBeGreaterThan(collapsed!.y);
@@ -179,7 +179,7 @@ test('node page expands ancestry in place and voting leaves content in place', a
     }));
     expect(geometry.reactionsTop).toBeGreaterThanOrEqual(geometry.contentBottom);
     expect(geometry.discussionTop).toBeGreaterThanOrEqual(geometry.reactionsBottom);
-    await ancestry.getByRole('button', { name: 'Hide ancestry' }).click();
+    await card.getByRole('button', { name: 'Hide ancestry' }).click();
     await expect(ancestry.getByRole('listitem')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }

@@ -283,27 +283,16 @@
         blocks = update.blocks;
       }}
     />{/if}
-  {#if node.breadcrumb.length || hasMoreAncestors}<div class="ancestry-context">
-      <Breadcrumb
-        expandable
-        items={node.breadcrumb}
-        originId={node.id}
-        {apiBase}
-        {onNavigate}
-        hasMore={hasMoreAncestors}
-        loadOlder={loadOlderAncestors}
-      />
-    </div>{/if}
   <header>
-    <div class="node-type-row">
-      <p class="node-type">{node.typeName}</p>
-      {#if !inspectionOnly}
-        {#if voting}{@render voting()}
-        {:else}<button class="vote-summary" type="button" disabled>
-          {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
-        </button>{/if}
-      {/if}
-    </div>
+    <Breadcrumb
+      heading={typeRow}
+      items={node.breadcrumb}
+      originId={node.id}
+      {apiBase}
+      {onNavigate}
+      hasMore={hasMoreAncestors}
+      loadOlder={loadOlderAncestors}
+    />
     <h1>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
@@ -409,16 +398,23 @@
 {/if}
 </article>
 
+{#snippet typeRow(toggle?: Snippet)}
+  <div class="node-type-row" class:with-ancestry={!!toggle}>
+    {@render toggle?.()}
+    <p class="node-type">{node.typeName}</p>
+    {#if !inspectionOnly}
+      {#if voting}{@render voting()}
+      {:else}<button class="vote-summary" type="button" disabled>
+        {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+      </button>{/if}
+    {/if}
+  </div>
+{/snippet}
+
 <style lang="scss">
   .relative-date { display: none; }
   .introduction { display: contents; }
 
-
-  // Reserve space beside the ancestry summary for the corner edit control.
-  .node-page:has(> :global(.edit-node.corner)) > .ancestry-context {
-    padding-right: max(var(--card-padding), 5rem);
-    min-height: 2.75rem;
-  }
 
   .node-page {
     position: relative;
@@ -428,17 +424,16 @@
     margin-inline: auto;
     padding: 0;
   }
-  .ancestry-context {
-    min-width: 0;
-    padding: 0.75rem var(--card-padding) 0;
-    margin-bottom: 0.5rem;
-  }
   header {
     padding: var(--card-padding) var(--card-padding) 0.5rem;
   }
-  .ancestry-context + header {
-    padding-top: 0;
+
+  header:has(> :global(.ancestry)) { padding-top: 0; }
+
+  .node-page:has(> :global(.edit-node.corner)) {
+    --ancestry-top-padding: 2.9rem;
   }
+
   h1 {
     line-height: var(--atlas-node-line-height);
     font-size: clamp(1.4rem, 4vw, 2rem);
@@ -598,17 +593,18 @@
     .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
   }
+  .node-type-row.with-ancestry { margin-bottom: 0; }
+
   .node-type-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: .4rem .75rem;
+    gap: .4rem .6rem;
     min-width: 0;
     container-type: inline-size;
     margin-bottom: .5rem;
   }
   .node-type {
-    margin: 0;
+    margin: 0 auto 0 0;
     min-width: 0;
     color: var(--atlas-accent);
     font-weight: 700;

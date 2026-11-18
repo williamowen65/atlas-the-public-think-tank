@@ -6,6 +6,7 @@
   line-height: var(--atlas-line-height, normal);
   --atlas-bg: #f5f7fa;
   --atlas-surface: #ffffff;
+  --atlas-tinted-surface: color-mix(in srgb, var(--atlas-surface) 97%, var(--atlas-accent));
   --atlas-text: #172b38;
   --atlas-muted: #485966;
   --atlas-accent: #174e65;
