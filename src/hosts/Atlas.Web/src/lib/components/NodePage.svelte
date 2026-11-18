@@ -356,6 +356,15 @@
     </div>
   {/if}
   {#if !inspectionOnly}<div class="discussion-toolbar">
+    <div class="add">
+      <button
+        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
+        disabled={node.status === 'Archived'}
+        >Add {active === 'comments'
+          ? 'a child node'
+          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
+      >
+    </div>
     <div
       class="tabs"
       use:alignDiscussionTabs
@@ -371,15 +380,6 @@
           onclick={() => onTabChange(tab.id)}
           onkeydown={(event) => key(event, index)}>{tab.name}</button
         >{/each}
-    </div>
-    <div class="add">
-      <button
-        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
-        disabled={node.status === 'Archived'}
-        >Add {active === 'comments'
-          ? 'a child node'
-          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
-      >
     </div>
   </div>
   <!--
@@ -479,17 +479,14 @@
     padding: 0.2rem 0.6rem;
   }
   .discussion-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) fit-content(52%);
-    align-items: start;
-    gap: 0.5rem;
+    display: flow-root;
     border-block: 1px solid var(--atlas-border);
     padding: var(--discussion-section-padding) var(--card-padding);
   }
   .add {
-    min-inline-size: 0;
-    margin-inline-start: auto;
-    max-inline-size: 100%;
+    float: inline-end;
+    max-inline-size: 52%;
+    margin-inline-start: 0.5rem;
   }
   .add button {
     border: 1px solid var(--atlas-accent);
@@ -519,12 +516,12 @@
   }
   .tabs {
     scroll-margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    min-inline-size: 0;
+    margin-block-end: -0.4rem;
   }
   .tabs button {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0 0.4rem 0.4rem 0;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     min-block-size: 2.25rem;
