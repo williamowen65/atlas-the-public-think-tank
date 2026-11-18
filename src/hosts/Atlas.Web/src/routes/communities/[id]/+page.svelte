@@ -115,6 +115,12 @@
       busy = false;
     }
   }
+  async function changeMembership() {
+    if (!community || busy) return;
+    const leaving = community.isMember;
+    if (!window.confirm(`${leaving ? 'Leave' : 'Join'} “${community.name}”?`)) return;
+    await action('/membership', leaving ? 'DELETE' : 'PUT');
+  }
   async function save() {
     if (!community || busy) return;
     if (name.trim() !== community.name) await action('/name', 'PUT', { text: name.trim() });
@@ -144,8 +150,11 @@
             >{editing ? 'Cancel editing' : 'Edit community'}</button
           >
         {:else}<button
+            type="button"
+            class="membership-action"
+            class:leave={community.isMember}
             disabled={busy}
-            onclick={() => void action('/membership', community?.isMember ? 'DELETE' : 'PUT')}
+            onclick={() => void changeMembership()}
             >{community.isMember ? 'Leave community' : 'Join community'}</button
           >{/if}
       {:else if !signedIn && community.status === 'Active'}<SessionControl
@@ -194,6 +203,30 @@
     font: inherit;
     padding: 0.5rem 0.8rem;
     cursor: pointer;
+  }
+  .community-page .membership-action {
+    border: 1px solid var(--atlas-accent);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    font-weight: 600;
+  }
+  .community-page .membership-action.leave {
+    display: block;
+    margin-inline-start: auto;
+    padding: 0.35rem 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--atlas-danger);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+  .membership-action.leave:not(:disabled):hover {
+    text-decoration: underline;
+  }
+  .membership-action:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
   form {
     display: grid;
