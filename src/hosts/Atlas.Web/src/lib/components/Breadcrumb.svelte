@@ -333,7 +333,7 @@
 
 {#if expandable}
   {#if allItems.length}
-    <nav class="ancestry" id={panelId} aria-label="Node ancestry">
+    <nav class="ancestry" class:expanded id={panelId} aria-label="Node ancestry">
       {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
       <ol>{@render ancestorItems()}</ol>
       {@render loadError()}
@@ -413,9 +413,20 @@
   {#each allItems as item, index (item.id ?? index)}
     {#if !expandable || expanded || index === allItems.length - 1}
       <li style:z-index={expandable ? undefined : allItems.length - index}>
-        {#if expandable && expanded && index > 0}<span class="ancestry-arrow" aria-hidden="true"
-            >↓</span
-          >{/if}
+        {#if expandable && expanded && index > 0}
+          <svg
+            class="ancestry-arrow"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 3v9a4 4 0 0 0 4 4h10m-4-4 4 4-4 4" />
+          </svg>
+        {/if}
         <div
           class="ancestor-title"
           class:parent-title={expandable && index === allItems.length - 1}
@@ -514,12 +525,14 @@
   }
 
   .ancestry {
+    --ancestry-gutter: 2.25rem;
+    --ancestry-gap: 0.6rem;
     max-width: none;
 
     .parent-title {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: var(--ancestry-gap);
     }
 
     color: var(--atlas-text);
@@ -547,12 +560,27 @@
       color: var(--atlas-accent);
       font-size: 0.9rem;
       font-weight: 600;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
       overflow-wrap: anywhere;
     }
 
+    &.expanded .ancestor-title:not(.parent-title) {
+      display: block;
+      padding-inline-start: calc(var(--ancestry-gutter) + var(--ancestry-gap));
+
+      a {
+        font-weight: 500;
+      }
+    }
+
     .ancestry-arrow {
-      color: var(--atlas-muted);
-      padding: 0;
+      display: block;
+      inline-size: 1.4rem;
+      block-size: 1.4rem;
+      margin-block: 0.15rem;
+      margin-inline-start: calc((var(--ancestry-gutter) - 1.4rem) / 2);
+      color: var(--atlas-accent);
     }
 
     ol {
@@ -568,10 +596,6 @@
 
       &::after {
         display: none;
-      }
-      &:first-child button,
-      &:first-child span {
-        padding-inline-start: 0.5rem;
       }
     }
 
@@ -591,12 +615,12 @@
     }
   }
 
-  .ancestry-toggle {
+  .ancestry .ancestry-toggle {
     display: inline-grid;
     place-items: center;
     flex: 0 0 auto;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
+    inline-size: var(--ancestry-gutter);
+    block-size: var(--ancestry-gutter);
     padding: 0;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
@@ -665,10 +689,6 @@
     }
     &:first-child {
       border-radius: 0.2rem 0 0 0.2rem;
-      button,
-      span {
-        padding-inline-start: 0.75rem;
-      }
     }
   }
 
@@ -676,6 +696,13 @@
     display: flex;
     align-items: center;
   }
+  .viewport li:first-child {
+    button,
+    span {
+      padding-inline-start: 0.75rem;
+    }
+  }
+
   .route-choice {
     display: flex;
     align-items: center;

@@ -133,8 +133,10 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
   await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
   await expect(toggle.locator('xpath=following-sibling::a[1]')).toHaveText('Nearest ancestor');
   await expect(page.locator('.node-type-row')).toContainText('Question');
+  await expect(toggle).toHaveCSS('padding-inline-start', '0px');
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toHaveCSS('padding-inline-start', '0px');
   await expect(nav.getByRole('alert')).toContainText('HTTP 503');
   await nav.getByRole('button', { name: 'Retry' }).click();
   await expect(nav).toContainText('Root ancestor');
