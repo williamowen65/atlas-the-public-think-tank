@@ -554,7 +554,7 @@
     border-bottom: 1px solid var(--atlas-border);
     margin-inline: calc(-1 * var(--card-padding));
     margin-bottom: 0.5rem;
-    padding: 0.65rem var(--ancestry-end-padding, var(--card-padding)) 0.65rem var(--card-padding);
+    padding: 0.65rem var(--card-padding);
 
     a {
       color: var(--atlas-accent);
@@ -591,11 +591,6 @@
       block-size: 1.4rem;
       margin-block: 0.15rem;
       margin-inline: auto;
-      position: relative;
-      // Center across the strip even when the corner edit button needs extra end padding.
-      inset-inline-start: calc(
-        (var(--ancestry-end-padding, var(--card-padding)) - var(--card-padding)) / 2
-      );
       color: var(--atlas-accent);
     }
 
@@ -609,6 +604,14 @@
       display: block;
       background: transparent;
       color: inherit;
+
+      // Only the first visible row shares the top corner with the edit control.
+      &:first-child {
+        padding-inline-end: max(
+          0px,
+          calc(var(--ancestry-end-padding, var(--card-padding)) - var(--card-padding))
+        );
+      }
 
       &::after {
         display: none;
