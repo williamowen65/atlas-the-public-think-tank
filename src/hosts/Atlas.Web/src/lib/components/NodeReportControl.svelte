@@ -68,8 +68,60 @@
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
   }
-  form { max-width: 28rem; padding: 1rem; border: 1px solid var(--atlas-muted); border-radius: .5rem; }
-  label { display: block; margin: .6rem 0 .25rem; }
-  input, textarea { width: 100%; }
-  .actions { display: flex; gap: .5rem; margin-top: .75rem; }
+  form {
+    display: grid;
+    gap: 0.375rem;
+    inline-size: min(100%, 28rem);
+    padding: 1rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-bg);
+  }
+  label {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  input + label { margin-block-start: 0.5rem; }
+  input, textarea {
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    color: var(--atlas-text);
+    font: inherit;
+  }
+  input::placeholder { color: var(--atlas-muted); }
+  textarea { resize: vertical; }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block-start: 0.5rem;
+  }
+  .actions button {
+    min-block-size: 2.75rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    color: var(--atlas-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .actions button[type='submit'] {
+    border-color: var(--atlas-accent);
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+  }
+  .actions button:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  @media (max-width: 560px) {
+    form { inline-size: 100%; }
+  }
 </style>
