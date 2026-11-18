@@ -333,7 +333,7 @@
 
 {#if expandable}
   {#if allItems.length}
-    <nav class="ancestry" class:expanded id={panelId} aria-label="Node ancestry">
+    <nav class="ancestry" id={panelId} aria-label="Node ancestry">
       {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
       <ol>{@render ancestorItems()}</ol>
       {@render loadError()}
@@ -560,14 +560,25 @@
       color: var(--atlas-accent);
       font-size: 0.9rem;
       font-weight: 600;
+      text-decoration: none;
       text-decoration-thickness: 1px;
       text-underline-offset: 0.18em;
       overflow-wrap: anywhere;
+
+      &:focus-visible,
+      &:active {
+        text-decoration-line: underline;
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          text-decoration-line: underline;
+        }
+      }
     }
 
-    &.expanded .ancestor-title:not(.parent-title) {
+    .ancestor-title:not(.parent-title) {
       display: block;
-      padding-inline-start: calc(var(--ancestry-gutter) + var(--ancestry-gap));
 
       a {
         font-weight: 500;
@@ -579,7 +590,12 @@
       inline-size: 1.4rem;
       block-size: 1.4rem;
       margin-block: 0.15rem;
-      margin-inline-start: calc((var(--ancestry-gutter) - 1.4rem) / 2);
+      margin-inline: auto;
+      position: relative;
+      // Center across the strip even when the corner edit button needs extra end padding.
+      inset-inline-start: calc(
+        (var(--ancestry-end-padding, var(--card-padding)) - var(--card-padding)) / 2
+      );
       color: var(--atlas-accent);
     }
 
