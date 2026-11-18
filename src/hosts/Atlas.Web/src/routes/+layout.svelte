@@ -112,7 +112,6 @@
 <div
   class="app-shell"
   style:--atlas-header-height={headerHeight ? `${headerHeight}px` : undefined}
-  style:--atlas-bottom-navigation-height={`${bottomNavigationHeight}px`}
 >
   <GlobeExplorer>
     {#snippet navigation(globeLauncher)}
