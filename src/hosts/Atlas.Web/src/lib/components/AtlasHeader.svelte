@@ -787,6 +787,9 @@
     .atlas-header.mobile-experiment {
       grid-template-columns: auto minmax(0, 1fr) auto;
       padding-block: 0.5rem;
+      margin-inline: calc(-1 * var(--atlas-space));
+      padding-inline: var(--atlas-space);
+      &::after { width: 100%; }
       .brand { grid-column: 2; grid-row: 1; }
       .brand strong { font-size: 1.35rem; }
       .brand span { font-size: 0.7rem; }
