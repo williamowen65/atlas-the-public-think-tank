@@ -37,8 +37,8 @@ public sealed class SectionedBlock : ContentBlock
             if (root.GetProperty("version").GetInt32() != 1) throw new ArgumentException("Unknown composition version.");
             Choice(root, "feedPresentation", "opening-content", "title-only");
             var layouts = root.GetProperty("layouts").EnumerateArray().ToDictionary(
-                layout => Id(layout, "id"),
-                layout => layout.GetProperty("slots").EnumerateArray().ToDictionary(slot => Id(slot, "id"), slot =>
+                layout => ReadRequiredJsonString(layout, "id"),
+                layout => layout.GetProperty("slots").EnumerateArray().ToDictionary(slot => ReadRequiredJsonString(slot, "id"), slot =>
                 {
                     var weight = slot.GetProperty("weight").GetDouble();
                     if (!double.IsFinite(weight) || weight <= 0 || weight > 100) throw new ArgumentException("Invalid column width.");
@@ -47,12 +47,12 @@ public sealed class SectionedBlock : ContentBlock
             if (layouts.Count is < 1 or > 100 || layouts.Values.Any(slots => slots.Count is < 1 or > 2))
                 throw new ArgumentException("Invalid layout count or column count.");
 
-            var sections = root.GetProperty("sections").EnumerateArray().ToDictionary(section => Id(section, "id"));
+            var sections = root.GetProperty("sections").EnumerateArray().ToDictionary(section => ReadRequiredJsonString(section, "id"));
             if (sections.Count is < 1 or > 100) throw new ArgumentException("Invalid section count.");
             var slotsBySection = new Dictionary<string, HashSet<string>>();
             foreach (var (id, section) in sections)
             {
-                var baseSlots = layouts[Id(section, "layoutId")].Keys;
+                var baseSlots = layouts[ReadRequiredJsonString(section, "layoutId")].Keys;
                 var slots = new HashSet<string>();
                 if (section.TryGetProperty("rows", out var rows))
                 {
@@ -68,15 +68,15 @@ public sealed class SectionedBlock : ContentBlock
                 slotsBySection.Add(id, slots);
             }
 
-            var blocks = root.GetProperty("blocks").EnumerateArray().ToDictionary(block => Id(block, "id"));
+            var blocks = root.GetProperty("blocks").EnumerateArray().ToDictionary(block => ReadRequiredJsonString(block, "id"));
             if (blocks.Count is < 1 or > 100) throw new ArgumentException("Invalid block count.");
             var positions = new HashSet<(string, string)>();
             var assigned = new HashSet<string>();
             foreach (var assignment in root.GetProperty("assignments").EnumerateArray())
             {
-                var section = Id(assignment, "sectionId");
-                var slot = Id(assignment, "slotId");
-                var block = Id(assignment, "blockId");
+                var section = ReadRequiredJsonString(assignment, "sectionId");
+                var slot = ReadRequiredJsonString(assignment, "slotId");
+                var block = ReadRequiredJsonString(assignment, "blockId");
                 if (!slotsBySection[section].Contains(slot))
                     throw new ArgumentException("Unknown section slot.");
                 Choice(assignment, "vertical", "start", "center", "end");
@@ -89,14 +89,14 @@ public sealed class SectionedBlock : ContentBlock
             var photoIds = new HashSet<string>();
             foreach (var block in blocks.Values)
             {
-                switch (Id(block, "kind"))
+                switch (ReadRequiredJsonString(block, "kind"))
                 {
                     case "text":
                         Choice(block, "alignment", "left", "center", "right");
                         text.Add(Optional(block.GetProperty("text").GetString(), 100_000, "text"));
                         break;
                     case "link":
-                        text.Add(HttpUrl(Id(block, "url"), "url").AbsoluteUri);
+                        text.Add(HttpUrl(ReadRequiredJsonString(block, "url"), "url").AbsoluteUri);
                         break;
                     case "image":
                     case "gallery":
@@ -114,8 +114,8 @@ public sealed class SectionedBlock : ContentBlock
                         if (photos.GetArrayLength() is < 1 or > 100) throw new ArgumentException("Invalid photo count.");
                         foreach (var photo in photos.EnumerateArray())
                         {
-                            if (!photoIds.Add(Id(photo, "id"))) throw new ArgumentException("Duplicate photo ID.");
-                            HttpUrl(Id(photo, "src"), "src");
+                            if (!photoIds.Add(ReadRequiredJsonString(photo, "id"))) throw new ArgumentException("Duplicate photo ID.");
+                            HttpUrl(ReadRequiredJsonString(photo, "src"), "src");
                             Choice(photo, "captionPlacement", "below", "overlay");
                             if (photo.TryGetProperty("frame", out var frame))
                             {
@@ -159,7 +159,7 @@ public sealed class SectionedBlock : ContentBlock
             throw new ArgumentException($"Invalid {property}.");
     }
 
-    private static string Id(JsonElement item, string name)
+    private static string ReadRequiredJsonString(JsonElement item, string name)
     {
         var value = item.GetProperty(name).GetString();
         var normalized = Required(value, name, 500);
