@@ -128,10 +128,11 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(preview.replace('presentation:ribbon-responsive', 'presentation:ribbon-corner'));
   const nav = page.getByRole('navigation', { name: 'Node ancestry' });
-  const toggle = page.locator('button.ancestry-toggle');
+  const toggle = nav.locator('button.ancestry-toggle');
   await expect(toggle).toHaveAccessibleName('Show ancestry');
   await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
-  await expect(toggle.locator('xpath=following-sibling::*[1]')).toHaveText('Question');
+  await expect(toggle.locator('xpath=following-sibling::a[1]')).toHaveText('Nearest ancestor');
+  await expect(page.locator('.node-type-row')).toContainText('Question');
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(nav.getByRole('alert')).toContainText('HTTP 503');

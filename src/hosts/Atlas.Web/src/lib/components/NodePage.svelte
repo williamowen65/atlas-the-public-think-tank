@@ -285,7 +285,7 @@
     />{/if}
   <header>
     <Breadcrumb
-      heading={typeRow}
+      expandable
       items={node.breadcrumb}
       originId={node.id}
       {apiBase}
@@ -293,6 +293,7 @@
       hasMore={hasMoreAncestors}
       loadOlder={loadOlderAncestors}
     />
+    {@render typeRow()}
     <h1>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
@@ -398,9 +399,8 @@
 {/if}
 </article>
 
-{#snippet typeRow(toggle?: Snippet)}
+{#snippet typeRow()}
   <div class="node-type-row">
-    {@render toggle?.()}
     <p class="node-type">{node.typeName}</p>
     {#if !inspectionOnly}
       {#if voting}{@render voting()}

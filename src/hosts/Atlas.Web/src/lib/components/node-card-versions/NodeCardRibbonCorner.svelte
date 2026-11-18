@@ -119,7 +119,7 @@
       <div id={`${instance}-title`}>{@render headerFields()}</div>
     {:else}
       <Breadcrumb
-        heading={typeRow}
+        expandable
         items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
         originId={draft ? undefined : node.id}
         {apiBase}
@@ -127,6 +127,7 @@
         hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors}
       />
+      {@render typeRow()}
       <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
@@ -231,9 +232,8 @@
   >
 {/snippet}
 
-{#snippet typeRow(toggle?: Snippet)}
+{#snippet typeRow()}
   <div class="node-type-row">
-    {@render toggle?.()}
     <p class="mobile-type">{node.typeName}</p>
     {#if !authoringBody}
       {#if voting}

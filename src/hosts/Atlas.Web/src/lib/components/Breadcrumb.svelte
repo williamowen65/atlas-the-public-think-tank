@@ -22,11 +22,11 @@
 </script>
 
 <script lang="ts">
-  import { untrack, type Snippet } from 'svelte';
+  import { untrack } from 'svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
-    heading,
+    expandable = false,
     onNavigate,
     hasMore = false,
     loadOlder,
@@ -37,8 +37,8 @@
      * Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied.
      */
     items: BreadcrumbItem[];
-    /** Render the heading row with an optional inline ancestry toggle. */
-    heading?: Snippet<[Snippet?]>;
+    /** Show the immediate parent with an optional ancestry toggle. */
+    expandable?: boolean;
     /**
      * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
      * navigation.
@@ -56,7 +56,6 @@
   /**
    * Older ancestor items prepended by the current path’s pager.
    */
-  const expandable = $derived(!!heading);
   const panelId = $props.id();
   let expanded = $state(false);
   let older = $state<BreadcrumbItem[]>([]);
@@ -332,7 +331,7 @@
   }}
 />
 
-{#if heading}
+{#if expandable}
   {#if allItems.length}
     <nav class="ancestry" id={panelId} aria-label="Node ancestry">
       {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
@@ -340,11 +339,6 @@
       {@render loadError()}
     </nav>
   {/if}
-  {@render heading(
-    allItems.length > 0 && (allItems.length > 1 || (more && loadOlder))
-      ? ancestryToggle
-      : undefined,
-  )}
 {:else if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
@@ -422,22 +416,30 @@
         {#if expandable && expanded && index > 0}<span class="ancestry-arrow" aria-hidden="true"
             >↓</span
           >{/if}
-        {#if expandable && item.id}
-          {@const id = item.id}
-          <a
-            href={`/nodes?id=${encodeURIComponent(id)}`}
-            onclick={(event) => {
-              if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-                return;
-              event.preventDefault();
-              onNavigate(id);
-            }}>{item.title}</a
-          >
-        {:else if item.id && onNavigate}
-          <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
-        {:else}
-          <span>{item.title}</span>
-        {/if}
+        <div
+          class="ancestor-title"
+          class:parent-title={expandable && index === allItems.length - 1}
+        >
+          {#if expandable && index === allItems.length - 1 && (allItems.length > 1 || (more && loadOlder))}
+            {@render ancestryToggle()}
+          {/if}
+          {#if expandable && item.id}
+            {@const id = item.id}
+            <a
+              href={`/nodes?id=${encodeURIComponent(id)}`}
+              onclick={(event) => {
+                if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                  return;
+                event.preventDefault();
+                onNavigate(id);
+              }}>{item.title}</a
+            >
+          {:else if item.id && onNavigate}
+            <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
+          {:else}
+            <span>{item.title}</span>
+          {/if}
+        </div>
         {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
           <div class="route-choice">
             <button
@@ -507,10 +509,22 @@
 {/snippet}
 
 <style lang="scss">
+  .ancestor-title {
+    display: contents;
+  }
+
   .ancestry {
+    max-width: none;
+
+    .parent-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
     color: var(--atlas-text);
 
-    button,
+    button:not(.ancestry-toggle),
     span {
       padding: 0.3rem 0.5rem;
       white-space: normal;
