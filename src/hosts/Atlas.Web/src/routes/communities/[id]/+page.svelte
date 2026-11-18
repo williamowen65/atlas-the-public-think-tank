@@ -115,12 +115,6 @@
       busy = false;
     }
   }
-  async function changeMembership() {
-    if (!community || busy) return;
-    const leaving = community.isMember;
-    if (!window.confirm(`${leaving ? 'Leave' : 'Join'} “${community.name}”?`)) return;
-    await action('/membership', leaving ? 'DELETE' : 'PUT');
-  }
   async function save() {
     if (!community || busy) return;
     if (name.trim() !== community.name) await action('/name', 'PUT', { text: name.trim() });
@@ -137,26 +131,29 @@
 
 <svelte:head><title>{community?.name ?? 'Community'} · Atlas</title></svelte:head>
 <div class="community-page">
-  <p><a href="/communities">← All communities</a></p>
+  <div class="community-opening">
+    <a href="/communities">← All communities</a>
+    {#if !loading && signedIn && community?.status === 'Active' && !owned}
+      <button
+        type="button"
+        class="membership-action"
+        aria-label={community.isMember ? 'Leave community' : 'Join community'}
+        class:joined={community.isMember}
+        disabled={busy}
+        onclick={() => void action('/membership', community?.isMember ? 'DELETE' : 'PUT')}
+      >{community.isMember ? 'Joined' : 'Join'}</button>
+    {/if}
+  </div>
   {#if loading}<p role="status">Loading community…</p>{:else if community}
     <header>
       <h1>{community.name}</h1>
       <p>{community.description}</p>
       <p class="stats">{community.memberCount} active members · {community.nodeCount} nodes</p>
       {#if community.status !== 'Active'}<p>This community is archived.</p>{/if}
-      {#if signedIn && community.status === 'Active'}
-        {#if owned}
-          <button onclick={() => (editing = !editing)}
-            >{editing ? 'Cancel editing' : 'Edit community'}</button
-          >
-        {:else}<button
-            type="button"
-            class="membership-action"
-            class:leave={community.isMember}
-            disabled={busy}
-            onclick={() => void changeMembership()}
-            >{community.isMember ? 'Leave community' : 'Join community'}</button
-          >{/if}
+      {#if signedIn && community.status === 'Active' && owned}
+        <button onclick={() => (editing = !editing)}
+          >{editing ? 'Cancel editing' : 'Edit community'}</button
+        >
       {:else if !signedIn && community.status === 'Active'}<SessionControl
           prompt="Sign in to join this community"
           onSession={(participant) => {
@@ -204,25 +201,25 @@
     padding: 0.5rem 0.8rem;
     cursor: pointer;
   }
+  .community-opening {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
   .community-page .membership-action {
+    min-height: 2.25rem;
+    padding: 0.25rem 0.85rem;
     border: 1px solid var(--atlas-accent);
-    border-radius: var(--atlas-radius);
+    border-radius: 999px;
     background: var(--atlas-accent);
     color: var(--atlas-on-accent);
+    font-size: 0.875rem;
     font-weight: 600;
   }
-  .community-page .membership-action.leave {
-    display: block;
-    margin-inline-start: auto;
-    padding: 0.35rem 0;
-    border-color: transparent;
-    background: transparent;
-    color: var(--atlas-danger);
-    font-size: 0.875rem;
-    font-weight: 400;
-  }
-  .membership-action.leave:not(:disabled):hover {
-    text-decoration: underline;
+  .community-page .membership-action.joined {
+    background: var(--atlas-surface);
+    color: var(--atlas-accent);
   }
   .membership-action:disabled {
     opacity: 0.6;
