@@ -109,7 +109,7 @@
 -->
 
 <a class="skip-link" href="#main-content">Skip to content</a>
-<div class="app-shell">
+<div class="app-shell" style:--atlas-header-height={headerHeight ? `${headerHeight}px` : undefined}>
   <GlobeExplorer>
     {#snippet navigation(globeLauncher)}
       <AtlasHeader bind:headerHeight bind:bottomNavigationHeight mobileExperiment {globeLauncher} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
@@ -129,6 +129,9 @@
     margin-inline: auto;
     display: flex;
     flex-direction: column;
+  }
+  :where(.app-shell) :global(:where([id])) {
+    scroll-margin-block-start: calc(var(--atlas-header-height, 5rem) + 0.5rem);
   }
   main {
     flex: 1;
