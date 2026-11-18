@@ -132,6 +132,9 @@
    * Comment ID whose expanded reply thread should show its composer.
    */
   let replyTarget = $state<string | null>(null);
+  /** Enables automatic page loading only while the browser restores a saved comment position. */
+  let restorationPending = $state(false);
+  let moreButton = $state<HTMLButtonElement>();
   /**
    * Mounted new-comment textarea used for programmatic focus.
    */
@@ -139,6 +142,31 @@
   const instance = $props.id();
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+  onMount(() => {
+    const sync = () => {
+      restorationPending = document.documentElement.dataset.atlasScrollRestore === 'pending';
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-atlas-scroll-restore'],
+    });
+    return () => observer.disconnect();
+  });
+  // During history restoration, expose additional cursor pages as the viewport reaches this
+  // list's continuation control. Normal visits retain the explicit Load more comments button.
+  $effect(() => {
+    if (!restorationPending || !next || loading || error || !moreButton) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void load();
+      },
+      { rootMargin: '0px 0px 160px 0px' },
+    );
+    observer.observe(moreButton);
+    return () => observer.disconnect();
+  });
   // Clear identity-sensitive drafts and edit state when the signed-in participant changes.
   $effect(() => {
     participantId;
@@ -477,7 +505,7 @@
     </p>{:else if started && !items.length}<p class="empty">
       {parentId ? 'No replies yet.' : 'No comments yet. Start the discussion.'}
     </p>{/if}
-  {#if error || next}<button class="more" onclick={() => void load()} disabled={loading}
+  {#if error || next}<button bind:this={moreButton} class="more" onclick={() => void load()} disabled={loading}
       >{error
         ? parentId
           ? 'Retry replies'

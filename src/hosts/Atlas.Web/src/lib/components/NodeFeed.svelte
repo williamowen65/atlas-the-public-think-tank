@@ -182,7 +182,7 @@
       -->
       {#snippet voting(compact?: boolean)}{#if renderVoting}{@render renderVoting(item, compact)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
-      <li class:moderated-card={item.node.isHidden === true}>
+      <li class:moderated-card={item.node.isHidden === true} data-node-id={item.node.id}>
         {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}
         <NodeCard
           reactionControls={renderReactions ? reactions : undefined}
