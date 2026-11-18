@@ -16,8 +16,8 @@
     <ProjectReference Include="../../Atlas.Application/Atlas.Application.csproj" />
     <ProjectReference Include="../../Atlas.Identity/Atlas.Identity.csproj" />
     <ProjectReference Include="../../Atlas.Persistence/Atlas.Persistence.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.15" />
   </ItemGroup>
 
 </Project>

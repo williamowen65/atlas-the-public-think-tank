@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.8.6" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.22" />
+    <PackageReference Include="AngleSharp" Version="1.10.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.23" />
     <PackageReference Include="Microsoft.Build" Version="17.14.28" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.22" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.23" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.2" />
     <PackageReference Include="MSTest" Version="3.11.1" />
   </ItemGroup>
 
