@@ -445,7 +445,7 @@
       display: flex; flex-wrap: nowrap; justify-content: space-around; margin: 0;
       padding: 0.35rem 0 max(0.35rem, env(safe-area-inset-bottom));
       border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
-      transition: transform 180ms ease;
+      transition: transform 180ms ease, visibility 180ms;
       a, .bottom-account-toggle, .globe-nav { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
       > a > svg { width: 1.65rem; height: 1.65rem; padding: 0.075rem; }
       .globe-nav { justify-content: center; }
@@ -737,7 +737,11 @@
     border-radius: 999px; background: var(--atlas-surface); color: var(--atlas-text);
   }
   .atlas-header:has(.explore-sidebar[open]) { z-index: 50; transform: none; pointer-events: auto; }
-  .atlas-header:has(.explore-sidebar[open]) ~ .bottom-navigation { visibility: hidden; pointer-events: none; }
+  .atlas-header:has(.explore-sidebar[open]) ~ .bottom-navigation {
+    visibility: hidden;
+    pointer-events: none;
+    transition-property: transform;
+  }
   @media (prefers-reduced-motion: reduce) { .explore-sidebar nav { transition: none; } }
   @starting-style { .explore-sidebar[open] nav { transform: translateX(-110%); } }
   @media (max-width: 850px) {
