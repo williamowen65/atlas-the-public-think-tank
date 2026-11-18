@@ -84,6 +84,9 @@
 
 <style>
   .about-page {
+    --about-banner-bg: color-mix(in srgb, var(--atlas-bg) 93%, var(--atlas-accent));
+    --about-card-bg: color-mix(in srgb, var(--atlas-surface) 97%, var(--atlas-accent));
+    --about-border: color-mix(in srgb, var(--atlas-bg) 70%, var(--atlas-border));
     width: min(100% - 2rem, 860px);
     margin: 0 auto;
     padding: clamp(1.5rem, 4vw, 3.5rem) 0 5rem;
@@ -94,8 +97,8 @@
   .mission {
     padding: clamp(1.5rem, 4vw, 3rem);
     border-radius: 1rem;
-    background: var(--color-surface, #f4f6f8);
-    color: var(--color-text, #202b36);
+    background: var(--about-banner-bg);
+    color: var(--atlas-text);
   }
 
   .eyebrow {
@@ -140,7 +143,7 @@
 
   section:not(.mission) {
     padding: 2.5rem 0;
-    border-bottom: 1px solid var(--color-border, #dce1e5);
+    border-bottom: 1px solid var(--about-border);
   }
 
   .hero {
@@ -155,8 +158,9 @@
 
   .features article {
     padding: 1.25rem;
-    border: 1px solid var(--color-border, #dce1e5);
+    border: 1px solid var(--about-border);
     border-radius: 0.75rem;
+    background: var(--about-card-bg);
   }
 
   .emphasis {
@@ -169,6 +173,12 @@
   }
 
   @media (max-width: 600px) {
+    .hero,
+    .mission {
+      margin-inline: calc(-1rem - var(--atlas-space));
+      border-radius: 0;
+    }
+
     .features {
       grid-template-columns: 1fr;
     }

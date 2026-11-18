@@ -148,7 +148,7 @@ for (const rating of [0, 6]) {
   });
 }
 
-test('mobile header stays on one row and long community drawer scrolls above bottom navigation', async ({ page }) => {
+test('mobile header keeps its wordmark and search button on one row and the community drawer scrolls', async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
     if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
@@ -163,12 +163,18 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   const search = page.getByRole('textbox', { name: 'Search nodes and filters' });
   // Native summary role varies across accessibility implementations; use its label.
   const summary = page.getByLabel('Open navigation menu', { exact: true });
+  const toggle = page.getByRole('button', { name: 'Toggle search', exact: true });
   const menuBox = await summary.boundingBox();
-  const searchBox = await search.boundingBox();
+  const searchBox = await toggle.boundingBox();
   expect(Math.abs(menuBox!.y + menuBox!.height / 2 - searchBox!.y - searchBox!.height / 2)).toBeLessThan(2);
-  await search.click();
-  await expect(page.getByRole('textbox', { name: 'Search nodes and filters' })).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
+  await toggle.click();
+  await expect(search).toHaveAttribute('placeholder', 'Search Atlas');
+  const wordmark = page.getByText('The Public Think Tank', { exact: true });
+  await expect(wordmark).toBeHidden();
+  await expect(summary).toBeHidden();
   await page.keyboard.press('Escape');
+  await expect(wordmark).toBeVisible();
+  await expect(summary).toBeVisible();
   const bottom = page.getByRole('navigation', { name: 'Bottom navigation', exact: true });
   await bottom.getByRole('link', { name: 'Discover' }).hover();
   await expect(bottom.getByRole('link', { name: 'Discover' })).toHaveCSS('text-decoration-line', 'none');
@@ -225,4 +231,37 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await expect(node.getByRole('dialog', { name: 'Rate node importance' })).toBeVisible();
   await node.getByRole('button', { name: 'Close vote dial' }).click();
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
+});
+
+test('Explore switches between community pages on phones and desktop', async ({ page }) => {
+  const communities = [
+    { id: communityId, name: 'Orca recovery', description: 'Protect resident orcas.' },
+    { id: 'a1000000-0000-4000-8000-000000000002', name: 'Learning and technology', description: 'Support learning.' },
+  ].map(community => ({
+    ...community, status: 'Active', isMember: true, ownerParticipantId: 'another-user',
+    memberCount: 2, nodeCount: 0,
+  }));
+
+  await page.route('**/atlas-session-api/auth/session', route =>
+    route.fulfill({ json: { participantId: 'demo' } }),
+  );
+  await page.route('**/atlas-session-api/communities/mine', route =>
+    route.fulfill({ json: communities }),
+  );
+  await page.route('**/atlas-public-api/communities/*', route => {
+    const community = communities.find(item => new URL(route.request().url()).pathname.endsWith('/' + item.id));
+    return community ? route.fulfill({ json: community }) : route.fallback();
+  });
+
+  for (const width of [390, 1200]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('http://127.0.0.1:4173/communities/' + communityId);
+    await expect(page.getByRole('heading', { name: communities[0].name, exact: true })).toBeVisible();
+    await page.getByLabel('Open navigation menu', { exact: true }).click();
+    const drawer = page.getByRole('navigation', { name: 'Explore navigation' });
+    await drawer.getByRole('link', { name: communities[1].name, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp('/communities/' + communities[1].id + '$'));
+    await expect(page.getByRole('heading', { name: communities[1].name, exact: true })).toBeVisible();
+    await expect(page.getByText(communities[1].description, { exact: true })).toBeVisible();
+  }
 });

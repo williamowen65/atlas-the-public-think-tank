@@ -149,6 +149,11 @@
       overflow-wrap: anywhere;
     }
   }
+  @media (max-width: 560px) {
+    .atlas-footer {
+      padding-block-end: max(0.5rem, env(safe-area-inset-bottom));
+    }
+  }
   @media (max-width: 360px) {
     .footer-links {
       // Keep both columns on small phones while leaving room for link text to wrap.

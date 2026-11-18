@@ -22,16 +22,18 @@ for (const authenticated of [false, true]) {
       await page.setViewportSize({ width, height: 850 });
       await page.goto('http://127.0.0.1:4173/about');
       const header = page.locator('.atlas-header');
+      await expect(header.getByText('The Public Think Tank', { exact: true })).toBeVisible();
       if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
       if (width <= 560) {
-        // Phone headers keep the shared Explore toggle available while editing search.
         const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
         const menu = header.getByLabel('Open navigation menu', { exact: true });
-        await expect(search).toBeVisible();
-        await expect(menu).toBeVisible();
-        await expect(search).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
-        await search.click();
-        await expect(menu).toBeVisible();
+        const toggle = header.getByRole('button', { name: 'Toggle search', exact: true });
+        await expect(search).toHaveCount(0);
+        await toggle.click();
+        await expect(search).toBeFocused();
+        await expect(search).toHaveAttribute('placeholder', 'Search Atlas');
+        await expect(menu).toBeHidden();
+        await expect(header.getByRole('link', { name: 'Atlas home', exact: true })).toBeHidden();
         await search.fill('orcas');
         await header.getByRole('button', { name: 'Search', exact: true }).click();
         await expect.poll(() => page.evaluate(() => localStorage.getItem('atlas.discovery.query.v1'))).toBe('orcas');
@@ -41,8 +43,11 @@ for (const authenticated of [false, true]) {
         await page.keyboard.press('Escape');
         await expect(filters).toHaveAttribute('aria-expanded', 'false');
         await page.keyboard.press('Escape');
-        await expect(search).toBeVisible();
+        await expect(search).toHaveCount(0);
+        await expect(toggle).toBeFocused();
         await expect(menu).toBeVisible();
+        await expect(header.getByText('The Public Think Tank', { exact: true })).toBeVisible();
+        await toggle.click();
         await expect(search).toHaveValue('orcas');
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         continue;
@@ -63,17 +68,9 @@ for (const authenticated of [false, true]) {
       await expect(search).toBeFocused();
       // Desktop search expands inline and hides its trigger while open.
       await expect(toggle).toBeHidden();
-      await expect.poll(async () => (await search.boundingBox())?.width ?? 0).toBeGreaterThan(30);
-      const pill = await header.locator('.search-line').boundingBox();
-      const navigation = await header.locator('.right-group').boundingBox();
-      expect(pill && navigation).toBeTruthy();
-      const overlapX =
-        Math.min(pill!.x + pill!.width, navigation!.x + navigation!.width) -
-        Math.max(pill!.x, navigation!.x);
-      const overlapY =
-        Math.min(pill!.y + pill!.height, navigation!.y + navigation!.height) -
-        Math.max(pill!.y, navigation!.y);
-      expect(overlapX <= 1 || overlapY <= 1).toBe(true);
+      await expect(header.locator('.right-group')).toBeHidden();
+      await expect(brand).toBeVisible();
+      await expect.poll(async () => (await search.boundingBox())?.width ?? 0).toBeGreaterThan(200);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         width,
       );
@@ -121,4 +118,17 @@ test('collapsed header still restores a URL search before its input is opened', 
     .toBe('salmon');
   await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
   await expect(input).toHaveValue('salmon');
+});
+
+test('footer section links land below the sticky header', async ({ page }) => {
+  await page.route('**/atlas-session-api/**', (route) => route.fulfill({ status: 401, json: {} }));
+  await page.route('**/atlas-public-api/**', (route) => route.fulfill({ json: [] }));
+  await page.goto('http://127.0.0.1:4173/about');
+  await page.locator('footer a[href="/about#how-it-works"]').click();
+  await expect(page).toHaveURL(/\/about#how-it-works$/);
+  const heading = page.getByRole('heading', { name: 'How Atlas Works', exact: true });
+  await expect(heading).toBeInViewport();
+  await expect.poll(() => heading.evaluate((element) =>
+    element.getBoundingClientRect().top - document.querySelector('.atlas-header')!.getBoundingClientRect().height,
+  )).toBeGreaterThanOrEqual(0);
 });

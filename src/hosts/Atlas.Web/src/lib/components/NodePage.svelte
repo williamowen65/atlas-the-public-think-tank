@@ -356,22 +356,6 @@
     </div>
   {/if}
   {#if !inspectionOnly}<div class="discussion-toolbar">
-    <div
-      class="tabs"
-      use:alignDiscussionTabs
-      role="tablist"
-      aria-label="Node discussions and child types"
-    >
-      {#each tabs as tab, index}<button
-          role="tab"
-          id={`${instance}-${tab.id}`}
-          aria-selected={active === tab.id}
-          aria-controls={`${instance}-panel`}
-          tabindex={active === tab.id ? 0 : -1}
-          onclick={() => onTabChange(tab.id)}
-          onkeydown={(event) => key(event, index)}>{tab.name}</button
-        >{/each}
-    </div>
     <div class="add">
       <button
         onclick={() => onAddChild(active === 'comments' ? undefined : active)}
@@ -380,6 +364,33 @@
           ? 'a child node'
           : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
       >
+    </div>
+    <div
+      class="tabs"
+      use:alignDiscussionTabs
+      role="tablist"
+      aria-label="Node discussions and child types"
+    >
+      {#snippet discussionTab(tab: (typeof tabs)[number], index: number)}
+        <button
+          class:comments-tab={index === 0}
+          role="tab"
+          id={`${instance}-${tab.id}`}
+          aria-selected={active === tab.id}
+          aria-controls={`${instance}-panel`}
+          tabindex={active === tab.id ? 0 : -1}
+          onclick={() => onTabChange(tab.id)}
+          onkeydown={(event) => key(event, index)}>{tab.name}</button
+        >
+      {/snippet}
+      {@render discussionTab(tabs[0], 0)}
+      {#if tabs.length > 1}
+        <div class="child-tabs" role="presentation">
+          {#each tabs.slice(1) as tab, index}
+            {@render discussionTab(tab, index + 1)}
+          {/each}
+        </div>
+      {/if}
     </div>
   </div>
   <!--
@@ -479,16 +490,14 @@
     padding: 0.2rem 0.6rem;
   }
   .discussion-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.4rem 1.25rem;
+    display: flow-root;
     border-block: 1px solid var(--atlas-border);
     padding: var(--discussion-section-padding) var(--card-padding);
   }
   .add {
-    margin-inline-start: auto;
-    max-inline-size: 100%;
+    float: inline-end;
+    max-inline-size: 52%;
+    margin-inline-start: 0.5rem;
   }
   .add button {
     border: 1px solid var(--atlas-accent);
@@ -518,12 +527,29 @@
   }
   .tabs {
     scroll-margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    min-inline-size: 0;
+  }
+  .child-tabs { display: contents; }
+  @media (max-width: 560px) {
+    .child-tabs {
+      clear: both;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding-block-start: 0.4rem;
+    }
+    .tabs .comments-tab {
+      max-inline-size: calc(48% - 0.5rem);
+    }
+  }
+  @media (width > 560px) {
+    .tabs { margin-block-end: -0.4rem; }
+    .tabs button {
+      display: inline-block;
+      margin: 0 0.4rem 0.4rem 0;
+    }
   }
   .tabs button {
+    vertical-align: top;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     min-block-size: 2.25rem;
