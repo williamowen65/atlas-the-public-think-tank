@@ -22,9 +22,11 @@
 </script>
 
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
+    expandable = false,
     onNavigate,
     hasMore = false,
     loadOlder,
@@ -35,6 +37,8 @@
      * Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied.
      */
     items: BreadcrumbItem[];
+    /** Show the immediate parent with an optional ancestry toggle. */
+    expandable?: boolean;
     /**
      * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
      * navigation.
@@ -52,6 +56,8 @@
   /**
    * Older ancestor items prepended by the current path’s pager.
    */
+  const panelId = $props.id();
+  let expanded = $state(false);
   let older = $state<BreadcrumbItem[]>([]);
   /**
    * Whether the alternative-parent menu is visible.
@@ -108,12 +114,14 @@
   }
   // Remember the visible anchor before fetching a different parent path, so the ribbon does not jump.
   async function selectLiveParent(parentId: string) {
-    if (!liveMenuChild || liveBusy) return;
+    if (!liveMenuChild || liveBusy || loading) return;
     const child = liveMenuChild;
-    const currentIndex = allItems.findIndex((item, index) => liveChildAt(index) === child);
+    const current = generation;
+    const currentIndex = allItems.findIndex((_, index) => liveChildAt(index) === child);
     if (currentIndex < 0) return;
     const suffix = allItems.slice(currentIndex + 1);
     liveBusy = true;
+    error = '';
     try {
       const response = await fetch(
         `${apiBase}/nodes/${encodeURIComponent(child)}/ancestors?firstParent=${encodeURIComponent(parentId)}`,
@@ -126,7 +134,7 @@
       };
       if (!Array.isArray(page.items)) throw new Error('Invalid ancestor response.');
       const newAncestors = [...page.items].reverse();
-      const previous = allItems;
+      if (current !== generation) return;
       const anchor = breadcrumbList?.children.item(currentIndex) as HTMLElement | null;
       pendingAnchor =
         anchor && breadcrumbViewport
@@ -137,29 +145,19 @@
                 breadcrumbViewport.getBoundingClientRect().left,
             }
           : null;
-      preserveScroll = true;
+      preserveScroll = !expandable;
       livePath = [...newAncestors, ...suffix];
       more = page.hasMore;
       openRouteMenu = false;
       liveMenuChild = null;
-      // Refresh branch hints for the newly chosen path.
-      for (const item of newAncestors) {
-        if (liveChoices[item.id] || !item.id) continue;
-        void fetch(`${apiBase}/nodes/${encodeURIComponent(item.id)}/parents`, {
-          credentials: apiBase === '/atlas-session-api' ? 'same-origin' : 'omit',
-        })
-          .then((res) => (res.ok ? res.json() : []))
-          .then((parents) => {
-            if (Array.isArray(parents)) liveChoices = { ...liveChoices, [item.id!]: parents };
-          })
-          .catch(() => {});
-      }
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not change parent path.';
+      if (current === generation)
+        error = cause instanceof Error ? cause.message : 'Could not change parent path.';
     } finally {
-      liveBusy = false;
+      if (current === generation) liveBusy = false;
     }
   }
+
   /**
    * Whether the current ancestry path has older items remaining.
    */
@@ -175,6 +173,10 @@
   let generation = 0;
   /** Displayed path: an API-selected alternative, or older items followed by supplied items. */
   const allItems = $derived(livePath ?? [...older, ...items]);
+  $effect(() => {
+    originId;
+    expanded = false;
+  });
   const liveChildAt = (index: number) =>
     index + 1 < allItems.length ? allItems[index + 1].id : originId;
   // A new source path resets paging and API-selected alternate ancestry.
@@ -187,14 +189,20 @@
     older = [];
     livePath = null;
     liveChoices = {};
+    openRouteMenu = false;
+    liveMenuChild = null;
+    liveBusy = false;
     more = hasMore;
     loading = false;
     error = '';
   });
   $effect(() => {
-    if (!originId) return;
+    if (!originId || !allItems.length) return;
     const controller = new AbortController();
-    const ids = [...items.map((item) => item.id), originId].filter((id): id is string => !!id);
+    const ids =
+      expandable && !expanded
+        ? [originId]
+        : [...allItems.map((item) => item.id), originId].filter((id): id is string => !!id);
     void Promise.all(
       ids.map(async (id) => {
         try {
@@ -216,7 +224,7 @@
 
   // Prepend only unseen ancestors; generation checks discard results from an outdated path.
   async function requestOlder() {
-    if (!more || loading || !loadOlder) return;
+    if (!more || loading || liveBusy || !loadOlder) return;
     const current = generation;
     loading = true;
     error = '';
@@ -226,7 +234,8 @@
       const seen = new Set(allItems.flatMap((item) => (item.id ? [item.id] : [])));
       // A repeated ancestor means this route has cycled. Stop instead of looping requests.
       const fresh = page.items.filter((item) => !item.id || !seen.has(item.id));
-      older = [...fresh, ...older];
+      if (livePath) livePath = [...fresh, ...livePath];
+      else older = [...fresh, ...older];
       more = page.hasMore && fresh.length === page.items.length && fresh.length > 0;
     } catch (cause) {
       if (current === generation)
@@ -235,6 +244,11 @@
       if (current === generation) loading = false;
     }
   }
+
+  $effect(() => {
+    if (expandable && expanded && allItems.length && more && !loading && !liveBusy && !error)
+      untrack(() => void requestOlder());
+  });
 
   // Measure after insertion; a detached element has no usable scrollWidth.
   function revealNewest(viewport: HTMLElement, path: BreadcrumbItem[]) {
@@ -317,7 +331,15 @@
   }}
 />
 
-{#if allItems.length || more}
+{#if expandable}
+  {#if allItems.length}
+    <nav class="ancestry" id={panelId} aria-label="Node ancestry">
+      {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
+      <ol>{@render ancestorItems()}</ol>
+      {@render loadError()}
+    </nav>
+  {/if}
+{:else if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
     <div
@@ -339,47 +361,8 @@
     >
       <!-- The viewport clips/scrolls this list; its items supply the ribbon segments. -->
       <ol bind:this={breadcrumbList}>
-        {#if more && loadOlder}
-          <li class="load-older">
-            <button type="button" disabled={loading} onclick={requestOlder}
-              >{loading ? 'Loading…' : 'Load older ancestors'}</button
-            >
-          </li>
-        {/if}
-        {#each allItems as item, index (item.id ?? index)}
-          <li style:z-index={allItems.length - index}>
-            {#if item.id && onNavigate}
-              <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
-            {:else}
-              <span>{item.title}</span>
-            {/if}
-            {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
-              <div class="route-choice">
-                <button
-                  type="button"
-                  class="route-toggle"
-                  aria-label="Choose another parent path"
-                  aria-expanded={openRouteMenu}
-                  onclick={(event) => {
-                    liveMenuChild = liveChildAt(index) ?? null;
-                    toggleRouteMenu(event);
-                  }}
-                >
-                  <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"
-                    ><path
-                      d="m3 6 5 5 5-5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    /></svg
-                  >
-                </button>
-              </div>
-            {/if}
-          </li>
-        {/each}
+        {#if more && loadOlder}<li class="load-older">{@render olderButton()}</li>{/if}
+        {@render ancestorItems()}
       </ol>
     </div>
     <!-- Keep the floating menu outside the scroll viewport so its choices are not clipped. -->
@@ -391,24 +374,304 @@
         style:top={menuPosition.top + 'px'}
         style:left={menuPosition.left + 'px'}
       >
-        {#if liveMenuChild}
-          {#each (liveChoices[liveMenuChild] ?? []).filter((parent) => parent.id !== allItems.find((item, index) => liveChildAt(index) === liveMenuChild)?.id) as parent (parent.id)}
-            <button
-              type="button"
-              disabled={liveBusy}
-              onclick={() => void selectLiveParent(parent.id)}>{parent.title}</button
-            >
-          {/each}
-        {/if}
+        {@render parentChoices()}
       </div>
     {/if}
-    {#if error}<p role="alert">
-        {error} <button type="button" onclick={requestOlder}>Retry</button>
-      </p>{/if}
+    {@render loadError()}
   </nav>
 {/if}
 
+{#snippet ancestryToggle()}
+  <button
+    type="button"
+    class="ancestry-toggle"
+    aria-label={expanded ? 'Hide ancestry' : 'Show ancestry'}
+    aria-expanded={expanded}
+    aria-controls={panelId}
+    onclick={() => {
+      expanded = !expanded;
+      if (!expanded) openRouteMenu = false;
+    }}
+  >
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m3 10 5-5 5 5" />
+    </svg>
+  </button>
+{/snippet}
+
+{#snippet ancestorItems()}
+  {#each allItems as item, index (item.id ?? index)}
+    {#if !expandable || expanded || index === allItems.length - 1}
+      <li style:z-index={expandable ? undefined : allItems.length - index}>
+        {#if expandable && expanded && index > 0}
+          <svg
+            class="ancestry-arrow"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 3v9a4 4 0 0 0 4 4h10m-4-4 4 4-4 4" />
+          </svg>
+        {/if}
+        <div
+          class="ancestor-title"
+          class:parent-title={expandable && index === allItems.length - 1}
+        >
+          {#if expandable && index === allItems.length - 1 && (allItems.length > 1 || (more && loadOlder))}
+            {@render ancestryToggle()}
+          {/if}
+          {#if expandable && item.id}
+            {@const id = item.id}
+            <a
+              href={`/nodes?id=${encodeURIComponent(id)}`}
+              onclick={(event) => {
+                if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                  return;
+                event.preventDefault();
+                onNavigate(id);
+              }}>{item.title}</a
+            >
+          {:else if item.id && onNavigate}
+            <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
+          {:else}
+            <span>{item.title}</span>
+          {/if}
+        </div>
+        {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
+          <div class="route-choice">
+            <button
+              type="button"
+              class="route-toggle"
+              aria-label="Choose another parent path"
+              aria-expanded={openRouteMenu && liveMenuChild === liveChildAt(index)}
+              onclick={(event) => {
+                if (expandable) {
+                  const child = liveChildAt(index) ?? null;
+                  openRouteMenu = !openRouteMenu || liveMenuChild !== child;
+                  liveMenuChild = child;
+                } else {
+                  liveMenuChild = liveChildAt(index) ?? null;
+                  toggleRouteMenu(event);
+                }
+              }}
+            >
+              {#if expandable}Other parents{:else}
+                <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"
+                  ><path
+                    d="m3 6 5 5 5-5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+              {/if}
+            </button>
+            {#if expandable && openRouteMenu && liveMenuChild === liveChildAt(index)}
+              <div class="inline-routes route-menu" role="group" aria-label="Other parent paths">
+                {@render parentChoices()}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </li>
+    {/if}
+  {/each}
+{/snippet}
+
+{#snippet parentChoices()}
+  {#if liveMenuChild}
+    {#each (liveChoices[liveMenuChild] ?? []).filter((parent) => parent.id !== allItems.find((item, index) => liveChildAt(index) === liveMenuChild)?.id) as parent (parent.id)}
+      <button type="button" disabled={liveBusy} onclick={() => void selectLiveParent(parent.id)}
+        >{parent.title}</button
+      >
+    {/each}
+  {/if}
+{/snippet}
+
+{#snippet olderButton()}
+  <button type="button" disabled={loading || liveBusy} onclick={requestOlder}>
+    {loading ? 'Loading…' : 'Load older ancestors'}
+  </button>
+{/snippet}
+
+{#snippet loadError()}
+  {#if error}
+    <p role="alert">{error}</p>
+    {#if more && loadOlder && !openRouteMenu}
+      <button type="button" onclick={requestOlder}>Retry</button>
+    {/if}
+  {/if}
+{/snippet}
+
 <style lang="scss">
+  .ancestor-title {
+    display: contents;
+  }
+
+  .ancestry {
+    --ancestry-gutter: 2.25rem;
+    --ancestry-gap: 0.6rem;
+    max-width: none;
+
+    .ancestor-title {
+      display: block;
+      text-align: center;
+    }
+
+    .parent-title:has(> .ancestry-toggle) {
+      --toggle-space: calc(var(--ancestry-gutter) + var(--ancestry-gap));
+      display: flex;
+      align-items: center;
+
+      > a,
+      > span {
+        flex: 0 0 auto;
+        max-inline-size: calc(100% - var(--toggle-space));
+        margin-inline: auto;
+        text-align: center;
+      }
+
+      // Balance the caret for short titles, then yield the space to longer ones.
+      &::after {
+        content: '';
+        flex: 0 1 var(--toggle-space);
+      }
+    }
+
+    color: var(--atlas-text);
+
+    button:not(.ancestry-toggle),
+    span {
+      padding: 0.3rem 0.5rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      text-align: start;
+    }
+
+    button:focus-visible {
+      outline-color: var(--atlas-accent);
+    }
+
+    background: var(--atlas-tinted-surface);
+    border-radius: var(--atlas-radius) var(--atlas-radius) 0 0;
+    border-bottom: 1px solid var(--atlas-border);
+    margin-inline: calc(-1 * var(--card-padding));
+    margin-bottom: 0.5rem;
+    padding: 0.65rem var(--card-padding);
+
+    a {
+      color: var(--atlas-accent);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+      overflow-wrap: anywhere;
+
+      &:focus-visible,
+      &:active {
+        text-decoration-line: underline;
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          text-decoration-line: underline;
+        }
+      }
+    }
+
+    .ancestor-title:not(.parent-title) a {
+      font-weight: 500;
+    }
+
+    .ancestor-title > span {
+      text-align: center;
+    }
+
+    .ancestry-arrow {
+      display: block;
+      inline-size: 1.4rem;
+      block-size: 1.4rem;
+      margin-block: 0.15rem;
+      margin-inline: auto;
+      color: var(--atlas-accent);
+    }
+
+    ol {
+      display: grid;
+      width: auto;
+      padding: 0;
+    }
+
+    li {
+      display: block;
+      background: transparent;
+      color: inherit;
+
+      // Only the first visible row shares the top corner with the edit control.
+      &:first-child {
+        padding-inline-end: max(
+          0px,
+          calc(var(--ancestry-end-padding, var(--card-padding)) - var(--card-padding))
+        );
+      }
+
+      &::after {
+        display: none;
+      }
+    }
+
+    .route-choice {
+      display: block;
+      text-align: center;
+    }
+    .route-toggle {
+      color: var(--atlas-accent);
+      border: 0;
+    }
+    .inline-routes {
+      position: static;
+      width: auto;
+      max-width: none;
+      margin-block: 0.2rem;
+      box-shadow: none;
+    }
+  }
+
+  .ancestry .ancestry-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    margin-inline-end: var(--ancestry-gap);
+    inline-size: var(--ancestry-gutter);
+    block-size: var(--ancestry-gutter);
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+
+    &[aria-expanded='true'] svg {
+      transform: rotate(180deg);
+    }
+  }
+
   nav {
     display: block;
     margin: 0;
@@ -466,10 +729,6 @@
     }
     &:first-child {
       border-radius: 0.2rem 0 0 0.2rem;
-      button,
-      span {
-        padding-inline-start: 0.75rem;
-      }
     }
   }
 
@@ -477,6 +736,13 @@
     display: flex;
     align-items: center;
   }
+  .viewport li:first-child {
+    button,
+    span {
+      padding-inline-start: 0.75rem;
+    }
+  }
+
   .route-choice {
     display: flex;
     align-items: center;

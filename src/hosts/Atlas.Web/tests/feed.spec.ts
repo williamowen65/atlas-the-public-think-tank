@@ -54,6 +54,8 @@ test('SPA composes the shared shell and live feed at narrow widths', async ({ pa
   await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
   await expect(page.getByRole('banner')).toContainText('Atlas');
   await expect(page.locator('article')).toHaveCount(3);
+  await expect(page.locator('article').getByRole('navigation', { name: 'Node ancestry' })).toHaveCount(0);
+  await expect(page.locator('article').getByRole('button', { name: 'Show ancestry' })).toHaveCount(0);
   await expect(page.getByRole('contentinfo')).toContainText('The Public Think Tank');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.getByRole('link', { name: 'Skip to content' }).focus();

@@ -283,26 +283,17 @@
         blocks = update.blocks;
       }}
     />{/if}
-  {#if node.breadcrumb.length}<div class="ribbon-context">
-      <Breadcrumb
-        items={node.breadcrumb}
-        originId={node.id}
-        {apiBase}
-        {onNavigate}
-        hasMore={hasMoreAncestors}
-        loadOlder={loadOlderAncestors}
-      />
-    </div>{/if}
   <header>
-    <div class="node-type-row">
-      <p class="node-type">{node.typeName}</p>
-      {#if !inspectionOnly}
-        {#if voting}{@render voting()}
-        {:else}<button class="vote-summary" type="button" disabled>
-          {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
-        </button>{/if}
-      {/if}
-    </div>
+    <Breadcrumb
+      expandable
+      items={node.breadcrumb}
+      originId={node.id}
+      {apiBase}
+      {onNavigate}
+      hasMore={hasMoreAncestors}
+      loadOlder={loadOlderAncestors}
+    />
+    {@render typeRow()}
     <h1>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
@@ -408,37 +399,41 @@
 {/if}
 </article>
 
+{#snippet typeRow()}
+  <div class="node-type-row">
+    <p class="node-type">{node.typeName}</p>
+    {#if !inspectionOnly}
+      {#if voting}{@render voting()}
+      {:else}<button class="vote-summary" type="button" disabled>
+        {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+      </button>{/if}
+    {/if}
+  </div>
+{/snippet}
+
 <style lang="scss">
   .relative-date { display: none; }
   .introduction { display: contents; }
 
 
-  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
-  .node-page:has(> :global(.edit-node.corner)) > .ribbon-context {
-    padding-right: 3.25rem;
-    min-height: 2.75rem;
-  }
-
   .node-page {
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --discussion-section-padding: 1.25rem;
-    --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     margin-inline: auto;
     padding: 0;
   }
-  .ribbon-context {
-    min-width: 0;
-    padding: 0.75rem 0 0;
-    margin-bottom: var(--card-padding);
-  }
   header {
     padding: var(--card-padding) var(--card-padding) 0.5rem;
   }
-  .ribbon-context + header {
-    padding-top: 0;
+
+  header:has(> :global(.ancestry)) { padding-top: 0; }
+
+  .node-page:has(> :global(.edit-node.corner)) {
+    --ancestry-end-padding: 5rem;
   }
+
   h1 {
     line-height: var(--atlas-node-line-height);
     font-size: clamp(1.4rem, 4vw, 2rem);
@@ -601,14 +596,13 @@
   .node-type-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: .4rem .75rem;
+    gap: .4rem .6rem;
     min-width: 0;
     container-type: inline-size;
     margin-bottom: .5rem;
   }
   .node-type {
-    margin: 0;
+    margin: 0 auto 0 0;
     min-width: 0;
     color: var(--atlas-accent);
     font-weight: 700;

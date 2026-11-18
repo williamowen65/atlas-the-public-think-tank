@@ -287,7 +287,12 @@
       cursor: default;
     }
     .node-picker {
+      grid-template-columns: minmax(0, 1fr);
       margin-block: 1rem;
+
+      select {
+        min-width: 0;
+      }
     }
   }
 </style>

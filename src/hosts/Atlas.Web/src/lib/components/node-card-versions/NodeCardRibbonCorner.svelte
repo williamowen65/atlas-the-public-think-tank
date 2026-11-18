@@ -110,9 +110,16 @@
   {:else}
     {@render cornerControl?.()}
   {/if}
-  {#if node.breadcrumb.length}
-    <div class="ribbon-context">
+  <header>
+    {#if headerFields}
+      {#if node.breadcrumb.length}
+        <Breadcrumb items={node.breadcrumb} originId={draft ? undefined : node.id}
+          {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
+      {/if}
+      <div id={`${instance}-title`}>{@render headerFields()}</div>
+    {:else}
       <Breadcrumb
+        expandable
         items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
         originId={draft ? undefined : node.id}
         {apiBase}
@@ -120,30 +127,7 @@
         hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors}
       />
-    </div>
-  {/if}
-  <header>
-    {#if headerFields}
-      <div id={`${instance}-title`}>{@render headerFields()}</div>
-    {:else}
-      <div class="node-type-row">
-        <p class="mobile-type">{node.typeName}</p>
-        {#if !authoringBody}
-          {#if voting}
-            {@render voting(true)}
-          {:else}
-            <button class="fallback-vote" type="button" aria-haspopup="dialog"
-              disabled={draft || node.status === 'Archived' || node.isHidden}
-              onclick={() => fallbackDialog?.showModal()}>
-              {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
-            </button>
-            <dialog bind:this={fallbackDialog} class="fallback-vote-dialog" aria-label="Rate node importance">
-              <button type="button" onclick={() => fallbackDialog?.close()}>Close</button>
-              <VotingDial label="Node importance" {value} {average} {totalVotes} onChange={onVote} />
-            </dialog>
-          {/if}
-        {/if}
-      </div>
+      {@render typeRow()}
       <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
@@ -248,23 +232,37 @@
   >
 {/snippet}
 
+{#snippet typeRow()}
+  <div class="node-type-row">
+    <p class="mobile-type">{node.typeName}</p>
+    {#if !authoringBody}
+      {#if voting}
+        {@render voting(true)}
+      {:else}
+        <button class="fallback-vote" type="button" aria-haspopup="dialog"
+          disabled={draft || node.status === 'Archived' || node.isHidden}
+          onclick={() => fallbackDialog?.showModal()}>
+          {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+        </button>
+        <dialog bind:this={fallbackDialog} class="fallback-vote-dialog" aria-label="Rate node importance">
+          <button type="button" onclick={() => fallbackDialog?.close()}>Close</button>
+          <VotingDial label="Node importance" {value} {average} {totalVotes} onChange={onVote} />
+        </dialog>
+      {/if}
+    {/if}
+  </div>
+{/snippet}
+
 <style lang="scss">
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
 
 
 
-  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
-  .node-card:has(> :global(.edit-node.corner)) > .ribbon-context {
-    padding-right: 3.25rem;
-    min-height: 2.75rem;
-  }
-
   .node-card {
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
-    --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     width: 100%;
     border: 1px solid var(--atlas-border);
@@ -282,18 +280,12 @@
     }
   }
 
-  .ribbon-context {
-    min-width: 0;
-    padding: 0.75rem 0 0;
-    margin-bottom: var(--card-padding);
+  .node-card header:has(> :global(.ancestry)) { padding-top: 0; }
+
+  .node-card:has(> :is(:global(.edit-node.corner), .hidden-edit-link)) {
+    --ancestry-end-padding: 5rem;
   }
 
-  .ribbon-context + header {
-    padding-top: 0;
-    h2 {
-      margin-top: 0;
-    }
-  }
 
 
 
@@ -471,14 +463,13 @@
   .node-type-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: .4rem .75rem;
+    gap: .4rem .6rem;
     min-width: 0;
     container-type: inline-size;
     margin-bottom: .5rem;
   }
   .node-type-row .mobile-type {
-    margin: 0;
+    margin: 0 auto 0 0;
     min-width: 0;
     color: var(--atlas-accent);
     font-weight: 700;
