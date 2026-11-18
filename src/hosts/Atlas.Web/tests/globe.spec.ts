@@ -45,7 +45,7 @@ async function mockApi(page: Page, offline = false, hasLocation = false, canShar
   );
 }
 
-test('desktop mini opens compact globe, toggles history, and restores focus on Escape', async ({
+test('desktop mini opens compact globe, defaults to Historical and toggles Live, and restores focus on Escape', async ({
   page,
 }) => {
   await mockApi(page);
@@ -60,11 +60,6 @@ test('desktop mini opens compact globe, toggles history, and restores focus on E
     'true',
   );
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Live', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await dialog.getByRole('button', { name: 'Historical', exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Historical', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -74,6 +69,10 @@ test('desktop mini opens compact globe, toggles history, and restores focus on E
   await dialog.getByRole('button', { name: 'About this globe', exact: true }).click();
   await dialog.getByText('Shared locations', { exact: false }).click();
   await expect(dialog.getByText('Near 48° latitude, -122° longitude: 3 accounts')).toBeVisible();
+  const live = dialog.getByRole('button', { name: 'Live', exact: true });
+  await live.click();
+  await expect(live).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.locator('.metric strong')).toHaveText('2');
   expect((await new AxeBuilder({ page }).include('dialog').analyze()).violations).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
@@ -195,11 +194,11 @@ test('map failure leaves counts and text locations usable', async ({ page }) => 
   await page.goto('/');
   await page.getByRole('button', { name: 'Open Atlas visitor globe', exact: true }).last().click();
   await expect(page.getByText('Map details could not load.', { exact: false })).toBeVisible();
-  await expect(page.locator('.metric strong')).toHaveText('2');
+  await expect(page.locator('.metric strong')).toHaveText('12');
   await expect(page.getByRole('button', { name: 'Retry map' })).toBeEnabled();
   await page.getByRole('button', { name: 'About this globe', exact: true }).click();
   await page.getByText('Shared locations', { exact: false }).click();
-  await expect(page.getByText('Near 48° latitude, -122° longitude: 1 account')).toBeVisible();
+  await expect(page.getByText('Near 48° latitude, -122° longitude: 3 accounts')).toBeVisible();
 });
 
 test('miniature and popup share one rotation across opening and reopening', async ({ page }) => {
@@ -304,7 +303,7 @@ test('outside clicks dismiss the globe without blocking header navigation', asyn
   await launcher.click();
   const popup = page.getByRole('dialog', { name: 'Visitor globe' });
   await expect(popup).toHaveAttribute('aria-modal', 'false');
-  await popup.getByRole('button', { name: 'Historical', exact: true }).click();
+  await popup.getByRole('button', { name: 'Live', exact: true }).click();
   await expect(popup).toBeVisible();
   await page.mouse.click(5, 300);
   await expect(popup).not.toBeVisible();
@@ -441,8 +440,6 @@ test('unsupported WebGL keeps the launcher and textual globe information usable'
   await expect(
     dialog.getByRole('status').filter({ hasText: 'WebGL 2 is unavailable' }),
   ).toContainText('WebGL 2 is unavailable');
-  await expect(dialog.locator('.metric strong')).toHaveText('2');
-  await dialog.getByRole('button', { name: 'Historical', exact: true }).click();
   await expect(dialog.locator('.metric strong')).toHaveText('12');
   await dialog.getByRole('button', { name: 'About this globe', exact: true }).click();
   await dialog.locator('summary').filter({ hasText: 'Shared locations' }).click();
