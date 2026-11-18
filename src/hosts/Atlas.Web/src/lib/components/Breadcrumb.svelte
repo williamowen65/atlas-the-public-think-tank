@@ -529,10 +529,29 @@
     --ancestry-gap: 0.6rem;
     max-width: none;
 
-    .parent-title {
+    .ancestor-title {
+      display: block;
+      text-align: center;
+    }
+
+    .parent-title:has(> .ancestry-toggle) {
+      --toggle-space: calc(var(--ancestry-gutter) + var(--ancestry-gap));
       display: flex;
       align-items: center;
-      gap: var(--ancestry-gap);
+
+      > a,
+      > span {
+        flex: 0 0 auto;
+        max-inline-size: calc(100% - var(--toggle-space));
+        margin-inline: auto;
+        text-align: center;
+      }
+
+      // Balance the caret for short titles, then yield the space to longer ones.
+      &::after {
+        content: '';
+        flex: 0 1 var(--toggle-space);
+      }
     }
 
     color: var(--atlas-text);
@@ -577,12 +596,12 @@
       }
     }
 
-    .ancestor-title:not(.parent-title) {
-      display: block;
+    .ancestor-title:not(.parent-title) a {
+      font-weight: 500;
+    }
 
-      a {
-        font-weight: 500;
-      }
+    .ancestor-title > span {
+      text-align: center;
     }
 
     .ancestry-arrow {
@@ -620,6 +639,7 @@
 
     .route-choice {
       display: block;
+      text-align: center;
     }
     .route-toggle {
       color: var(--atlas-accent);
@@ -638,6 +658,7 @@
     display: inline-grid;
     place-items: center;
     flex: 0 0 auto;
+    margin-inline-end: var(--ancestry-gap);
     inline-size: var(--ancestry-gutter);
     block-size: var(--ancestry-gutter);
     padding: 0;
