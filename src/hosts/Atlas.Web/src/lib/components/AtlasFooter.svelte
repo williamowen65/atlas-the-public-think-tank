@@ -151,8 +151,7 @@
   }
   @media (max-width: 560px) {
     .atlas-footer {
-      // Share the footer's bottom padding with the fixed menu's clearance.
-      padding-block-end: max(2rem, var(--atlas-bottom-navigation-height, 0px));
+      padding-block-end: max(0.5rem, env(safe-area-inset-bottom));
     }
   }
   @media (max-width: 360px) {
