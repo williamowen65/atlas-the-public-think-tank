@@ -405,8 +405,8 @@
 {/if}
 {#if mobileExperiment}
   <nav bind:offsetHeight={bottomNavigationHeight} class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
-    <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
-    <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
+    <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z" /></svg>Discover</a>
+    <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>Create</a>
     {#if globeLauncher}<div class="globe-nav">{@render globeLauncher()}</div>{/if}
     {#if authenticated}
       <div class="bottom-account" bind:this={mobileAccountElement}>
@@ -431,7 +431,7 @@
         {/if}
       </div>
     {:else}
-      <a href="/login"><span aria-hidden="true">♙</span>You</a>
+      <a href="/login"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>You</a>
     {/if}
   </nav>
 {/if}
@@ -447,7 +447,7 @@
       border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
       transition: transform 180ms ease;
       a, .bottom-account-toggle, .globe-nav { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
-      > a > span { font-size: 1.4rem; line-height: 1.3; }
+      > a > svg { width: 1.65rem; height: 1.65rem; padding: 0.075rem; }
       .globe-nav { justify-content: center; }
       .bottom-account { flex: 1; display: flex; justify-content: center; }
       .bottom-account-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: var(--atlas-text); font: inherit; cursor: pointer; }
