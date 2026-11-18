@@ -479,14 +479,15 @@
     padding: 0.2rem 0.6rem;
   }
   .discussion-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.4rem 1.25rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) fit-content(52%);
+    align-items: start;
+    gap: 0.5rem;
     border-block: 1px solid var(--atlas-border);
     padding: var(--discussion-section-padding) var(--card-padding);
   }
   .add {
+    min-inline-size: 0;
     margin-inline-start: auto;
     max-inline-size: 100%;
   }
