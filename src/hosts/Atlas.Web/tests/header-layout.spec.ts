@@ -129,6 +129,6 @@ test('footer section links land below the sticky header', async ({ page }) => {
   const heading = page.getByRole('heading', { name: 'How Atlas Works', exact: true });
   await expect(heading).toBeInViewport();
   await expect.poll(() => heading.evaluate((element) =>
-    element.getBoundingClientRect().top - document.querySelector('.atlas-header')!.offsetHeight,
+    element.getBoundingClientRect().top - document.querySelector('.atlas-header')!.getBoundingClientRect().height,
   )).toBeGreaterThanOrEqual(0);
 });
