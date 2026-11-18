@@ -892,7 +892,10 @@
   }
   @media (min-width: 561px) and (max-width: 720px) {
     .atlas-header { column-gap: 0.5rem; padding-left: 2rem; }
-    .right-group, .primary, .auth { gap: 0.45rem; }
+    .atlas-header:not(.search-open) {
+      grid-template-columns: auto minmax(2.75rem, 1fr) minmax(0, max-content);
+    }
+    .right-group, .primary, .auth { flex-wrap: wrap; gap: 0.45rem; }
   }
   // Shared drawer wins over generic account dropdown and old phone-only styles.
   .atlas-header .explore-sidebar nav {
