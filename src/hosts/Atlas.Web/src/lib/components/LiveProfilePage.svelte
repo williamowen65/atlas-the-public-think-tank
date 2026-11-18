@@ -260,7 +260,10 @@
   {#if error}<p role="alert">{error}</p>{/if}
   {#if profile}
     <header class="profile-header">
-          {#if isOwner && !profile.deleted}<button
+      <div class="profile-title">
+        <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
+        <h1>{profile.displayName}</h1>
+        {#if isOwner && !profile.deleted}<button
               type="button"
               class="edit-profile"
               aria-label={editing ? 'Cancel editing' : 'Edit my profile'}
@@ -270,12 +273,8 @@
                 notice = '';
               }}>✎</button
             >{/if}
-
-      <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
+      </div>
       <div class="profile-details">
-        <div class="profile-title">
-          <h1>{profile.displayName}</h1>
-        </div>
         {#if profile.createdAt}<p class="muted">
             Member since {new Date(profile.createdAt).toLocaleDateString()}
           </p>{/if}
@@ -285,13 +284,11 @@
         </p>
         {#if ownedCommunities.length}<p class="community-line">
             <strong>Community owner of:</strong>
-            {#each ownedCommunities as community, i (community.id)}{#if i > 0},
-              {/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}
+            {#each ownedCommunities as community, i (community.id)}{#if i > 0}{', '}{/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}
           </p>{/if}
         {#if joinedCommunities.length}<p class="community-line">
             <strong>Member of:</strong>
-            {#each joinedCommunities as community, i (community.id)}{#if i > 0},
-              {/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}
+            {#each joinedCommunities as community, i (community.id)}{#if i > 0}{', '}{/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}
           </p>{/if}
       </div>
     </header>
@@ -389,31 +386,29 @@
     cursor: pointer;
   }
   .profile-title {
-    padding-inline-end: 2.75rem;
     display: flex;
     align-items: center;
     gap: 0.7rem;
   }
   .edit-profile {
     border: 1px solid var(--atlas-border);
-    position: absolute;
-    top: 0;
-    right: 0;
+    flex: 0 0 2.5rem;
+    margin-inline-start: auto;
     display: grid;
     place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    height: 2.5rem;
     padding: 0;
-    border-top: 0;
-    border-right: 0;
-    border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius);
+    border-radius: var(--atlas-radius);
     background: transparent;
     color: var(--atlas-text);
   }
   .profile-details {
+    display: grid;
+    gap: 0.55rem;
     min-width: 0;
-    flex: 1;
+    overflow-wrap: anywhere;
   }
+  .profile-details p { margin: 0; }
   form {
     display: grid;
     gap: 0.65rem;
@@ -430,7 +425,6 @@
     border-radius: var(--atlas-radius);
   }
   .community-line {
-    margin: 0.35rem 0;
     font-size: 0.9rem;
     line-height: 1.5;
     overflow-wrap: anywhere;
@@ -444,10 +438,8 @@
     text-decoration: underline;
   }
   .profile-header {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
+    display: grid;
+    gap: 1rem;
     padding: 1.5rem;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
@@ -465,7 +457,11 @@
     font-weight: 700;
   }
   h1 {
+    min-width: 0;
     margin: 0;
+    font-size: clamp(1.35rem, 4.8vw, 2rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
   }
   h2 {
     margin: 2rem 0 1rem;
