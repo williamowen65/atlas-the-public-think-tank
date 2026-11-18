@@ -173,6 +173,12 @@
   }
 
   @media (max-width: 600px) {
+    .hero,
+    .mission {
+      margin-inline: calc(-1rem - var(--atlas-space));
+      border-radius: 0;
+    }
+
     .features {
       grid-template-columns: 1fr;
     }
