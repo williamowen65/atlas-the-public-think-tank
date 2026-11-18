@@ -25,7 +25,6 @@ for (const authenticated of [false, true]) {
       await expect(header.getByText('The Public Think Tank', { exact: true })).toBeVisible();
       if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
       if (width <= 560) {
-        // Phone headers keep the shared Explore toggle available while editing search.
         const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
         const menu = header.getByLabel('Open navigation menu', { exact: true });
         const toggle = header.getByRole('button', { name: 'Toggle search', exact: true });
@@ -33,7 +32,8 @@ for (const authenticated of [false, true]) {
         await toggle.click();
         await expect(search).toBeFocused();
         await expect(search).toHaveAttribute('placeholder', 'Search Atlas');
-        await expect(menu).toBeVisible();
+        await expect(menu).toBeHidden();
+        await expect(header.getByRole('link', { name: 'Atlas home', exact: true })).toBeHidden();
         await search.fill('orcas');
         await header.getByRole('button', { name: 'Search', exact: true }).click();
         await expect.poll(() => page.evaluate(() => localStorage.getItem('atlas.discovery.query.v1'))).toBe('orcas');
@@ -45,6 +45,8 @@ for (const authenticated of [false, true]) {
         await page.keyboard.press('Escape');
         await expect(search).toHaveCount(0);
         await expect(toggle).toBeFocused();
+        await expect(menu).toBeVisible();
+        await expect(header.getByText('The Public Think Tank', { exact: true })).toBeVisible();
         await toggle.click();
         await expect(search).toHaveValue('orcas');
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
