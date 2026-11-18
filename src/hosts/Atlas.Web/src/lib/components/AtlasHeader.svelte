@@ -484,12 +484,12 @@
   }
   @media (prefers-reduced-motion: reduce) { .bottom-navigation, .atlas-header { transition: none; } }
 
-  // Desktop search occupies the flexible middle column, never a second header row.
-  // Leave the mobile experiment untouched; its search remains permanently available.
+  // Open search uses the desktop navigation space while keeping the brand and menu visible.
   @media (min-width: 561px) {
-    .atlas-header.search-open .search-toggle { display: none; }
-    // Animate the inline field from the search button's right edge into the
-    // available header space. Only transform/opacity change, so navigation stays put.
+    .atlas-header.search-open .search-toggle,
+    .atlas-header.search-open .right-group { display: none; }
+    .atlas-header.search-open { grid-template-columns: auto minmax(0, 1fr); }
+    // Animate the inline field into the available header space.
     .atlas-header .search-panel {
       transform-origin: right center;
       animation: atlas-search-expand 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
