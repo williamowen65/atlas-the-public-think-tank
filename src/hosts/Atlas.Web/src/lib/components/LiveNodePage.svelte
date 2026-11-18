@@ -41,6 +41,8 @@
     type ContentBlock,
     type NodeDetail,
   } from '../api/nodePage';
+  import SectionLayoutWorkbench from '../sections/SectionLayoutWorkbench.svelte';
+  import { readComposition, validateComposition, writeComposition } from '../sections/composition';
   import type { NodeCardData } from './NodeCard.svelte';
   let {
     nodeId = '',
@@ -76,9 +78,11 @@
   type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string; publicReason?: string | null };
   let hiddenDetail = $state<HiddenDetail | null>(null);
   let hiddenTitle = $state('');
-  let hiddenIntro = $state('');
   let hiddenMarkdown = $state('');
+  let hiddenComposition = $state('');
   let hiddenBlocks = $state<ContentBlock[]>([]);
+  const hiddenSectioned = $derived(hiddenBlocks.find(({ kind }) => kind === 'sectioned'));
+  const hiddenSectionDraft = $derived(readComposition(hiddenSectioned?.content.composition));
   let hiddenBusy = $state(false);
   let hiddenMessage = $state('');
   let hiddenEdited = $state(false);
@@ -91,7 +95,7 @@
   let hiddenHistory = $state<ReportHistory[]>([]);
   let hiddenPreview = $state<NodeCardData | null>(null);
   let hiddenPreviewError = $state(false);
-  type TextRevision = { title: string; shortDescription: string; markdown: string };
+  type TextRevision = { title: string; markdown: string; composition?: string };
   let hiddenRevisions = $state<{ reported: TextRevision | null; revised: TextRevision } | null>(null);
   let revisionTab = $state<'reported' | 'revised'>('reported');
   let revisionError = $state('');
@@ -119,25 +123,32 @@
   }
   const hiddenRevisionChanged = $derived(!!hiddenDetail && (
     hiddenTitle.trim() !== hiddenDetail.title.trim() ||
-    hiddenIntro.trim() !== hiddenDetail.shortDescription.trim() ||
-    hiddenMarkdown.trim() !== (hiddenBlocks.find(block =>
+    (hiddenSectioned ? hiddenComposition !== hiddenSectioned.content.composition : hiddenMarkdown.trim() !== (hiddenBlocks.find(block =>
       block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown'
-    )?.content.markdown ?? '').trim()
+    )?.content.markdown ?? '').trim())
   ));
   async function saveHiddenRevision() {
     if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
     if (!hiddenRevisionChanged) {
-      hiddenMessage = 'Make a change to the title, introduction, or description before saving a revision.';
+      hiddenMessage = 'Make a change to the title or content before saving a revision.';
       return;
+    }
+    if (hiddenSectioned) {
+      const error = validateComposition(hiddenComposition);
+      if (error) { hiddenMessage = error; return; }
     }
     hiddenBusy = true; hiddenMessage = '';
     try {
       const id = encodeURIComponent(hiddenDetail.id);
       if (hiddenTitle.trim() !== hiddenDetail.title) await apiRequest('/atlas-session-api', `nodes/${id}/title`, 'PUT', { text: hiddenTitle.trim() });
-      if (hiddenIntro.trim() !== hiddenDetail.shortDescription) await apiRequest('/atlas-session-api', `nodes/${id}/short-description`, 'PUT', { text: hiddenIntro.trim() });
-      const original = hiddenBlocks.find(block => block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown');
-      if (original && hiddenMarkdown !== (original.content.markdown ?? '')) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(original.id)}`, 'PUT', { kind: 'markdown', text: hiddenMarkdown });
-      if (!original && hiddenMarkdown.trim()) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks`, 'POST', { kind: 'markdown', text: hiddenMarkdown });
+      if (hiddenSectioned) {
+        if (hiddenComposition !== hiddenSectioned.content.composition)
+          await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(hiddenSectioned.id)}`, 'PUT', { kind: 'sectioned', text: hiddenComposition });
+      } else {
+        const original = hiddenBlocks.find(block => block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown');
+        if (original && hiddenMarkdown !== (original.content.markdown ?? '')) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(original.id)}`, 'PUT', { kind: 'markdown', text: hiddenMarkdown });
+        if (!original && hiddenMarkdown.trim()) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks`, 'POST', { kind: 'markdown', text: hiddenMarkdown });
+      }
       hiddenEdited = true;
       hiddenMessage = 'Changes saved. You can now request moderator review.';
       retry++;
@@ -204,7 +215,6 @@
   const draftChanged = (draft: NodeDraft) =>
     !!(
       draft.title ||
-      draft.shortDescription ||
       draft.markdown ||
       draft.newType?.name ||
       draft.newType?.description ||
@@ -348,8 +358,8 @@
                   moderatorMessage = 'Moderation tools could not be loaded.';
               }
               hiddenTitle = detail.title;
-              hiddenIntro = detail.shortDescription ?? '';
               hiddenBlocks = await apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal);
+              hiddenComposition = hiddenBlocks.find(({ kind }) => kind === 'sectioned')?.content.composition ?? '';
               hiddenMarkdown = hiddenBlocks.filter(b => ['markdown', 'markdowntext'].includes(b.kind.toLowerCase())).map(b => b.content.markdown ?? '').join('\n\n');
             }
             return;
@@ -425,8 +435,14 @@
         {/if}
         <form onsubmit={(event) => { event.preventDefault(); void saveHiddenRevision(); }}>
           <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
-          <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
-          <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
+          {#if hiddenSectionDraft}
+            {#key hiddenSectioned?.content.composition}
+              <SectionLayoutWorkbench initialDraft={{ ...hiddenSectionDraft, title: '' }}
+                onDraftChange={(draft) => hiddenComposition = writeComposition(draft)} embedded />
+            {/key}
+          {:else}
+            <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
+          {/if}
           <button type="submit" disabled={hiddenBusy || !hiddenRevisionChanged}>Save revision</button>
         </form>
         <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested || !hiddenEdited} onclick={() => void requestHiddenReview()}>Request moderator review</button>
@@ -447,12 +463,14 @@
 
           <NodePage
             node={hiddenRevisions?.reported && revisionTab === 'reported'
-              ? { ...hiddenPreview, title: hiddenRevisions.reported.title, description: hiddenRevisions.reported.shortDescription }
+              ? { ...hiddenPreview, title: hiddenRevisions.reported.title }
               : hiddenPreview}
             blocks={hiddenRevisions?.reported && revisionTab === 'reported'
               ? hiddenBlocks.map(block => ['markdown', 'markdowntext'].includes(block.kind.toLowerCase())
                 ? { ...block, content: { ...block.content, markdown: hiddenRevisions!.reported!.markdown } }
-                : block)
+                : block.kind === 'sectioned' && hiddenRevisions!.reported!.composition
+                  ? { ...block, content: { composition: hiddenRevisions!.reported!.composition } }
+                  : block)
               : hiddenBlocks}
             types={[]}
             active="comments"
@@ -562,7 +580,7 @@
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
            Archive state reaches LiveVotingDial, which also disables itself while loading/saving. -->
       {#snippet voting()}{#if node}<LiveVotingDial
-            mobileCompact
+            forceCompact
             nodeId={node.id}
             initialAverage={average}
             initialTotalVotes={totalVotes}
@@ -572,7 +590,9 @@
             nodeId={node.id}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
-      <NodeReportControl nodeId={node.id} />
+      {#snippet reportControl()}
+        {#if node}{#key node.id}<NodeReportControl nodeId={node.id} />{/key}{/if}
+      {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button

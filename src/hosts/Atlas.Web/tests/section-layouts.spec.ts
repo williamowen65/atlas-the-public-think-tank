@@ -1,0 +1,565 @@
+import { expect, test, type Locator } from '@playwright/test';
+import { applyLayout, blockAt, example, moveBlock } from '../src/lib/sections/sectionLayouts';
+
+test('a smaller layout keeps overflow blocks in reading order', () => {
+  const original = example('editorial');
+  const first = original.sections[0];
+  const next = applyLayout(original, first.id, 'full');
+
+  expect(next.blocks).toEqual(original.blocks);
+  expect(next.sections.map(({ layoutId }) => layoutId)).toEqual(['full', 'full', 'equal']);
+  expect(blockAt(next, first.id, 'left')?.id).toBe('opening');
+  expect(blockAt(next, next.sections[1].id, 'left')?.id).toBe('street-photo');
+});
+
+test('moving into an occupied slot swaps blocks and layout changes retain an empty slot', () => {
+  const original = example('editorial');
+  const first = original.sections[0].id;
+  const swapped = moveBlock(original, 'opening', first, 'right');
+  expect(blockAt(swapped, first, 'left')?.id).toBe('street-photo');
+  expect(blockAt(swapped, first, 'right')?.id).toBe('opening');
+
+  const emptyLeft = { ...swapped, assignments: swapped.assignments.filter(({ blockId }) => blockId !== 'street-photo') };
+  const resized = applyLayout(emptyLeft, first, 'wide-right');
+  expect(blockAt(resized, first, 'left')).toBeUndefined();
+  expect(blockAt(resized, first, 'right')?.id).toBe('opening');
+});
+
+test('the workbench creates a reusable layout and shows the same draft in feed and node previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  await section.getByRole('textbox', { name: /Node content/ }).click();
+  await page.getByRole('button', { name: 'Change layout' }).click();
+  await page.getByText('Customize layout').click();
+  await page.getByLabel('Layout name').fill('Pilot layout');
+  await page.getByRole('button', { name: 'Save as a new preset' }).click();
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveAttribute('aria-expanded', 'false');
+  await page.getByRole('button', { name: 'Add section' }).click();
+  await page.locator('.layout-panel select').first().selectOption({ label: 'Pilot layout' });
+  await page.getByRole('button', { name: 'Add this layout' }).click();
+
+  await page.getByText('Backend data preview').click();
+  const data = JSON.parse(await page.locator('.inspector pre').innerText());
+  const layout = data.layouts.find((entry: { name: string }) => entry.name === 'Pilot layout');
+  expect(layout.slots).toHaveLength(2);
+  expect(data.sections.filter((entry: { layoutId: string }) => entry.layoutId === layout.id)).toHaveLength(2);
+  expect(data.assignments).toHaveLength(4);
+
+  await page.getByRole('checkbox', { name: 'Phone width' }).check();
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(page.getByRole('button', { name: 'Expand', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Read More', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'A greener public square' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Read More', exact: true })).toHaveCount(0);
+});
+
+test('the editor formats a text slot and swaps blocks using the destination on the page', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const text = section.getByRole('textbox', { name: /Node content/ });
+  await text.click();
+  await text.evaluate((element) => {
+    const range = document.createRange();
+    const paragraph = element.querySelector('p')!;
+    range.selectNodeContents(paragraph);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.getByRole('button', { name: 'Bold', exact: true }).click();
+  await expect(text.locator('strong')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await text.locator('strong').click();
+  for (const name of ['Italic', 'Underline']) {
+    const control = page.getByRole('button', { name, exact: true });
+    await expect(control).toHaveAttribute('aria-pressed', 'false');
+    await control.click();
+    await expect(control).toHaveAttribute('aria-pressed', 'true');
+  }
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await text.locator('strong').click();
+  await expect(page.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(1);
+  await page.getByRole('button', { name: 'Move block', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Swap here/ })).toHaveCount(3);
+  await section.getByRole('button', { name: 'Swap here · Section 1 · Right' }).click();
+  await expect(section.locator('.edit-slot').first().getByRole('img')).toHaveCount(1);
+  await expect(section.locator('.edit-slot').last().locator('strong')).toHaveCount(1);
+});
+
+test('duplicates a section with independent blocks, photos and slot alignment', async () => {
+  const { duplicateSection } = await import('../src/lib/sections/sectionLayouts');
+  const draft = example('editorial');
+  draft.assignments[0].vertical = 'center';
+  const original = draft.sections[0];
+  const result = duplicateSection(draft, original.id);
+  const copy = result.sections[1];
+  expect(copy.layoutId).toBe(original.layoutId);
+  expect(copy.id).not.toBe(original.id);
+  const first = blockAt(result, original.id, 'right');
+  const second = blockAt(result, copy.id, 'right');
+  expect(first?.id).not.toBe(second?.id);
+  if (first?.kind !== 'image' || second?.kind !== 'image') throw new Error('Expected image blocks');
+  expect(first.photos[0].id).not.toBe(second.photos[0].id);
+  expect(result.assignments.find(({ sectionId, slotId }) => sectionId === copy.id && slotId === 'left')?.vertical).toBe('center');
+});
+
+test('confirms block removal and undoes block and empty section removal in order', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const sections = page.locator('.edit-section');
+  const section = sections.first();
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  await expect(undo).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Delete empty section' })).toHaveCount(0);
+  const text = section.getByRole('textbox', { name: /Node content/ });
+  await text.click();
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Remove block' }).click();
+  await expect(text).toBeVisible();
+  await expect(undo).toBeDisabled();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Remove block' }).click();
+  await expect(text).toHaveCount(0);
+  await undo.press('ControlOrMeta+z');
+  await expect(text).toBeVisible();
+
+  await text.click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Remove block' }).click();
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Remove block' }).click();
+  await page.getByRole('button', { name: 'Delete empty section' }).click();
+  await expect(sections).toHaveCount(1);
+  await undo.click();
+  await expect(sections).toHaveCount(2);
+  await section.getByRole('button', { name: /Add block/ }).first().focus();
+  await expect(page.getByRole('button', { name: 'Delete empty section' })).toBeVisible();
+  await undo.click();
+  await expect(section.getByRole('img')).toBeVisible();
+  await undo.click();
+  await expect(text).toBeVisible();
+  await expect(undo).toBeDisabled();
+});
+
+test('feed previews show both first-section blocks and Read More reveals later sections and breaks', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const rule = page.locator('hr.section-break');
+  const second = page.getByRole('region', { name: 'Section 2', exact: true });
+  await expect(rule).toHaveCount(0);
+  await second.getByRole('textbox', { name: /Node content/ }).first().click();
+  await page.getByRole('button', { name: 'Add section break' }).click();
+  await expect(second.locator('hr.section-break')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(page.locator('.sections > .section')).toHaveCount(1);
+  await expect(page.locator('.sections > .section > .slot')).toHaveCount(2);
+  await expect(rule).toHaveCount(0);
+  await page.getByRole('button', { name: 'Read More', exact: true }).click();
+  await expect(page.locator('.sections > .section')).toHaveCount(2);
+  await expect(rule).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await second.getByRole('textbox', { name: /Node content/ }).first().click();
+  await page.getByRole('button', { name: 'Remove section break' }).click();
+  await expect(rule).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(rule).toHaveCount(1);
+});
+
+test('clicking away dismisses block controls and H6 survives preview', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  await section.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await expect(page.getByLabel('Image URL')).toBeVisible();
+  const editor = section.getByRole('textbox', { name: /Node content/ });
+  await editor.locator('p').first().click();
+  await expect(page.getByLabel('Image URL')).toHaveCount(0);
+  const headings = page.getByRole('combobox', { name: 'Heading level' });
+  await expect(headings).toHaveValue('0');
+  await headings.selectOption('6');
+  await expect(editor.locator('h6')).toHaveCount(1);
+  await expect(headings).toHaveValue('6');
+  await headings.selectOption('0');
+  await expect(editor.locator('h6')).toHaveCount(0);
+  await headings.selectOption('6');
+  await expect(headings).toHaveValue('6');
+  await page.getByRole('textbox', { name: 'Node title' }).click();
+  await expect(headings).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Change layout' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Move block', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Remove block' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(page.locator('h6')).toHaveCount(1);
+});
+
+test('layout choices preview immediately and cancel or click-away resolve the change', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const grid = section.locator('.grid');
+  const title = page.getByRole('textbox', { name: 'Node title' });
+  const change = async () => {
+    await section.getByRole('textbox', { name: /Node content/ }).click();
+    await page.getByRole('button', { name: 'Change layout' }).click();
+    await page.locator('.layout-panel select').first().selectOption('full');
+    await expect(grid.locator('.edit-slot')).toHaveCount(1);
+  };
+  await change();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(2);
+  await change();
+  await title.click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(grid.locator('.edit-slot')).toHaveCount(2);
+});
+
+test('image framing and centered captions carry from editing into the feed', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="240" height="120" fill="green"/></svg>',
+  }));
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const caption = page.getByText('Make room to walk and gather.', { exact: true });
+  await expect(caption).toHaveCSS('text-align', 'center');
+  await page.getByRole('button', { name: /Edit Buildings along/ }).click();
+  await page.getByLabel('Crop shape').selectOption('2 / 3');
+  await page.getByLabel('Corners').selectOption('square');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(caption).toHaveCSS('text-align', 'center');
+  const frame = page.locator('.frame.crop');
+  await expect(frame).toHaveCSS('aspect-ratio', '2 / 3');
+  await expect(frame.locator('img')).toHaveCSS('object-fit', 'cover');
+  await expect(frame).toHaveCSS('border-top-left-radius', '0px');
+});
+
+test('an image wraps at a selected paragraph in the editor and previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="teal"/></svg>',
+  }));
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  await section.getByRole('button', { name: 'Edit Buildings along a city street' }).click();
+  await page.getByLabel('Wrap text').selectOption('right');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await section.getByText(/^Start with the places/).click();
+  await page.getByRole('button', { name: 'Move image here' }).click();
+  await expect(section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image')).toHaveCSS('float', 'right');
+
+  const image = section.getByRole('button', { name: 'Edit Buildings along a city street' });
+  const paragraph = section.getByText(/^Start with the places/);
+  const editor = section.locator('.atlas-story-text');
+  async function dropOn(target: Locator, side: 'left' | 'right') {
+    const bounds = (await editor.boundingBox())!;
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    const event = { dataTransfer, clientX: bounds.x + bounds.width * (side === 'left' ? 0.25 : 0.75) };
+    await image.dispatchEvent('dragstart', event);
+    await target.dispatchEvent('dragover', event);
+    await target.dispatchEvent('drop', event);
+    await dataTransfer.dispose();
+  }
+
+  await dropOn(paragraph, 'left');
+  const anchoredImage = section.locator('.atlas-story-text > p + .ProseMirror-widget .section-wrapped-image');
+  await expect(anchoredImage).toHaveCSS('float', 'left');
+  await dropOn(paragraph, 'right');
+  await expect(anchoredImage).toHaveCSS('float', 'right');
+
+  await dropOn(section.getByText(/^A public square can be/), 'right');
+  await expect(section.locator('.atlas-story-text > .ProseMirror-widget:first-child').getByRole('button', {
+    name: 'Edit Buildings along a city street',
+  })).toBeVisible();
+  await dropOn(paragraph, 'right');
+  await image.click();
+  await expect(page.getByRole('complementary', { name: 'Editor controls' }).getByRole('group', { name: 'Image settings' })).toBeVisible();
+  await page.getByLabel('Crop shape').selectOption('1 / 1');
+  await page.getByRole('slider', { name: /Image width/ }).focus();
+  await page.keyboard.press('Home');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  const float = section.locator('.section-wrapped-image');
+  expect(await float.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThan(160);
+  expect(await image.evaluate((element) => element.getBoundingClientRect().width)).toBeCloseTo(
+    await float.evaluate((element) => element.getBoundingClientRect().width),
+  );
+
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  const wrapped = page.locator('.markdown > p + .section-wrapped-image');
+  await expect(wrapped).toHaveCSS('float', 'right');
+  await expect(wrapped.locator('img')).toHaveCSS('float', 'none');
+  const previewFrame = await wrapped.locator('.frame').boundingBox();
+  const previewImage = await wrapped.locator('img').boundingBox();
+  expect(previewImage?.width).toBeCloseTo(previewFrame?.width ?? 0);
+  expect(previewImage?.height).toBeCloseTo(previewFrame?.height ?? 0);
+  await page.getByRole('button', { name: 'Read More', exact: true }).click();
+  await expect(wrapped.getByRole('button', { name: 'View Buildings along a city street' })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Phone width' }).check();
+  await expect(wrapped).toHaveCSS('float', 'none');
+});
+
+test('masonry image settings close within the gallery without moving its tiles', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--masonry-gallery&viewMode=story');
+  const gallery = page.getByRole('group', { name: 'Gallery block' });
+  const image = gallery.getByRole('button', { name: 'Edit Buildings along a city street' });
+  await image.focus();
+  await expect(page.getByLabel('Gallery layout')).toHaveValue('masonry');
+  const before = await image.boundingBox();
+  await image.click();
+  const settings = page.getByRole('group', { name: 'Image settings' });
+  await expect(settings).toBeVisible();
+  expect(await image.boundingBox()).toEqual(before);
+  await page.getByRole('button', { name: 'Collapse editor controls' }).click();
+  await expect(settings).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show editor controls' }).click();
+  await expect(settings).toBeVisible();
+  await settings.getByRole('textbox', { name: 'Caption', exact: true }).fill('An evening walk');
+  await gallery.getByText('An evening walk').dispatchEvent('pointerdown');
+  await expect(settings).toHaveCount(0);
+  await expect(gallery.getByText('An evening walk')).toBeVisible();
+});
+
+test('mosaic keeps its gutter for both caption placements', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=content-section-layout-workbench--mosaic-gallery&viewMode=story');
+  const row = page.locator('.mosaic-row').first();
+  const frame = row.locator('.feature .frame');
+  const stack = row.locator('.mosaic-stack');
+  const checkGutter = async () => {
+    const featureBox = await frame.boundingBox();
+    const stackBox = await stack.boundingBox();
+    const gap = await row.evaluate((element) => parseFloat(getComputedStyle(element).columnGap));
+    expect(stackBox!.x - (featureBox!.x + featureBox!.width)).toBeCloseTo(gap, 0);
+  };
+  await checkGutter();
+  await row.getByRole('button', { name: 'Edit Buildings along a city street' }).click();
+  await page.getByLabel('Caption placement').selectOption('below');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await checkGutter();
+  await page.getByRole('button', { name: 'Node page', exact: true }).click();
+  await checkGutter();
+});
+
+test('the phone-width formatting toolbar stays on one row and groups alignment', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  await page.getByRole('button', { name: 'Hide editor controls' }).click();
+  const section = page.getByRole('region', { name: 'Section 1', exact: true });
+  const editor = section.getByRole('textbox', { name: /Node content/ });
+  const heading = page.getByRole('combobox', { name: 'Heading level' });
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  await editor.locator('p').first().click();
+  const headingBounds = (await heading.boundingBox())!;
+  const undoBounds = (await undo.boundingBox())!;
+  expect(Math.abs(headingBounds.y - undoBounds.y)).toBeLessThan(4);
+
+  const alignment = page.getByRole('button', { name: 'Alignment', exact: true });
+  await alignment.click();
+  const text = page.getByRole('group', { name: 'Text alignment', exact: true });
+  await expect(text.getByRole('button', { name: 'Left' })).toHaveAttribute('aria-pressed', 'true');
+  await text.getByRole('button', { name: 'Center' }).click();
+  await expect(editor.locator('p').first()).toHaveCSS('text-align', 'center');
+  await expect(text).toBeHidden();
+
+  await alignment.click();
+  await expect(text.getByRole('button', { name: 'Center' })).toHaveAttribute('aria-pressed', 'true');
+  const vertical = page.getByRole('group', { name: 'Vertical alignment', exact: true });
+  await vertical.getByRole('button', { name: 'Bottom' }).click();
+  await expect(section.locator('.edit-slot').first()).toHaveCSS('align-items', 'end');
+});
+
+test('gallery columns update live and carry through both previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editor-controls-playground&viewMode=story');
+  await page.getByRole('button', { name: 'Edit Buildings along a city street' }).focus();
+  const layout = page.getByLabel('Gallery layout');
+  const grid = page.getByLabel('Grid columns');
+  const masonry = page.getByLabel('Masonry columns');
+  const masonryColumns = page.locator('.masonry-column');
+  const gridColumns = page.locator('.tiles');
+
+  await expect(grid).toHaveValue('2');
+  await grid.selectOption('1');
+  await expect(gridColumns).toHaveCSS('--column-count', '1');
+  await grid.selectOption('4');
+  await expect(gridColumns).toHaveCSS('--column-count', '4');
+  await layout.selectOption('masonry');
+  await expect(masonry).toHaveValue('3');
+  await masonry.selectOption('4');
+  await expect(masonryColumns).toHaveCount(4);
+  await masonry.selectOption('1');
+  await expect(masonryColumns).toHaveCount(1);
+  await masonry.selectOption('2');
+  await expect(masonryColumns).toHaveCount(2);
+  await layout.selectOption('grid');
+  await expect(grid).toHaveValue('4');
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(gridColumns).toHaveCSS('--column-count', '3');
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(gridColumns).toHaveCSS('--column-count', '3');
+
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Buildings along a city street' }).focus();
+  await layout.selectOption('masonry');
+  await expect(masonry).toHaveValue('2');
+  await page.getByRole('button', { name: 'Feed preview' }).click();
+  await expect(masonryColumns).toHaveCount(2);
+  await page.getByRole('button', { name: 'Node page' }).click();
+  await expect(masonryColumns).toHaveCount(2);
+});
+
+test('redo restores successive edits until a new edit clears the redo history', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const title = page.getByRole('textbox', { name: 'Node title' });
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  const redo = page.getByRole('button', { name: 'Redo', exact: true });
+
+  await expect(redo).toBeDisabled();
+  await title.fill('First edit');
+  await title.fill('Second edit');
+  await undo.click();
+  await undo.click();
+  await expect(title).toHaveValue('A greener public square');
+  await redo.click();
+  await expect(title).toHaveValue('First edit');
+  await redo.click();
+  await expect(title).toHaveValue('Second edit');
+  await expect(redo).toBeDisabled();
+
+  await title.press('Control+z');
+  await title.press('Control+Shift+z');
+  await expect(title).toHaveValue('Second edit');
+  await undo.click();
+  await title.fill('New direction');
+  await expect(redo).toBeDisabled();
+  await undo.click();
+  await redo.click();
+  await expect(title).toHaveValue('New direction');
+});
+
+test('creative crop presets update the photo in the editor and both previews', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editorial&viewMode=story');
+  const editPhoto = page.getByRole('button', { name: /Edit Buildings along/ });
+  await editPhoto.click();
+  const shape = page.getByLabel('Crop shape');
+  const frame = editPhoto.locator('.frame');
+  await shape.selectOption('circle');
+  await expect(frame).toHaveCSS('aspect-ratio', '1 / 1');
+  await expect(frame).toHaveCSS('border-top-left-radius', '9999px');
+  await expect(page.getByLabel('Corners', { exact: true })).toHaveCount(0);
+
+  await shape.selectOption('blob');
+  await expect(frame).toHaveAttribute('data-silhouette', 'blob');
+  const handles = page.getByRole('group', { name: 'Blob shape handles' });
+  const handle = handles.getByRole('button', { name: 'Adjust top outgoing blob handle' });
+  const path = frame.locator('clipPath path');
+  await expect(handles.getByRole('button')).toHaveCount(12);
+  const initialPath = await path.getAttribute('d');
+  const anchor = handles.getByRole('button', { name: 'Move top blob anchor' });
+  await anchor.press('ArrowDown');
+  await expect(path).toHaveAttribute('d', /^M 0\.50000 0\.10200 /);
+  await handle.press('ArrowRight');
+  await expect(path).not.toHaveAttribute('d', initialPath!);
+  const keyboardPath = await path.getAttribute('d');
+  const bounds = (await handle.boundingBox())!;
+  const photoWidth = (await frame.boundingBox())!.width;
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + photoWidth * .18, bounds.y + photoWidth * .12, { steps: 5 });
+  await expect(path).not.toHaveAttribute('d', keyboardPath!);
+  await page.mouse.up();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(path).toHaveAttribute('d', keyboardPath!);
+  await expect(handles).toHaveCount(0);
+  await editPhoto.click();
+  const blobBounds = (await frame.boundingBox())!;
+  const edgePoint = await handles.locator('.edge').first().evaluate((edge: SVGPathElement) => {
+    const { x, y } = edge.getPointAtLength(edge.getTotalLength() / 2);
+    return { x, y };
+  });
+  await page.mouse.dblclick(blobBounds.x + edgePoint.x * blobBounds.width, blobBounds.y + edgePoint.y * blobBounds.height);
+  await expect(handles.getByRole('button')).toHaveCount(15);
+  await handles.getByRole('button', { name: 'Move added 2 blob anchor' }).press('ArrowLeft');
+  await shape.selectOption('pill');
+  await expect(handles).toHaveCount(0);
+  await expect(frame).toHaveCSS('aspect-ratio', '2 / 1');
+  await expect(frame).toHaveAttribute('data-silhouette', 'pill');
+
+  for (const view of ['Feed preview', 'Node page']) {
+    await page.getByRole('button', { name: view, exact: true }).click();
+    const preview = page.getByRole('button', { name: /View Buildings along/ }).locator('.frame');
+    await expect(preview).toHaveAttribute('data-silhouette', 'pill');
+    await expect(preview).toHaveCSS('aspect-ratio', '2 / 1');
+  }
+});
+
+test('grid aligns a pill crop against a taller photo in the editor and previews', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editor-controls-playground&viewMode=story');
+  const tiles = page.locator('.tiles .tile');
+  await tiles.nth(1).getByRole('button', { name: /^Edit / }).click();
+  await page.getByLabel('Crop shape').selectOption('pill');
+  const alignment = page.getByLabel('Vertical alignment in grid');
+
+  const verticalGaps = () => tiles.nth(1).evaluate((tile) => {
+    const slot = tile.getBoundingClientRect();
+    const photo = tile.querySelector('figure')!.getBoundingClientRect();
+    return { above: photo.top - slot.top, below: slot.bottom - photo.bottom };
+  });
+  const expectCentered = async () => {
+    await expect.poll(async () => (await verticalGaps()).above).toBeGreaterThan(4);
+    const { above, below } = await verticalGaps();
+    expect(above).toBeCloseTo(below, 0);
+  };
+
+  await alignment.selectOption('end');
+  await expect.poll(async () => (await verticalGaps()).above).toBeGreaterThan(4);
+  expect((await verticalGaps()).below).toBeCloseTo(0, 0);
+  await alignment.selectOption('center');
+  await expectCentered();
+
+  for (const view of ['Feed preview', 'Node page']) {
+    await page.getByRole('button', { name: view, exact: true }).click();
+    await expectCentered();
+  }
+});
+
+test('dragging a gallery photo reorders it and supports undo', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('https://images.unsplash.com/**', (route) => route.abort());
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=content-section-layout-workbench--editor-controls-playground&viewMode=story');
+  const gallery = page.getByRole('group', { name: 'Gallery block' });
+  const photos = gallery.getByRole('button', { name: /^Edit / });
+  const first = (await photos.first().getAttribute('aria-label'))!;
+  const second = (await photos.nth(1).getAttribute('aria-label'))!;
+  await photos.first().click();
+  const handle = gallery.getByRole('button', { name: first.replace(/^Edit /, 'Reorder ') });
+  const start = (await handle.boundingBox())!;
+  const destination = (await photos.nth(1).boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(destination.x + destination.width / 2, destination.y + destination.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(photos.first()).toHaveAttribute('aria-label', second);
+  await expect(photos.nth(1)).toHaveAttribute('aria-label', first);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(photos.first()).toHaveAttribute('aria-label', first);
+});

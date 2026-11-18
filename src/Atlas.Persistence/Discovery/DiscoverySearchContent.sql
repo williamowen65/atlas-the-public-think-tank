@@ -2,7 +2,7 @@
 -- UNION avoids duplicate nodes when title, introduction and several blocks all match.
 SELECT n.Id AS NodeId
 FROM dbo.NodeRows n
-WHERE FREETEXT((n.Title, n.ShortDescription), @search, LANGUAGE 1033)
+WHERE FREETEXT(n.Title, @search, LANGUAGE 1033)
 UNION
 SELECT n.Id AS NodeId
 FROM dbo.NodeRows n

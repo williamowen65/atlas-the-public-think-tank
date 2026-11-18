@@ -38,16 +38,25 @@
 -->
 <script lang="ts">
   import { relativeDate } from '../../format/relativeDate';
-  import { bottomCornerAction } from '../../actions/bottomCornerAction';
-  import NodeEditControl from '../NodeEditControl.svelte';
+  import type { Snippet } from 'svelte';
+  import type { ContentBlock } from '../../api/nodePage';
+  import FeedBlockPreview from '../FeedBlockPreview.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
+  let detailsOpen = $state(false);
+  let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
+    cornerControl,
+    headerFields,
+    authoringBody,
+    authoringFooter,
+    blocks,
+    draft = false,
     reactionControls,
     onOpenProfile,
     voting,
@@ -67,6 +76,14 @@
   }: NodeCardProps & {
     /** Experimental mobile feed layout; desktop and full node detail remain unchanged. */
     mobileLayout?: boolean;
+    /** Feed owner actions are supplied by NodeCard. */
+    cornerControl?: Snippet;
+    headerFields?: Snippet;
+    authoringBody?: Snippet;
+    authoringFooter?: Snippet;
+    /** Draft content or freshly saved content, when already available. */
+    blocks?: ContentBlock[];
+    draft?: boolean;
   } = $props();
   const instance = $props.id();
   // Prefer structured contribution types; use the text summary only for older projections.
@@ -88,24 +105,16 @@
 -->
 
 <article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
-    {#if editOpensDetail}
-      <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
-    {:else}
-      <NodeEditControl
-        corner
-        nodeId={node.id}
-        authorId={node.authorId}
-        {apiBase}
-        onSaved={(update) => {
-          node = { ...node, title: update.title, description: update.shortDescription };
-        }}
-      />
-    {/if}
+  {#if editOpensDetail}
+    <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
+  {:else}
+    {@render cornerControl?.()}
+  {/if}
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
       <Breadcrumb
-        items={node.breadcrumb}
-        originId={node.id}
+        items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
+        originId={draft ? undefined : node.id}
         {apiBase}
         {onNavigate}
         hasMore={hasMoreAncestors}
@@ -114,12 +123,33 @@
     </div>
   {/if}
   <header>
-    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-    <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
+    {#if headerFields}
+      <div id={`${instance}-title`}>{@render headerFields()}</div>
+    {:else}
+      <div class="node-type-row">
+        <p class="mobile-type">{node.typeName}</p>
+        {#if !authoringBody}
+          {#if voting}
+            {@render voting(true)}
+          {:else}
+            <button class="fallback-vote" type="button" aria-haspopup="dialog"
+              disabled={draft || node.status === 'Archived' || node.isHidden}
+              onclick={() => fallbackDialog?.showModal()}>
+              {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+            </button>
+            <dialog bind:this={fallbackDialog} class="fallback-vote-dialog" aria-label="Rate node importance">
+              <button type="button" onclick={() => fallbackDialog?.close()}>Close</button>
+              <VotingDial label="Node importance" {value} {average} {totalVotes} onChange={onVote} />
+            </dialog>
+          {/if}
+        {/if}
+      </div>
+      <h2 id={`${instance}-title`}>{node.title}</h2>
+    {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
       <span
-        ><span class="by-prefix">By </span>{#if node.authorId}<a
+        ><span class="by-prefix">{'By '}</span>{#if node.authorId && !draft}<a
             href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
             onclick={(event) => {
               if (onOpenProfile && node.authorId) {
@@ -137,58 +167,64 @@
         })}</time
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span>
-        <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span><CommunityLinks
+        <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span>
+        {#if draft}{node.communities.join(', ')}{:else}<CommunityLinks
           nodeId={node.id}
-          allowJoin={mobileLayout}
           names={node.communities}
-        />{/if}
+        />{/if}{/if}
     </p>
   </header>
 
-  <div class="body">
-    <aside class="dial" aria-label="Importance rating">
-      {#if voting}{@render voting()}{:else}<VotingDial
-          label="Node importance"
-          {value}
-          {average}
-          {totalVotes}
-          disabled={node.status === 'Archived'}
-          onChange={onVote}
-        />{/if}
-    </aside>
-    <p class="description" id={`${instance}-description`} use:bottomCornerAction>
-      <span class="read-more"
-        ><ActionButton
-          label="Read more"
-          disabled={!onReadMore}
-          onActivate={() => onReadMore?.(node.id)}
-        /></span
-      >{node.description}
-    </p>
-    {#if node.requestedTypes.length}
-      <p class="invitation">
-        Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
-      </p>
-    {/if}
-  </div>
-  <div class="card-details">
-    {@render reactions()}
-    <div class="navigation-details">
-      {@render comments()}
-      {#each node.childTypes ?? [] as contribution}<span
-          class="navigation-separator"
-          aria-hidden="true">·</span
-        ><button
-          class="text-action connection-summary"
-          type="button"
-          disabled={!onChildType}
-          onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
-        >{/each}
-      {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
-        ><span class="text-action connection-summary">{label}</span>{/each}
+  {#if authoringBody}
+    <div class="body authoring-body">{@render authoringBody()}</div>
+    {@render authoringFooter?.()}
+  {:else}
+    <div class="body">
+      {#if node.isHidden}
+        {@render legacyDescription(node.description)}
+      {:else}
+        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} leadingAction={detailsToggle} {apiBase} {blocks}
+          onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
+      {/if}
     </div>
-  </div>
+    <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
+      {@render reactions()}
+      <div class="navigation-details">
+        {@render comments()}
+        {#each node.childTypes ?? [] as contribution}<span
+            class="navigation-separator"
+            aria-hidden="true">·</span
+          ><button
+            class="text-action connection-summary"
+            type="button"
+            disabled={!onChildType}
+            onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
+          >{/each}
+        {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
+          ><span class="text-action connection-summary">{label}</span>{/each}
+      </div>
+    </div>
+  {/if}
 </article>
+
+{#snippet detailsToggle()}
+  <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
+    aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
+    onclick={() => detailsOpen = !detailsOpen}>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  </button>
+{/snippet}
+
+{#snippet legacyDescription(text: string)}
+  <div class="description" id={`${instance}-description`}>
+    <span class="fallback-text">{text}</span>
+    {@render detailsToggle()}
+    <span class="read-more">
+      <ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} />
+    </span>
+  </div>
+{/snippet}
 
 {#snippet reactions()}
   {#if reactionControls}{@render reactionControls()}{:else}
@@ -215,7 +251,7 @@
 <style lang="scss">
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
-  .mobile-type { display: none; }
+
 
 
   // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
@@ -242,10 +278,7 @@
     h2 {
       margin: 0 0 var(--atlas-heading-gap, 0.5rem);
       font-size: calc(clamp(1.35rem, 4vw, 1.9rem) * var(--atlas-heading-scale, 1.5) / 1.5);
-      line-height: 1.2;
-    }
-    p {
-      line-height: var(--atlas-line-height, 1.65);
+      line-height: var(--atlas-node-line-height);
     }
   }
 
@@ -262,9 +295,15 @@
     }
   }
 
-  .title-type {
-    color: var(--atlas-accent);
+
+
+  .details-toggle {
+    display: inline-grid; place-items: center; margin-inline-end: auto;
+    width: 2.25rem; min-height: 2.25rem; padding: 0;
+    color: var(--atlas-accent); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); cursor: pointer;
   }
+  .details-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 
   [data-presentation] {
     .card-details {
@@ -273,10 +312,12 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.35rem 1rem;
-      padding: 0 var(--card-padding) 1rem;
+      padding: .65rem var(--card-padding) 1rem;
+      &:not(.details-open) { display: none; }
       font-size: 0.9rem;
       color: var(--atlas-muted);
     }
+    &:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
     .reactions {
       display: flex;
       flex-wrap: wrap;
@@ -342,38 +383,41 @@
       }
     }
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
     color: var(--atlas-muted);
   }
 
   .body {
+    --atlas-markdown-line-height: var(--atlas-node-line-height);
+    line-height: var(--atlas-node-line-height);
     padding: 0.5rem var(--card-padding) 0;
     display: flow-root;
   }
 
-  .dial {
-    float: left;
-    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+  .authoring-body { padding-bottom: var(--card-padding); }
+
+  .fallback-vote, .fallback-vote-dialog {
+    color: var(--atlas-text); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius);
+    padding: .5rem; font: inherit;
   }
+  .fallback-vote-dialog::backdrop { background: #0006; }
 
   .description {
-    margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .fallback-text {
+    grid-column: 1 / -1;
     white-space: pre-line;
   }
 
   .read-more {
-    --atlas-action-padding: 0.4rem 0.7rem;
-    // Exclude only the button's bottom-corner footprint from the text flow.
-    float: right;
-    margin: var(--corner-top, 0px) 0 0 0.75rem;
-    shape-outside: inset(var(--corner-top, 0px) 0 0 0);
-    white-space: normal;
-  }
-
-  .invitation {
-    clear: both;
-    font-size: 0.9rem;
-    color: var(--atlas-muted);
+    --atlas-action-padding: 0.25rem 0.65rem;
   }
 
   .text-action {
@@ -417,48 +461,32 @@
   @media (max-width: 560px) {
     .mobile-layout {
       --card-padding: 0.75rem;
-      .mobile-type { display: block; margin: 0 0 0.25rem; color: var(--atlas-accent); font-size: 2.1rem; line-height: 0; font-weight: 700; }
       h2 { font-size: 1.2rem; }
-      .title-type, .by-prefix, .community-prefix { display: none; }
-      .byline { font-size: 0.75rem; line-height: 1.5; }
-      // Keep the description and Read more in one text flow, as on desktop.
-      // The button's existing right float lets text occupy the remaining width.
+      .by-prefix, .community-prefix { display: none; }
       .body { display: flow-root; }
-      .description { display: block; }
-      .dial { display: contents; }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
 
-  .node-type-row { display: none; }
-  @media (max-width: 560px) {
-    .mobile-layout .node-type-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: nowrap;
-      min-width: 0;
-      container-type: inline-size;
-      gap: 0.4rem 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    // Scale with the available header width, not just the viewport. CSS cannot
-    // measure text and select an exact fitting font size, so truncate as a
-    // last resort rather than allowing the label to overlap the vote summary.
-    .node-type-row .mobile-type {
-      margin: 0;
-      min-width: 0;
-      flex: 0 1 auto;
-      max-width: 100%;
-      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .node-type-row :global(.header-summary) {
-      flex-shrink: 0;
-    }
-    
+  .node-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem .75rem;
+    min-width: 0;
+    container-type: inline-size;
+    margin-bottom: .5rem;
   }
+  .node-type-row .mobile-type {
+    margin: 0;
+    min-width: 0;
+    color: var(--atlas-accent);
+    font-weight: 700;
+    font-size: clamp(.95rem, 8.1cqi, 2.1rem);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-type-row :global(.live-voting), .fallback-vote { flex-shrink: 0; }
 </style>

@@ -12,6 +12,7 @@ public static class DiscoveryFullTextSchema
     // generated on Windows compares equal to the runtime model on Linux CI.
     public static readonly string BlockTextExpression = """
         CONVERT(nvarchar(max), CASE [Kind]
+            WHEN N'sectioned' THEN COALESCE([CompositionSearchText], N'')
             WHEN N'markdown' THEN COALESCE([Markdown], N'')
             WHEN N'image' THEN CONCAT([AltText], N' ', [Caption])
             WHEN N'video' THEN CONCAT([Caption], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)

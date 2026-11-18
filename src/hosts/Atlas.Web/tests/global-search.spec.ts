@@ -9,7 +9,7 @@ const entry = (id: string, title: string) => ({
   card: {
     title,
     typeName: 'Question',
-    shortDescription: 'A compact result introduction.',
+    description: 'A compact result introduction.',
     authorName: 'Author',
     createdAt: '2026-10-21T12:00:00Z',
     status: 'Active',

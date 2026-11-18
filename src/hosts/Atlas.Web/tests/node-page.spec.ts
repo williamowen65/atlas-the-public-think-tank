@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
+import { example } from '../src/lib/sections/sectionLayouts';
+import { writeComposition } from '../src/lib/sections/composition';
 const root = 'b1000000-0000-4000-8000-000000000001';
 const child = 'b1000000-0000-4000-8000-000000000002';
 const idea = 'a1000000-0000-4000-8000-000000000001';
 const evidence = 'a1000000-0000-4000-8000-000000000002';
 const types = [{ id: idea, name: 'Idea', autoPluralize: true, pluralName: 'Ideas' }, { id: evidence, name: 'Evidence', autoPluralize: false, pluralName: 'Evidence' }];
-const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea · 0 Evidence', childTypes: [{ typeId: idea, label: '1 Idea', count: 1 }, { typeId: evidence, label: '0 Evidence', count: 0 }], communities: 'Atlas', commentCount: 1, isHidden: false } });
+const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', description: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea · 0 Evidence', childTypes: [{ typeId: idea, label: '1 Idea', count: 1 }, { typeId: evidence, label: '0 Evidence', count: 0 }], communities: 'Atlas', commentCount: 1, isHidden: false } });
 async function mock(page: Page) {
   await page.route('**/atlas-session-api/**', route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
@@ -32,13 +34,13 @@ test('Read more opens the matching node story; tabs load child feeds and a paren
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
   await page.getByRole('button', { name: 'Read more', exact: true }).click();
   await expect(page).toHaveURL(/compositions-node-page/);
-  await expect(page.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A live question' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Full explanation' })).toBeVisible();
   await expect(page.getByText('A public comment', { exact: true })).toBeVisible();
   await expect(page.locator('.content-blocks script')).toHaveCount(0);
   expect(urls.some(url => url.searchParams.get('NodeId') === root)).toBe(true);
   await page.getByRole('tab', { name: '1 Idea', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
   expect(urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === idea)).toBe(true);
   await page.getByRole('button', { name: 'Add Idea', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Create child node' })).toBeVisible();
@@ -58,13 +60,14 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story');
   await page.getByLabel('Title', { exact: true }).fill('A root idea');
-  await page.getByLabel('Short description', { exact: true }).fill('A short authored summary.');
   await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
-  await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
-  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Supporting content');
-  await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Revised content');
-  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Revised content');
+  const content = page.getByRole('textbox', { name: /Node content/ }).first();
+  await content.fill('Supporting content');
+  await page.getByRole('button', { name: 'Preview in feed' }).click();
+  await expect(page.getByRole('article', { name: 'A root idea' }).getByText('Supporting content', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(content).toContainText('Supporting content');
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
   // Creation drafts have no voting interaction.
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -84,12 +87,58 @@ test('root form previews a new type and never writes to the API', async ({ page 
   expect(writes).toEqual([]);
 });
 
+test('a published node stacks section columns in slot order on narrow screens', async ({ page }) => {
+  await mock(page);
+  await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({
+    json: [{ id: 'composition', kind: 'sectioned', content: { composition: writeComposition(example('editorial')) } }],
+  }));
+  await page.route('https://images.unsplash.com/**', route => route.abort());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`http://127.0.0.1:4173/nodes?id=${root}`);
+  const slots = page.locator('.post-body .sections > .section').first().locator(':scope > .slot');
+  await expect(slots).toHaveCount(2);
+  const first = (await slots.first().boundingBox())!;
+  const second = (await slots.last().boundingBox())!;
+  expect(second.x).toBeCloseTo(first.x);
+  expect(second.y).toBeGreaterThanOrEqual(first.y + first.height);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const desktopFirst = (await slots.first().boundingBox())!;
+  const desktopSecond = (await slots.last().boundingBox())!;
+  expect(desktopSecond.x).toBeGreaterThan(desktopFirst.x);
+  expect(desktopSecond.y).toBeCloseTo(desktopFirst.y);
+});
+
+for (const layout of ['grid', 'masonry'] as const) {
+  test(`a published ${layout} fits its columns to the available width`, async ({ page }) => {
+    const draft = example(layout);
+    const gallery = draft.blocks.find(block => block.kind === 'gallery');
+    if (gallery?.kind !== 'gallery') throw new Error('Expected a gallery in the demo draft');
+    gallery.gridColumns = 4;
+    gallery.masonryColumns = 4;
+    await mock(page);
+    await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({
+      json: [{ id: 'composition', kind: 'sectioned', content: { composition: writeComposition(draft) } }],
+    }));
+    await page.route('https://images.unsplash.com/**', route => route.abort());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`http://127.0.0.1:4173/nodes?id=${root}`);
+    const galleryLayout = page.locator(layout === 'grid' ? '.post-body .tiles' : '.post-body .masonry');
+    const columnCount = () => galleryLayout.evaluate(element =>
+      getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    await expect.poll(columnCount).toBe(2);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect.poll(columnCount).toBe(Math.min(4, gallery.photos.length));
+  });
+}
+
 test('SPA Read more opens a node page and child tabs support keyboard navigation', async ({ page }) => {
   await mock(page);
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('http://127.0.0.1:4173');
   await page.getByRole('button', { name: 'Read more', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${root}`));
+  await expect(page.getByText('The complete content belongs here.', { exact: true })).toHaveCSS('white-space', 'normal');
   const comments = page.getByRole('tab', { name: '1 Comment', exact: true });
   await comments.focus(); await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: '1 Idea', exact: true })).toHaveAttribute('aria-selected', 'true');
@@ -97,48 +146,36 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
 });
 
 
-test('node page keeps a full-width ribbon and wraps post content around the dial', async ({ page }) => {
+test('node page keeps a full-width ribbon and voting leaves content in place', async ({ page }) => {
   await mock(page);
   await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
   await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
   await page.route('**/atlas-public-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
   const card = page.locator('.node-page');
-  await expect(card.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
+  await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    if (width <= 560) {
-      // Mobile keeps full content below the compact introduction/disclosure.
-      await expect(card.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
-      await expect(card.getByRole('spinbutton')).toHaveCount(0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-      continue;
-    }
-    const layout = await card.evaluate(el => {
-      const bounds = el.getBoundingClientRect();
-      const ribbon = el.querySelector('nav')!.getBoundingClientRect();
-      const dial = el.querySelector('.dial')!.getBoundingClientRect();
-      const text = el.querySelector('.content-blocks p')!.firstChild!;
-      const range = document.createRange();
-      range.setStart(text, 0); range.setEnd(text, 1);
-      const first = range.getBoundingClientRect();
-      let wrapsBelow = false;
-      for (let index = 0; index < text.textContent!.length; index++) {
-        range.setStart(text, index); range.setEnd(text, index + 1);
-        const rect = range.getBoundingClientRect();
-        if (rect.top > dial.bottom && rect.left < dial.right) { wrapsBelow = true; break; }
-      }
-      const content = el.querySelector('.content-blocks')!.getBoundingClientRect();
-      const reactions = el.querySelector('.node-reactions')!.getBoundingClientRect();
-      const actions = el.querySelector('.add')!.getBoundingClientRect();
-      return { left: ribbon.left - bounds.left, right: bounds.right - ribbon.right, startsBesideDial: first.top < dial.bottom && first.left >= dial.right, wrapsBelow, reactionsAfterContent: reactions.top >= content.bottom, actionsAfterReactions: actions.top >= reactions.bottom };
-    });
-    expect(layout.left).toBeCloseTo(1, 0);
-    expect(layout.right).toBeCloseTo(1, 0);
-    expect(layout.startsBesideDial).toBe(true);
-    expect(layout.wrapsBelow).toBe(true);
-    expect(layout.reactionsAfterContent).toBe(true);
-    expect(layout.actionsAfterReactions).toBe(true);
+    const body = card.locator('.post-body');
+    await expect(body).toContainText('Supporting detail.');
+    const before = await body.boundingBox();
+    await card.getByRole('button', { name: /Rate node importance/ }).click();
+    const picker = card.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    await expect(picker.getByRole('spinbutton')).toBeVisible();
+    expect(await body.boundingBox()).toEqual(before);
+    await picker.getByRole('button', { name: 'Close vote dial' }).click();
+    await expect(picker).toBeHidden();
+    const geometry = await card.evaluate(element => ({
+      card: element.getBoundingClientRect().width,
+      ribbon: element.querySelector('nav')!.getBoundingClientRect().width,
+      contentBottom: element.querySelector('.post-body')!.getBoundingClientRect().bottom,
+      reactionsTop: element.querySelector('.reaction-controls')!.getBoundingClientRect().top,
+      reactionsBottom: element.querySelector('.reaction-controls')!.getBoundingClientRect().bottom,
+      discussionTop: element.querySelector('.discussion-toolbar')!.getBoundingClientRect().top,
+    }));
+    expect(geometry.ribbon).toBeCloseTo(geometry.card - 2, 0);
+    expect(geometry.reactionsTop).toBeGreaterThanOrEqual(geometry.contentBottom);
+    expect(geometry.discussionTop).toBeGreaterThanOrEqual(geometry.reactionsBottom);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
 });
@@ -159,6 +196,7 @@ for (const destination of ['storybook', 'spa']) {
       await page.goto(destination === 'storybook'
         ? 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story'
         : 'http://127.0.0.1:4173');
+      await page.getByRole('button', { name: 'Show reactions, comments, and subnodes' }).first().click();
       const button = page.getByRole('button', { name: contribution.label, exact: true });
       await expect(button).toHaveCSS('cursor', 'pointer');
       await button.focus();
@@ -180,7 +218,7 @@ for (const destination of ['storybook', 'spa']) {
         await expect(page.getByRole('heading', { name: 'Be the first to create an evidence', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Create an evidence', exact: true })).toBeEnabled();
       }
-      else await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+      else await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
       await expect.poll(() => tabs.evaluate(element => {
         const top = element.getBoundingClientRect().top;
         const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);

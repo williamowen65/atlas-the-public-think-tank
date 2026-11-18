@@ -35,6 +35,13 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Latin1_General_100_CI_AI_SC");
 
+                    b.Property<string>("Composition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompositionSearchText")
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -57,7 +64,7 @@ namespace Atlas.Persistence.Migrations
                     b.Property<string>("SearchText")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("nvarchar(max)")
-                        .HasComputedColumnSql("CONVERT(nvarchar(max), CASE [Kind]\r\n    WHEN N'markdown' THEN COALESCE([Markdown], N'')\r\n    WHEN N'image' THEN CONCAT([AltText], N' ', [Caption])\r\n    WHEN N'video' THEN CONCAT([Caption], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'link-preview' THEN CONCAT([Title], N' ', [Description], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'chart-reference' THEN COALESCE([Title], N'')\r\n    ELSE N'' END)", true)
+                        .HasComputedColumnSql("CONVERT(nvarchar(max), CASE [Kind]\r\n    WHEN N'sectioned' THEN COALESCE([CompositionSearchText], N'')\r\n    WHEN N'markdown' THEN COALESCE([Markdown], N'')\r\n    WHEN N'image' THEN CONCAT([AltText], N' ', [Caption])\r\n    WHEN N'video' THEN CONCAT([Caption], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'link-preview' THEN CONCAT([Title], N' ', [Description], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'chart-reference' THEN COALESCE([Title], N'')\r\n    ELSE N'' END)", true)
                         .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<string>("Title")
@@ -537,10 +544,6 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid>("NodeId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ShortDescription")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -667,13 +670,6 @@ namespace Atlas.Persistence.Migrations
 
                     b.Property<Guid?>("DescriptionId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ShortDescription")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(280)
-                        .HasColumnType("nvarchar(280)")
-                        .HasDefaultValue("");
 
                     b.Property<string>("Status")
                         .IsRequired()

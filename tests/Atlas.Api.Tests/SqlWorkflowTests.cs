@@ -20,6 +20,9 @@ namespace Atlas.Api.Tests;
 [TestClass]
 public sealed class SqlWorkflowTests
 {
+    private static readonly string PublishedBody = string.Join(" ", Enumerable.Repeat(
+        "This contribution describes the issue and asks readers to share their experience.", 3));
+
     /// <summary>
     /// Given an isolated SQL database and real Identity accounts, follow one signed-in content workflow.
     /// Expect CSRF/ownership/role denials where appropriate, successful permitted operations, and logout
@@ -185,13 +188,31 @@ public sealed class SqlWorkflowTests
         StringAssert.Contains(cookies, "secure");
         await RefreshCsrfToken(client);
         // Antiforgery tokens are bound to the current principal.
+        foreach (var (markdown, composition) in new (string, string?)[]
+        {
+            ("x", null),
+            (new string('x', 199), null),
+            ($"![{PublishedBody}](https://example.test/photo.png)", null),
+            (PublishedBody, """{"blocks":[{"kind":"image","photos":[{"alt":"Long image metadata"}]}]}""")
+        })
+        {
+            var rejected = await client.PostAsJsonAsync("/api/nodes", new
+            {
+                title = "Insufficient body",
+                markdown,
+                composition,
+                typeId,
+                requestedTypeIds = Array.Empty<Guid>()
+            });
+            Assert.AreEqual(HttpStatusCode.BadRequest, rejected.StatusCode);
+            StringAssert.Contains(await rejected.Content.ReadAsStringAsync(), "Add at least 200 characters");
+        }
         var created = await client.PostAsJsonAsync(
             "/api/nodes",
             new
             {
                 title = "HTTP idea",
-                markdown = "Description",
-                shortDescription = "A concise HTTP idea introduction",
+                markdown = PublishedBody,
                 typeId,
                 requestedTypeIds = Array.Empty<Guid>(),
                 actorParticipantId = Guid.NewGuid(),
@@ -295,10 +316,6 @@ public sealed class SqlWorkflowTests
     /// </summary>
     private static async Task ExerciseVotesCommentsAndCommunityQuota(HttpClient client, Guid node)
     {
-        await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/short-description", new { text = "Updated short introduction" }));
-        var updatedIntroduction = await client.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}");
-        Assert.AreEqual("Updated short introduction", updatedIntroduction.GetProperty("shortDescription").GetString());
-        Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/api/nodes/{node}/short-description", new { text = new string('x', 281) })).StatusCode);
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/vote", new
         {
             value = 7
@@ -432,8 +449,8 @@ public sealed class SqlWorkflowTests
         Assert.AreEqual(2, await database.ModerationReportedSnapshotRows.CountAsync(row => row.NodeId == node));
         Assert.AreEqual(2, await database.ModerationAuditEventRows.CountAsync(row => row.NodeId == node));
         Assert.AreEqual(quotaBefore + 2, await database.ReportSubmissionQuotaRows.CountAsync());
-        await AssertSnapshot(firstId, "HTTP idea", new[] { "Description", "Another block" });
-        await AssertSnapshot(secondId, "Second report title", new[] { "Description", "Another block", "Second report block" });
+        await AssertSnapshot(firstId, "HTTP idea", new[] { PublishedBody, "Another block" });
+        await AssertSnapshot(secondId, "Second report title", new[] { PublishedBody, "Another block", "Second report block" });
 
         async Task<Guid> SubmitReport()
         {
@@ -689,8 +706,7 @@ public sealed class SqlWorkflowTests
             new
             {
                 title = "Retained post",
-                markdown = "Retained body",
-                shortDescription = "A retained introduction",
+                markdown = PublishedBody,
                 typeId = type.Id.Value,
                 requestedTypeIds = Array.Empty<Guid>()
             }

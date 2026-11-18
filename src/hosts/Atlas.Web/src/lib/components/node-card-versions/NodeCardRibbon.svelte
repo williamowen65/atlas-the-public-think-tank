@@ -96,17 +96,18 @@
   {/if}
   <header>
     <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
+        node = { ...node, title: update.title };
       }}
     />
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
-      By {#if node.authorId}<a
+      {'By '}{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {

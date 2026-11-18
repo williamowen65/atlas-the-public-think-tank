@@ -7,7 +7,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.fulltext_catalogs WHERE name = N'AtlasDiscovery
     EXEC(N'CREATE FULLTEXT CATALOG AtlasDiscovery WITH ACCENT_SENSITIVITY = OFF');
 IF NOT EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.NodeRows'))
     EXEC(N'CREATE FULLTEXT INDEX ON dbo.NodeRows
-        (Title LANGUAGE 1033, ShortDescription LANGUAGE 1033)
+        (Title LANGUAGE 1033)
         KEY INDEX PK_NodeRows ON AtlasDiscovery
         WITH CHANGE_TRACKING AUTO, STOPLIST = SYSTEM');
 IF NOT EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.BlockRows'))

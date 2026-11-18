@@ -28,6 +28,30 @@ public sealed class WorkflowTests
     }
 
     [TestMethod]
+    public void SectionedDescriptionIsCreatedWithTheNode()
+    {
+        const string composition = """
+            {
+              "version": 1,
+              "layouts": [{"id":"full","slots":[{"id":"left","weight":1}]}],
+              "sections": [{"id":"s","layoutId":"full"},{"id":"s2","layoutId":"full"}],
+              "blocks": [
+                {"id":"b","kind":"text","text":"A searchable paragraph."},
+                {"id":"b2","kind":"gallery","photos":[{"id":"p","src":"https://example.test/photo.jpg","alt":"A kingfisher","caption":"Along the boardwalk"}]}
+              ],
+              "assignments": [{"sectionId":"s","slotId":"left","blockId":"b"},{"sectionId":"s2","slotId":"left","blockId":"b2"}]
+            }
+            """;
+        var store = new Store();
+        var node = new Creation(store, store).Create("Sectioned node", "Fallback", store.Type.Id,
+            store.Actor, [], composition: composition);
+        var document = ((IDocumentRepository)store).GetById(new DocumentId(node.DescriptionId.Value))!;
+        var block = (SectionedBlock)store.GetBlockById(document.BlockIds.Single())!;
+        Assert.AreEqual(composition, block.Composition);
+        Assert.AreEqual("A searchable paragraph.\nA kingfisher\nAlong the boardwalk", block.SearchableText);
+    }
+
+    [TestMethod]
     public void InvalidNodeProposalWritesNoContent()
     {
         var store = new Store();

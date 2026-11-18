@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 const feedStory = 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story';
 const entry = (number: number) => ({ nodeId: `b1000000-0000-4000-8000-${String(number).padStart(12, '0')}`, averageVote: null, voteCount: 0, card: {
-  title: `Feed question ${number}`, shortDescription: 'A concise introduction to this connected question.', typeName: 'Question', authorName: 'Reader', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '2 Ideas', communities: 'Building Atlas', commentCount: 0, reactions: '', isHidden: false,
+  title: `Feed question ${number}`, description: 'A concise introduction to this connected question.', typeName: 'Question', authorName: 'Reader', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '2 Ideas', communities: 'Building Atlas', commentCount: 0, reactions: '', isHidden: false,
 } });
 async function mockFeed(page: Page, failSecond = false) {
   const requested: number[] = [];
@@ -9,7 +9,7 @@ async function mockFeed(page: Page, failSecond = false) {
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.includes('/communities/') || url.pathname.endsWith('/parents')) return route.fulfill({ json: [] });
-    if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     const current = Number(url.searchParams.get('Page'));
     requested.push(current);
     if (current === 2 && fail) { fail = false; return route.fulfill({ status: 503 }); }

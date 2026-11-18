@@ -77,7 +77,7 @@
     apiBase,
   }: {
     /** Svelte snippet receiving a FeedItem, used to supply voting controls for each card. */
-    renderVoting?: Snippet<[FeedItem]>;
+    renderVoting?: Snippet<[FeedItem, compact?: boolean]>;
     /** Svelte snippet receiving a FeedItem, used to supply reaction controls for each card. */
     renderReactions?: Snippet<[FeedItem]>;
     /** Loaded FeedItem records to display; the parent owns fetching and accumulation. */
@@ -180,7 +180,7 @@
         Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
         by NodeCard.
       -->
-      {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
+      {#snippet voting(compact?: boolean)}{#if renderVoting}{@render renderVoting(item, compact)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
       <li class:moderated-card={item.node.isHidden === true}>
         {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}

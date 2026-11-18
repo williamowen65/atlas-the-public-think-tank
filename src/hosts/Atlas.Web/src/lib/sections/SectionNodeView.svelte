@@ -1,0 +1,148 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import LinkPreviewCard from './LinkPreviewCard.svelte';
+  import GalleryLayout from './GalleryLayout.svelte';
+  import WrappedImage from './WrappedImage.svelte';
+  import PhotoFrame from './PhotoFrame.svelte';
+  import SectionBreak from './SectionBreak.svelte';
+  import MarkdownContent from '../components/MarkdownContent.svelte';
+  import NodeMediaGallery, { type GalleryMedia } from '../components/NodeMediaGallery.svelte';
+  import { publicUrl } from '../api/nodePage';
+  import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
+
+  let { draft, feed = false, onReadMore, leadingAction }: {
+    draft: Draft;
+    feed?: boolean;
+    onReadMore?: () => void;
+    leadingAction?: Snippet;
+  } = $props();
+
+  let viewportHeight = $state(0);
+  let contentHeight = $state(0);
+  let gallery = $state<ReturnType<typeof NodeMediaGallery>>();
+  const truncated = $derived(feed && contentHeight > viewportHeight + 1);
+  const sections = $derived.by(() => {
+    if (!feed) return draft.sections;
+    if (draft.feedPresentation === 'title-only') return [];
+    const opening = draft.sections.find(section => {
+      const layout = draft.layouts.find(({ id }) => id === section.layoutId);
+      return layout && sectionRows(section, layout).some(({ slots }) => slots.some(({ id }) => {
+        const block = blockAt(draft, section.id, id);
+        if (!block) return false;
+        if (block.kind === 'text') return !!block.text.trim();
+        if (block.kind === 'link') return !!publicUrl(block.url);
+        return block.photos.some(photo => !!publicUrl(photo.src));
+      }));
+    });
+    return opening ? [opening] : [];
+  });
+  const photos = $derived(sections.flatMap((section) => {
+    const layout = draft.layouts.find(({ id }) => id === section.layoutId)!;
+    return sectionRows(section, layout).flatMap(({ slots }) => slots).flatMap((slot) => {
+      const block = blockAt(draft, section.id, slot.id);
+      return block && 'photos' in block ? block.photos.flatMap((photo) => {
+        const src = publicUrl(photo.src);
+        return src ? [{ ...photo, src }] : [];
+      }) : [];
+    });
+  }));
+  const media = $derived<GalleryMedia[]>(photos.map((photo) => ({ kind: 'image', ...photo })));
+</script>
+
+<div class:feed-layout={feed}>
+<div class="viewport" class:feed class:truncated bind:clientHeight={viewportHeight}>
+  <div class="sections" bind:offsetHeight={contentHeight}>
+    {#each sections as section, index (section.id)}
+      {@const layout = draft.layouts.find(({ id }) => id === section.layoutId)!}
+      {#if !feed && index > 0 && section.breakBefore}<SectionBreak />{/if}
+      {#each sectionRows(section, layout) as row (row.id)}
+        {@const wrap = rowWrap(draft, section, row.slots)}
+        {#if row.slots.some((slot) => blockAt(draft, section.id, slot.id))}
+          <section class="section" style:--columns={wrap ? "minmax(0, 1fr)" : columns(row.slots)}>
+            {#each row.slots as slot (slot.id)}
+              {@const block = blockAt(draft, section.id, slot.id)}
+              {@const vertical = draft.assignments.find((entry) => entry.sectionId === section.id && entry.slotId === slot.id)?.vertical}
+              {#if !wrap || block?.id !== wrap.imageId}
+                <div class="slot" style:align-self={vertical ?? 'start'}
+                  style:text-align={block?.kind === 'text' ? block.alignment : undefined}>
+                  {#if block?.kind === 'text'}
+                    {#snippet inset()}
+                      {#if wrap}
+                        <WrappedImage side={wrap.side} width={wrap.image.photos[0]?.frame?.width}>
+                          {#each wrap.image.photos as photo (photo.id)}
+                            {@render photoView(photo, false, 100)}
+                          {/each}
+                        </WrappedImage>
+                      {/if}
+                    {/snippet}
+                    <MarkdownContent preserveHeadingLevels text={block.text} inset={wrap ? inset : undefined} insetAnchor={wrap?.anchor} />
+                  {:else if block?.kind === 'link'}
+                    <LinkPreviewCard url={block.url} />
+                  {:else if block?.kind === 'gallery'}
+                    {#snippet tile(photo: Photo)}{@render photoView(photo, block.galleryStyle !== 'masonry')}{/snippet}
+                    <GalleryLayout fitColumns photos={block.photos.filter((photo) => publicUrl(photo.src))} layout={block.galleryStyle} width={block.galleryWidth} columns={block.galleryStyle === 'masonry' ? block.masonryColumns : block.gridColumns} masonryAlignment={block.masonryAlignment} slideshow={block.slideshow} photo={tile} />
+                  {:else if block}
+                    {#each block.photos as photo (photo.id)}{@render photoView(photo, false)}{/each}
+                  {/if}
+                </div>
+              {/if}
+            {/each}
+          </section>
+        {/if}
+      {/each}
+    {/each}
+  </div>
+</div>
+{#if truncated}<div class="cutoff" aria-label="More content follows">…</div>{/if}
+{#if feed}
+  <div class="feed-actions">
+    {@render leadingAction?.()}
+    {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
+  </div>
+{/if}
+</div>
+{#if media.length}<NodeMediaGallery bind:this={gallery} items={media} />{/if}
+
+{#snippet photoView(photo: Photo, inGallery: boolean, width = photo.frame?.width ?? 100)}
+  {@const src = publicUrl(photo.src)}
+  {#if src}
+    <figure style:width={width + '%'}>
+      <button class="photo-button" type="button" aria-label={`View ${photo.alt || 'photo'}`}
+        onclick={(event) => void gallery?.open(photos.findIndex(({ id }) => id === photo.id), event.currentTarget)}>
+        <PhotoFrame {photo} {src} gallery={inGallery} />
+      </button>
+      {#if photo.caption && photo.captionPlacement !== 'overlay'}<figcaption>{photo.caption}</figcaption>{/if}
+    </figure>
+  {/if}
+{/snippet}
+
+<style>
+  .feed-layout { display: flex; flex-direction: column; min-block-size: 100%; width: 100%; }
+  .viewport { container: section-content / inline-size; }
+  .viewport.feed {
+    /* Reserve space for the card itself and the shared navigation bars. */
+    max-block-size: var(--atlas-section-preview-height, max(5rem, calc(90svh - 12rem - var(--atlas-navigation-height, 0px))));
+    overflow: clip;
+  }
+  .viewport.truncated { mask-image: linear-gradient(black calc(100% - .65rem), transparent); }
+  .sections { --atlas-markdown-line-height: var(--atlas-node-line-height); display: grid; gap: clamp(1.2rem, 3cqi, 2.75rem); }
+  .section { display: grid; grid-template-columns: var(--columns); gap: clamp(1rem, 3cqi, 2.25rem); align-items: start; }
+  .slot { min-width: 0; }
+  .slot :global(.markdown > :first-child) { margin-block-start: 0; }
+  .slot :global(.markdown > :last-child) { margin-block-end: 0; }
+  figure { margin: 0 auto; }
+  figure button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+  figcaption, .cutoff { color: var(--atlas-muted); }
+  figcaption { text-align: center; font-size: var(--atlas-node-meta-size); line-height: var(--atlas-node-meta-line-height); margin-top: .25rem; }
+  .cutoff { margin-block: -.4rem .35rem; position: relative; }
+  .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; padding-block-start: .5rem; }
+  .feed-actions button {
+    font: inherit; line-height: 1.25; min-block-size: 2.25rem; padding: .25rem .65rem; border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius, .5rem); color: var(--atlas-text); background: var(--atlas-surface); cursor: pointer;
+  }
+  .feed-actions .primary { background: var(--atlas-accent); color: var(--atlas-on-accent, white); border-color: var(--atlas-accent); }
+  @container section-content (max-width: 37rem) {
+    .section { grid-template-columns: minmax(0, 1fr); }
+    .slot:empty { display: none; }
+  }
+</style>

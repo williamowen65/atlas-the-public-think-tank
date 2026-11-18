@@ -5,7 +5,7 @@ const communityId = 'a1000000-0000-4000-8000-000000000001';
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  // Real UI behavior with fixed API projections: membership writes are recorded below.
+  // Exercise the feed with fixed API responses.
   await page.route('**/atlas-public-api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.includes('/communities/node/')) return route.fulfill({ json: [
@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
       items: [{ nodeId: id, averageVote: 7.5, voteCount: 12, card: {
         title: 'Restore salmon habitat', typeName: 'Solution', authorName: 'Demo author',
         createdAt: '2026-10-01T12:00:00Z', status: 'Active',
-        shortDescription: 'A fuller introduction that should use the available mobile card width.',
+        description: 'A fuller introduction that should use the available mobile card width.',
         communities: 'Orca recovery', commentCount: 2, childTypes: [], isHidden: false,
       } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false,
     } });
@@ -46,14 +46,13 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   const type = await card.locator('.mobile-type').boundingBox();
   expect(Math.abs((row!.y + row!.height / 2) - (type!.y + type!.height / 2))).toBeLessThan(2);
   expect(type!.x + type!.width).toBeLessThanOrEqual(row!.x);
+  const body = card.locator('.body');
+  const before = await body.boundingBox();
   await summary.click();
-  const dial = card.getByRole('spinbutton');
+  const picker = card.getByRole('dialog', { name: 'Rate node importance', exact: true });
+  const dial = picker.getByRole('spinbutton');
   await expect(dial).toBeVisible();
-  // The expanded dial belongs beside the introduction, rather than a row beneath it.
-  await expect(card.locator('.dial-content')).toHaveCSS('float', 'left');
-  const selector = await card.locator('.selector').boundingBox();
-  const introduction = await card.locator('.description').boundingBox();
-  expect(selector!.y).toBeLessThan(introduction!.y + introduction!.height);
+  expect(await body.boundingBox()).toEqual(before);
 
   await dial.focus();
   await page.keyboard.press('End');
@@ -61,20 +60,27 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await summary.click();
+  await picker.getByRole('button', { name: 'Close vote dial' }).click();
   await expect(dial).toHaveCount(0);
   expect(writes).toEqual([]);
-  // Returning to desktop restores the original bottom-right float after the
-  // mobile dial has been mounted and removed.
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(card.locator('.read-more')).toHaveCSS('float', 'right');
-  await expect(card.locator('.read-more')).toHaveCSS('position', 'static');
-  await expect(dial).toBeVisible();
-  await expect.poll(() => card.evaluate(element => Math.abs(
-    element.querySelector('.description')!.getBoundingClientRect().bottom -
-    element.querySelector('.read-more button')!.getBoundingClientRect().bottom,
-  ))).toBeLessThan(2);
 });
+
+for (const width of [390, 1280]) {
+  test(`feed card details are collapsed by default and can be toggled at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('http://127.0.0.1:4173/');
+    const card = page.locator('article.node-card').first();
+    const toggle = card.getByRole('button', { name: /reactions, comments, and subnodes/ });
+    const details = card.locator('.card-details');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(details).toBeHidden();
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(details).toBeVisible();
+    await toggle.click();
+    await expect(details).toBeHidden();
+  });
+}
 
 test('bottom navigation hides while reading down and returns when scrolling up', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/');
@@ -90,30 +96,19 @@ test('bottom navigation hides while reading down and returns when scrolling up',
   await expect(nav).toBeVisible();
 });
 
-test('joining from a card uses membership transport and updates other controls', async ({ page }) => {
-  let joined = false;
-  const writes: string[] = [];
-  await page.route('**/atlas-session-api/**', route => {
-    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
-    if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
-    const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'demo' } });
-    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
-    if (path.endsWith('/communities/mine')) return route.fulfill({ json: joined ? [{ id: communityId, name: 'Orca recovery', isMember: true }] : [] });
-    if (path.endsWith('/membership')) {
-      writes.push(route.request().method());
-      expect(route.request().headers()['x-csrf-token']).toBeTruthy();
-      joined = true;
-      return route.fulfill({ status: 204 });
-    }
-    return route.fallback();
+for (const isMember of [false, true]) {
+  test(`mobile feed links to the community without membership controls (member: ${isMember})`, async ({ page }) => {
+    await page.route('**/atlas-session-api/auth/session', route => route.fulfill({ json: { participantId: 'demo' } }));
+    await page.route('**/atlas-session-api/communities/mine', route => route.fulfill({
+      json: isMember ? [{ id: communityId, name: 'Orca recovery', isMember: true }] : [],
+    }));
+    await page.goto('http://127.0.0.1:4173/');
+    const card = page.locator('article.node-card').first();
+    await expect(card.getByRole('link', { name: 'Orca recovery' })).toHaveAttribute('href', `/communities/${communityId}`);
+    await expect(card.getByRole('button', { name: 'Join Orca recovery' })).toHaveCount(0);
+    await expect(card.getByText('Joined', { exact: true })).toHaveCount(0);
   });
-  await page.goto('http://127.0.0.1:4173/');
-  const card = page.locator('article.node-card').first();
-  await card.getByRole('button', { name: 'Join Orca recovery', exact: true }).click();
-  await expect(card.getByText('Joined', { exact: true })).toBeVisible();
-  expect(writes).toEqual(['PUT']);
-});
+}
 
 for (const rating of [0, 6]) {
   test(`saved mobile rating ${rating} collapses the dial and remains available for editing`, async ({ page }) => {
@@ -142,7 +137,7 @@ for (const rating of [0, 6]) {
     for (let i = 0; i < rating; i++) await page.keyboard.press('ArrowUp');
     await page.keyboard.press('Enter');
     await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
-    await expect(summary).toContainText(`Voted ${rating}/10`);
+    await expect(summary.locator('.summary-label')).toHaveText(new RegExp(`^Voted\n${rating}/10$`), { useInnerText: true });
     await expect(summary).toHaveAttribute('aria-expanded', 'false');
     await expect(dial).toHaveCount(0);
     await expect(summary).toBeFocused();
@@ -217,16 +212,17 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await page.goto('http://127.0.0.1:4173/nodes?id=' + id);
   const node = page.locator('article.node-page');
   await expect(node.getByRole('heading', { name: 'Restore salmon habitat', exact: true })).toBeVisible();
-  await expect(node.locator('.mobile-type')).toHaveText('Solution');
+  await expect(node.locator('.node-type')).toHaveText('Solution');
   await expect(node.locator('.relative-date')).toBeVisible();
-  await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toBeVisible();
+  await expect(node.getByRole('link', { name: 'Orca recovery', exact: true })).toHaveAttribute('href', `/communities/${communityId}`);
+  await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toHaveCount(0);
   const summary = node.getByRole('button', { name: /Rate node importance/ });
   await expect(summary).toBeEnabled();
   await expect(node.locator('.node-type-row .rating-summary')).toBeVisible();
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
   await summary.click();
   await expect(node.getByRole('spinbutton')).toBeVisible();
-  await expect(node.locator('.dial-content')).toHaveCSS('float', 'left');
-  await summary.click();
+  await expect(node.getByRole('dialog', { name: 'Rate node importance' })).toBeVisible();
+  await node.getByRole('button', { name: 'Close vote dial' }).click();
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
 });

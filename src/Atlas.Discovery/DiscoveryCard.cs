@@ -9,7 +9,6 @@ public sealed record DiscoveryCard(Guid NodeId, string Title, string TypeName, s
 
     public IReadOnlyList<DiscoveryChildType> ChildTypes { get; init; } = Array.Empty<DiscoveryChildType>();
 
-    public string ShortDescription { get; init; } = "";
 
     /// <summary>Structured first segment and continuation, for future scroll/feed clients.</summary>
     public BreadcrumbPage? BreadcrumbSegment { get; init; }

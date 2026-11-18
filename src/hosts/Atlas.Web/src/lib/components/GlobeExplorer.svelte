@@ -11,7 +11,7 @@
   let mobile = $state(false);
   let dialog: HTMLDialogElement;
   let expanded = $state(false);
-  let mode = $state<'live' | 'historical'>('live');
+  let mode = $state<'live' | 'historical'>('historical');
   let snapshot = $state<GlobeSnapshot>();
   let status = $state<'loading' | 'ready' | 'failed'>('loading');
   let canShare = $state(false);

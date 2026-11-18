@@ -1,0 +1,205 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import type { GalleryStyle, GalleryColumns, Photo, SlideshowSettings } from './sectionLayouts';
+
+  let { photos, layout = 'grid', width = 'full', columns, masonryAlignment = 'top', slideshow = {}, fitColumns = false, selected, onNavigate, photo }: {
+    photos: Photo[];
+    layout?: GalleryStyle;
+    width?: 'full' | 'centered';
+    columns?: GalleryColumns;
+    masonryAlignment?: 'top' | 'center';
+    slideshow?: SlideshowSettings;
+    fitColumns?: boolean;
+    selected?: string | null;
+    onNavigate?: () => void;
+    photo: Snippet<[Photo, boolean?]>;
+  } = $props();
+
+  const mosaicRows = $derived(photos.flatMap((_, index) =>
+    index % 3 === 0 ? [photos.slice(index, index + 3)] : []));
+
+  let galleryWidth = $state(0);
+  // Keep roughly 120px per tile in published galleries, including the gaps between columns.
+  const fittingColumns = $derived(fitColumns && galleryWidth > 0
+    ? Math.max(1, Math.floor((galleryWidth + 10) / 130))
+    : Infinity);
+  const masonryCount = $derived(Math.min(photos.length, fittingColumns,
+    columns ?? (galleryWidth === 0 || galleryWidth >= 384 ? 3 : galleryWidth >= 272 ? 2 : 1)));
+  const gridCount = $derived(Math.max(1, Math.min(photos.length, columns ?? 2, fittingColumns)));
+  const masonryColumns = $derived(Array.from({ length: masonryCount }, (_, column) => {
+    const size = Math.floor(photos.length / masonryCount);
+    const remainder = photos.length % masonryCount;
+    const start = column * size + Math.min(column, remainder);
+    return photos.slice(start, start + size + Number(column < remainder));
+  }));
+
+  let index = $state(0);
+  const selectedIndex = $derived(photos.findIndex(({ id }) => id === selected));
+  const current = $derived(selectedIndex >= 0 ? selectedIndex : Math.min(index, photos.length - 1));
+
+  $effect(() => {
+    if (selectedIndex >= 0) index = selectedIndex;
+  });
+
+  function navigate(direction: number) {
+    index = (current + direction + photos.length) % photos.length;
+    onNavigate?.();
+  }
+</script>
+
+<div bind:clientWidth={galleryWidth} class:editor-columns={!fitColumns} class:centered={width === 'centered'}>
+  {#if layout === 'slideshow' && photos.length}
+    <div class="slideshow">
+      <div class="slide-stage" class:peek={slideshow.neighbors && photos.length > 1}
+        class:fill={slideshow.fit === 'cover'} data-height={slideshow.height ?? 'standard'}>
+        {#if slideshow.neighbors && photos.length > 1}
+          <div class="neighbor previous" inert aria-hidden="true">
+            {@render photo({ ...photos[(current + photos.length - 1) % photos.length], caption: '' }, true)}
+          </div>
+        {/if}
+        <div class="current-slide">
+          {#key photos[current].id}
+            {@render photo(photos[current])}
+          {/key}
+        </div>
+        {#if slideshow.neighbors && photos.length > 1}
+          <div class="neighbor next" inert aria-hidden="true">
+            {@render photo({ ...photos[(current + 1) % photos.length], caption: '' }, true)}
+          </div>
+        {/if}
+      </div>
+      {#if photos.length > 1}
+        <div class="slide-controls">
+          <button type="button" aria-label="Previous gallery image" onclick={() => navigate(-1)}>‹</button>
+          <span aria-live="polite">{current + 1} of {photos.length}</span>
+          <button type="button" aria-label="Next gallery image" onclick={() => navigate(1)}>›</button>
+        </div>
+      {/if}
+    </div>
+  {:else if layout === 'mosaic' && photos.length > 1}
+    <div class="mosaic">
+      {#each mosaicRows as [feature, ...small], row (feature.id)}
+        <div class="mosaic-row" class:reverse={row % 2 === 1} class:single={!small.length} class:paired={small.length === 2}>
+          <div class="feature">{@render photo(feature)}</div>
+          {#if small.length}
+            <div class="mosaic-stack">
+              {#each small as item (item.id)}
+                {@render photo(item)}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {:else if layout === 'masonry' && photos.length > 1}
+    <div class="masonry" class:middle={masonryAlignment === 'center'}
+      style:--column-count={masonryCount}>
+      {#each masonryColumns as items}
+        <div class="masonry-column">
+          {#each items as item (item.id)}
+            {@render photo(item)}
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="tiles" class:paired-grid={gridCount === 2} style:--column-count={gridCount}>
+      {#each photos as item (item.id)}
+        <div class="tile" class:middle={item.frame?.gridVertical === 'center'} class:bottom={item.frame?.gridVertical === 'end'}>
+          {@render photo(item)}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+</div>
+
+<style>
+  .centered { width: min(84%, 48rem); margin-inline: auto; }
+  @container (max-width: 37rem) { .centered { width: 100%; } }
+  .tiles { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; }
+  .tile { display: grid; align-items: start; min-width: 0; }
+  .tile.middle { align-items: center; }
+  .tile.bottom { align-items: end; }
+  .tiles .tile:only-child, .paired-grid .tile:last-child:nth-child(odd), .mosaic-row.single .feature {
+    grid-column: 1 / -1; width: min(100%, 32rem); justify-self: center;
+  }
+  .mosaic, .mosaic-stack { display: grid; gap: .6rem; align-content: start; }
+  .mosaic-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .6rem; align-items: start; }
+  .mosaic-row.reverse { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .reverse:not(.single) .feature { grid-area: 1 / 2; }
+  .reverse .mosaic-stack { grid-area: 1 / 1; }
+  .mosaic-row:not(.single) :global(figure) { position: relative; width: 100% !important; margin: 0; }
+  .mosaic-row:not(.single) :global(figure > .photo-button) { display: block; width: 100%; }
+  .mosaic-row:not(.single) :global(figure > .photo-button > .frame) { width: 100%; aspect-ratio: 1 !important; }
+  .mosaic-row:not(.single) :global(figure > .photo-button > .frame > img) {
+    width: 100%; height: 100%; object-fit: cover;
+    object-position: var(--focus-x) var(--focus-y);
+    transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
+  }
+  .paired .feature { align-self: stretch; position: relative; }
+  .paired .feature :global(figure) {
+    position: absolute; inset: 0; display: grid; grid-template: minmax(0, 1fr) auto / minmax(0, 1fr);
+  }
+  .paired .feature :global(figure > .photo-button) { min-width: 0; min-height: 0; height: 100%; }
+  .paired .feature :global(figure > .photo-button > .frame) { height: 100%; aspect-ratio: auto !important; }
+  .paired .feature :global(figcaption) { overflow-wrap: anywhere; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette]) { clip-path: none; border-radius: var(--atlas-radius, .5rem) !important; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].square) { border-radius: 0 !important; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette].extra-rounded) { border-radius: 1.5rem !important; }
+  :is(.mosaic-row:not(.single), .slide-stage) :global(.frame[data-silhouette] .caption-overlay) { inset: auto 0 0; }
+  .masonry { display: grid; grid-template-columns: repeat(var(--column-count), minmax(0, 1fr)); gap: .6rem; align-items: start; }
+  .masonry.middle { align-items: center; }
+  .masonry-column { display: grid; gap: .6rem; min-width: 0; }
+  .slideshow { container-type: inline-size; width: 100%; }
+  .centered > .slideshow { max-width: 40rem; margin-inline: auto; }
+  .slide-stage { --slide-height: min(28rem, 57svh); position: relative; isolation: isolate; }
+  .slide-stage[data-height='compact'] { --slide-height: min(18rem, 45svh); }
+  .slide-stage[data-height='tall'] { --slide-height: min(36rem, 65svh); }
+  .peek {
+    --peek-width: clamp(.75rem, 7cqi, 3rem);
+    --slide-gap: clamp(.375rem, 1.5cqi, .75rem);
+    display: grid;
+    grid-template-columns: var(--peek-width) minmax(0, 1fr) var(--peek-width);
+    gap: var(--slide-gap);
+    align-items: start;
+  }
+  .neighbor { position: relative; height: var(--slide-height); overflow: hidden; }
+  .neighbor :global(figure) {
+    position: absolute; inset-block-start: 0;
+    width: calc(100cqi - 2 * (var(--peek-width) + var(--slide-gap))) !important;
+  }
+  .previous :global(figure) { inset-inline-end: 0; }
+  .next :global(figure) { inset-inline-start: 0; }
+  .current-slide { position: relative; z-index: 1; }
+  .slide-stage :global(figure) { width: 100% !important; margin: 0; min-width: 0; }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame)) { display: block; width: 100%; height: var(--slide-height); }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame)) { background-color: var(--atlas-bg); }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame) > .frame) {
+    width: 100%; height: 100%; aspect-ratio: auto !important; background: var(--atlas-bg);
+  }
+  .slide-stage :global(figure > :is(.photo-button, .neighbor-frame) > .frame > img) {
+    width: 100%; height: 100%; object-fit: contain; transform: none;
+  }
+  .fill :global(figure > :is(.photo-button, .neighbor-frame) > .frame > img) {
+    object-fit: cover; object-position: var(--focus-x) var(--focus-y);
+    transform: scale(var(--zoom)); transform-origin: var(--focus-x) var(--focus-y);
+  }
+  .current-slide :global(figcaption) {
+    position: static;
+    box-sizing: border-box;
+    max-block-size: 2.75rem;
+    overflow: auto;
+    width: 100%;
+    margin: 0;
+    padding-block-start: .25rem;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .slide-controls { display: flex; align-items: center; justify-content: center; gap: .75rem; margin-block-start: .2rem; }
+  .slide-controls button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: inherit; cursor: pointer; }
+
+  @container (max-width: 24rem) {
+    .editor-columns > .mosaic .mosaic-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

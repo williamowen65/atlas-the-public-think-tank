@@ -88,7 +88,7 @@ export interface NodeCardProps {
    * Renderable snippet that replaces the card’s built-in VotingDial. Supply LiveVotingDial here
    * for API-backed voting; otherwise the built-in dial reports selections through onVote.
    */
-  voting?: Snippet;
+  voting?: Snippet<[compact?: boolean]>;
   /**
    * Renderable snippet replacing the static reaction summary with custom/live controls, such as
    * LiveReactions.

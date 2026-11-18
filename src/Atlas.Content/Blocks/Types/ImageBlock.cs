@@ -7,12 +7,14 @@ public sealed class ImageBlock : ContentBlock
     public string Url { get; private set; }
     public string AltText { get; private set; }
     public string Caption { get; private set; }
+    public string Layout { get; private set; }
 
     public ImageBlock(
         string url,
         string altText,
         string? caption,
-        DateTimeOffset createdAt
+        DateTimeOffset createdAt,
+        string? layout = null
     )
         : this(
             BlockId.New(),
@@ -20,7 +22,8 @@ public sealed class ImageBlock : ContentBlock
             altText,
             caption,
             createdAt,
-            createdAt
+            createdAt,
+            layout
         ) { }
 
     private ImageBlock(
@@ -29,7 +32,8 @@ public sealed class ImageBlock : ContentBlock
         string altText,
         string? caption,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string? layout
     )
         : base(
             id,
@@ -37,6 +41,7 @@ public sealed class ImageBlock : ContentBlock
             updatedAt
         )
     {
+        Layout = ValidateLayout(layout);
         Url = MediaUrl(
             url,
             nameof(url)
@@ -57,7 +62,8 @@ public sealed class ImageBlock : ContentBlock
         string url,
         string altText,
         string? caption,
-        DateTimeOffset changedAt
+        DateTimeOffset changedAt,
+        string? layout = null
     )
     {
         var validatedUrl = MediaUrl(
@@ -74,7 +80,9 @@ public sealed class ImageBlock : ContentBlock
             2_000,
             nameof(caption)
         );
+        var validatedLayout = layout is null ? Layout : ValidateLayout(layout);
         ChangedAt(changedAt);
+        Layout = validatedLayout;
         Url = validatedUrl;
         AltText = validatedAltText;
         Caption = validatedCaption;
@@ -86,7 +94,8 @@ public sealed class ImageBlock : ContentBlock
         string altText,
         string? caption,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string? layout = null
     ) =>
         new(
             id,
@@ -94,6 +103,17 @@ public sealed class ImageBlock : ContentBlock
             altText,
             caption,
             createdAt,
-            updatedAt
+            updatedAt,
+            layout
         );
+    private static string ValidateLayout(string? layout)
+    {
+        if (string.IsNullOrEmpty(layout)) return "half:left";
+        var parts = layout.Split(':');
+        if (parts.Length == 2
+            && parts[0] is ("quarter" or "third" or "half")
+            && parts[1] is ("left" or "center" or "right"))
+            return layout;
+        throw new ArgumentException("Invalid image layout.", nameof(layout));
+    }
 }

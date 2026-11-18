@@ -36,17 +36,17 @@ public sealed class DiscoveryEdgeCaseTests
         using (var db = fixture.Open())
         {
             var document = db.DocumentRows.Include(row => row.Blocks).Single();
-            var kinds = new[] { ("markdown", "adaptation"), ("image", "résilience"), ("video", "orcas"), ("link-preview", "ocean"), ("chart-reference", "trend"), ("poll-reference", "secret-poll") };
+            var kinds = new[] { ("markdown", "adaptation"), ("sectioned", "boardwalk kingfisher promenade"), ("image", "résilience"), ("video", "orcas"), ("link-preview", "ocean"), ("chart-reference", "trend"), ("poll-reference", "secret-poll") };
             for (var i = 0; i < kinds.Length; i++)
             {
-                var block = new BlockRow { Id = Guid.NewGuid(), Kind = kinds[i].Item1, Markdown = kinds[i].Item2, AltText = kinds[i].Item2, Caption = kinds[i].Item2, Title = kinds[i].Item2, Description = kinds[i].Item2, Url = "https://example.test/whales", CreatedAt = candidate.CreatedAt, UpdatedAt = candidate.UpdatedAt };
+                var block = new BlockRow { Id = Guid.NewGuid(), Kind = kinds[i].Item1, Markdown = kinds[i].Item1 == "sectioned" ? null : kinds[i].Item2, CompositionSearchText = kinds[i].Item1 == "sectioned" ? kinds[i].Item2 : null, AltText = kinds[i].Item2, Caption = kinds[i].Item2, Title = kinds[i].Item2, Description = kinds[i].Item2, Url = "https://example.test/whales", CreatedAt = candidate.CreatedAt, UpdatedAt = candidate.UpdatedAt };
                 db.BlockRows.Add(block);
                 document.Blocks.Add(new DocumentBlockRow { DocumentId = document.Id, BlockId = block.Id, Position = i + 1 });
             }
             db.SaveChanges();
         }
         var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery);
-        foreach (var text in new[] { "coast", "adaptation climate", "resilience", "orcas", "ocean", "trend", "whales" })
+        foreach (var text in new[] { "coast", "adaptation climate", "resilience", "orcas", "ocean", "trend", "whales", "boardwalk", "kingfisher", "promenade" })
             Assert.AreEqual(candidate.NodeId, query.DiscoverPage(new(SearchText: text)).Items.Single().NodeId, text);
         Assert.IsEmpty(query.DiscoverPage(new(SearchText: "secret-poll")).Items);
         // Symbol-only input has no indexed terms; underscores are not SQL LIKE wildcards.

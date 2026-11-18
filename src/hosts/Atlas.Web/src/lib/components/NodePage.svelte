@@ -5,8 +5,9 @@
 
   **Props**
   - `voting` (`Snippet`; optional): Renderable snippet for the voting region, replacing the
-    always-disabled plain VotingDial fallback. LiveNodePage supplies LiveVotingDial here to add
+    read-only vote summary. LiveNodePage supplies LiveVotingDial here to add
     API/session behavior.
+  - `reportControl` (`Snippet`; optional): Report action shown at the end of the content.
   - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
     omitted, NodePage displays the static reaction summary from node.reactions.
   - `scrollToDiscussionTabs` (`boolean`; optional; default `false`): Requests initial focus and
@@ -53,11 +54,11 @@
   import CommunityLinks from './CommunityLinks.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
-  import VotingDial from './VotingDial.svelte';
   let {
     onOpenProfile,
     voting,
     reactions,
+    reportControl,
     scrollToDiscussionTabs = false,
     inspectionOnly = false,
     node,
@@ -76,7 +77,7 @@
     children,
   }: {
     /**
-     * Renderable snippet for the voting region, replacing the always-disabled plain VotingDial
+     * Renderable snippet for the voting region, replacing the read-only vote summary
      * fallback. LiveNodePage supplies LiveVotingDial here to add API/session behavior.
      */
     voting?: Snippet;
@@ -85,6 +86,7 @@
      * static reaction summary from node.reactions.
      */
     reactions?: Snippet;
+    reportControl?: Snippet;
     /**
      * Requests initial focus and scrolling of the selected discussion tab to 20px below the
      * viewport top where the natural page height allows; never adds space just to reach the target.
@@ -272,11 +274,12 @@
 <article class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
-      nodeId={node.id}
-      authorId={node.authorId}
+      {node}
+      {average}
+      {totalVotes}
       {apiBase}
       onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
+        node = { ...node, title: update.title };
         blocks = update.blocks;
       }}
     />{/if}
@@ -291,10 +294,18 @@
       />
     </div>{/if}
   <header>
-    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-    <h1><span class="title-type">{`${node.typeName}: `}</span>{node.title}</h1>
+    <div class="node-type-row">
+      <p class="node-type">{node.typeName}</p>
+      {#if !inspectionOnly}
+        {#if voting}{@render voting()}
+        {:else}<button class="vote-summary" type="button" disabled>
+          {average == null ? '—' : average.toFixed(1)} · {totalVotes ?? 0} votes · Vote
+        </button>{/if}
+      {/if}
+    </div>
+    <h1>{node.title}</h1>
     <p class="byline">
-      <span class="by-prefix">By </span>{#if node.authorId}<a
+      <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {
@@ -313,55 +324,38 @@
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span> <span class="community-prefix">Community: </span> <CommunityLinks
           nodeId={node.id}
-          allowJoin
           names={node.communities}
         />{/if}
     </p>
     {#if node.status === 'Archived'}<p>Archived</p>{/if}
   </header>
-  <!--
-    Contains the floated voting dial so the introduction and content can flow beside it without
-    affecting later sections.
-  -->
   <div class="post-body">
-    <div class="introduction">
-    {#if !inspectionOnly}<aside class="dial" aria-label="Importance rating">
-      <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
-           Without one, show totals with an always-disabled VotingDial: there is no save handler.
-           The bare disabled attribute below means disabled={true}, regardless of archive status. -->
-      {#if voting}{@render voting()}{:else}<VotingDial
-          label="Node importance"
-          {average}
-          {totalVotes}
-          disabled
-        />{/if}
-    </aside>{/if}
-    <p class="description">{node.description}</p>
+    <div class="description">
+      {#if blocks.some((block) => block.kind !== 'markdown' || !!block.content.markdown?.trim())}
+        <ContentBlocks {blocks} />
+      {:else if node.description}
+        <!-- Compatibility for older nodes whose Content document is blank. -->
+        <p class="plain-description">{node.description}</p>
+      {:else}
+        <ContentBlocks {blocks} />
+      {/if}
     </div>
-    <ContentBlocks {blocks} />
+    {#if !inspectionOnly}{@render reportControl?.()}{/if}
   </div>
-  {#if !inspectionOnly}
-  {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
-      class="reactions"
-      role="group"
-      aria-label="Community reactions"
-    >
-      {#each node.reactions as reaction}<span
-          >{reaction.label} <strong>{reaction.count}</strong></span
-        >{/each}
-    </div>{/if}
-  <!-- Keeps the Add action with the discussion tab strip, above the selected panel. -->
+  {#if !inspectionOnly && (reactions || node.reactions.length)}
+    <div class="reaction-controls">
+      {#if reactions}
+        {@render reactions()}
+      {:else}
+        <div class="reactions" role="group" aria-label="Community reactions">
+          {#each node.reactions as reaction}
+            <span>{reaction.label} <strong>{reaction.count}</strong></span>
+          {/each}
+        </div>
+      {/if}
+    </div>
   {/if}
   {#if !inspectionOnly}<div class="discussion-toolbar">
-    <div class="add">
-      <button
-        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
-        disabled={node.status === 'Archived'}
-        >Add {active === 'comments'
-          ? 'a child node'
-          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
-      >
-    </div>
     <div
       class="tabs"
       use:alignDiscussionTabs
@@ -377,6 +371,15 @@
           onclick={() => onTabChange(tab.id)}
           onkeydown={(event) => key(event, index)}>{tab.name}</button
         >{/each}
+    </div>
+    <div class="add">
+      <button
+        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
+        disabled={node.status === 'Archived'}
+        >Add {active === 'comments'
+          ? 'a child node'
+          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
+      >
     </div>
   </div>
   <!--
@@ -395,7 +398,7 @@
 </article>
 
 <style lang="scss">
-  .mobile-type, .relative-date { display: none; }
+  .relative-date { display: none; }
   .introduction { display: contents; }
 
 
@@ -408,7 +411,7 @@
   .node-page {
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
-    --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
+    --discussion-section-padding: 1.25rem;
     --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     margin-inline: auto;
@@ -426,11 +429,13 @@
     padding-top: 0;
   }
   h1 {
+    line-height: var(--atlas-node-line-height);
     font-size: clamp(1.4rem, 4vw, 2rem);
     margin: 0 0 0.5rem;
   }
   .byline {
-    font-size: 0.85rem;
+    font-size: var(--atlas-node-meta-size);
+    line-height: var(--atlas-node-meta-line-height);
     color: var(--atlas-muted);
     margin: 0;
     a {
@@ -448,25 +453,23 @@
   .post-body {
     display: flow-root;
     padding: 0.5rem var(--card-padding) 0;
-    line-height: var(--atlas-line-height, 1.65);
-  }
-  .dial {
-    float: left;
-    margin: 0 var(--dial-text-gap) 0 -0.4rem;
+    --atlas-markdown-line-height: var(--atlas-node-line-height);
+    line-height: var(--atlas-node-line-height);
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
+  }
+  .plain-description {
     white-space: pre-line;
   }
   .reaction-controls {
-    // The page owns its content gutter; feed cards already provide their own inset.
-    padding-inline: var(--card-padding);
+    border-block-start: 1px solid var(--atlas-border);
+    padding: var(--discussion-section-padding) var(--card-padding);
   }
   .reactions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    padding: 0.5rem var(--card-padding) 0;
     font-size: 0.85rem;
     color: var(--atlas-muted);
   }
@@ -476,21 +479,25 @@
     padding: 0.2rem 0.6rem;
   }
   .discussion-toolbar {
-    display: flow-root;
-    border-bottom: 1px solid var(--atlas-border);
-    padding: 0.5rem var(--card-padding) 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.4rem 1.25rem;
+    border-block: 1px solid var(--atlas-border);
+    padding: var(--discussion-section-padding) var(--card-padding);
   }
   .add {
-    float: right;
-    margin: 0 0 0.75rem 1.25rem;
+    margin-inline-start: auto;
+    max-inline-size: 100%;
   }
   .add button {
     border: 1px solid var(--atlas-accent);
     border-radius: var(--atlas-radius);
-    padding: 0.45rem 0.8rem;
+    min-block-size: 2.25rem;
+    padding: 0.25rem 0.65rem;
     background: var(--atlas-accent);
     color: var(--atlas-on-accent);
-    line-height: 1.4;
+    line-height: 1.25;
     font-weight: 600;
 
     &:not(:disabled):hover {
@@ -511,17 +518,19 @@
   }
   .tabs {
     scroll-margin-top: 20px;
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    min-inline-size: 0;
   }
   .tabs button {
-    margin: 0 0.4rem 0.4rem 0;
-    vertical-align: top;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
-    padding: 0.45rem 0.8rem;
+    min-block-size: 2.25rem;
+    padding: 0.25rem 0.65rem;
     background: var(--atlas-surface);
     color: var(--atlas-muted);
-    line-height: 1.4;
+    line-height: 1.25;
     font-weight: 600;
 
     &:hover {
@@ -556,55 +565,40 @@
   @media (max-width: 380px) {
     .node-page {
       --card-padding: var(--atlas-card-padding-narrow, 0.75rem);
-      --dial-text-gap: var(--atlas-dial-text-gap, 0.6rem);
     }
   }
   @media (max-width: 560px) {
     .node-page { --card-padding: 0.75rem; }
-    .mobile-type { display: block; margin: 0 0 0.25rem; font-size: 2.1rem; line-height: 0; font-weight: 700; color: var(--atlas-accent); }
-    .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
+    .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
-    .byline { font-size: 0.75rem; line-height: 1.5; }
-    // Keep the dial in the same float context as every content block on mobile.
-    // A separate flow-root here forced blocks below the entire dial.
-    .introduction { display: contents; }
-    // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
-    // LiveVotingDial floats its expanded .dial-content with its own text gap.
-    // Avoid applying the same gap a second time on the outer aside.
-    .dial { margin-left: 0; margin-right: 0; }
-    // The collapsed mobile summary lives in the header; its empty floated aside
-    // must not reserve a margin or indent the introduction.
-    .dial:has(:global(.collapsed-mode)):not(:has(:global(.dial-content))) { display: none; }
-    .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
-  .node-type-row { display: none; }
-  @media (max-width: 560px) {
-    .node-type-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: nowrap;
-      min-width: 0;
-      container-type: inline-size;
-      gap: 0.4rem 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    // Scale with the available header width, not just the viewport. CSS cannot
-    // measure text and select an exact fitting font size, so truncate as a
-    // last resort rather than allowing the label to overlap the vote summary.
-    .node-type-row .mobile-type {
-      margin: 0;
-      min-width: 0;
-      flex: 0 1 auto;
-      max-width: 100%;
-      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .node-type-row :global(.header-summary) {
-      flex-shrink: 0;
-    }
+  .node-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem .75rem;
+    min-width: 0;
+    container-type: inline-size;
+    margin-bottom: .5rem;
+  }
+  .node-type {
+    margin: 0;
+    min-width: 0;
+    color: var(--atlas-accent);
+    font-weight: 700;
+    font-size: clamp(.95rem, 8.1cqi, 2.1rem);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-type-row :global(.live-voting), .vote-summary { flex-shrink: 0; }
+  .vote-summary {
+    font: inherit;
+    padding: .5rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    color: var(--atlas-muted);
   }
 </style>

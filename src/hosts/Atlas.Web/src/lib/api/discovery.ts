@@ -108,7 +108,6 @@ interface DiscoveryCard {
   description: string;
 
   /** Short introduction shown before full node content. */
-  shortDescription: string;
 
   /** Formatted ancestor fallback when a structured segment is unavailable. */
   breadcrumb: string;
@@ -263,7 +262,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     authorId: card.authorId ?? undefined,
     status: card.status === 'Archived' ? 'Archived' : 'Active',
     createdAt: card.createdAt,
-    description: card.shortDescription ?? '',
+    description: card.description ?? '',
     communities:
       card.communities && card.communities.trim().toLowerCase() !== 'none'
         ? card.communities

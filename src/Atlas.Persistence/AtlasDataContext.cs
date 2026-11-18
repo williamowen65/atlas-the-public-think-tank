@@ -300,10 +300,6 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
                 .HasColumnType("nvarchar(450)")
                 .HasMaxLength(450)
                 .IsRequired();
-            entity.Property(row => row.ShortDescription)
-                .HasMaxLength(280)
-                .HasDefaultValue("")
-                .IsRequired();
             entity.Property<Guid?>("DescriptionId")
                 .HasColumnType("uniqueidentifier");
             entity.Property<Guid?>("TypeId")
@@ -377,6 +373,8 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
                 .IsRequired();
             entity.Property<string?>("Markdown")
                 .HasColumnType("nvarchar(max)");
+            entity.Property(row => row.Composition).HasColumnType("nvarchar(max)");
+            entity.Property(row => row.CompositionSearchText).HasColumnType("nvarchar(max)").UseCollation(DiscoveryTextCollation.Name);
             entity.Property<string?>("AltText")
                 .HasColumnType("nvarchar(max)");
             entity.Property<string?>("Caption")

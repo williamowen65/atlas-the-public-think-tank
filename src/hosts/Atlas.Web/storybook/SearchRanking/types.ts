@@ -1,5 +1,5 @@
 export type Entry = {
-  key: string; kind: 'node' | 'comment'; title?: string; shortDescription?: string; blocks?: string[];
+  key: string; kind: 'node' | 'comment'; title?: string; blocks?: string[];
   body?: string; sameTextAs?: string | null; votes: number[]; at: string;
 };
 export type Phase = { name: string; votes: Record<string, number[]>; expectedOrder: string[]; sameScoresAs?: string };

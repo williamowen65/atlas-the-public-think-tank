@@ -68,7 +68,7 @@ public sealed class ModerationController(
                        join block in transactionDb.BlockRows.AsNoTracking() on link.BlockId equals block.Id
                        where link.DocumentId == current.DescriptionId
                        orderby link.Position
-                       select new { link.Position, block.Kind, block.Markdown, block.AltText,
+                       select new { link.Position, block.Kind, block.Markdown, block.Composition, block.AltText,
                            block.Caption, block.Url, block.Title, block.Description, block.ReferenceId }).ToArray();
         transactionDb.ModerationReportedSnapshotRows.Add(new ModerationReportedSnapshotRow
         {
@@ -76,7 +76,6 @@ public sealed class ModerationController(
             NodeId = id,
             CapturedAt = report.CreatedAt,
             Title = current.Title,
-            ShortDescription = current.ShortDescription,
             ContentJson = JsonSerializer.Serialize(content)
         });
         transactionDb.ModerationAuditEventRows.Add(new ModerationAuditEventRow
@@ -206,12 +205,18 @@ public sealed class ModerationController(
         var block = blockId == Guid.Empty ? null : database.BlockRows.AsNoTracking()
             .SingleOrDefault(row => row.Id == blockId);
         string reportedMarkdown = "";
+        string? reportedComposition = null;
         if (snapshot is not null)
         {
             using var document = JsonDocument.Parse(snapshot.ContentJson);
             foreach (var entry in document.RootElement.EnumerateArray())
             {
                 var kind = entry.GetProperty("Kind").GetString();
+                if (kind == "sectioned" && entry.TryGetProperty("Composition", out var composition))
+                {
+                    reportedComposition = composition.GetString();
+                    break;
+                }
                 if (!string.Equals(kind, "markdown", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(kind, "markdowntext", StringComparison.OrdinalIgnoreCase)) continue;
                 reportedMarkdown = entry.GetProperty("Markdown").GetString() ?? "";
@@ -222,13 +227,11 @@ public sealed class ModerationController(
         {
             reported = snapshot is null ? null : new {
                 title = snapshot.Title,
-                shortDescription = snapshot.ShortDescription,
-                markdown = reportedMarkdown
+                markdown = reportedMarkdown, composition = reportedComposition
             },
             revised = new {
                 current.Title,
-                current.ShortDescription,
-                markdown = block?.Markdown ?? ""
+                markdown = block?.Markdown ?? "", composition = block?.Composition
             }
         });
     }

@@ -21,7 +21,6 @@ public sealed record RankingEntry
     public string Key { get; init; } = "";
     public string Kind { get; init; } = "node";
     public string Title { get; init; } = "";
-    public string ShortDescription { get; init; } = "";
     public string[] Blocks { get; init; } = [];
     public string Body { get; init; } = "";
     public string? SameTextAs { get; init; }
@@ -57,7 +56,7 @@ public static class SearchRankingFixture
             throw new ArgumentException("Phase names must be unique.");
         foreach (var entry in scenario.Entries)
         {
-            if (entry.Kind is not ("node" or "comment") || entry.Title.Length > 200 || entry.ShortDescription.Length > 280 || entry.Body.Length > 10000 || entry.Blocks.Length > 8 || entry.Blocks.Any(b => b.Length > 1000))
+            if (entry.Kind is not ("node" or "comment") || entry.Title.Length > 200 || entry.Body.Length > 10000 || entry.Blocks.Length > 8 || entry.Blocks.Any(b => b.Length > 1000))
                 throw new ArgumentException("An entry exceeds the fixture limits.");
             if (entry.Kind == "node" && string.IsNullOrWhiteSpace(entry.Title) || entry.Kind == "comment" && string.IsNullOrWhiteSpace(entry.Body) && string.IsNullOrEmpty(entry.SameTextAs))
                 throw new ArgumentException("Nodes need titles; comments need bodies or a matching node.");
@@ -109,7 +108,7 @@ public static class SearchRankingFixture
                     db.BlockRows.Add(new BlockRow { Id = block, Kind = "markdown", Markdown = e.Blocks[i], CreatedAt = e.At, UpdatedAt = e.At });
                     db.Set<DocumentBlockRow>().Add(new DocumentBlockRow { DocumentId = document, BlockId = block, Position = i });
                 }
-                db.NodeRows.Add(new NodeRow { Id = ids[e.Key], Title = e.Title, ShortDescription = e.ShortDescription, TypeId = type, AuthorId = author,
+                db.NodeRows.Add(new NodeRow { Id = ids[e.Key], Title = e.Title, TypeId = type, AuthorId = author,
                     DescriptionId = document, Status = "Active", CreatedAt = e.At, UpdatedAt = e.At });
             }
             db.SaveChanges();

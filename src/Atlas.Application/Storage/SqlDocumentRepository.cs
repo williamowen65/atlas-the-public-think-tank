@@ -70,6 +70,10 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
 
         switch (block)
         {
+            case SectionedBlock sectioned:
+                stored.Composition = sectioned.Composition;
+                stored.CompositionSearchText = sectioned.SearchableText;
+                break;
             case MarkdownTextBlock text:
                 stored.Markdown = text.Markdown;
                 break;
@@ -77,6 +81,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
                 stored.Url = image.Url;
                 stored.AltText = image.AltText;
                 stored.Caption = ForStorage(image.Caption);
+                // Description is a kind-specific slot. Image blocks use it for their layout.
+                stored.Description = image.Layout;
                 break;
             case VideoBlock video:
                 stored.Url = video.Url;
@@ -116,6 +122,7 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         // than running a public constructor that represents new creation.
         return block.Kind switch
         {
+            "sectioned" => SectionedBlock.Reconstitute(id, block.Composition ?? string.Empty, block.CreatedAt, block.UpdatedAt),
             "markdown" => MarkdownTextBlock.Reconstitute(
                 id,
                 block.Markdown ?? string.Empty,
@@ -128,7 +135,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
                 block.AltText ?? string.Empty,
                 block.Caption,
                 block.CreatedAt,
-                block.UpdatedAt
+                block.UpdatedAt,
+                block.Description
             ),
             "video" => VideoBlock.Reconstitute(
                 id,

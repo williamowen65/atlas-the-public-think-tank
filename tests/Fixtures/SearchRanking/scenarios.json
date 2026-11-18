@@ -38,15 +38,15 @@
     "id": "relevance", "name": "Strong text match versus many votes", "description": "Matching all query terms should beat a one-term match even when that weaker match has many high ratings.", "query": "silver otter meadow",
     "entries": [
       { "key": "strong", "kind": "comment", "body": "Silver otter meadow", "votes": [], "at": "2026-01-01T12:00:00Z" },
-      { "key": "weak", "kind": "node", "title": "Silver", "shortDescription": "Housing transport energy education water schools planning research", "votes": [10,10,10,10,10,10,10,10,10,10], "at": "2026-01-01T12:00:00Z" }
+      { "key": "weak", "kind": "node", "title": "Silver", "blocks": ["Housing transport energy education water schools planning research"], "votes": [10,10,10,10,10,10,10,10,10,10], "at": "2026-01-01T12:00:00Z" }
     ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["strong", "weak"] }]
   },
   {
     "id": "test-testing", "name": "Explore test versus testing", "description": "Reproduce short comments versus longer rated nodes. No desired cross-kind order is assumed: inspect the real linguistic ranks.", "query": "testing",
     "entries": [
       { "key": "comment", "kind": "comment", "body": "I would support testing this locally before advocating for a large-scale rollout.", "votes": [], "at": "2026-01-01T12:00:00Z" },
-      { "key": "housing", "kind": "node", "title": "Offer housing-first support with flexible services", "shortDescription": "Test stable housing paired with voluntary support for health, employment, and daily needs.", "votes": [8,8,8,9,9], "at": "2026-01-01T12:00:00Z" },
-      { "key": "whales", "kind": "node", "title": "Pilot seasonal quiet corridors for whales", "shortDescription": "Test predictable low-noise areas during key feeding periods with clear exemptions for safety.", "votes": [8,8,8,8], "at": "2026-01-01T12:00:00Z" }
+      { "key": "housing", "kind": "node", "title": "Offer housing-first support with flexible services", "blocks": ["Test stable housing paired with voluntary support for health, employment, and daily needs."], "votes": [8,8,8,9,9], "at": "2026-01-01T12:00:00Z" },
+      { "key": "whales", "kind": "node", "title": "Pilot seasonal quiet corridors for whales", "blocks": ["Test predictable low-noise areas during key feeding periods with clear exemptions for safety."], "votes": [8,8,8,8], "at": "2026-01-01T12:00:00Z" }
     ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": [] }]
   },
   {

@@ -73,6 +73,8 @@
   const marked = $derived(hasVoted ?? value !== null);
   const ratings = Array.from({ length: 11 }, (_, index) => 10 - index);
   let reel: HTMLDivElement;
+  let reelHeight = $state(0);
+  let lastReelHeight = 0;
   /**
    * Whether pointer dragging is active on the rating reel.
    */
@@ -178,7 +180,12 @@
     const next = value;
     const layout = compact;
     const locked = disabled;
-    if (!reel) return;
+    // A closed dialog has no layout, so wait until the reel can be measured.
+    const height = reelHeight;
+    if (!reel || height === 0) {
+      lastReelHeight = 0;
+      return;
+    }
     if (locked) {
       stopMotion();
       clearTimeout(wheelRelease);
@@ -192,12 +199,13 @@
       drag = null;
       dragging = false;
     }
-    if (next !== lastEmitted || layout !== lastLayout || locked !== lastDisabled || next === null) {
+    if (next !== lastEmitted || layout !== lastLayout || locked !== lastDisabled || height !== lastReelHeight || next === null) {
       syncTarget = (10 - (next ?? 5)) * rowHeight();
       reel.scrollTop = syncTarget;
     }
     lastEmitted = next;
     lastLayout = layout;
+    lastReelHeight = height;
     lastDisabled = locked;
   });
 
@@ -394,6 +402,7 @@
     ></div>
     <div
       bind:this={reel}
+      bind:clientHeight={reelHeight}
       class="reel"
       class:dragging
       class:coasting

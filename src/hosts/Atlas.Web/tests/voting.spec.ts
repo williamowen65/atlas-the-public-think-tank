@@ -1,16 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 const node = 'b1000000-0000-4000-8000-000000000001';
 const story = `http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story&args=nodeId:${node}`;
-async function setup(page: Page, anonymous = false) {
+async function setup(page: Page, anonymous = false, savedVote: number | null = null) {
   let signedIn = !anonymous; let fail = false;
-  let summary = { voteCount: 3, averageVote: 5, currentParticipantVote: null as number | null };
+  let summary = { voteCount: 3, averageVote: 5, currentParticipantVote: savedVote };
   const mutations: { method: string; value?: number }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/node-types') || url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${node}`)) return route.fulfill({ json: { id: node, requestedTypeIds: [] } });
-    return route.fulfill({ json: { items: [{ nodeId: node, voteCount: 3, averageVote: 5, card: { title: 'Voting question', shortDescription: 'Introduction', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ nodeId: node, voteCount: 3, averageVote: 5, card: { title: 'Voting question', description: 'Introduction', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.route('**/atlas-session-api/**', route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
@@ -48,25 +48,57 @@ async function setup(page: Page, anonymous = false) {
   return { mutations, fail: (value: boolean) => fail = value };
 }
 
+for (const savedVote of [null, 8, 9, 0]) {
+  test(`the vote dialog centers ${savedVote ?? 'the unrated midpoint'} when opened`, async ({ page }) => {
+    const fixture = await setup(page, false, savedVote);
+    await page.goto(story);
+    const toggle = page.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ });
+    await toggle.click();
+    const dialog = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    const dial = dialog.getByRole('spinbutton');
+    await expect.poll(() => dial.evaluate(reel => {
+      const rowHeight = reel.querySelector('.rating')!.getBoundingClientRect().height;
+      return 10 - Math.round(reel.scrollTop / rowHeight);
+    })).toBe(savedVote ?? 5);
+    await expect(dial).toHaveAttribute('aria-valuetext', savedVote === null ? /Unrated/ : `${savedVote} out of 10`);
+    expect(fixture.mutations).toEqual([]);
+  });
+}
+
 test('node-page votes persist, use server totals, restore on reload and support keyboard undo', async ({ page }) => {
   const fixture = await setup(page); await page.goto(story);
+  const summary = page.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ });
+  await expect(summary).toBeEnabled();
+  const body = page.locator('.post-body');
+  const before = await body.boundingBox();
+  await summary.click();
+  await expect(page.getByRole('dialog', { name: 'Rate node importance', exact: true })).toBeVisible();
+  expect(await body.boundingBox()).toEqual(before);
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('5.0');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
   // Selecting a value must not send a write until the user confirms it.
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
   expect(fixture.mutations).toEqual([]);
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: 'Thank you for voting', exact: true });
+  await expect(picker.getByRole('status')).toContainText('Thank you for casting a vote on Atlas, the Public Think Tank.');
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
+  await expect(picker).toBeHidden();
+  await page.getByRole('button', { name: /Voted 10.*Average 6.3/ }).click();
   await expect(page.locator('.average')).toHaveText('6.3');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
   await expect(page.locator('.voting-dial')).toHaveClass(/voted/);
   await expect(dial).toHaveAttribute('aria-valuenow', '10');
   expect(fixture.mutations).toEqual([{ method: 'PUT', value: 10 }]);
   await page.reload();
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   await expect(dial).toHaveAttribute('aria-valuenow', '10');
   await dial.focus(); await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+  await page.getByRole('button', { name: /Voted 0.*Rate node importance/ }).click();
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('3.8');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
@@ -74,6 +106,7 @@ test('node-page votes persist, use server totals, restore on reload and support 
   const undo = page.getByRole('button', { name: 'Undo your node importance vote' });
   await undo.focus(); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm undo', exact: true }).click();
+  await page.getByRole('button', { name: /^Vote\./ }).click();
   await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect(page.locator('.average')).toHaveText('5.0');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');
@@ -82,8 +115,22 @@ test('node-page votes persist, use server totals, restore on reload and support 
   expect(fixture.mutations.at(-1)?.method).toBe('DELETE');
 });
 
+test('clicking outside the vote picker dismisses it without voting', async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(story);
+  const summary = page.getByRole('button', { name: /Rate node importance/ });
+  await summary.click();
+  const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+  await expect(picker).toBeVisible();
+  await page.mouse.click(1, 1);
+  await expect(picker).toBeHidden();
+  await expect(summary).toBeFocused();
+  expect(fixture.mutations).toEqual([]);
+});
+
 test('anonymous rating rolls back and opens a dismissible sign-in prompt', async ({ page }) => {
   const fixture = await setup(page, true); await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
@@ -102,11 +149,12 @@ test('anonymous rating rolls back and opens a dismissible sign-in prompt', async
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
-  await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
+  await expect(page.locator('.summary-voters')).toHaveAccessibleName('4 votes');
 });
 
 test('failed voting returns the dial to its confirmed state without inventing totals', async ({ page }) => {
   const fixture = await setup(page); fixture.fail(true); await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End'); await page.keyboard.press('Enter');
@@ -122,6 +170,7 @@ test('failed voting returns the dial to its confirmed state without inventing to
 test('cancelling a proposed rating leaves the confirmed vote and server totals unchanged', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus();
@@ -144,7 +193,13 @@ for (const width of [1024, 640, 320]) {
     await page.goto('http://127.0.0.1:4173');
     const card = page.locator('article').first();
     const summary = card.getByRole('button', { name: /Rate node importance/ });
-    if (width <= 560) await summary.click();
+    const body = card.locator('.body');
+    const before = await body.boundingBox();
+    await expect(card.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ })).toBeVisible();
+    await summary.click();
+    const picker = page.getByRole('dialog', { name: 'Rate node importance', exact: true });
+    await expect(picker).toBeVisible();
+    expect(await body.boundingBox()).toEqual(before);
     const dial = card.getByRole('spinbutton', { name: 'Node importance', exact: true });
     await expect(dial).toHaveAttribute('aria-disabled', 'false');
     // Click above the selected row using real pointer input: an overlay makes this time out.
@@ -154,12 +209,10 @@ for (const width of [1024, 640, 320]) {
     await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
     await expect.poll(() => fixture.mutations.length).toBe(1);
     expect(fixture.mutations[0].method).toBe('PUT');
-    if (width <= 560) {
-      await expect(dial).toHaveCount(0);
-      await expect(summary).toContainText(`Voted ${fixture.mutations[0].value}/10`);
-      await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
-      await summary.click();
-    }
+    await expect(picker).not.toBeVisible();
+    await expect(summary).toHaveAccessibleName(new RegExp(`Voted ${fixture.mutations[0].value} out of 10`));
+    await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
+    await summary.click();
     await expect(dial).toHaveAttribute('aria-valuenow', String(fixture.mutations[0].value));
     await expect(card.locator('.vote-count')).toHaveAccessibleName('4 votes');
   });
@@ -169,6 +222,7 @@ for (const width of [1024, 640, 320]) {
 test('keyboard adjustment waits for Enter before opening vote confirmation', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus();
@@ -226,6 +280,7 @@ test('touch vote waits for finger release and still requires confirmation', asyn
 test('wheel confirmation waits after the last adjustment', async ({ page }) => {
   const fixture = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: /Rate node importance/ }).click();
   const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.hover();

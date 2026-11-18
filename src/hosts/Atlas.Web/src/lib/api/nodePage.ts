@@ -31,6 +31,7 @@ export interface ContentBlock {
   content: {
     /** Markdown source rendered as formatted text. */
     markdown?: string;
+    composition?: string;
 
     /** Image or link URL; callers must apply their URL-safety policy. */
     url?: string;
@@ -40,6 +41,9 @@ export interface ContentBlock {
 
     /** Optional image caption. */
     caption?: string;
+
+    /** Width and placement preset for a standalone image. */
+    layout?: string;
 
     /** Display title supplied by the API. */
     title?: string;
@@ -67,7 +71,6 @@ export interface NodeDetail {
   title: string;
 
   /** Short introduction shown before full node content. */
-  shortDescription: string;
 
   /** Type IDs the author requests as contributions to this node. */
   requestedTypeIds: string[];

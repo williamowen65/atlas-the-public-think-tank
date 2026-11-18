@@ -5,7 +5,7 @@ BEGIN
     -- Serialize projection upserts for the same result without replacing its full-text key.
     DECLARE @documents TABLE (ResultId uniqueidentifier PRIMARY KEY, NodeId uniqueidentifier, SearchText nvarchar(max));
     INSERT @documents (ResultId, NodeId, SearchText)
-    SELECT n.Id, n.Id, CONCAT(CONVERT(nvarchar(max), n.Title), N' ', n.ShortDescription, N' ', blocks.SearchText)
+    SELECT n.Id, n.Id, CONCAT(CONVERT(nvarchar(max), n.Title), N' ', blocks.SearchText)
     FROM dbo.NodeRows n JOIN @ids ids ON ids.Id = n.Id
     OUTER APPLY (
         SELECT STRING_AGG(CONVERT(nvarchar(max), b.SearchText), N' ') WITHIN GROUP (ORDER BY link.Position) AS SearchText

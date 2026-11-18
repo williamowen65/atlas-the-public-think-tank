@@ -5,7 +5,6 @@ public sealed class NodeRow
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
-    public string ShortDescription { get; set; } = string.Empty;
     public Guid? DescriptionId { get; set; }
     public Guid? TypeId { get; set; }
     public Guid? AuthorId { get; set; }
@@ -78,6 +77,8 @@ public sealed class BlockRow
     public Guid Id { get; set; }
     public string Kind { get; set; } = string.Empty;
     public string? Markdown { get; set; }
+    public string? Composition { get; set; }
+    public string? CompositionSearchText { get; set; }
     public string? AltText { get; set; }
     public string? Caption { get; set; }
     public string? Url { get; set; }
@@ -183,7 +184,6 @@ public sealed class ModerationReportedSnapshotRow
     public Guid NodeId { get; set; }
     public DateTimeOffset CapturedAt { get; set; }
     public string Title { get; set; } = string.Empty;
-    public string ShortDescription { get; set; } = string.Empty;
     /// <summary>Versioned JSON containing the ordered reported content blocks.</summary>
     public string ContentJson { get; set; } = string.Empty;
 }

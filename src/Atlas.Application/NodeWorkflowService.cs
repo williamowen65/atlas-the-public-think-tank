@@ -9,13 +9,12 @@ namespace Atlas.Application;
 public sealed class NodeWorkflowService(INodeRepository nodes, IEventPublisher events)
 {
     public Node Create(IDocumentRepository documents, string title, string markdown, NodeTypeId typeId,
-        Guid actorId, IEnumerable<NodeTypeId> requested, NodeId? parentId = null, string shortDescription = "")
+        Guid actorId, IEnumerable<NodeTypeId> requested, NodeId? parentId = null, string? composition = null)
     {
-        var node = new NodeCreationService(nodes, documents).Create(title, markdown, typeId, actorId, requested, parentId, shortDescription);
+        var node = new NodeCreationService(nodes, documents).Create(title, markdown, typeId, actorId, requested, parentId, composition);
         Dispatch(node);
         return node;
     }
-    public void ChangeShortDescription(Node node, Guid actorId, string text) => Change(node, actorId, () => node.ChangeShortDescription(text, actorId, AtlasTime.UtcNow));
     public void Rename(Node node, Guid actorId, string title) => Change(node, actorId, () => node.Rename(new NodeTitle(title), actorId, AtlasTime.UtcNow));
     public void Archive(Node node, Guid actorId) => Change(node, actorId, () => node.Archive(actorId, AtlasTime.UtcNow));
     public void Restore(Node node, Guid actorId) => Change(node, actorId, () => node.Restore(actorId, AtlasTime.UtcNow));

@@ -1,3 +1,5 @@
+import type { AuthorBlock } from '../api/contentAuthoring';
+
 /** Editable node-creation values shared by the form and device-local draft storage. */
 
 export interface NodeDraft {
@@ -5,16 +7,21 @@ export interface NodeDraft {
   title: string;
 
   /** Short introduction displayed on the node card and above full content. */
-  shortDescription: string;
 
   /** Markdown source for the node’s main content block. */
   markdown: string;
+
+  /** Ordered typed content. Old browser drafts without blocks are migrated from markdown. */
+  blocks?: AuthorBlock[];
 
   /** Selected catalog type ID, or null when no existing type is selected. */
   typeId: string | null;
 
   /** Catalog type IDs the author requests as contributions to this node. */
   requestedTypeIds: string[];
+
+  /** Optional community associations to apply when publishing. */
+  communityIds?: string[];
 
   /** Parent node ID for a child draft; omitted for a root draft. */
   parentId?: string;

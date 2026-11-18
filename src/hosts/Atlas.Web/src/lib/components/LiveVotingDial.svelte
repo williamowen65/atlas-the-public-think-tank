@@ -27,6 +27,30 @@
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   /** Whether the mobile summary has been expanded by the visitor. */
   let expanded = $state(false);
+  let thanking = $state(false);
+  let thankYouTimer: ReturnType<typeof setTimeout> | undefined;
+  let backdropPressed = false;
+  let dialDialog = $state<HTMLDialogElement>();
+  $effect(() => {
+    if (!dialDialog) return;
+    if (expanded && !dialDialog.open) dialDialog.showModal();
+    else if (!expanded && dialDialog.open) dialDialog.close();
+  });
+  function closePicker() {
+    clearTimeout(thankYouTimer);
+    thanking = false;
+    backdropPressed = false;
+    expanded = false;
+    cancelPending();
+  }
+
+  function onBackdrop(event: PointerEvent) {
+    if (event.target !== dialDialog || !dialDialog) return false;
+    const bounds = dialDialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom;
+  }
+
   /** The disclosure remains focusable after moving into the card's type row. */
   let summaryButton = $state<HTMLButtonElement>();
   /**
@@ -36,7 +60,8 @@
    * @param button Mounted mobile disclosure button.
    * @returns Cleanup removing the relocated element when its component is destroyed.
    */
-  function placeSummary(button: HTMLButtonElement) {
+  function placeSummary(button: HTMLButtonElement, inline: boolean) {
+    if (inline) return;
     const row = button.closest('article')?.querySelector('.node-type-row');
     if (!row) return;
     button.classList.add('header-summary');
@@ -64,6 +89,8 @@
     initialTotalVotes = 0,
     archived = false,
     mobileCompact = false,
+    forceCompact = false,
+    preview = false,
     sessionBase = '/atlas-session-api',
   }: {
     /** ID of the node this component reads, displays, or modifies. */
@@ -79,13 +106,16 @@
     archived?: boolean;
     /** Collapse the mobile feed dial behind a rating summary; full node pages keep the dial. */
     mobileCompact?: boolean;
+    forceCompact?: boolean;
+    /** Render the same controls with supplied counts and without live actions. */
+    preview?: boolean;
     /**
      * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
      * control. The API returns the authoritative count and average.
      */
     sessionBase?: string;
   } = $props();
-  const collapsedMode = $derived(mobileCompact && narrow);
+  const collapsedMode = $derived(forceCompact || (mobileCompact && narrow));
   /**
    * Last server-confirmed participant rating; null means no confirmed vote.
    */
@@ -192,6 +222,7 @@
   onMount(() => {
     average = initialAverage;
     totalVotes = initialTotalVotes;
+    if (preview) { loading = false; return; }
     void refresh()
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -206,10 +237,21 @@
     };
     window.addEventListener('atlas-session-changed', sessionChanged);
     return () => {
+      clearTimeout(thankYouTimer);
       controller.abort();
       window.removeEventListener('atlas-session-changed', sessionChanged);
     };
   });
+  const reviewing = $derived(pending !== null || pendingUndo);
+  const confirmationTitle = $derived(pendingUndo ? 'Undo your importance rating?' : 'Confirm your importance rating');
+  const pickerTitle = $derived(thanking ? 'Thank you for voting' : reviewing ? confirmationTitle : 'Rate node importance');
+  let pickerHeading = $state<HTMLHeadingElement>();
+  $effect(() => {
+    // Announce each new step without closing and reopening the dialog.
+    const title = pickerTitle;
+    if (expanded && pickerHeading?.textContent === title) pickerHeading.focus();
+  });
+
   $effect(() => {
     if (login && dialog && !dialog.open) dialog.showModal();
   });
@@ -235,6 +277,7 @@
     if (busy || archived || loading || pending !== null || next === confirmed) return;
     value = next;
     pending = next;
+    if (forceCompact) return;
     void tick().then(() => {
       if (!controller.signal.aborted && pending === next && confirmDialog && !confirmDialog.open)
         confirmDialog.showModal();
@@ -244,6 +287,7 @@
     if (busy || loading || archived || confirmed === null) return;
     pending = null;
     pendingUndo = true;
+    if (forceCompact) return;
     void tick().then(() => {
       if (pendingUndo && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
     });
@@ -277,11 +321,11 @@
       confirmed = next;
       value = next;
       saved = true;
-      // Collapse only after the API accepts the write; failed writes keep the
-      // editor available. The summary uses confirmed state, including zero.
-      if (collapsedMode) {
+      if (forceCompact && expanded && next !== null) {
+        thanking = true;
+        thankYouTimer = setTimeout(closePicker, 2500);
+      } else if (collapsedMode) {
         expanded = false;
-
       }
       notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
       try {
@@ -307,7 +351,7 @@
       busy = false;
     }
     // Focus only after busy=false has re-enabled the summary button.
-    if (saved && collapsedMode && !controller.signal.aborted) {
+    if (saved && collapsedMode && !expanded && !controller.signal.aborted) {
       await tick();
       summaryButton?.focus({ preventScroll: true });
     }
@@ -327,10 +371,11 @@
   confirmation and sign-in.
 -->
 
-<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
+<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} class:inline-summary={forceCompact} aria-busy={busy}>
   {#if collapsedMode}
-    <button class="rating-summary" bind:this={summaryButton} use:placeSummary type="button" aria-expanded={expanded}
-      disabled={archived || busy || loading}
+    {#key forceCompact}
+    <button class="rating-summary" bind:this={summaryButton} use:placeSummary={forceCompact} type="button" aria-expanded={expanded} aria-haspopup={forceCompact ? 'dialog' : undefined}
+      disabled={preview || archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
       <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
@@ -338,10 +383,48 @@
         <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
         <span class="summary-count" aria-hidden="true">{formatVoteCount(totalVotes)}</span>
       </span>
-      <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
+      <span class="summary-label">{#if confirmed === null}Vote{:else}Voted<br />{confirmed}/10{/if}</span>
     </button>
+    {/key}
   {/if}
-  {#if !collapsedMode || expanded}
+  {#if forceCompact}
+    <dialog bind:this={dialDialog} class="vote-login vote-picker" aria-label={pickerTitle}
+      onpointerdown={(event) => backdropPressed = onBackdrop(event)}
+      onpointerup={(event) => {
+        if (backdropPressed && onBackdrop(event)) closePicker();
+        backdropPressed = false;
+      }}
+      onclose={closePicker}>
+      <div class="picker-heading" class:thank-you-heading={thanking}>
+        <h2 bind:this={pickerHeading} tabindex="-1">{pickerTitle}</h2>
+        <button type="button" aria-label="Close vote dial" onclick={closePicker}>×</button>
+      </div>
+      {#if thanking}
+        <div class="vote-thanks" role="status">
+          <span class="vote-checkmark" aria-hidden="true">✓</span>
+          <p>Thank you for casting a vote on Atlas, the Public Think Tank.</p>
+        </div>
+      {:else if reviewing}
+        {@render confirmationControls()}
+      {:else}
+        {@render dialControls()}
+        {@render feedback()}
+      {/if}
+    </dialog>
+  {:else if !collapsedMode || expanded}
+    {@render dialControls()}
+  {/if}
+  {#if !forceCompact || !expanded}{@render feedback()}{/if}
+</div>
+{#snippet feedback()}
+  {#if busy}<small role="status">Saving…</small>{/if}
+  {#if notice}<small role="status">{notice}</small>{/if}
+  {#if error}<small role="alert">{error}</small>{/if}
+  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
+      >Retry totals</button
+    >{/if}
+{/snippet}
+{#snippet dialControls()}
   <div class="dial-content">
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
@@ -350,7 +433,7 @@
     {average}
     {totalVotes}
     hasVoted={confirmed !== null}
-    disabled={archived || busy || loading}
+    disabled={preview || archived || busy || loading}
     onChange={choose}
     onCommit={requestRating}
     onCancel={cancelPending}
@@ -363,35 +446,29 @@
       aria-label="Undo your node importance vote">Undo vote</button
     >{/if}
   </div>
-  {/if}
-  {#if busy}<small role="status">Saving…</small>{/if}
-  {#if notice}<small role="status">{notice}</small>{/if}
-  {#if error}<small role="alert">{error}</small>{/if}
-  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
-      >Retry totals</button
-    >{/if}
-</div>
-<!--
-  Confirmation is a separate native dialog so its modal behavior is independent of the inline
-  dial.
--->
-<dialog
-  bind:this={confirmDialog}
-  class="vote-login"
-  aria-labelledby="vote-confirm-title"
-  oncancel={cancelPending}
-  onclose={() => {
-    if (pending !== null || pendingUndo) cancelPending();
-  }}
->
+{/snippet}
+<!-- Inline dials still need a dialog to review their vote. -->
+{#if !forceCompact}
+  <dialog
+    bind:this={confirmDialog}
+    class="vote-login"
+    aria-label={confirmationTitle}
+    oncancel={cancelPending}
+    onclose={() => {
+      if (reviewing) cancelPending();
+    }}
+  >
+    <h2>{confirmationTitle}</h2>
+    {@render confirmationControls()}
+  </dialog>
+{/if}
+{#snippet confirmationControls()}
   {#if pendingUndo}
-    <h2 id="vote-confirm-title">Undo your importance rating?</h2>
     <p>
       Your current rating of <strong>{confirmed} out of 10</strong> will be removed from the community
       average and vote count.
     </p>
   {:else}
-    <h2 id="vote-confirm-title">Confirm your importance rating</h2>
     <p>
       Does this contribution deserve attention? Rate how important it is to explore or consider,
       from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.
@@ -410,7 +487,7 @@
       >{pendingUndo ? 'Confirm undo' : 'Confirm rating'}</button
     >
   </div>
-</dialog>
+{/snippet}
 <!--
   Sign-in is separate from confirmation; signing in asks the visitor to select their rating
   again.
@@ -454,8 +531,15 @@
     font-size: 0.8rem;
     cursor: pointer;
   }
+  .summary-label {
+    line-height: 1.15;
+    text-align: center;
+  }
   .summary-average {
-    padding: 0.3rem 0.5rem;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    padding-inline: 0.5rem;
     border-radius: 0.4rem;
     background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
     font-variant-numeric: tabular-nums;
@@ -497,6 +581,49 @@
     position: absolute;
     inset-inline-start: var(--card-padding);
     bottom: 0.65rem;
+  }
+  .live-voting.inline-summary { display: block; width: auto; }
+  .collapsed-mode.inline-summary .rating-summary { position: static; }
+  .collapsed-mode .vote-picker .dial-content { display: grid; justify-items: center; float: none; width: auto; margin: .5rem 0 0; }
+  .picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .vote-picker .picker-heading h2 { margin: 0; }
+  .picker-heading button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+    font: inherit;
+    font-size: 1.35rem;
+    cursor: pointer;
+  }
+  .picker-heading button:hover { background: var(--atlas-bg); }
+  .vote-picker .thank-you-heading h2 { flex: 1; }
+  .vote-thanks {
+    display: grid;
+    justify-items: center;
+    gap: .75rem;
+    margin-block-start: 1rem;
+    padding: 1.15rem;
+    border-radius: var(--atlas-radius);
+    background: color-mix(in srgb, var(--atlas-accent) 9%, var(--atlas-surface));
+    text-align: center;
+  }
+  .vote-thanks p { margin: 0; }
+  .vote-checkmark {
+    display: grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 50%;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    font-size: 1.25rem;
+    font-weight: 700;
   }
   .collapsed-mode .dial-content {
     display: block;

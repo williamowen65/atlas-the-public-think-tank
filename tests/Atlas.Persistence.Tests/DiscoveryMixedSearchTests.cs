@@ -271,7 +271,7 @@ public sealed class DiscoveryMixedSearchTests
         db.SaveChanges();
         Assert.IsFalse(Text(node.NodeId).Contains("Revised block", StringComparison.Ordinal));
         // Raw SQL writes (including seed/import paths) must be tracked too.
-        db.Database.ExecuteSqlInterpolated($"UPDATE dbo.NodeRows SET ShortDescription = N'Raw import text' WHERE Id = {node.NodeId}");
+        db.Database.ExecuteSqlInterpolated($"UPDATE dbo.NodeRows SET Title = N'Raw import text' WHERE Id = {node.NodeId}");
         StringAssert.Contains(Text(node.NodeId), "Raw import text");
         AtlasDatabaseSetup.InstallSupplementalSchema(db);
         Assert.AreEqual(key, Key(node.NodeId), "Repeat setup must preserve the full-text document key.");
