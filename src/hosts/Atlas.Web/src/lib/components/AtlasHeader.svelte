@@ -794,8 +794,11 @@
       .right-group { display: none; }
       .search-toggle { grid-column: 3; grid-row: 1; }
       .search-panel { grid-column: 1 / -1; grid-row: 2; }
-      &.search-open { grid-template-columns: auto minmax(0, 1fr); }
-      &.filters-open .brand { grid-column: 2; }
+      &.search-open {
+        grid-template-columns: minmax(0, 1fr);
+        .brand, .explore-sidebar { display: none; }
+        .search-panel { grid-row: 1; }
+      }
       .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
       .explore-sidebar nav {
         // Global nav uses flex-wrap; a fixed-height column must not wrap
