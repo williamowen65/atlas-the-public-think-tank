@@ -109,7 +109,11 @@
 -->
 
 <a class="skip-link" href="#main-content">Skip to content</a>
-<div class="app-shell" style:--atlas-header-height={headerHeight ? `${headerHeight}px` : undefined}>
+<div
+  class="app-shell"
+  style:--atlas-header-height={headerHeight ? `${headerHeight}px` : undefined}
+  style:--atlas-bottom-navigation-height={`${bottomNavigationHeight}px`}
+>
   <GlobeExplorer>
     {#snippet navigation(globeLauncher)}
       <AtlasHeader bind:headerHeight bind:bottomNavigationHeight mobileExperiment {globeLauncher} {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
@@ -149,8 +153,5 @@
   }
   .skip-link:focus {
     top: 1rem;
-  }
-  @media (max-width: 560px) {
-    .app-shell { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
   }
 </style>
