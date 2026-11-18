@@ -102,8 +102,9 @@
     margin-block-start: 0.5rem;
   }
   .actions button {
-    min-block-size: 2.75rem;
-    padding: 0.45rem 0.85rem;
+    min-block-size: 2.25rem;
+    padding: 0.25rem 0.65rem;
+    line-height: 1.25;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     background: var(--atlas-surface);
