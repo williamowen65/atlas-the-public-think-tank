@@ -149,6 +149,12 @@
       overflow-wrap: anywhere;
     }
   }
+  @media (max-width: 560px) {
+    .atlas-footer {
+      // Share the footer's bottom padding with the fixed menu's clearance.
+      padding-block-end: max(2rem, var(--atlas-bottom-navigation-height, 0px));
+    }
+  }
   @media (max-width: 360px) {
     .footer-links {
       // Keep both columns on small phones while leaving room for link text to wrap.
