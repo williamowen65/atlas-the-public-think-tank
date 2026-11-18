@@ -192,7 +192,6 @@ test('application breadcrumb still switches API-loaded parents without story pro
   });
   await page.goto(`http://127.0.0.1:4173/nodes?id=${node}`);
   const breadcrumb = page.getByRole('navigation', { name: 'Node ancestry' });
-  await page.getByRole('button', { name: 'Show ancestry' }).click();
   await breadcrumb.getByRole('button', { name: 'Choose another parent path' }).click();
   await breadcrumb.getByRole('button', { name: 'Alternative parent', exact: true }).click();
   await expect(

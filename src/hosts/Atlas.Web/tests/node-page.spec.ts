@@ -146,7 +146,7 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
 });
 
 
-test('node page expands ancestry in place and voting leaves content in place', async ({ page }) => {
+test('node page shows a sole parent without an ancestry toggle and voting leaves content in place', async ({ page }) => {
   await mock(page);
   await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
   await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
@@ -155,16 +155,14 @@ test('node page expands ancestry in place and voting leaves content in place', a
   const card = page.locator('.node-page');
   await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
   const ancestry = card.getByRole('navigation', { name: 'Node ancestry' });
-  await expect(ancestry).toBeHidden();
+  await expect(ancestry.getByRole('listitem')).toHaveText('A parent question');
+  await expect(card.getByRole('button', { name: 'Show ancestry' })).toHaveCount(0);
+  await expect(ancestry.locator('xpath=following-sibling::*[1]')).toHaveClass(/node-type-row/);
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const body = card.locator('.post-body');
     await expect(body).toContainText('Supporting detail.');
-    const collapsed = await body.boundingBox();
-    await card.getByRole('button', { name: 'Show ancestry' }).click();
-    await expect(ancestry.getByRole('listitem')).toHaveText('A parent question');
     const before = await body.boundingBox();
-    expect(before!.y).toBeGreaterThan(collapsed!.y);
     await card.getByRole('button', { name: /Rate node importance/ }).click();
     const picker = card.getByRole('dialog', { name: 'Rate node importance', exact: true });
     await expect(picker.getByRole('spinbutton')).toBeVisible();
@@ -179,8 +177,6 @@ test('node page expands ancestry in place and voting leaves content in place', a
     }));
     expect(geometry.reactionsTop).toBeGreaterThanOrEqual(geometry.contentBottom);
     expect(geometry.discussionTop).toBeGreaterThanOrEqual(geometry.reactionsBottom);
-    await card.getByRole('button', { name: 'Hide ancestry' }).click();
-    await expect(ancestry.getByRole('listitem')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
 });

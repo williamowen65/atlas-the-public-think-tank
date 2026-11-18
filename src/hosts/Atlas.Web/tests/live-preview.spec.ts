@@ -130,7 +130,7 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
   const nav = page.getByRole('navigation', { name: 'Node ancestry' });
   const toggle = page.locator('button.ancestry-toggle');
   await expect(toggle).toHaveAccessibleName('Show ancestry');
-  await expect(nav).toBeHidden();
+  await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
   await expect(toggle.locator('xpath=following-sibling::*[1]')).toHaveText('Question');
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -143,7 +143,7 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await expect(nav.locator('.ancestry-arrow')).toHaveCount(4);
   await toggle.click();
-  await expect(nav).toBeHidden();
+  await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
   const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');

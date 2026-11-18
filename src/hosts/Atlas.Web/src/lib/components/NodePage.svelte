@@ -399,7 +399,7 @@
 </article>
 
 {#snippet typeRow(toggle?: Snippet)}
-  <div class="node-type-row" class:with-ancestry={!!toggle}>
+  <div class="node-type-row">
     {@render toggle?.()}
     <p class="node-type">{node.typeName}</p>
     {#if !inspectionOnly}
@@ -431,7 +431,7 @@
   header:has(> :global(.ancestry)) { padding-top: 0; }
 
   .node-page:has(> :global(.edit-node.corner)) {
-    --ancestry-top-padding: 2.9rem;
+    --ancestry-end-padding: 5rem;
   }
 
   h1 {
@@ -593,8 +593,6 @@
     .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
   }
-  .node-type-row.with-ancestry { margin-bottom: 0; }
-
   .node-type-row {
     display: flex;
     align-items: center;

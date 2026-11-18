@@ -232,7 +232,7 @@
 {/snippet}
 
 {#snippet typeRow(toggle?: Snippet)}
-  <div class="node-type-row" class:with-ancestry={!!toggle}>
+  <div class="node-type-row">
     {@render toggle?.()}
     <p class="mobile-type">{node.typeName}</p>
     {#if !authoringBody}
@@ -283,7 +283,7 @@
   .node-card header:has(> :global(.ancestry)) { padding-top: 0; }
 
   .node-card:has(> :is(:global(.edit-node.corner), .hidden-edit-link)) {
-    --ancestry-top-padding: 2.9rem;
+    --ancestry-end-padding: 5rem;
   }
 
 
@@ -459,8 +459,6 @@
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
-
-  .node-type-row.with-ancestry { margin-bottom: 0; }
 
   .node-type-row {
     display: flex;

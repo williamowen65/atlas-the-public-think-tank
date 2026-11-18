@@ -198,9 +198,12 @@
     error = '';
   });
   $effect(() => {
-    if (!originId || (expandable && !expanded)) return;
+    if (!originId || !allItems.length) return;
     const controller = new AbortController();
-    const ids = [...allItems.map((item) => item.id), originId].filter((id): id is string => !!id);
+    const ids =
+      expandable && !expanded
+        ? [originId]
+        : [...allItems.map((item) => item.id), originId].filter((id): id is string => !!id);
     void Promise.all(
       ids.map(async (id) => {
         try {
@@ -244,7 +247,7 @@
   }
 
   $effect(() => {
-    if (expandable && expanded && more && !loading && !liveBusy && !error)
+    if (expandable && expanded && allItems.length && more && !loading && !liveBusy && !error)
       untrack(() => void requestOlder());
   });
 
@@ -330,20 +333,18 @@
 />
 
 {#if heading}
-  {#if allItems.length || more}
-    <div class="ancestry">
-      <nav id={panelId} aria-label="Node ancestry" hidden={!expanded}>
-        {#if expanded}
-          {#if loading}<p role="status">Loading older ancestors…</p>{/if}
-          <ol>{@render ancestorItems()}</ol>
-          {@render loadError()}
-        {/if}
-      </nav>
-      {@render heading(ancestryToggle)}
-    </div>
-  {:else}
-    {@render heading()}
+  {#if allItems.length}
+    <nav class="ancestry" id={panelId} aria-label="Node ancestry">
+      {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
+      <ol>{@render ancestorItems()}</ol>
+      {@render loadError()}
+    </nav>
   {/if}
+  {@render heading(
+    allItems.length > 0 && (allItems.length > 1 || (more && loadOlder))
+      ? ancestryToggle
+      : undefined,
+  )}
 {:else if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
@@ -416,61 +417,67 @@
 
 {#snippet ancestorItems()}
   {#each allItems as item, index (item.id ?? index)}
-    <li style:z-index={expandable ? undefined : allItems.length - index}>
-      {#if expandable && index > 0}<span class="ancestry-arrow" aria-hidden="true">↓</span>{/if}
-      {#if expandable && item.id}
-        {@const id = item.id}
-        <a
-          href={`/nodes?id=${encodeURIComponent(id)}`}
-          onclick={(event) => {
-            if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-              return;
-            event.preventDefault();
-            onNavigate(id);
-          }}>{item.title}</a
-        >
-      {:else if item.id && onNavigate}
-        <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
-      {:else}
-        <span>{item.title}</span>
-      {/if}
-      {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
-        <div class="route-choice">
-          <button
-            type="button"
-            class="route-toggle"
-            aria-label="Choose another parent path"
-            aria-expanded={openRouteMenu && liveMenuChild === liveChildAt(index)}
+    {#if !expandable || expanded || index === allItems.length - 1}
+      <li style:z-index={expandable ? undefined : allItems.length - index}>
+        {#if expandable && expanded && index > 0}<span class="ancestry-arrow" aria-hidden="true"
+            >↓</span
+          >{/if}
+        {#if expandable && item.id}
+          {@const id = item.id}
+          <a
+            href={`/nodes?id=${encodeURIComponent(id)}`}
             onclick={(event) => {
-              if (expandable) {
-                const child = liveChildAt(index) ?? null;
-                openRouteMenu = !openRouteMenu || liveMenuChild !== child;
-                liveMenuChild = child;
-              } else {
-                liveMenuChild = liveChildAt(index) ?? null;
-                toggleRouteMenu(event);
-              }
-            }}
+              if (!onNavigate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                return;
+              event.preventDefault();
+              onNavigate(id);
+            }}>{item.title}</a
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"
-              ><path
-                d="m3 6 5 5 5-5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
+        {:else if item.id && onNavigate}
+          <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
+        {:else}
+          <span>{item.title}</span>
+        {/if}
+        {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
+          <div class="route-choice">
+            <button
+              type="button"
+              class="route-toggle"
+              aria-label="Choose another parent path"
+              aria-expanded={openRouteMenu && liveMenuChild === liveChildAt(index)}
+              onclick={(event) => {
+                if (expandable) {
+                  const child = liveChildAt(index) ?? null;
+                  openRouteMenu = !openRouteMenu || liveMenuChild !== child;
+                  liveMenuChild = child;
+                } else {
+                  liveMenuChild = liveChildAt(index) ?? null;
+                  toggleRouteMenu(event);
+                }
+              }}
             >
-          </button>
-          {#if expandable && openRouteMenu && liveMenuChild === liveChildAt(index)}
-            <div class="inline-routes route-menu" role="group" aria-label="Other parent paths">
-              {@render parentChoices()}
-            </div>
-          {/if}
-        </div>
-      {/if}
-    </li>
+              {#if expandable}Other parents{:else}
+                <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"
+                  ><path
+                    d="m3 6 5 5 5-5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+              {/if}
+            </button>
+            {#if expandable && openRouteMenu && liveMenuChild === liveChildAt(index)}
+              <div class="inline-routes route-menu" role="group" aria-label="Other parent paths">
+                {@render parentChoices()}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </li>
+    {/if}
   {/each}
 {/snippet}
 
@@ -520,15 +527,7 @@
     border-bottom: 1px solid var(--atlas-border);
     margin-inline: calc(-1 * var(--card-padding));
     margin-bottom: 0.5rem;
-    padding: var(--ancestry-top-padding, 0.65rem) var(--card-padding) 0.45rem;
-
-    nav {
-      padding-bottom: 0.45rem;
-    }
-
-    nav[hidden] {
-      display: none;
-    }
+    padding: 0.65rem var(--ancestry-end-padding, var(--card-padding)) 0.65rem var(--card-padding);
 
     a {
       color: var(--atlas-accent);
