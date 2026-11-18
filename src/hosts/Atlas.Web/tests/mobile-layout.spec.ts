@@ -169,8 +169,12 @@ test('mobile header keeps its wordmark and search button on one row and the comm
   expect(Math.abs(menuBox!.y + menuBox!.height / 2 - searchBox!.y - searchBox!.height / 2)).toBeLessThan(2);
   await toggle.click();
   await expect(search).toHaveAttribute('placeholder', 'Search Atlas');
-  await expect(page.getByText('The Public Think Tank', { exact: true })).toBeVisible();
+  const wordmark = page.getByText('The Public Think Tank', { exact: true });
+  await expect(wordmark).toBeHidden();
+  await expect(summary).toBeHidden();
   await page.keyboard.press('Escape');
+  await expect(wordmark).toBeVisible();
+  await expect(summary).toBeVisible();
   const bottom = page.getByRole('navigation', { name: 'Bottom navigation', exact: true });
   await bottom.getByRole('link', { name: 'Discover' }).hover();
   await expect(bottom.getByRole('link', { name: 'Discover' })).toHaveCSS('text-decoration-line', 'none');
