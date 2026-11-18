@@ -53,13 +53,13 @@ jobs:
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Restore Chromium cache
         id: chromium-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}-chromium-shell-v1
       - name: Restore Linux package downloads
         id: linux-packages
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/atlas-apt-archives
           key: ${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-playwright-${{ steps.playwright-version.outputs.version }}-apt-v1
@@ -74,7 +74,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/atlas-apt-archives"
       - name: Save Linux package downloads
         if: steps.linux-packages.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/atlas-apt-archives
           key: ${{ steps.linux-packages.outputs.cache-primary-key }}
@@ -85,7 +85,7 @@ jobs:
       # Save before tests so a failing test run still primes the next push's cache.
       - name: Save Chromium cache
         if: steps.chromium-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ steps.chromium-cache.outputs.cache-primary-key }}

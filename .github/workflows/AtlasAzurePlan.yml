@@ -51,7 +51,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Resolve installation selection
@@ -113,11 +113,11 @@ jobs:
       ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
       AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key || vars.AZURE_TFSTATE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify installation namespace and state key
         working-directory: .
         run: python infrastructure/scripts/check-deployment-target.py infrastructure
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false

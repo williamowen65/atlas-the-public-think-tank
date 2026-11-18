@@ -39,7 +39,7 @@ jobs:
       resource_group: ${{ steps.target.outputs.resource_group }}
       state_key: ${{ steps.target.outputs.state_key }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Resolve explicit rehearsal cleanup target
@@ -99,13 +99,13 @@ jobs:
       CLEANUP_CONFIRMATION: ${{ inputs.confirmation }}
       ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Validate rehearsal-only cleanup selection
         working-directory: .
         run: python infrastructure/scripts/rehearsal-cleanup.py select
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
@@ -118,7 +118,7 @@ jobs:
             [[ -n "${!key:-}" ]] || { echo "::error::Missing required GitHub Environment configuration: $key"; exit 1; }
           done
           echo "Azure plan prerequisites supplied; no credentials printed."
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -173,7 +173,7 @@ jobs:
           digest=$(sha256sum "$RUNNER_TEMP/atlas.tfplan.enc" | cut -d ' ' -f 1)
           echo "sha256=$digest" >> "$GITHUB_OUTPUT"
           cp .terraform.lock.hcl "$RUNNER_TEMP/terraform-provider.lock.hcl"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: inputs.operation == 'delete' && steps.scope.outputs.has_changes == 'true'
         with:
           name: atlas-encrypted-destroy-plan
@@ -227,17 +227,17 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
             jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
             { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Validate rehearsal-only cleanup selection
         working-directory: .
         run: python infrastructure/scripts/rehearsal-cleanup.py select
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.13.5'
           terraform_wrapper: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: atlas-encrypted-destroy-plan
           path: ${{ runner.temp }}/atlas-plan

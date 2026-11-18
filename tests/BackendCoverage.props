@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup><TestingPlatformDotnetTestSupport>false</TestingPlatformDotnetTestSupport></PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="10.1.0">
+    <PackageReference Include="coverlet.collector" Version="10.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

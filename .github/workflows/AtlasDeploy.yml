@@ -55,7 +55,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify requested operation
@@ -78,13 +78,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
       - name: Build SvelteKit static site
@@ -101,7 +101,7 @@ jobs:
           cp -a src/hosts/Atlas.Web/dist/. "$RUNNER_TEMP/atlas-publish/wwwroot/"
           test -f "$RUNNER_TEMP/atlas-publish/wwwroot/index.html"
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: atlas-api-with-web
           path: ${{ runner.temp }}/atlas-publish/
@@ -116,7 +116,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify installation app target
@@ -126,7 +126,7 @@ jobs:
           ATLAS_VARIANT: ${{ inputs.variant }}
           ATLAS_TARGET_APP: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
         run: python infrastructure/scripts/check-deployment-target.py website
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: atlas-api-with-web
           path: ./atlas-publish
@@ -136,7 +136,7 @@ jobs:
         run: |
           test -n "$APP_NAME" || { echo "Selected profile did not resolve a public app."; exit 1; }
       - name: Sign in to Azure using GitHub OIDC
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -156,7 +156,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify installation app target
