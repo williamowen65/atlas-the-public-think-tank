@@ -63,17 +63,9 @@ for (const authenticated of [false, true]) {
       await expect(search).toBeFocused();
       // Desktop search expands inline and hides its trigger while open.
       await expect(toggle).toBeHidden();
-      await expect.poll(async () => (await search.boundingBox())?.width ?? 0).toBeGreaterThan(30);
-      const pill = await header.locator('.search-line').boundingBox();
-      const navigation = await header.locator('.right-group').boundingBox();
-      expect(pill && navigation).toBeTruthy();
-      const overlapX =
-        Math.min(pill!.x + pill!.width, navigation!.x + navigation!.width) -
-        Math.max(pill!.x, navigation!.x);
-      const overlapY =
-        Math.min(pill!.y + pill!.height, navigation!.y + navigation!.height) -
-        Math.max(pill!.y, navigation!.y);
-      expect(overlapX <= 1 || overlapY <= 1).toBe(true);
+      await expect(header.locator('.right-group')).toBeHidden();
+      await expect(brand).toBeVisible();
+      await expect.poll(async () => (await search.boundingBox())?.width ?? 0).toBeGreaterThan(200);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         width,
       );
