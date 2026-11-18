@@ -148,7 +148,7 @@ for (const rating of [0, 6]) {
   });
 }
 
-test('mobile header stays on one row and long community drawer scrolls above bottom navigation', async ({ page }) => {
+test('mobile header keeps its wordmark and search button on one row and the community drawer scrolls', async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
     if (route.request().method() === 'GET' && /^\/atlas-session-api\/nodes\/[^/]+$/.test(new URL(route.request().url()).pathname)) return route.fulfill({ json: { hidden: false, requestedTypeIds: [] } });
@@ -163,11 +163,13 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   const search = page.getByRole('textbox', { name: 'Search nodes and filters' });
   // Native summary role varies across accessibility implementations; use its label.
   const summary = page.getByLabel('Open navigation menu', { exact: true });
+  const toggle = page.getByRole('button', { name: 'Toggle search', exact: true });
   const menuBox = await summary.boundingBox();
-  const searchBox = await search.boundingBox();
+  const searchBox = await toggle.boundingBox();
   expect(Math.abs(menuBox!.y + menuBox!.height / 2 - searchBox!.y - searchBox!.height / 2)).toBeLessThan(2);
-  await search.click();
-  await expect(page.getByRole('textbox', { name: 'Search nodes and filters' })).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
+  await toggle.click();
+  await expect(search).toHaveAttribute('placeholder', 'Search Atlas');
+  await expect(page.getByText('The Public Think Tank', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   const bottom = page.getByRole('navigation', { name: 'Bottom navigation', exact: true });
   await bottom.getByRole('link', { name: 'Discover' }).hover();
