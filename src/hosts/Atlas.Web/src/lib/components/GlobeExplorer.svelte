@@ -38,8 +38,9 @@
 
   const rotation = createGlobeRotation(() => !(consent && manual));
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
+  const viewPins = $derived(status === 'ready' ? (summary?.pins ?? []) : []);
   const previewPins = $derived([
-    ...(status === 'ready' ? (summary?.pins ?? []) : []),
+    ...viewPins,
     ...(consent && manual && picked ? [{ ...picked, visitors: 1, color: pinColor }] : []),
   ]);
   let sharing = $state(false);
@@ -341,7 +342,7 @@
     <VisitorGlobe
       mini
       angle={rotation.angle}
-      pins={status === 'ready' ? snapshot?.live.pins : []}
+      pins={viewPins}
     />
   </button>
 {/snippet}
