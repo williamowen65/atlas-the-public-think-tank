@@ -528,15 +528,25 @@
   .tabs {
     scroll-margin-top: 20px;
   }
-  .child-tabs {
-    clear: both;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    padding-block-start: 0.4rem;
+  .child-tabs { display: contents; }
+  @media (max-width: 560px) {
+    .child-tabs {
+      clear: both;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding-block-start: 0.4rem;
+    }
+    .tabs .comments-tab {
+      max-inline-size: calc(48% - 0.5rem);
+    }
   }
-  .tabs .comments-tab {
-    max-inline-size: calc(48% - 0.5rem);
+  @media (width > 560px) {
+    .tabs { margin-block-end: -0.4rem; }
+    .tabs button {
+      display: inline-block;
+      margin: 0 0.4rem 0.4rem 0;
+    }
   }
   .tabs button {
     vertical-align: top;
