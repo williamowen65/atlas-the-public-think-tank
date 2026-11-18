@@ -368,13 +368,13 @@
 >
   <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
-      <button type="button" aria-pressed={mode === 'live'} onclick={() => (mode = 'live')}
-        >Live</button
-      >
       <button
         type="button"
         aria-pressed={mode === 'historical'}
         onclick={() => (mode = 'historical')}>Historical</button
+      >
+      <button type="button" aria-pressed={mode === 'live'} onclick={() => (mode = 'live')}
+        >Live</button
       >
     </div>
     <button
