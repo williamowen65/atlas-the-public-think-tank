@@ -371,7 +371,9 @@
       role="tablist"
       aria-label="Node discussions and child types"
     >
-      {#each tabs as tab, index}<button
+      {#snippet discussionTab(tab: (typeof tabs)[number], index: number)}
+        <button
+          class:comments-tab={index === 0}
           role="tab"
           id={`${instance}-${tab.id}`}
           aria-selected={active === tab.id}
@@ -379,7 +381,16 @@
           tabindex={active === tab.id ? 0 : -1}
           onclick={() => onTabChange(tab.id)}
           onkeydown={(event) => key(event, index)}>{tab.name}</button
-        >{/each}
+        >
+      {/snippet}
+      {@render discussionTab(tabs[0], 0)}
+      {#if tabs.length > 1}
+        <div class="child-tabs" role="presentation">
+          {#each tabs.slice(1) as tab, index}
+            {@render discussionTab(tab, index + 1)}
+          {/each}
+        </div>
+      {/if}
     </div>
   </div>
   <!--
@@ -516,12 +527,19 @@
   }
   .tabs {
     scroll-margin-top: 20px;
-    margin-block-end: -0.4rem;
+  }
+  .child-tabs {
+    clear: both;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding-block-start: 0.4rem;
+  }
+  .tabs .comments-tab {
+    max-inline-size: calc(48% - 0.5rem);
   }
   .tabs button {
-    display: inline-block;
     vertical-align: top;
-    margin: 0 0.4rem 0.4rem 0;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     min-block-size: 2.25rem;
