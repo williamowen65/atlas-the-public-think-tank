@@ -7,8 +7,8 @@
   No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/state';
+  import { untrack } from 'svelte';
   import LiveNodeFeed from '$lib/components/LiveNodeFeed.svelte';
   import SessionControl from '$lib/components/SessionControl.svelte';
   import {
@@ -68,59 +68,92 @@
    * Current session’s participant ID for ownership comparison.
    */
   let currentParticipant = $state<string | null>(null);
+  let routeVersion = 0;
+  let refreshVersion = 0;
+
   async function refresh() {
+    const communityId = id;
+    const request = ++refreshVersion;
+    const isCurrent = () => id === communityId && request === refreshVersion;
     try {
-      const result = await communityDetail(id);
-      community = result;
-      name = result.name;
-      description = result.description;
+      const result = await communityDetail(communityId);
+      if (!isCurrent()) return;
+      let participant: string | null = null;
+      let memberships: Community[] = [];
+      let isMember = result.isMember;
       try {
         const session = await import('$lib/api/apiRequest').then((m) =>
           m.apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session'),
         );
-        currentParticipant = session.participantId;
-        signedIn = !!session.participantId;
-        if (signedIn) {
+        if (!isCurrent()) return;
+        participant = session.participantId;
+        if (participant) {
           try {
-            mine = await myCommunities();
-            community = { ...result, isMember: mine.some((c) => c.id === id && c.isMember) };
+            memberships = await myCommunities();
+            isMember = memberships.some((c) => c.id === communityId && c.isMember);
           } catch {
             /* Membership lookup failure does not invalidate authentication. */
           }
         }
       } catch {
-        signedIn = false;
-        currentParticipant = null;
+        /* Public community details remain available without a session. */
       }
+      if (!isCurrent()) return;
+      currentParticipant = participant;
+      signedIn = !!participant;
+      mine = memberships;
+      community = { ...result, isMember };
+      name = result.name;
+      description = result.description;
       error = '';
     } catch {
-      error = 'This community could not be loaded.';
+      if (isCurrent()) error = 'This community could not be loaded.';
     } finally {
-      loading = false;
+      if (isCurrent()) loading = false;
     }
   }
-  onMount(() => {
-    void refresh();
+  $effect(() => {
+    if (!id) return;
+    routeVersion++;
+    community = null;
+    mine = [];
+    loading = true;
+    editing = false;
+    busy = false;
+    error = '';
+    untrack(() => void refresh());
+
+    return () => {
+      routeVersion++;
+      refreshVersion++;
+    };
   });
   async function action(path: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown) {
     if (busy) return;
+    const communityId = id;
+    const version = routeVersion;
+    const isCurrent = () => id === communityId && routeVersion === version;
     busy = true;
     error = '';
     try {
-      await communityAction('/' + encodeURIComponent(id) + path, method, body);
-      await refresh();
+      await communityAction('/' + encodeURIComponent(communityId) + path, method, body);
+      if (isCurrent()) await refresh();
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not update community.';
+      if (isCurrent()) error = cause instanceof Error ? cause.message : 'Could not update community.';
     } finally {
-      busy = false;
+      if (isCurrent()) busy = false;
     }
   }
   async function save() {
     if (!community || busy) return;
+    const version = routeVersion;
+    const communityId = id;
+    const nextDescription = description.trim();
+    const descriptionChanged = nextDescription !== community.description;
     if (name.trim() !== community.name) await action('/name', 'PUT', { text: name.trim() });
-    if (description.trim() !== community.description)
-      await action('/description', 'PUT', { text: description.trim() });
-    editing = false;
+    if (id !== communityId || routeVersion !== version) return;
+    if (descriptionChanged) await action('/description', 'PUT', { text: nextDescription });
+    if (id === communityId && routeVersion === version) editing = false;
   }
 </script>
 
