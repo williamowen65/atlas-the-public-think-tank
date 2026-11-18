@@ -283,8 +283,9 @@
         blocks = update.blocks;
       }}
     />{/if}
-  {#if node.breadcrumb.length}<div class="ribbon-context">
+  {#if node.breadcrumb.length || hasMoreAncestors}<div class="ancestry-context">
       <Breadcrumb
+        expandable
         items={node.breadcrumb}
         originId={node.id}
         {apiBase}
@@ -413,9 +414,9 @@
   .introduction { display: contents; }
 
 
-  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
-  .node-page:has(> :global(.edit-node.corner)) > .ribbon-context {
-    padding-right: 3.25rem;
+  // Reserve space beside the ancestry summary for the corner edit control.
+  .node-page:has(> :global(.edit-node.corner)) > .ancestry-context {
+    padding-right: max(var(--card-padding), 5rem);
     min-height: 2.75rem;
   }
 
@@ -423,20 +424,19 @@
     position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --discussion-section-padding: 1.25rem;
-    --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     margin-inline: auto;
     padding: 0;
   }
-  .ribbon-context {
+  .ancestry-context {
     min-width: 0;
-    padding: 0.75rem 0 0;
-    margin-bottom: var(--card-padding);
+    padding: 0.75rem var(--card-padding) 0;
+    margin-bottom: 0.5rem;
   }
   header {
     padding: var(--card-padding) var(--card-padding) 0.5rem;
   }
-  .ribbon-context + header {
+  .ancestry-context + header {
     padding-top: 0;
   }
   h1 {

@@ -102,7 +102,7 @@ test('uncast fixture selections reset to neutral and accepted simulations stay s
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });
 
-test('API breadcrumb prepends older pages, retries failures and stops at root', async ({ page, request }) => {
+test('expandable ancestry shows the parent, retries paging and stops at root', async ({ page, request }) => {
   const ids = Array.from({ length: 5 }, (_, i) => `b1000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
   let failed = false;
   let calls = 0;
@@ -124,8 +124,13 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
-  await page.goto(preview);
-  const nav = page.getByRole('navigation', { name: 'Node breadcrumb' });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(preview.replace('presentation:ribbon-responsive', 'presentation:ribbon-corner'));
+  const nav = page.getByRole('navigation', { name: 'Node ancestry' });
+  await expect(nav.getByRole('button', { name: 'Nearest ancestor' })).toBeVisible();
+  await expect(nav.getByText('Middle ancestor')).toHaveCount(0);
+  await nav.getByRole('button', { name: 'Show ancestry' }).press('Enter');
+  await expect(nav.getByRole('button', { name: 'Hide ancestry' })).toHaveAttribute('aria-expanded', 'true');
   await nav.getByRole('button', { name: 'Load older ancestors' }).click();
   await expect(nav.getByRole('alert')).toContainText('HTTP 503');
   await nav.getByRole('button', { name: 'Retry' }).click();
@@ -133,6 +138,10 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
   await expect(nav.getByRole('button', { name: 'Load older ancestors' })).toHaveCount(0);
   expect(calls).toBe(2);
   expect((await nav.locator('li').allTextContents()).map(text => text.trim())).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await nav.getByRole('button', { name: 'Hide ancestry' }).click();
+  await expect(nav.getByText('Oldest ancestor')).toHaveCount(0);
+  await expect(nav.getByRole('button', { name: 'Nearest ancestor' })).toBeVisible();
   const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');
