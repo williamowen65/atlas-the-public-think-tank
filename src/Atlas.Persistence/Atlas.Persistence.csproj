@@ -10,8 +10,8 @@
     <ProjectReference Include="../Atlas.Observability/Atlas.Observability.csproj" />
     <EmbeddedResource Include="Discovery/*.sql" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
     <!-- Azure SQL user-assigned Managed Identity authentication (same driver/extension version). -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
     <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
