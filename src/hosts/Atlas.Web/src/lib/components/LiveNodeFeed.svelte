@@ -115,6 +115,10 @@
   let failedDirection: 'initial' | 'next' | 'previous' = 'initial';
   let failedPage = 1;
   let pendingRestoreAnchor: SavedFeedAnchor | undefined;
+  let restoreLayoutObserver: ResizeObserver | undefined;
+  let restoreLayoutTimeout: ReturnType<typeof setTimeout> | undefined;
+  let restoreLayoutStartedAt = 0;
+  let restoreLoadHandler: (() => void) | undefined;
   let controller: AbortController | undefined;
   let disposed = false;
   type SavedFeedAnchor = { kind: string; id: string; offset: number; page?: number };
@@ -154,6 +158,51 @@
     const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
     window.scrollTo(0, Math.min(targetY, maxScroll));
     return targetY <= maxScroll;
+  }
+
+  function finishFeedAnchorStabilization() {
+    restoreLayoutObserver?.disconnect();
+    restoreLayoutObserver = undefined;
+    if (restoreLoadHandler) document.removeEventListener('load', restoreLoadHandler, true);
+    restoreLoadHandler = undefined;
+    if (restoreLayoutTimeout) clearTimeout(restoreLayoutTimeout);
+    restoreLayoutTimeout = undefined;
+    window.removeEventListener('wheel', cancelFeedAnchorStabilization);
+    window.removeEventListener('touchstart', cancelFeedAnchorStabilization);
+    window.removeEventListener('pointerdown', cancelFeedAnchorStabilization);
+    window.removeEventListener('keydown', cancelFeedAnchorStabilization);
+  }
+
+  function cancelFeedAnchorStabilization() {
+    finishFeedAnchorStabilization();
+  }
+
+  /** Keep the saved item at its recorded offset while responsive/lazy media settles. */
+  function stabilizeFeedAnchor(anchor: SavedFeedAnchor) {
+    finishFeedAnchorStabilization();
+    restoreLayoutStartedAt = Date.now();
+    const correctPosition = () => {
+      if (Date.now() - restoreLayoutStartedAt >= 5000) {
+        finishFeedAnchorStabilization();
+        return;
+      }
+      const element = findNodeElement(anchor.id);
+      if (!element) return;
+      const delta = element.getBoundingClientRect().top - anchor.offset;
+      if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+      if (restoreLayoutTimeout) clearTimeout(restoreLayoutTimeout);
+      restoreLayoutTimeout = setTimeout(finishFeedAnchorStabilization, 800);
+    };
+    restoreLayoutObserver = new ResizeObserver(() => requestAnimationFrame(correctPosition));
+    restoreLayoutObserver.observe(document.body);
+    window.addEventListener('wheel', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('touchstart', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('pointerdown', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('keydown', cancelFeedAnchorStabilization);
+    // Lazy images can load without a timely body resize notification on some mobile browsers.
+    restoreLoadHandler = correctPosition;
+    document.addEventListener('load', restoreLoadHandler, true);
+    restoreLayoutTimeout = setTimeout(finishFeedAnchorStabilization, 800);
   }
 
   // Page numbers address any ranked slice directly; adjacent slices are fetched in either
@@ -229,6 +278,7 @@
         if (restoreAnchor?.kind === 'node') {
           const restored = restoreFeedAnchor(restoreAnchor);
           pendingRestoreAnchor = !restored && page.hasNextPage ? restoreAnchor : undefined;
+          if (restored) stabilizeFeedAnchor(restoreAnchor);
         }
       } else if (direction === 'previous') {
         items = [...additions, ...items];
@@ -303,6 +353,7 @@
     window.addEventListener('atlas-moderator-visibility-changed', refresh);
     return () => {
       disposed = true;
+      finishFeedAnchorStabilization();
       controller?.abort();
       window.removeEventListener('atlas-moderator-visibility-changed', refresh);
     };
