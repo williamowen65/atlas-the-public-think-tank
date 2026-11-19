@@ -152,7 +152,12 @@
 
   // Keep only scroll metadata on each browser history entry. The list itself is fetched fresh
   // when a route is revisited, so edits and moderation changes cannot leave a cached feed stale.
-  afterNavigate(({ type }) => {
+  afterNavigate(({ from, to, type }) => {
+    // A fresh HTTP response supplies share metadata for each directly loaded URL.
+    // A client-side transition must not carry the previous page’s tags forward.
+    if (from && to && (from.url.pathname !== to.url.pathname || from.url.search !== to.url.search)) {
+      document.head.querySelectorAll('[data-atlas-server-seo]').forEach((element) => element.remove());
+    }
     if (type !== 'popstate') return;
     const saved = (page.state as Record<string, unknown>)[scrollStateKey] as
       | SavedScrollPosition

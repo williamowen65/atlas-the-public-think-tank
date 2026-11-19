@@ -25,11 +25,16 @@ internal static partial class NodePublicationText
             }
         }
 
+        var text = PlainText(markdown);
+        return text.Length >= MinimumLength && LetterOrDigit().IsMatch(text);
+    }
+
+    internal static string PlainText(string markdown)
+    {
         var text = ImageMarkup().Replace(markdown, "");
         text = LinkMarkup().Replace(text, "$1");
         text = Formatting().Replace(text, "");
-        text = Whitespace().Replace(text, " ").Trim();
-        return text.Length >= MinimumLength && LetterOrDigit().IsMatch(text);
+        return Whitespace().Replace(text, " ").Trim();
     }
 
     [GeneratedRegex(@"!\[[^\[\]\r\n]*\](?:\([^)]*\)|\[[^\[\]\r\n]*\])", RegexOptions.NonBacktracking)]

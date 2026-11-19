@@ -1,15 +1,13 @@
-# Public-page SEO proposal
+# Public-page SEO
 
 [PTT-168](https://thepublicthinktank.atlassian.net/browse/PTT-168)
 
-## Where the response is served today
+## Existing deployment and scope
 
 `AtlasDeploy.yml` builds Atlas.Web with SvelteKit's static adapter, copies its
 output into the ASP.NET Core host's `wwwroot`, and deploys one same-origin app.
-The root SvelteKit layout disables SSR. The API host serves the same SPA shell
-for known UI routes, including `/nodes` even when the node does not exist.
-Discover already sets a title and description in Svelte, but those route-level
-tags are populated by the browser.
+The root SvelteKit layout disables SSR. The API host serves the SPA shell for
+known UI routes and now adds route metadata to the initial HTML.
 
 | URL | Proposed first release behavior |
 | --- | --- |
@@ -20,7 +18,7 @@ tags are populated by the browser.
 | `/communities`, `/communities/<id>` | Defer until anonymous access, eligibility, and stable community URLs have been verified. |
 | Profile, account, draft, moderation, editor, and component routes | Exclude from the sitemap and return noindex on HTML responses. Existing access rules govern what the app can show. |
 
-## Delivery options
+## Delivery decision
 
 | Approach | What it delivers | Deployment impact |
 | --- | --- | --- |
@@ -28,12 +26,13 @@ tags are populated by the browser.
 | SvelteKit SSR for public routes | Initial metadata and rendered page content, including text search engines can read directly. | Introduces a server runtime and deployment routing. Audit browser-only loads and session cookie handling. |
 | Generate public HTML in the ASP.NET Core host | Initial metadata for existing URLs using live public data. A metadata-only first slice supports link previews while the SPA still renders the body. | Keeps the existing artifact and same-origin deployment. Requires a public HTML response path and a separate way to verify body indexing. |
 
-Start with a demo spike in the ASP.NET Core host. Serve the same initial HTML to
-people and crawlers. Add a single set of server-visible metadata, and verify that
-Svelte navigation replaces it without leaving stale or duplicate tags. Measure
-the initial HTML before committing to a discovery approach. If meaningful body
-content is required in the first release, compare a server-rendered public
-article with selective SvelteKit SSR before building out the sitemap.
+The first release uses the ASP.NET Core host for metadata on the home feed,
+About, and public node links. The home preview introduces Atlas and uses a
+branded image. The node preview leads with the published title and excerpt,
+identifies Atlas as the site, and uses the first eligible HTTPS image or the
+branded fallback. The sharing service controls which fields it displays.
+SvelteKit still renders the page body in the browser. Server-rendered article
+content remains a separate decision for search discovery.
 
 ## Eligibility and metadata
 
@@ -48,44 +47,68 @@ unsuitable. Begin with one branded image and add eligible node images later if
 needed. Emit the document title, description, canonical URL, Open Graph tags,
 and Twitter card tags in the initial response.
 
-Proposed status policy is a 404 for a missing node and a generic noindex shell
-for a moderated node if the public moderation notice still needs to render.
-Keep archived nodes accessible by direct link when current product rules allow
-it, and exclude them from the sitemap with noindex applied to their pages.
-Verify that public metadata disappears as soon as visibility changes. During
-the spike, avoid shared caching for dynamic HTML and distinguish a transient
-backend failure from a missing node.
+A valid but missing node ID returns 404. The shell still lets the browser
+render the missing-node screen. A hidden node can show its existing moderation
+notice and an archived node can remain reachable by direct link. Both receive
+generic Atlas metadata and noindex while the archived indexing policy remains
+open. The sitemap also excludes them. There is no shared cache for this HTML.
+API authorization and moderation rules still govern access to the actual
+content, independent of crawler directives.
 
-## Host and rollout decisions
+Signed-out direct visits to drafts, settings, personal profile, and moderation
+redirect to the feed. Signed-in visitors can still open their own pages. These
+pages use noindex and generic Atlas metadata, so a preview never contains a
+draft title, settings, or account data. Public entry points such as login and
+registration still work via direct link. Unknown routes and missing files
+return 404.
 
-- Use `atlas.thepublicthinktank.com` as the canonical host if `www` may later
-  serve a separate project site. If both hostnames serve Atlas, configure the
-  alias to permanently redirect to the canonical host while preserving paths
-  and queries. If Atlas is the primary website at `www`, that host is an
-  equally valid canonical choice.
-- Configure the public origin and the indexing switch independently for each
-  deployment. Default indexing to off. On demo and local, generate canonical
-  and social URLs from the configured environment origin, send
-  `X-Robots-Tag: noindex` on HTML, and omit the sitemap. Let crawlers retrieve
-  demo pages so they can see noindex. Use access controls if demo content needs
-  to be private.
-- Serve the production sitemap only on the canonical production host. Generate
-  it from the public eligibility rule and advertise its absolute URL in
-  `robots.txt`. Gate indexing on an explicitly configured production origin.
-- Provision DNS, Azure custom hostname bindings, and HTTPS certificates for the
-  selected hosts, then verify the HTTPS alias behavior. After production
-  validation, verify a Search Console domain property via DNS if registrar
-  access is available and submit the canonical production sitemap there.
+## Host and rollout
 
-## Verification for the first implementation
+The canonical production hostname is `atlas.thepublicthinktank.com`.
+`www.thepublicthinktank.com` permanently redirects to it, preserving the path
+and query. The redirect activates once the live app is configured with the
+canonical Atlas origin. Keep the demo origin separate.
 
-Use an HTTP client without JavaScript against the local packaged ASP.NET host
-and the deployed demo hostname. Check the raw head, status, and headers for
-`/`, `/about`, an active public node, the same node with contribution parameters,
-a hidden node, an archived node, a missing node, and a private or account route.
-Repeat the hidden case with an authorized session and verify that the HTML head
-contains no hidden original. Check the robots response and sitemap behavior
-under both indexing configurations, including exclusion of demo URLs and
-ineligible node IDs. Verify the demo share card and its image in the intended
-sharing service, then check browser navigation for duplicate or stale head tags.
-Repeat checks for both HTTPS production hosts before sitemap submission.
+1. Set up Azure custom hostname bindings, DNS, and HTTPS for the two live
+   hostnames and the demo hostname. Bind `www` to the live app so it can issue
+   the redirect.
+2. In the GitHub environment used for Terraform plan and apply, set
+   `ATLAS_SEO_PUBLIC_ORIGINS` to
+   `{"live":"https://atlas.thepublicthinktank.com","demo":"https://demo.thepublicthinktank.com"}`
+   once those bindings are ready. Terraform defaults each unset origin to its
+   App Service hostname. Keep `ATLAS_SEO_INDEXING_ENABLED` false for the
+   first rollout.
+3. Deploy the branch to demo and verify the two share cards below. Demo and
+   local send `X-Robots-Tag: noindex` on HTML responses and have no sitemap.
+   Their robots file permits crawling so clients can read the noindex header.
+4. After checking the production origin and alias over HTTPS, enable
+   `ATLAS_SEO_INDEXING_ENABLED` through Terraform. The application only allows
+   indexing and exposes the sitemap when the request hostname matches the
+   configured canonical live site. The sitemap reads current public node IDs,
+   capped at 49,998 nodes plus the home and About URLs. Add sitemap partitions
+   before reaching that limit.
+5. Verify the public site in Search Console and submit the canonical sitemap
+   after production validation.
+
+## Verify direct links
+
+Test locally against the packaged ASP.NET host with the frontend build copied
+into its web root. Vite serves its own development shell and is useful for
+checking the interactive app. Use an HTTP client to inspect the initial HTML
+and headers without running JavaScript. For example, on Azure demo:
+
+```sh
+curl -si https://demo.thepublicthinktank.com/
+curl -si 'https://demo.thepublicthinktank.com/nodes?id=PUBLIC_NODE_ID&type=comments'
+curl -si https://demo.thepublicthinktank.com/my-drafts
+curl -si https://demo.thepublicthinktank.com/robots.txt
+curl -si https://demo.thepublicthinktank.com/sitemap.xml
+```
+
+Check that the node canonical keeps the ID and drops contribution parameters.
+Paste the home and node URLs in the intended sharing service. Check a
+moderated node, an archived node, a missing node, and a private account route.
+Repeat the moderated request with an authorized session to ensure its head
+stays generic. Verify that the share image loads and that browser navigation
+clears metadata from the previous direct response. Repeat checks for both
+HTTPS production hosts and compare sitemap contents before submission.

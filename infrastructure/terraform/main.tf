@@ -95,6 +95,8 @@ module "sites" {
   account_mail_address       = var.account_mail_address
   account_mail_password      = var.account_mail_password
   account_mail_public_origin = lookup(var.account_mail_public_origins, each.key, null)
+  seo_public_origin          = lookup(var.seo_public_origins, each.key, null)
+  seo_indexing_enabled       = each.key == "live" && var.seo_indexing_enabled
   tags                       = merge(local.tags, { variant = each.key })
 }
 

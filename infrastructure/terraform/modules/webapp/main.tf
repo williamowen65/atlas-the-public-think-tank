@@ -27,6 +27,16 @@ variable "account_mail_public_origin" {
   default = null
 }
 
+variable "seo_public_origin" {
+  type    = string
+  default = null
+}
+
+variable "seo_indexing_enabled" {
+  type    = bool
+  default = false
+}
+
 resource "azurerm_linux_web_app" "atlas" {
   name                                           = var.name
   resource_group_name                            = var.resource_group_name
@@ -59,6 +69,8 @@ resource "azurerm_linux_web_app" "atlas" {
     ASPNETCORE_ENVIRONMENT                = "Production"
     APPLICATIONINSIGHTS_CONNECTION_STRING = var.insights_connection
     ATLAS_DEPLOYMENT_VARIANT              = var.variant
+    Atlas__Seo__PublicOrigin              = coalesce(var.seo_public_origin, format("https://%s.azurewebsites.net", var.name))
+    Atlas__Seo__IndexingEnabled           = tostring(var.seo_indexing_enabled)
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
     }, var.account_mail_enabled ? {

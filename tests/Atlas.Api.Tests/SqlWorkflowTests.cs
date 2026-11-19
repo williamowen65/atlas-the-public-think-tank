@@ -61,7 +61,21 @@ public sealed class SqlWorkflowTests
             await VerifyReportSnapshotsAndRollback(database, client, node);
 
             await GrantGlobalModeratorRole(factory);
-            await HideVerifyAndRestoreNode(factory, client, node);
+            using var web = PublicPageSeoTests.CreateWebRoot();
+            using var seoHost = factory.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
+                .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
+                .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
+                .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
+            using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
+            await VerifyNodeSeo(seo, node, true, "HTTP idea");
+            await HideVerifyAndRestoreNode(factory, client, seo, node);
+            await VerifyNodeSeo(seo, node, true, "Revised after moderation");
+
+            var archived = await database.NodeRows.SingleAsync(row => row.Id == node);
+            archived.Status = "Archived";
+            await database.SaveChangesAsync();
+            await VerifyNodeSeo(seo, node, false, "Revised after moderation");
+            Assert.AreEqual(HttpStatusCode.NotFound, (await seo.GetAsync($"/nodes?id={Guid.NewGuid()}")).StatusCode);
             await SignOutAndRejectSession(client);
         }
         finally
@@ -490,7 +504,7 @@ public sealed class SqlWorkflowTests
     /// Given the new moderator role, hide the node, expect anonymous placeholders/404s, then follow
     /// edit-review-restore.
     /// </summary>
-    private static async Task HideVerifyAndRestoreNode(ApiFactory factory, HttpClient client, Guid node)
+    private static async Task HideVerifyAndRestoreNode(ApiFactory factory, HttpClient client, HttpClient seo, Guid node)
     {
         // Current stored roles are consulted even though the cookie predates this grant.
         await Success(await client.GetAsync("/api/moderation/queue"));
@@ -517,6 +531,7 @@ public sealed class SqlWorkflowTests
                 (await anonymous.GetAsync($"/api/nodes/{node}/comments")).StatusCode
             );
         }
+        await VerifyNodeSeo(seo, node, false, "HTTP idea");
         // Restoration follows the existing author-edit -> review-request workflow.
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new
         {
@@ -531,6 +546,20 @@ public sealed class SqlWorkflowTests
         {
             text = "Restore after test"
         }));
+    }
+
+    private static async Task VerifyNodeSeo(HttpClient client, Guid node, bool eligible, string title)
+    {
+        var canonical = $"https://atlas.thepublicthinktank.com/nodes?id={node}";
+        var page = await client.GetAsync($"/nodes?id={node}&type=comments");
+        Assert.AreEqual(HttpStatusCode.OK, page.StatusCode);
+        Assert.AreEqual(!eligible, page.Headers.Contains("X-Robots-Tag"));
+        var html = await page.Content.ReadAsStringAsync();
+        Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains($"href=\"{canonical}\"", StringComparison.Ordinal));
+        var sitemap = await client.GetStringAsync("/sitemap.xml");
+        Assert.AreEqual(eligible, sitemap.Contains($"<loc>{canonical}</loc>", StringComparison.Ordinal));
     }
 
     /// <summary>
