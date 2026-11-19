@@ -30,7 +30,7 @@ internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
     // Bump the URL and disk cache together when the capture layout changes.
-    private static string LayoutVersion(ShareTarget? target) => target is { Kind: SharePage.Node } ? "5" : "4";
+    private static string LayoutVersion(ShareTarget? target) => target is { Kind: SharePage.Node } ? "6" : "4";
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
     private const string CaptureStyle = """

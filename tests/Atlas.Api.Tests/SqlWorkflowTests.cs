@@ -93,7 +93,7 @@ public sealed class SqlWorkflowTests
             var imagePath = $"/share-images/nodes/{node:D}.png";
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
-            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v5"));
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v6"));
             await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
             CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
@@ -586,7 +586,7 @@ public sealed class SqlWorkflowTests
         var html = await page.Content.ReadAsStringAsync();
         Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
         StringAssert.Contains(html, "property=\"og:title\" content=\"Atlas | The Public Think Tank\"");
-        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=5";
+        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=6";
         Assert.AreEqual(eligible, html.Contains($"property=\"og:image\" content=\"{image}\"", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains($"name=\"twitter:image\" content=\"{image}\"", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));
