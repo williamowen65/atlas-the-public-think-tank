@@ -114,6 +114,7 @@
   let previousPage = 0;
   let failedDirection: 'initial' | 'next' | 'previous' = 'initial';
   let failedPage = 1;
+  let pendingRestoreAnchor: SavedFeedAnchor | undefined;
   let controller: AbortController | undefined;
   let disposed = false;
   type SavedFeedAnchor = { kind: string; id: string; offset: number; page?: number };
@@ -136,6 +137,23 @@
     return [...document.querySelectorAll<HTMLElement>('[data-node-id]')].find(
       (element) => element.dataset.nodeId === id,
     );
+  }
+
+  /** Align the saved card with its saved viewport offset if the loaded window has enough height. */
+  function restoreFeedAnchor(anchor: SavedFeedAnchor) {
+    const element = findNodeElement(anchor.id);
+    if (!element) {
+      window.scrollTo(0, 0);
+      return true;
+    }
+    const root = document.scrollingElement ?? document.documentElement;
+    const targetY = Math.max(
+      0,
+      element.getBoundingClientRect().top + window.scrollY - anchor.offset,
+    );
+    const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
+    window.scrollTo(0, Math.min(targetY, maxScroll));
+    return targetY <= maxScroll;
   }
 
   // Page numbers address any ranked slice directly; adjacent slices are fetched in either
@@ -209,13 +227,8 @@
         hasMore = page.hasNextPage;
         await tick();
         if (restoreAnchor?.kind === 'node') {
-          const anchor = findNodeElement(restoreAnchor.id);
-          if (anchor) {
-            const top = anchor.getBoundingClientRect().top;
-            window.scrollTo(0, Math.max(0, window.scrollY + top - restoreAnchor.offset));
-          } else {
-            window.scrollTo(0, 0);
-          }
+          const restored = restoreFeedAnchor(restoreAnchor);
+          pendingRestoreAnchor = !restored && page.hasNextPage ? restoreAnchor : undefined;
         }
       } else if (direction === 'previous') {
         items = [...additions, ...items];
@@ -230,6 +243,11 @@
         items = [...items, ...additions];
         nextPage = page.page + 1;
         hasMore = page.hasNextPage;
+        if (pendingRestoreAnchor) {
+          await tick();
+          const restored = restoreFeedAnchor(pendingRestoreAnchor);
+          if (restored || !page.hasNextPage) pendingRestoreAnchor = undefined;
+        }
       }
     } catch (cause) {
       if (!disposed && current === controller) {
@@ -248,6 +266,9 @@
       if (!disposed && current === controller) {
         loading = false;
         slowLoading = false;
+        // If the saved offset was beyond the scrollable height of the first page, fetch only
+        // enough adjacent pages below it to make that offset reachable before finishing restore.
+        if (pendingRestoreAnchor && hasMore && !error) void load('next');
       }
     }
   }
