@@ -11,7 +11,8 @@
   import { onMount, type ComponentProps, type Snippet } from 'svelte';
   // SvelteKit's reactive route information, including the current URL; not Redux state.
   import { page } from '$app/state';
-  import { afterNavigate, beforeNavigate, replaceState } from '$app/navigation';
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
+  import { readScrollPosition, saveScrollPosition, type ScrollAnchor } from '$lib/state/scrollPositions';
   import GlobeExplorer from '$lib/components/GlobeExplorer.svelte';
   import { apiRequest } from '$lib/api/apiRequest';
   import AtlasHeader from '$lib/components/AtlasHeader.svelte';
@@ -45,14 +46,10 @@
    */
   let displayName = $state('Atlas User');
 
-  type ScrollAnchor = { kind: 'node' | 'comment'; id: string; offset: number; page?: number };
-  type SavedScrollPosition = { y: number; anchor?: ScrollAnchor; route?: string };
-  const scrollStateKey = '__atlasScrollPosition';
   let restoreObserver: MutationObserver | undefined;
   let restoreResizeObserver: ResizeObserver | undefined;
   let restoreFrame = 0;
   let restoreTimeout: ReturnType<typeof setTimeout> | undefined;
-  let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let restoringScroll = false;
 
   function visibleAnchor(): ScrollAnchor | undefined {
@@ -76,19 +73,6 @@
     };
   }
 
-  function saveScrollPosition() {
-    // Back updates the browser URL before SvelteKit finishes rendering the destination.
-    // A pending scroll save must not write the outgoing route into that history entry.
-    if (restoringScroll || page.url.href !== window.location.href) return;
-    const state = page.state as Record<string, unknown>;
-    const position: SavedScrollPosition = {
-      y: window.scrollY,
-      anchor: visibleAnchor(),
-      route: page.url.pathname + page.url.search,
-    };
-    replaceState('', { ...state, [scrollStateKey]: position });
-  }
-
   function finishScrollRestore() {
     restoringScroll = false;
     document.documentElement.removeAttribute('data-atlas-scroll-restore');
@@ -101,7 +85,7 @@
     restoreTimeout = undefined;
   }
 
-  function restoreScrollPosition(position: SavedScrollPosition) {
+  function restoreScrollPosition(position: NonNullable<ReturnType<typeof readScrollPosition>>) {
     finishScrollRestore();
     restoringScroll = true;
     document.documentElement.setAttribute('data-atlas-scroll-restore', 'pending');
@@ -153,19 +137,14 @@
     scheduleAttempt();
   }
 
-  // Keep only scroll metadata on each browser history entry. The list itself is fetched fresh
-  // when a route is revisited, so edits and moderation changes cannot leave a cached feed stale.
   afterNavigate(({ from, to, type }) => {
     // A fresh HTTP response supplies share metadata for each directly loaded URL.
     // A client-side transition must not carry the previous page’s tags forward.
     if (from && to && (from.url.pathname !== to.url.pathname || from.url.search !== to.url.search)) {
       document.head.querySelectorAll('[data-atlas-server-seo]').forEach((element) => element.remove());
     }
-    if (type !== 'popstate') return;
-    const saved = (page.state as Record<string, unknown>)[scrollStateKey] as
-      | SavedScrollPosition
-      | undefined;
-    if (saved?.route && saved.route !== page.url.pathname + page.url.search) return;
+    if (type !== 'popstate' || !to) return;
+    const saved = readScrollPosition(to.url);
     // Feed routes resume the ranked page around this anchor; replaying earlier pages would
     // recreate the expensive load-up-to-the-old-offset behavior this state is meant to avoid.
     if (saved?.anchor?.kind === 'node' && Number.isInteger(saved.anchor.page) && saved.anchor.page! > 0)
@@ -173,12 +152,12 @@
     if (saved && Number.isFinite(saved.y)) restoreScrollPosition(saved);
   });
 
-  // Capture immediately before route navigation as well as during scrolling, so a quick click
-  // after a swipe cannot leave the history entry with an older position.
-  beforeNavigate(({ from, type }) => {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    if (from && type !== 'popstate' && !restoringScroll) saveScrollPosition();
+  // Navigation begins while the outgoing DOM is still available. Store only its scroll
+  // coordinates and anchor, leaving URL and history updates entirely to the router.
+  beforeNavigate(({ from }) => {
+    if (from && !restoringScroll) {
+      saveScrollPosition(from.url, { y: window.scrollY, anchor: visibleAnchor() });
+    }
     finishScrollRestore();
   });
 
@@ -220,20 +199,10 @@
     // This reads the existing session; it does not require the visitor to sign in.
     void refresh();
     window.addEventListener('atlas-session-changed', refresh);
-    const scheduleSave = () => {
-      if (restoringScroll || saveTimer) return;
-      saveTimer = setTimeout(() => {
-        saveTimer = undefined;
-        saveScrollPosition();
-      }, 120);
-    };
-    window.addEventListener('scroll', scheduleSave, { passive: true });
     // Svelte runs this cleanup when the layout is removed.
     return () => {
       active = false;
       window.removeEventListener('atlas-session-changed', refresh);
-      window.removeEventListener('scroll', scheduleSave);
-      if (saveTimer) clearTimeout(saveTimer);
       finishScrollRestore();
     };
   });

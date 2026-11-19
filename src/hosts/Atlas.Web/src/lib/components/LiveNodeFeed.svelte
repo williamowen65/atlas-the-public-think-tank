@@ -32,7 +32,8 @@
   import { moderatorVisibility } from '../state/moderatorVisibility.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import { onMount, tick } from 'svelte';
-  import { page as routePage } from '$app/state';
+  import { navigating, page as routePage } from '$app/state';
+  import { readScrollPosition, type ScrollAnchor } from '../state/scrollPositions';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { DatabaseResumingError, readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
   import type { DiscoveryFilters } from '../api/discovery';
@@ -121,8 +122,7 @@
   let restoreLoadHandler: (() => void) | undefined;
   let controller: AbortController | undefined;
   let disposed = false;
-  type SavedFeedAnchor = { kind: string; id: string; offset: number; page?: number };
-  const savedHistoryKey = '__atlasScrollPosition';
+  type SavedFeedAnchor = ScrollAnchor;
 
   function captureViewportAnchor() {
     const candidates = [...document.querySelectorAll<HTMLElement>('[data-node-id]')].filter((element) => {
@@ -325,16 +325,11 @@
   // Parent views key the feed when their filters change. Avoid an effect that
   // reads and writes loading/items, which can repeatedly restart requests.
   onMount(() => {
-    const historyState = routePage.state as Record<string, unknown>;
-    const saved = historyState[savedHistoryKey] as
-      | { anchor?: SavedFeedAnchor; route?: string }
-      | undefined;
-    const savedAnchor = saved?.anchor;
-    const sameRoute = !saved?.route || saved.route === routePage.url.pathname + routePage.url.search;
-    const restorePage = sameRoute && savedAnchor?.kind === 'node' && Number.isInteger(savedAnchor.page) && savedAnchor.page! > 0
-      ? savedAnchor.page!
-      : 1;
-    const anchor = sameRoute && restorePage > 1 ? savedAnchor : undefined;
+    const saved = navigating.type === 'popstate' ? readScrollPosition(routePage.url)?.anchor : undefined;
+    const anchor = saved?.kind === 'node' && Number.isInteger(saved.page) && saved.page! > 0
+      ? saved
+      : undefined;
+    const restorePage = anchor?.page ?? 1;
     nextPage = restorePage;
     previousPage = restorePage - 1;
     hasPrevious = restorePage > 1;

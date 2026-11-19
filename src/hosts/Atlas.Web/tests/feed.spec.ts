@@ -86,7 +86,7 @@ test('Back from a node returns to the paginated feed and restores its card posit
   await expect(page.locator('.node-page')).toBeVisible();
   await expect(page).toHaveURL(/\/nodes\?id=/);
 
-  // Leaving while a node-page scroll is pending must preserve the feed history entry.
+  // Back must change routes even when it follows a scroll on the node page.
   const requestIndex = requests.length;
   await page.evaluate(() => {
     window.scrollTo(0, document.documentElement.scrollHeight);
