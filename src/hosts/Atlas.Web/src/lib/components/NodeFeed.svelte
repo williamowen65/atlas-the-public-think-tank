@@ -47,6 +47,7 @@
     totalVotes: number;
     reactionError?: boolean;
     hasMoreAncestors?: boolean;
+    page?: number;
   }
 </script>
 
@@ -62,10 +63,13 @@
     loading = false,
     loadingNotice = '',
     hasMore = false,
+    hasPrevious = false,
     error = '',
     errorRole = 'alert',
     presentation = 'ribbon-corner',
     onLoadMore,
+    onLoadPrevious,
+    onRetry,
     onNavigate,
     onOpenProfile,
     onReadMore,
@@ -88,6 +92,8 @@
     loadingNotice?: string;
     /** Whether more feed pages remain. Enables automatic loading and the Load more button. */
     hasMore?: boolean;
+    /** Whether an earlier discovery page can be prepended while the visitor scrolls upward. */
+    hasPrevious?: boolean;
     /** Error text for feed paging; a nonempty value exposes retry feedback. */
     error?: string;
     /** Recoverable availability notices use a polite live region. */
@@ -99,6 +105,10 @@
      * state.
      */
     onLoadMore?: () => void;
+    /** Callback requesting the preceding page; returned records are prepended by the parent. */
+    onLoadPrevious?: () => void;
+    /** Callback retrying the exact page and direction that failed, if either page failed. */
+    onRetry?: () => void;
     /**
      * Callback receiving a node ID from a card’s ancestor or related-node links. The parent
      * chooses the destination/navigation mechanism.
@@ -130,6 +140,7 @@
     onCreateFirst?: () => void;
   } = $props();
   let tail: HTMLDivElement;
+  let head = $state<HTMLDivElement>();
   /**
    * Trimmed contribution type label used by the empty-feed invitation.
    */
@@ -159,6 +170,28 @@
     observer.observe(tail);
     return () => observer.disconnect();
   });
+  // Page windows can start in the middle of the result set. Fetch the preceding page only when
+  // the visitor approaches the top edge of the currently loaded window.
+  $effect(() => {
+    items.length;
+    if (
+      typeof IntersectionObserver === 'undefined' ||
+      !head ||
+      loading ||
+      error ||
+      !hasPrevious ||
+      !onLoadPrevious
+    )
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) onLoadPrevious?.();
+      },
+      { rootMargin: '240px 0px 0px 0px' },
+    );
+    observer.observe(head);
+    return () => observer.disconnect();
+  });
   /** Reserve initial list space, including the first frame before the parent starts fetching. */
   const initialLoading = $derived(!items.length && !error && (loading || hasMore));
 </script>
@@ -174,6 +207,11 @@
 </div>
 <section class="node-feed" aria-label="Node feed" aria-busy={loading || initialLoading}>
   {#if initialLoading}<LoadingPlaceholder />{/if}
+  {#if hasPrevious}<div class="feed-head" bind:this={head}>
+      <button type="button" disabled={loading || !!error || !onLoadPrevious} onclick={onLoadPrevious}
+        >Load previous nodes</button
+      >
+    </div>{/if}
   <ul aria-label="Nodes">
     {#each items as item (item.node.id)}
       <!--
@@ -182,7 +220,11 @@
       -->
       {#snippet voting(compact?: boolean)}{#if renderVoting}{@render renderVoting(item, compact)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
-      <li class:moderated-card={item.node.isHidden === true}>
+      <li
+        class:moderated-card={item.node.isHidden === true}
+        data-node-id={item.node.id}
+        data-feed-page={item.page}
+      >
         {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}
         <NodeCard
           reactionControls={renderReactions ? reactions : undefined}
@@ -235,7 +277,7 @@
     {#if hasMore || error}<button
         type="button"
         disabled={loading || !onLoadMore}
-        onclick={onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button
+        onclick={error ? onRetry ?? onLoadMore : onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button
       >{/if}
   </div>
 </section>
@@ -263,6 +305,11 @@
     text-align: center;
     padding: 1.5rem 0.5rem;
     color: var(--atlas-muted);
+  }
+  .feed-head {
+    display: flex;
+    justify-content: center;
+    min-height: 0.5rem;
   }
   button {
     font: inherit;

@@ -31,7 +31,8 @@
   import LiveVotingDial from './LiveVotingDial.svelte';
   import { moderatorVisibility } from '../state/moderatorVisibility.svelte';
   import LiveReactions from './LiveReactions.svelte';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import { page as routePage } from '$app/state';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { DatabaseResumingError, readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
   import type { DiscoveryFilters } from '../api/discovery';
@@ -101,6 +102,8 @@
    * Whether discovery reports another page to load.
    */
   let hasMore = $state(true);
+  /** Whether an earlier page exists before the current loaded window. */
+  let hasPrevious = $state(false);
   // Moderator inspection uses authenticated navigation only while hidden cards are enabled.
   const breadcrumbBase = $derived(
     moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api'
@@ -108,11 +111,109 @@
       : apiBase,
   );
   let nextPage = 1;
+  let previousPage = 0;
+  let failedDirection: 'initial' | 'next' | 'previous' = 'initial';
+  let failedPage = 1;
+  let pendingRestoreAnchor: SavedFeedAnchor | undefined;
+  let restoreLayoutObserver: ResizeObserver | undefined;
+  let restoreLayoutTimeout: ReturnType<typeof setTimeout> | undefined;
+  let restoreLayoutStartedAt = 0;
+  let restoreLoadHandler: (() => void) | undefined;
   let controller: AbortController | undefined;
   let disposed = false;
-  // Fetch the next page, discard hidden/unavailable projections, and append each node ID only once.
-  async function load() {
-    if (loading || disposed || !hasMore) return;
+  type SavedFeedAnchor = { kind: string; id: string; offset: number; page?: number };
+  const savedHistoryKey = '__atlasScrollPosition';
+
+  function captureViewportAnchor() {
+    const candidates = [...document.querySelectorAll<HTMLElement>('[data-node-id]')].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < window.innerHeight;
+    });
+    const element = candidates.sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )[0];
+    return element
+      ? { id: element.dataset.nodeId ?? '', top: element.getBoundingClientRect().top }
+      : undefined;
+  }
+
+  function findNodeElement(id: string) {
+    return [...document.querySelectorAll<HTMLElement>('[data-node-id]')].find(
+      (element) => element.dataset.nodeId === id,
+    );
+  }
+
+  /** Align the saved card with its saved viewport offset if the loaded window has enough height. */
+  function restoreFeedAnchor(anchor: SavedFeedAnchor) {
+    const element = findNodeElement(anchor.id);
+    if (!element) {
+      window.scrollTo(0, 0);
+      return true;
+    }
+    const root = document.scrollingElement ?? document.documentElement;
+    const targetY = Math.max(
+      0,
+      element.getBoundingClientRect().top + window.scrollY - anchor.offset,
+    );
+    const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
+    window.scrollTo(0, Math.min(targetY, maxScroll));
+    return targetY <= maxScroll;
+  }
+
+  function finishFeedAnchorStabilization() {
+    restoreLayoutObserver?.disconnect();
+    restoreLayoutObserver = undefined;
+    if (restoreLoadHandler) document.removeEventListener('load', restoreLoadHandler, true);
+    restoreLoadHandler = undefined;
+    if (restoreLayoutTimeout) clearTimeout(restoreLayoutTimeout);
+    restoreLayoutTimeout = undefined;
+    window.removeEventListener('wheel', cancelFeedAnchorStabilization);
+    window.removeEventListener('touchstart', cancelFeedAnchorStabilization);
+    window.removeEventListener('pointerdown', cancelFeedAnchorStabilization);
+    window.removeEventListener('keydown', cancelFeedAnchorStabilization);
+  }
+
+  function cancelFeedAnchorStabilization() {
+    finishFeedAnchorStabilization();
+  }
+
+  /** Keep the saved item at its recorded offset while responsive/lazy media settles. */
+  function stabilizeFeedAnchor(anchor: SavedFeedAnchor) {
+    finishFeedAnchorStabilization();
+    restoreLayoutStartedAt = Date.now();
+    const correctPosition = () => {
+      if (Date.now() - restoreLayoutStartedAt >= 5000) {
+        finishFeedAnchorStabilization();
+        return;
+      }
+      const element = findNodeElement(anchor.id);
+      if (!element) return;
+      const delta = element.getBoundingClientRect().top - anchor.offset;
+      if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+      if (restoreLayoutTimeout) clearTimeout(restoreLayoutTimeout);
+      restoreLayoutTimeout = setTimeout(finishFeedAnchorStabilization, 800);
+    };
+    restoreLayoutObserver = new ResizeObserver(() => requestAnimationFrame(correctPosition));
+    restoreLayoutObserver.observe(document.body);
+    window.addEventListener('wheel', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('touchstart', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('pointerdown', cancelFeedAnchorStabilization, { passive: true });
+    window.addEventListener('keydown', cancelFeedAnchorStabilization);
+    // Lazy images can load without a timely body resize notification on some mobile browsers.
+    restoreLoadHandler = correctPosition;
+    document.addEventListener('load', restoreLoadHandler, true);
+    restoreLayoutTimeout = setTimeout(finishFeedAnchorStabilization, 800);
+  }
+
+  // Page numbers address any ranked slice directly; adjacent slices are fetched in either
+  // direction and the API remains the source of truth for each page.
+  async function load(direction: 'initial' | 'next' | 'previous' = 'next', requestedPage?: number, restoreAnchor?: SavedFeedAnchor) {
+    if (loading || disposed) return;
+    if (direction === 'next' && !hasMore) return;
+    if (direction === 'previous' && !hasPrevious) return;
+    let pageNumber = requestedPage ?? (direction === 'previous' ? previousPage : nextPage);
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) return;
+    const viewportAnchor = direction === 'previous' ? captureViewportAnchor() : undefined;
     loading = true;
     error = '';
     databaseResuming = false;
@@ -127,13 +228,27 @@
     const timeout = setTimeout(() => current.abort(), 60000);
     try {
       const moderatorRead = moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api';
-      const page = await readDiscovery(apiBase, nextPage, search, current.signal, undefined, {
+      let page = await readDiscovery(apiBase, pageNumber, search, current.signal, undefined, {
         ...filters,
         parentId: parentId ?? filters.parentId,
         typeId: typeId ?? filters.typeId,
         authorId: authorId ?? filters.authorId,
       }, false, moderatorRead);
-      if (page.page !== nextPage) throw new Error('Unexpected page');
+      // A saved page can fall beyond the current end after deletions or filtering changes.
+      // Move to the latest available page rather than restoring into an empty feed.
+      if (direction === 'initial' && !page.items.length && page.totalCount > 0) {
+        const lastPage = Math.max(1, Math.ceil(page.totalCount / page.pageSize));
+        if (lastPage !== pageNumber) {
+          pageNumber = lastPage;
+          page = await readDiscovery(apiBase, pageNumber, search, current.signal, undefined, {
+            ...filters,
+            parentId: parentId ?? filters.parentId,
+            typeId: typeId ?? filters.typeId,
+            authorId: authorId ?? filters.authorId,
+          }, false, moderatorRead);
+        }
+      }
+      if (page.page !== pageNumber) throw new Error('Unexpected page');
       const additions: FeedItem[] = [];
       for (const entry of page.items) {
         const node = discoveryCard(entry, moderatorRead);
@@ -148,21 +263,52 @@
           average: entry.averageVote,
           totalVotes: entry.voteCount,
           hasMoreAncestors: !!entry.card?.breadcrumbSegment?.continuationNodeId,
+          page: page.page,
         });
       }
       // Publish cards promptly; optional reaction summaries never block pagination.
       if (disposed || current !== controller) return;
-      items = [...items, ...additions];
-      hasMore = page.hasNextPage;
-      nextPage = page.page + 1;
+      if (direction === 'initial') {
+        items = additions;
+        previousPage = page.page - 1;
+        nextPage = page.page + 1;
+        hasPrevious = page.page > 1;
+        hasMore = page.hasNextPage;
+        await tick();
+        if (restoreAnchor?.kind === 'node') {
+          const restored = restoreFeedAnchor(restoreAnchor);
+          pendingRestoreAnchor = !restored && page.hasNextPage ? restoreAnchor : undefined;
+          if (restored) stabilizeFeedAnchor(restoreAnchor);
+        }
+      } else if (direction === 'previous') {
+        items = [...additions, ...items];
+        previousPage = page.page - 1;
+        hasPrevious = page.page > 1;
+        await tick();
+        if (viewportAnchor) {
+          const anchor = findNodeElement(viewportAnchor.id);
+          if (anchor) window.scrollBy(0, anchor.getBoundingClientRect().top - viewportAnchor.top);
+        }
+      } else {
+        items = [...items, ...additions];
+        nextPage = page.page + 1;
+        hasMore = page.hasNextPage;
+        if (pendingRestoreAnchor) {
+          await tick();
+          const restored = restoreFeedAnchor(pendingRestoreAnchor);
+          if (restored || !page.hasNextPage) pendingRestoreAnchor = undefined;
+        }
+      }
     } catch (cause) {
       if (!disposed && current === controller) {
+        failedDirection = direction;
+        failedPage = pageNumber;
         databaseResuming = cause instanceof DatabaseResumingError;
         error = cause instanceof DatabaseResumingError
           ? cause.message
           : current.signal.aborted
             ? 'Loading nodes timed out. The server or database may still be waking up. Please retry.'
-            : 'Could not load more nodes. Please retry.';
+            : 'Could not load nodes. Please retry.';
       }
     } finally {
       clearTimeout(slowNotice);
@@ -170,25 +316,44 @@
       if (!disposed && current === controller) {
         loading = false;
         slowLoading = false;
+        // If the saved offset was beyond the scrollable height of the first page, fetch only
+        // enough adjacent pages below it to make that offset reachable before finishing restore.
+        if (pendingRestoreAnchor && hasMore && !error) void load('next');
       }
     }
   }
   // Parent views key the feed when their filters change. Avoid an effect that
   // reads and writes loading/items, which can repeatedly restart requests.
   onMount(() => {
-    void load();
+    const historyState = routePage.state as Record<string, unknown>;
+    const saved = historyState[savedHistoryKey] as
+      | { anchor?: SavedFeedAnchor; route?: string }
+      | undefined;
+    const savedAnchor = saved?.anchor;
+    const sameRoute = !saved?.route || saved.route === routePage.url.pathname + routePage.url.search;
+    const restorePage = sameRoute && savedAnchor?.kind === 'node' && Number.isInteger(savedAnchor.page) && savedAnchor.page! > 0
+      ? savedAnchor.page!
+      : 1;
+    const anchor = sameRoute && restorePage > 1 ? savedAnchor : undefined;
+    nextPage = restorePage;
+    previousPage = restorePage - 1;
+    hasPrevious = restorePage > 1;
+    void load('initial', restorePage, anchor);
     const refresh = () => {
       controller?.abort();
       controller = undefined;
       loading = false;
       items = [];
       hasMore = true;
+      hasPrevious = false;
       nextPage = 1;
-      void load();
+      previousPage = 0;
+      void load('initial', 1);
     };
     window.addEventListener('atlas-moderator-visibility-changed', refresh);
     return () => {
       disposed = true;
+      finishFeedAnchorStabilization();
       controller?.abort();
       window.removeEventListener('atlas-moderator-visibility-changed', refresh);
     };
@@ -219,12 +384,15 @@
   {loading}
   loadingNotice={slowLoading ? 'Loading is taking longer than usual. The server or database may be waking up. Please keep this page open.' : ''}
   {hasMore}
+  {hasPrevious}
   {error}
   errorRole={databaseResuming ? 'status' : 'alert'}
   {presentation}
   {emptyTypeName}
   {onCreateFirst}
-  onLoadMore={() => void load()}
+  onLoadMore={() => void load('next')}
+  onLoadPrevious={() => void load('previous')}
+  onRetry={() => void load(failedDirection, failedPage)}
   loadOlderAncestors={(id) =>
     id
       ? readOlderAncestors(id, AbortSignal.timeout(10000), breadcrumbBase)

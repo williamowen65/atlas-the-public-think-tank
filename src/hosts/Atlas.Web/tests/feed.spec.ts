@@ -39,7 +39,7 @@ test('failed paging retains cards and keyboard retry requests the same page', as
   await page.goto(feedStory);
   await expect(page.locator('article')).toHaveCount(3);
   await page.locator('.feed-tail').scrollIntoViewIfNeeded();
-  await expect(page.getByRole('alert')).toContainText('Could not load more nodes');
+  await expect(page.getByRole('alert')).toContainText('Could not load nodes');
   await expect(page.locator('article')).toHaveCount(3);
   const retry = page.getByRole('button', { name: 'Retry loading nodes' });
   await retry.focus(); await page.keyboard.press('Enter');
@@ -192,7 +192,7 @@ for (const failedPage of [1, 2]) {
 test('unrecognized service failure keeps the ordinary feed error', async ({ page }) => {
   await page.route('**/atlas-public-api/**', route => route.fulfill({ status: 503, json: { code: 'request_failed' } }));
   await page.goto('http://127.0.0.1:4173');
-  await expect(page.getByRole('alert')).toContainText('Could not load more nodes');
+  await expect(page.getByRole('alert')).toContainText('Could not load nodes');
   await expect(page.getByText('The database for this site is waking back up.', { exact: false })).toHaveCount(0);
 });
 
