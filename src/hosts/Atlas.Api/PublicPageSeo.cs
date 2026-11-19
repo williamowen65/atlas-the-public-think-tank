@@ -1,3 +1,4 @@
+using Atlas.Communities.Communities;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -107,10 +108,16 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             "/" => home,
             "/about" => new Preview("About Atlas | The Public Think Tank", AboutDescription, "/about", "website"),
             "/nodes" => await ReadNode(context),
+            "/profiles" when request.Query.TryGetValue("id", out var ids) &&
+                ids.Count == 1 && Guid.TryParse(ids[0], out var profile) =>
+                await ReadPublicCard(context, new(SharePage.Profile, profile)),
+            _ when path.StartsWith("/communities/", StringComparison.Ordinal) &&
+                Guid.TryParse(path["/communities/".Length..], out var community) =>
+                await ReadPublicCard(context, new(SharePage.Community, community)),
             _ => null
         };
 
-        if (preview is null || !CanIndex(request)) response.Headers[NoIndexHeader] = "noindex";
+        if (preview is null || preview.Target is { Kind: not SharePage.Node } || !CanIndex(request)) response.Headers[NoIndexHeader] = "noindex";
         response.ContentType = "text/html; charset=utf-8";
         if (HttpMethods.IsHead(request.Method)) return;
 
@@ -154,7 +161,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             }
         }
         return new Preview(node.Title, text.Length == 0 ? HomeDescription : Excerpt(text),
-            NodePath(id), "article", image, id);
+            NodePath(id), "article", image, new(SharePage.Node, id));
     }
 
     private static void ReadSection(SectionedBlock sectioned, ref string text, ref Uri? image)
@@ -180,15 +187,40 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             !db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
                 report.Status == (int)ModerationStatus.Actioned && report.VisibilityRestoredAt == null));
 
-    internal static async Task<DateTimeOffset?> ShareRevision(HttpContext context, Guid? id)
+    private sealed record PublicCardData(string Title, string Description, DateTimeOffset UpdatedAt);
+
+    private static IQueryable<PublicCardData> PublicCard(AtlasDataContext db, ShareTarget target) =>
+        target.Kind == SharePage.Community
+            ? db.CommunityRows.Where(row => row.Id == target.Id && row.Status == nameof(CommunityStatus.Active))
+                .Select(row => new PublicCardData(row.Name, row.Description, row.UpdatedAt))
+            : db.ParticipantRows.Where(row => row.Id == target.Id && row.IsActive)
+                .Select(row => new PublicCardData(row.DisplayName, row.Bio, row.UpdatedAt));
+
+    private static async Task<Preview?> ReadPublicCard(HttpContext context, ShareTarget target)
     {
         using var db = context.RequestServices.GetRequiredService<Func<AtlasDataContext>>()();
-        if (id is null)
+        var card = await PublicCard(db, target).SingleOrDefaultAsync(context.RequestAborted);
+        if (card is null) return null;
+        var description = string.IsNullOrWhiteSpace(card.Description)
+            ? target.Kind == SharePage.Profile ? "View this participant’s public profile on Atlas." : "Explore this community on Atlas."
+            : Excerpt(card.Description);
+        return new Preview(card.Title, description, target.PagePath,
+            target.Kind == SharePage.Profile ? "profile" : "website", Target: target);
+    }
+
+    internal static async Task<DateTimeOffset?> ShareRevision(HttpContext context, ShareTarget? target)
+    {
+        using var db = context.RequestServices.GetRequiredService<Func<AtlasDataContext>>()();
+        if (target is null)
         {
             var moderation = await db.ModerationCaseRows.MaxAsync(
                 report => report.VisibilityRestoredAt ?? report.DecidedAt, context.RequestAborted);
             return moderation ?? DateTimeOffset.MinValue;
         }
+        if (target.Value.Kind != SharePage.Node)
+            return (await PublicCard(db, target.Value).SingleOrDefaultAsync(context.RequestAborted))?.UpdatedAt;
+
+        var id = target.Value.Id;
         var revision = await (from node in EligibleNodes(db)
                               join document in db.DocumentRows on node.DescriptionId equals (Guid?)document.Id
                               where node.Id == id
@@ -222,7 +254,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         if (url is not null) Meta("property", "og:url", url);
         var capture = request.HttpContext.RequestServices.GetRequiredService<ShareImageCapture>();
         var image = capture.Enabled
-            ? Url(request, ShareImageCapture.ImagePath(preview.NodeId))
+            ? Url(request, ShareImageCapture.ImagePath(preview.Target))
             : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
         if (image is not null) Meta("property", "og:image", image);
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");
@@ -275,5 +307,5 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         or "/confirm-email" or "/forgot-password" or "/reset-password"
         || path.StartsWith("/communities/", StringComparison.Ordinal);
 
-    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null, Guid? NodeId = null);
+    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null, ShareTarget? Target = null);
 }

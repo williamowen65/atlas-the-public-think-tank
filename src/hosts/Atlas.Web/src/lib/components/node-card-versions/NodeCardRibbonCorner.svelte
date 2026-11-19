@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import CopyNodeLink from "../CopyNodeLink.svelte";
   import { relativeDate } from '../../format/relativeDate';
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
@@ -156,6 +157,7 @@
           nodeId={node.id}
           names={node.communities}
         />{/if}{/if}
+    {#if !draft && !node.isHidden && node.status !== 'Archived'}<CopyNodeLink nodeId={node.id} />{/if}
     </p>
   </header>
 

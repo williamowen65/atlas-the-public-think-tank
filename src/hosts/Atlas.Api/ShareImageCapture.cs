@@ -2,6 +2,28 @@ using Microsoft.Playwright;
 
 namespace Atlas.Api;
 
+internal enum SharePage { Node, Community, Profile }
+
+internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
+{
+    internal string PagePath => Kind switch
+    {
+        SharePage.Community => $"/communities/{Id:D}",
+        SharePage.Profile => $"/profiles?id={Id:D}",
+        _ => $"/nodes?id={Id:D}"
+    };
+
+    internal string ImagePath => Kind switch
+    {
+        SharePage.Community => $"/share-images/communities/{Id:D}.png",
+        SharePage.Profile => $"/share-images/profiles/{Id:D}.png",
+        _ => $"/share-images/nodes/{Id:D}.png"
+    };
+    internal string Selector => Kind is SharePage.Node
+        ? "#main-content article.node-page"
+        : "#main-content [data-share-preview]";
+}
+
 internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
@@ -17,15 +39,16 @@ internal sealed class ShareImageCapture(
     internal bool Enabled => directory is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
-    internal static string ImagePath(Guid? id) => id is { } node ? $"/share-images/nodes/{node:D}.png" : "/share-images/discover.png";
+    internal static string ImagePath(ShareTarget? id) => id?.ImagePath ?? "/share-images/discover.png";
 
-    internal async Task<IResult> Image(HttpContext context, Guid? id)
+    internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
         if (!Enabled) return Results.NotFound();
         var revision = await PublicPageSeo.ShareRevision(context, id);
         if (revision is null) return Results.NotFound();
 
-        var name = id?.ToString("D") ?? "discover";
+        var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
+        if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
         var file = Path.Combine(directory!, name + ".png");
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
@@ -48,7 +71,7 @@ internal sealed class ShareImageCapture(
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
 
-    private Task? Schedule(string name, string file, Guid? id)
+    private Task? Schedule(string name, string file, ShareTarget? id)
     {
         lock (gate)
         {
@@ -60,14 +83,14 @@ internal sealed class ShareImageCapture(
         }
     }
 
-    private async Task Capture(string name, string file, Guid? id)
+    private async Task Capture(string name, string file, ShareTarget? id)
     {
         await browserSlot.WaitAsync();
         var temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             var started = DateTime.UtcNow;
-            var url = new Uri(origin!, id is { } node ? $"/nodes?id={node:D}" : "/");
+            var url = new Uri(origin!, id?.PagePath ?? "/");
             using var playwright = await Playwright.CreateAsync();
             await using var browser = environment.IsDevelopment()
                 ? await playwright.Chromium.LaunchAsync(new() { Timeout = 12000 })
@@ -86,18 +109,18 @@ internal sealed class ShareImageCapture(
             await page.RouteAsync("**/*", route =>
             {
                 var request = route.Request;
-                if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var target) ||
-                    target.GetLeftPart(UriPartial.Authority) != origin!.GetLeftPart(UriPartial.Authority) ||
+                if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var requestedUri) ||
+                    requestedUri.GetLeftPart(UriPartial.Authority) != origin!.GetLeftPart(UriPartial.Authority) ||
                     request.Method != "GET" ||
-                    (request.IsNavigationRequest && target != url) ||
-                    target.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase))
+                    (request.IsNavigationRequest && requestedUri != url) ||
+                    requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase))
                     return route.AbortAsync();
                 return route.ContinueAsync();
             });
             var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
             if (response?.Ok != true || page.Url != url.AbsoluteUri) return;
 
-            var card = page.Locator(id is null ? "#main-content article.node-card" : "#main-content article.node-page").First;
+            var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
             await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
             if (id is not null)
                 await card.EvaluateAsync("element => element.scrollIntoView({block: 'start', behavior: 'instant'})");
@@ -107,7 +130,12 @@ internal sealed class ShareImageCapture(
             {
                 Clip = new() { X = 0, Y = top, Width = id is null ? 1200 : 480, Height = id is null ? 630 : 252 },
                 Animations = ScreenshotAnimations.Disabled,
-                Style = id is null ? null : ".app-shell > :not(main) { visibility: hidden; }",
+                Style = id switch
+                {
+                    null => null,
+                    { Kind: SharePage.Node } => ".app-shell > :not(main) { visibility: hidden; }",
+                    _ => "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
+                },
                 Timeout = 12000
             });
             await File.WriteAllBytesAsync(temporary, image);

@@ -138,7 +138,11 @@ app.MapControllers();
 app.MapMethods("/robots.txt", ["GET", "HEAD"], (HttpRequest request) => seo.Robots(request));
 app.MapMethods("/sitemap.xml", ["GET", "HEAD"], (Func<HttpContext, Task<IResult>>)seo.Sitemap);
 app.MapGet("/share-images/discover.png", (HttpContext context, ShareImageCapture capture) => capture.Image(context, null));
-app.MapGet("/share-images/nodes/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) => capture.Image(context, id));
+app.MapGet("/share-images/nodes/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) => capture.Image(context, new(SharePage.Node, id)));
+app.MapGet("/share-images/communities/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) =>
+    capture.Image(context, new(SharePage.Community, id)));
+app.MapGet("/share-images/profiles/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) =>
+    capture.Image(context, new(SharePage.Profile, id)));
 app.MapFallback(context => seo.ServePage(context, app.Environment));
 app.Run();
 // Top-level statements generate a Program type containing Main. This declaration

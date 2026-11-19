@@ -69,6 +69,23 @@ public sealed class SqlWorkflowTests
                 .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
             using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
             await VerifyNodeSeo(seo, node, true, "HTTP idea");
+            var community = await database.CommunityRows.AsNoTracking().SingleAsync();
+            var participant = await database.ParticipantRows.AsNoTracking()
+                .SingleAsync(person => person.Id == community.OwnerParticipantId);
+            var communityPage = await seo.GetAsync($"/communities/{community.Id:D}");
+            var profilePage = await seo.GetAsync($"/profiles?id={participant.Id:D}");
+            foreach (var (page, image) in new[]
+            {
+                (communityPage, $"/share-images/communities/{community.Id:D}.png"),
+                (profilePage, $"/share-images/profiles/{participant.Id:D}.png")
+            })
+            {
+                Assert.AreEqual(HttpStatusCode.OK, page.StatusCode);
+                Assert.IsTrue(page.Headers.Contains("X-Robots-Tag"));
+                StringAssert.Contains(await page.Content.ReadAsStringAsync(), image);
+            }
+            Assert.AreEqual(HttpStatusCode.NotFound,
+                (await seo.GetAsync($"/share-images/profiles/{Guid.NewGuid():D}.png")).StatusCode);
             var imagePath = $"/share-images/nodes/{node:D}.png";
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");

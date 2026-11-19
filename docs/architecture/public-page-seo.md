@@ -15,8 +15,8 @@ known UI routes and now adds route metadata to the initial HTML.
 | `/about` | Index with a dedicated title and description. |
 | `/nodes?id=<id>` | Index eligible nodes. Keep the ID in the canonical URL and drop contribution, comment, and filter parameters. |
 | `/nodes` without a valid ID | Exclude from indexing. Verify the existing empty-state behavior before choosing its HTTP status. |
-| `/communities`, `/communities/<id>` | Defer until anonymous access, eligibility, and stable community URLs have been verified. |
-| Profile, account, draft, moderation, editor, and component routes | Exclude from the sitemap and return noindex on HTML responses. Existing access rules govern what the app can show. |
+| `/communities/<id>`, `/profiles?id=<id>` | Share active public communities and profiles with top-section screenshots. Keep them out of indexing and the sitemap. |
+| Community directory, personal account, draft, moderation, editor, and component routes | Exclude from the sitemap and return noindex on HTML responses. Existing access rules govern what the app can show. |
 
 ## Delivery decision
 
@@ -165,3 +165,15 @@ seven seconds, then serves the current Discover capture or the static fallback
 while the queued capture continues. Node edits invalidate captures via the
 node and document timestamps. Home captures expire after 24 hours and are also
 invalidated by moderation decisions. Clients may cache their own link previews.
+
+
+To verify community and profile cards, open an active community and a public
+profile signed out, check the Open Graph title and description, and open each
+`og:image` URL. The capture shows the public top section. The image endpoints
+return 404 for archived communities or inactive profiles. These pages remain
+out of the sitemap and send `noindex`.
+
+On a published node card or detail page, click the link icon next to the
+byline. Paste the copied URL and confirm it opens the node without extra
+query parameters. If clipboard access is unavailable, the button exposes
+the URL in a selectable field.

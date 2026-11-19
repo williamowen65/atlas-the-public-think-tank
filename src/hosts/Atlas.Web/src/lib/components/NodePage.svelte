@@ -45,6 +45,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import CopyNodeLink from "./CopyNodeLink.svelte";
   import { relativeDate } from '../format/relativeDate';
   import NodeEditControl from './NodeEditControl.svelte';
   import type { Snippet } from 'svelte';
@@ -317,6 +318,7 @@
           nodeId={node.id}
           names={node.communities}
         />{/if}
+    {#if !inspectionOnly && !node.isHidden && node.status !== 'Archived'}<CopyNodeLink nodeId={node.id} />{/if}
     </p>
     {#if node.status === 'Archived'}<p>Archived</p>{/if}
   </header>
