@@ -60,7 +60,7 @@
   });
 </script>
 
-<div class="feed-block-preview" class:has-sections={!!composition} class:has-slides={!composition && pages.length > 0} bind:this={host}>
+<div data-feed-preview-ready={blocks !== undefined || settled} class="feed-block-preview" class:has-sections={!!composition} class:has-slides={!composition && pages.length > 0} bind:this={host}>
   {#if composition}
     {#key nodeId}
       <SectionNodeView draft={{ ...composition, title: '' }} feed {onReadMore} {leadingAction} />

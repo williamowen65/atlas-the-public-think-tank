@@ -29,8 +29,9 @@ known UI routes and now adds route metadata to the initial HTML.
 The first release uses the ASP.NET Core host for metadata on the home feed,
 About, and public node links. Share previews use the Atlas title and the page’s public description. When
 capture is enabled, each preview points to a screenshot of the shared page.
-Discover and node captures fill the frame with the card and omit the site
-navigation and voting error controls. The sharing service controls which fields it displays.
+Discover captures include the page intro and wait for the first card’s content
+and controls. Node captures frame the shared card. Both omit site navigation
+and voting error controls. The sharing service controls which fields it displays.
 SvelteKit still renders the page body in the browser. Server-rendered article
 content remains a separate decision for search discovery.
 

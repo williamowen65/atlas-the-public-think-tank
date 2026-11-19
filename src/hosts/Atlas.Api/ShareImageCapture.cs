@@ -28,14 +28,16 @@ internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
     // Bump the URL and disk cache together when the capture layout changes.
-    internal const string LayoutVersion = "2";
+    internal const string LayoutVersion = "3";
     private const string CaptureStyle = """
         body { margin: 0 !important; padding: 0 !important; }
         .app-shell, #main-content, #main-content .node-feed,
+        #main-content .feed-intro,
         #main-content article.node-page, #main-content article.node-card {
             max-width: none !important;
             margin-inline: 0 !important;
         }
+        #main-content .feed-intro { padding-inline: 1rem; }
         .app-shell > :not(main), .skip-link, [data-share-hide] { display: none !important; }
         """;
 
@@ -137,15 +139,25 @@ internal sealed class ShareImageCapture(
             var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
             await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
             await page.AddStyleTagAsync(new() { Content = CaptureStyle });
-            await card.EvaluateAsync("""
-                element => {
-                    element.style.setProperty('scroll-margin-block-start', '0', 'important');
-                    element.scrollIntoView({block: 'start', behavior: 'instant'});
-                }
-                """);
-            var bounds = await card.BoundingBoxAsync();
-            if (bounds is null) return;
-            var top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
+            var top = 0;
+            if (id is null)
+            {
+                await card.Locator("[data-feed-preview-ready='true']")
+                    .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
+                await page.EvaluateAsync("window.scrollTo({ top: 0, behavior: 'instant' })");
+            }
+            else
+            {
+                await card.EvaluateAsync("""
+                    element => {
+                        element.style.setProperty('scroll-margin-block-start', '0', 'important');
+                        element.scrollIntoView({block: 'start', behavior: 'instant'});
+                    }
+                    """);
+                var bounds = await card.BoundingBoxAsync();
+                if (bounds is null) return;
+                top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var image = await page.ScreenshotAsync(new()
             {
