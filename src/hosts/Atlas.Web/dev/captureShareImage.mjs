@@ -36,7 +36,7 @@ const temporary = new URL(`.${randomUUID()}.png`, directory);
 const browser = await chromium.launch({ executablePath: process.env.ATLAS_LOCAL_CHROMIUM });
 try {
   const page = await browser.newPage({
-    viewport: { width, height: 1000 },
+    viewport: { width, height: isNode ? 1000 : height },
     deviceScaleFactor: 1200 / width,
     ignoreHTTPSErrors: origin.protocol === 'https:',
     colorScheme: 'light',
@@ -53,11 +53,14 @@ try {
 
   const target = page.locator(isNode ? '#main-content [data-share-node] article.node-card' : '#main-content article.node-card').first();
   await target.waitFor({ state: 'visible', timeout: 30_000 });
-  if (isNode) await target.locator("[data-feed-preview-ready='true']").waitFor({ state: 'attached' });
+  await target.scrollIntoViewIfNeeded();
+  await target.locator("[data-feed-preview-ready='true']").waitFor({ state: 'attached' });
   await page.evaluate(() => document.fonts.ready);
   if (isNode) {
     // Keep the published node's title and opening content in frame.
     await target.evaluate(element => element.scrollIntoView({ block: 'start', behavior: 'instant' }));
+  } else {
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }
   const top = isNode ? Math.max(0, (await target.boundingBox()).y) : 0;
 
@@ -65,7 +68,9 @@ try {
   const image = await page.screenshot({
     clip: { x: 0, y: Math.ceil(top), width, height },
     animations: 'disabled',
-    style: isNode ? '.app-shell > :not(main) { visibility: hidden; }' : undefined,
+    style: isNode
+      ? '.app-shell > :not(main) { visibility: hidden; }'
+      : '.app-shell > .mini-launcher { right: 4.67vw !important; }',
   });
   await writeFile(temporary, image);
   await rename(temporary, destination);

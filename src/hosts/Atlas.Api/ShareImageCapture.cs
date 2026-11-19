@@ -30,7 +30,12 @@ internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
     // Bump the URL and disk cache together when the capture layout changes.
-    private static string LayoutVersion(ShareTarget? target) => target is { Kind: SharePage.Node } ? "6" : "4";
+    private static string LayoutVersion(ShareTarget? target) => target switch
+    {
+        null => "5",
+        { Kind: SharePage.Node } => "6",
+        _ => "4"
+    };
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
     private const string CaptureStyle = """
@@ -43,7 +48,11 @@ internal sealed class ShareImageCapture(
             margin-inline: 0 !important;
         }
         #main-content .feed-intro { padding-inline: 1rem; }
-        .app-shell > :not(main), .skip-link, [data-share-hide] { display: none !important; }
+        .skip-link, [data-share-hide] { display: none !important; }
+        """;
+    private const string DiscoverCaptureStyle = """
+        .app-shell > :not(main, .atlas-header, .mini-launcher) { display: none !important; }
+        .app-shell > .mini-launcher { right: 4.67vw !important; }
         """;
 
     private readonly object gate = new();
@@ -124,7 +133,7 @@ internal sealed class ShareImageCapture(
             var captureHeight = (int)(ImageHeight / scale);
             await using var session = await browser.NewContextAsync(new()
             {
-                ViewportSize = new() { Width = captureWidth, Height = 1000 },
+                ViewportSize = new() { Width = captureWidth, Height = id is null ? captureHeight : 1000 },
                 DeviceScaleFactor = scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
@@ -180,7 +189,12 @@ internal sealed class ShareImageCapture(
             stage = "waiting for the share card";
             var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
             await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
-            await page.AddStyleTagAsync(new() { Content = CaptureStyle });
+            await page.AddStyleTagAsync(new()
+            {
+                Content = CaptureStyle + (id is null
+                    ? DiscoverCaptureStyle
+                    : ".app-shell > :not(main) { display: none !important; }")
+            });
             if (id is { Kind: SharePage.Node })
             {
                 stage = "waiting for the feed preview";
@@ -193,8 +207,9 @@ internal sealed class ShareImageCapture(
             var top = 0;
             if (id is null)
             {
+                await card.ScrollIntoViewIfNeededAsync();
                 await card.Locator("[data-feed-preview-ready='true']")
-                    .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
+                    .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
                 await page.EvaluateAsync("window.scrollTo({ top: 0, behavior: 'instant' })");
             }
             else
