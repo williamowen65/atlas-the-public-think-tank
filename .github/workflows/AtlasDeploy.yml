@@ -92,14 +92,11 @@ jobs:
         run: |
           npm ci
           npm run build
-          test -f dist/index.html
+          test -f ../Atlas.Api/wwwroot/index.html
       - name: Publish ASP.NET Core API
         run: dotnet publish src/hosts/Atlas.Api/Atlas.Api.csproj --configuration Release --output "$RUNNER_TEMP/atlas-publish"
-      - name: Bundle frontend into the same-origin API host
-        run: |
-          mkdir -p "$RUNNER_TEMP/atlas-publish/wwwroot"
-          cp -a src/hosts/Atlas.Web/dist/. "$RUNNER_TEMP/atlas-publish/wwwroot/"
-          test -f "$RUNNER_TEMP/atlas-publish/wwwroot/index.html"
+      - name: Verify published frontend
+        run: test -f "$RUNNER_TEMP/atlas-publish/wwwroot/index.html"
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:

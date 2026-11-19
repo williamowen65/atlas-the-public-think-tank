@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
+const output = '../Atlas.Api/wwwroot';
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 export default {
@@ -11,6 +12,6 @@ export default {
     // Use the Atlas.Web package version for the app.html version marker.
     version: { name: version },
     // Atlas.Api remains the backend. Output is static files plus the SPA fallback.
-    adapter: adapter({ pages: 'dist', assets: 'dist', fallback: 'index.html' }),
+    adapter: adapter({ pages: output, assets: output, fallback: 'index.html' }),
   },
 };

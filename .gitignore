@@ -400,6 +400,7 @@ http-client.env.json.user
 
 # Atlas.Web generated artifacts
 /src/hosts/Atlas.Web/dist/
+/src/hosts/Atlas.Api/wwwroot/
 /src/hosts/Atlas.Web/storybook-static/
 /src/hosts/Atlas.Web/playwright-report/
 /src/hosts/Atlas.Web/test-results/

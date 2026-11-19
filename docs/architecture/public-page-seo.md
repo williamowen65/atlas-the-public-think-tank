@@ -4,8 +4,8 @@
 
 ## Existing deployment and scope
 
-`AtlasDeploy.yml` builds Atlas.Web with SvelteKit's static adapter, copies its
-output into the ASP.NET Core host's `wwwroot`, and deploys one same-origin app.
+`AtlasDeploy.yml` builds Atlas.Web with SvelteKit's static adapter, writes directly to
+the ASP.NET Core host's `wwwroot`, and deploys one same-origin app.
 The root SvelteKit layout disables SSR. The API host serves the SPA shell for
 known UI routes and now adds route metadata to the initial HTML.
 
@@ -92,8 +92,10 @@ canonical Atlas origin. Keep the demo origin separate.
 
 ## Verify direct links
 
-Test locally against the packaged ASP.NET host with the frontend build copied
-into its web root. Vite serves its own development shell and is useful for
+Run `npm run build` in `src/hosts/Atlas.Web`, then start the ASP.NET host and
+open `https://localhost:7240/`. The frontend build writes directly to the API
+web root. To capture the built app with local Chromium, set
+`Atlas__Seo__CaptureOrigin` to `https://localhost:7240` before starting the API. Vite serves its own development shell and is useful for
 checking the interactive app. Use an HTTP client to inspect the initial HTML
 and headers without running JavaScript. For example, on Azure demo:
 
