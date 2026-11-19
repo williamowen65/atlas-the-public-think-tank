@@ -419,8 +419,8 @@
 {#snippet feedback()}
   {#if busy}<small role="status">Saving…</small>{/if}
   {#if notice}<small role="status">{notice}</small>{/if}
-  {#if error}<small role="alert">{error}</small>{/if}
-  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
+  {#if error}<small role="alert" data-share-hide>{error}</small>{/if}
+  {#if refreshFailed}<button class="undo" data-share-hide onclick={() => void retry()} disabled={busy}
       >Retry totals</button
     >{/if}
 {/snippet}

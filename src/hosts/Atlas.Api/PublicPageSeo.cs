@@ -18,6 +18,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
 {
     private const string ProductionHost = "atlas.thepublicthinktank.com";
     private const string AlternateHost = "www.thepublicthinktank.com";
+    private const string ShareTitle = "Atlas | The Public Think Tank";
     private const string HomeDescription =
         "Explore connected questions, evidence, and ideas in Atlas, the Public Think Tank.";
     private const string AboutDescription =
@@ -102,7 +103,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             return;
         }
 
-        var home = new Preview("Atlas | The Public Think Tank", HomeDescription, "/", "website");
+        var home = new Preview(ShareTitle, HomeDescription, "/", "website");
         var preview = path switch
         {
             "/" => home,
@@ -247,10 +248,10 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         Meta("name", "description", preview.Description);
         if (url is not null && canonical)
             html.AppendLine($"<link data-atlas-server-seo rel=\"canonical\" href=\"{encode.Encode(url)}\">");
-        Meta("property", "og:title", preview.Title);
+        Meta("property", "og:title", ShareTitle);
         Meta("property", "og:description", preview.Description);
         Meta("property", "og:type", preview.Type);
-        Meta("property", "og:site_name", "Atlas");
+        Meta("property", "og:site_name", ShareTitle);
         if (url is not null) Meta("property", "og:url", url);
         var capture = request.HttpContext.RequestServices.GetRequiredService<ShareImageCapture>();
         var image = capture.Enabled
@@ -258,7 +259,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
         if (image is not null) Meta("property", "og:image", image);
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");
-        Meta("name", "twitter:title", preview.Title);
+        Meta("name", "twitter:title", ShareTitle);
         Meta("name", "twitter:description", preview.Description);
         if (image is not null) Meta("name", "twitter:image", image);
         return html.ToString();

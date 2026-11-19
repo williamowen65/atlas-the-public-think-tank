@@ -89,7 +89,8 @@ public sealed class SqlWorkflowTests
             var imagePath = $"/share-images/nodes/{node:D}.png";
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
-            await File.WriteAllBytesAsync(Path.Combine(web.Path, $"{node:D}.png"), cached);
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v2"));
+            await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
             CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
             await VerifyNodeSeo(seo, node, true, "Revised after moderation");
@@ -580,6 +581,7 @@ public sealed class SqlWorkflowTests
         Assert.AreEqual(!eligible, page.Headers.Contains("X-Robots-Tag"));
         var html = await page.Content.ReadAsStringAsync();
         Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
+        StringAssert.Contains(html, "property=\"og:title\" content=\"Atlas | The Public Think Tank\"");
         Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains($"href=\"{canonical}\"", StringComparison.Ordinal));
         var sitemap = await client.GetStringAsync("/sitemap.xml");

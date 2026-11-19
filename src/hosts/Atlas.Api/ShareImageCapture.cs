@@ -27,6 +27,18 @@ internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
 internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
+    // Bump the URL and disk cache together when the capture layout changes.
+    internal const string LayoutVersion = "2";
+    private const string CaptureStyle = """
+        body { margin: 0 !important; padding: 0 !important; }
+        .app-shell, #main-content, #main-content .node-feed,
+        #main-content article.node-page, #main-content article.node-card {
+            max-width: none !important;
+            margin-inline: 0 !important;
+        }
+        .app-shell > :not(main), .skip-link, [data-share-hide] { display: none !important; }
+        """;
+
     private readonly object gate = new();
     private readonly Dictionary<string, Task> pending = new();
     private readonly SemaphoreSlim browserSlot = new(1);
@@ -39,7 +51,7 @@ internal sealed class ShareImageCapture(
     internal bool Enabled => directory is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
-    internal static string ImagePath(ShareTarget? id) => id?.ImagePath ?? "/share-images/discover.png";
+    internal static string ImagePath(ShareTarget? id) => (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion;
 
     internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
@@ -49,7 +61,7 @@ internal sealed class ShareImageCapture(
 
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
-        var file = Path.Combine(directory!, name + ".png");
+        var file = Path.Combine(directory!, $"v{LayoutVersion}", name + ".png");
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
         var job = Schedule(name, file, id);
@@ -64,9 +76,6 @@ internal sealed class ShareImageCapture(
         if (revision is null) return Results.NotFound();
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
-        var home = Path.Combine(directory!, "discover.png");
-        if (id is not null && Current(home, (await PublicPageSeo.ShareRevision(context, null))!.Value))
-            return Results.File(home, "image/png");
         var fallback = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
@@ -118,24 +127,33 @@ internal sealed class ShareImageCapture(
                 return route.ContinueAsync();
             });
             var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
-            if (response?.Ok != true || page.Url != url.AbsoluteUri) return;
+            if (response?.Ok != true || page.Url != url.AbsoluteUri)
+            {
+                logger.LogWarning("Atlas share capture for {Image} did not reach the requested page (HTTP {Status}).",
+                    name, response?.Status);
+                return;
+            }
 
             var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
             await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
-            if (id is not null)
-                await card.EvaluateAsync("element => element.scrollIntoView({block: 'start', behavior: 'instant'})");
-            var top = id is null ? 0 : (int)Math.Ceiling(Math.Max(0, (await card.BoundingBoxAsync())?.Y ?? 0));
-            Directory.CreateDirectory(directory!);
+            await page.AddStyleTagAsync(new() { Content = CaptureStyle });
+            await card.EvaluateAsync("""
+                element => {
+                    element.style.setProperty('scroll-margin-block-start', '0', 'important');
+                    element.scrollIntoView({block: 'start', behavior: 'instant'});
+                }
+                """);
+            var bounds = await card.BoundingBoxAsync();
+            if (bounds is null) return;
+            var top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var image = await page.ScreenshotAsync(new()
             {
                 Clip = new() { X = 0, Y = top, Width = id is null ? 1200 : 480, Height = id is null ? 630 : 252 },
                 Animations = ScreenshotAnimations.Disabled,
-                Style = id switch
-                {
-                    null => null,
-                    { Kind: SharePage.Node } => ".app-shell > :not(main) { visibility: hidden; }",
-                    _ => "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
-                },
+                Style = id is { Kind: not SharePage.Node }
+                    ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
+                    : null,
                 Timeout = 12000
             });
             await File.WriteAllBytesAsync(temporary, image);

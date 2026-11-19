@@ -26,7 +26,7 @@ public sealed class PublicPageSeoTests
         var html = await home.Content.ReadAsStringAsync();
         StringAssert.Contains(html, "<title>Atlas | The Public Think Tank</title>");
         StringAssert.Contains(html, "rel=\"canonical\" href=\"https://demo.thepublicthinktank.com/\"");
-        StringAssert.Contains(html, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/discover.png\"");
+        StringAssert.Contains(html, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/discover.png?v=2\"");
 
         var about = await client.GetStringAsync("/about");
         StringAssert.Contains(about, "<title>About Atlas | The Public Think Tank</title>");

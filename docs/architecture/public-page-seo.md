@@ -27,10 +27,10 @@ known UI routes and now adds route metadata to the initial HTML.
 | Generate public HTML in the ASP.NET Core host | Initial metadata for existing URLs using live public data. A metadata-only first slice supports link previews while the SPA still renders the body. | Keeps the existing artifact and same-origin deployment. Requires a public HTML response path and a separate way to verify body indexing. |
 
 The first release uses the ASP.NET Core host for metadata on the home feed,
-About, and public node links. The home preview introduces Atlas and uses a
-branded image. The node preview leads with the published title and excerpt,
-identifies Atlas as the site, and uses the first eligible HTTPS image or the
-branded fallback. The sharing service controls which fields it displays.
+About, and public node links. Share previews use the Atlas title and the page’s public description. When
+capture is enabled, each preview points to a screenshot of the shared page.
+Discover and node captures fill the frame with the card and omit the site
+navigation and voting error controls. The sharing service controls which fields it displays.
 SvelteKit still renders the page body in the browser. Server-rendered article
 content remains a separate decision for search discovery.
 
@@ -163,7 +163,7 @@ when the API is run from its project directory.
 
 When a reader requests a share image, Atlas reuses a current PNG on disk.
 A missing or stale image queues one capture per target. The request waits up to
-seven seconds, then serves the current Discover capture or the static fallback
+seven seconds, then serves the static Atlas fallback
 while the queued capture continues. Node edits invalidate captures via the
 node and document timestamps. Home captures expire after 24 hours and are also
 invalidated by moderation decisions. Clients may cache their own link previews.
