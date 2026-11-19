@@ -28,9 +28,12 @@ internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
     // Bump the URL and disk cache together when the capture layout changes.
-    internal const string LayoutVersion = "3";
+    internal const string LayoutVersion = "4";
+    internal const int ImageWidth = 1200;
+    internal const int ImageHeight = 630;
     private const string CaptureStyle = """
-        body { margin: 0 !important; padding: 0 !important; }
+        /* A centered 16:9 crop of 1200 × 630 trims 40 pixels from each edge. */
+        body { margin: 0 !important; padding: 0 4.67vw !important; box-sizing: border-box; }
         .app-shell, #main-content, #main-content .node-feed,
         #main-content .feed-intro,
         #main-content article.node-page, #main-content article.node-card {
@@ -108,10 +111,13 @@ internal sealed class ShareImageCapture(
                 : await playwright.Chromium.ConnectOverCDPAsync(
                     "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
                     new() { Timeout = 12000 });
+            var scale = id is null ? 1f : 2.5f;
+            var captureWidth = (int)(ImageWidth / scale);
+            var captureHeight = (int)(ImageHeight / scale);
             await using var session = await browser.NewContextAsync(new()
             {
-                ViewportSize = new() { Width = id is null ? 1200 : 480, Height = 1000 },
-                DeviceScaleFactor = id is null ? 1 : 2.5f,
+                ViewportSize = new() { Width = captureWidth, Height = 1000 },
+                DeviceScaleFactor = scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
                 ColorScheme = ColorScheme.Light
@@ -161,7 +167,7 @@ internal sealed class ShareImageCapture(
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var image = await page.ScreenshotAsync(new()
             {
-                Clip = new() { X = 0, Y = top, Width = id is null ? 1200 : 480, Height = id is null ? 630 : 252 },
+                Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
                 Animations = ScreenshotAnimations.Disabled,
                 Style = id is { Kind: not SharePage.Node }
                     ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"

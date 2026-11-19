@@ -257,7 +257,15 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         var image = capture.Enabled
             ? Url(request, ShareImageCapture.ImagePath(preview.Target))
             : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
-        if (image is not null) Meta("property", "og:image", image);
+        if (image is not null)
+        {
+            Meta("property", "og:image", image);
+            if (capture.Enabled || preview.Image is null)
+            {
+                Meta("property", "og:image:width", ShareImageCapture.ImageWidth.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Meta("property", "og:image:height", ShareImageCapture.ImageHeight.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");
         Meta("name", "twitter:title", ShareTitle);
         Meta("name", "twitter:description", preview.Description);

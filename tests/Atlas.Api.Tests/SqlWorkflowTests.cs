@@ -89,7 +89,7 @@ public sealed class SqlWorkflowTests
             var imagePath = $"/share-images/nodes/{node:D}.png";
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
-            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v3"));
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v4"));
             await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
             CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
