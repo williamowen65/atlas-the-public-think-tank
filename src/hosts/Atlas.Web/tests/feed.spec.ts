@@ -34,7 +34,7 @@ test('isolated feed appends on scrolling, deduplicates, hides excluded cards and
   await expect(page.locator('article')).toHaveCount(3);
   await page.locator('.feed-tail').scrollIntoViewIfNeeded();
   await expect(page.locator('article')).toHaveCount(5);
-  await expect(page.getByRole('status')).toContainText('caught up');
+  await expect(page.locator('.feed-tail').getByRole('status')).toContainText('caught up');
   expect(requests).toEqual([1, 2]);
   await expect(page.locator('article').first()).toContainText('Feed question 1');
   await expect(page.locator('article').last()).toContainText('Feed question 6');
@@ -100,6 +100,35 @@ test('Back from a node returns to the paginated feed and restores its card posit
   if (requests.length > requestIndex) expect(requests[requestIndex]).toBe(2);
   await expect.poll(async () => Math.abs(((await card.boundingBox())?.y ?? Infinity) - offset)).toBeLessThan(8);
 });
+
+for (const clipboardAvailable of [true, false]) {
+  test(`share preview copies the canonical node URL (clipboard ${clipboardAvailable ? 'available' : 'blocked'})`, async ({ page }) => {
+    const { nodeId } = entry(4);
+    await mockFeed(page);
+    await page.addInitScript(available => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: async (url: string) => {
+            if (!available) throw new Error('Clipboard blocked');
+            document.documentElement.dataset.copiedLink = url;
+          },
+        },
+      });
+    }, clipboardAvailable);
+    await page.goto(`/nodes?id=${nodeId}&share=feed`);
+    const card = page.getByRole('article', { name: 'Feed question 4' });
+    await expect(card).toBeVisible();
+    await expect(card.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
+    await card.getByRole('button', { name: 'Copy node link', exact: true }).click();
+    const canonical = new URL(`/nodes?id=${nodeId}`, page.url()).href;
+    if (clipboardAvailable) {
+      await expect(page.locator('html')).toHaveAttribute('data-copied-link', canonical);
+      await expect(card.getByText('Link copied', { exact: true })).toBeVisible();
+    } else {
+      await expect(card.getByRole('textbox', { name: 'Node link' })).toHaveValue(canonical);
+    }
+  });
+}
 
 test('header and footer each have a separate isolated Playground', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -183,7 +212,7 @@ test('node contribution tab pages fifteen children in scoped groups of three', a
     await panel.getByRole('button', { name: 'Load more nodes', exact: true }).click();
     await expect(panel.locator('article')).toHaveCount(current * 3);
   }
-  await expect(panel.getByRole('status')).toContainText('caught up');
+  await expect(panel.locator('.feed-tail').getByRole('status')).toContainText('caught up');
   await expect(panel.getByRole('button', { name: 'Load more nodes', exact: true })).toHaveCount(0);
   expect(pages).toEqual([1, 2, 3, 4, 5]);
   await page.getByRole('tab', { name: '0 Comments', exact: true }).click();

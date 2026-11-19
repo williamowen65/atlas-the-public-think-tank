@@ -68,7 +68,7 @@ public sealed class SqlWorkflowTests
                 .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
                 .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
             using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
-            await VerifyNodeSeo(seo, node, true, "HTTP idea");
+            await VerifyNodeSeo(seo, node, true, "Second report title");
             var capturePage = await seo.GetAsync($"/nodes?id={node:D}&share=feed");
             Assert.AreEqual("noindex", capturePage.Headers.GetValues("X-Robots-Tag").Single());
             StringAssert.Contains(await capturePage.Content.ReadAsStringAsync(),
@@ -559,7 +559,7 @@ public sealed class SqlWorkflowTests
                 (await anonymous.GetAsync($"/api/nodes/{node}/comments")).StatusCode
             );
         }
-        await VerifyNodeSeo(seo, node, false, "HTTP idea");
+        await VerifyNodeSeo(seo, node, false, "Second report title");
         Assert.AreEqual(HttpStatusCode.NotFound, (await seo.GetAsync($"/share-images/nodes/{node:D}.png")).StatusCode);
         // Restoration follows the existing author-edit -> review-request workflow.
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new

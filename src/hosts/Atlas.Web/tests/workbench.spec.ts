@@ -66,16 +66,16 @@ test('multiple dials are independent and share emitted styles', async ({ page })
 });
 
 /** Preview globals apply the same token definitions to layouts and components. */
-test('global theme and density apply across story types', async ({ page }) => {
-  for (const id of ['styles-and-layout-typography--playground', 'components-votingdial--playground']) {
+for (const id of ['styles-and-layout-typography--playground', 'components-votingdial--playground']) {
+  test(`global theme and density apply to ${id}`, async ({ page }) => {
     await page.goto(story(id, 'theme:dark;density:compact'));
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--atlas-space').trim())).toBe('.5rem');
     const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
     expect(results.violations).toEqual([]);
-  }
-});
+  });
+}
 
 /** Reset restores code-defined typography arguments rather than reloading edited args. */
 test('typography reset restores code defaults', async ({ page }) => {
