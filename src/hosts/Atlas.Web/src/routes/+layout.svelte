@@ -76,13 +76,18 @@
   }
 
   function saveScrollPosition() {
-    if (restoringScroll) return;
+    if (restoringScroll || !page.url || page.url.href !== window.location.href) return;
     const state = page.state as Record<string, unknown>;
     const position: SavedScrollPosition = {
       y: window.scrollY,
       anchor: visibleAnchor(),
       route: page.url.pathname + page.url.search,
     };
+    if (page.url.pathname === '/') {
+      try {
+        sessionStorage.setItem(scrollStateKey, JSON.stringify(position));
+      } catch { /* The browser can restrict storage. */ }
+    }
     replaceState('', { ...state, [scrollStateKey]: position });
   }
 
@@ -152,7 +157,7 @@
 
   // Server-rendered tags describe the initial document and are stale after a route change.
   afterNavigate(({ from, to }) => {
-    if (from && to && (from.url.pathname !== to.url.pathname || from.url.search !== to.url.search)) {
+    if (from?.url && to?.url && (from.url.pathname !== to.url.pathname || from.url.search !== to.url.search)) {
       document.head.querySelectorAll('[data-atlas-server-seo]').forEach((element) => element.remove());
     }
   });

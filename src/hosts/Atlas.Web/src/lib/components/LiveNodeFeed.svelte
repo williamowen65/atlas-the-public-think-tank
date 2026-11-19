@@ -326,15 +326,20 @@
   // reads and writes loading/items, which can repeatedly restart requests.
   onMount(() => {
     const historyState = routePage.state as Record<string, unknown>;
-    const saved = historyState[savedHistoryKey] as
-      | { anchor?: SavedFeedAnchor; route?: string }
-      | undefined;
+    type SavedPosition = { anchor?: SavedFeedAnchor; route?: string };
+    let saved = historyState[savedHistoryKey] as SavedPosition | undefined;
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    if (!saved && routePage.url.pathname === '/' && navigation?.type === 'back_forward') {
+      try {
+        saved = JSON.parse(sessionStorage.getItem(savedHistoryKey) ?? 'null') as SavedPosition | undefined;
+      } catch { /* Fall back to the first page if storage is unavailable. */ }
+    }
     const savedAnchor = saved?.anchor;
     const sameRoute = !saved?.route || saved.route === routePage.url.pathname + routePage.url.search;
     const restorePage = sameRoute && savedAnchor?.kind === 'node' && Number.isInteger(savedAnchor.page) && savedAnchor.page! > 0
       ? savedAnchor.page!
       : 1;
-    const anchor = sameRoute && restorePage > 1 ? savedAnchor : undefined;
+    const anchor = sameRoute && savedAnchor?.kind === 'node' ? savedAnchor : undefined;
     nextPage = restorePage;
     previousPage = restorePage - 1;
     hasPrevious = restorePage > 1;
