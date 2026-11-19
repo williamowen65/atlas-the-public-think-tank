@@ -45,8 +45,8 @@
    */
   let displayName = $state('Atlas User');
 
-  type ScrollAnchor = { kind: 'node' | 'comment'; id: string; offset: number };
-  type SavedScrollPosition = { y: number; anchor?: ScrollAnchor };
+  type ScrollAnchor = { kind: 'node' | 'comment'; id: string; offset: number; page?: number };
+  type SavedScrollPosition = { y: number; anchor?: ScrollAnchor; route?: string };
   const scrollStateKey = '__atlasScrollPosition';
   let restoreObserver: MutationObserver | undefined;
   let restoreResizeObserver: ResizeObserver | undefined;
@@ -71,13 +71,18 @@
       kind: element.dataset.nodeId ? 'node' : 'comment',
       id,
       offset: element.getBoundingClientRect().top,
+      page: element.dataset.feedPage ? Number(element.dataset.feedPage) : undefined,
     };
   }
 
   function saveScrollPosition() {
     if (restoringScroll) return;
     const state = page.state as Record<string, unknown>;
-    const position: SavedScrollPosition = { y: window.scrollY, anchor: visibleAnchor() };
+    const position: SavedScrollPosition = {
+      y: window.scrollY,
+      anchor: visibleAnchor(),
+      route: page.url.pathname + page.url.search,
+    };
     replaceState('', { ...state, [scrollStateKey]: position });
   }
 
@@ -152,6 +157,10 @@
     const saved = (page.state as Record<string, unknown>)[scrollStateKey] as
       | SavedScrollPosition
       | undefined;
+    // Feed routes resume the ranked page around this anchor; replaying earlier pages would
+    // recreate the expensive load-up-to-the-old-offset behavior this state is meant to avoid.
+    if (saved?.anchor?.kind === 'node' && Number.isInteger(saved.anchor.page) && saved.anchor.page! > 0)
+      return;
     if (saved && Number.isFinite(saved.y)) restoreScrollPosition(saved);
   });
 
