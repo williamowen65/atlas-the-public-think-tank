@@ -137,3 +137,10 @@ variable "seo_indexing_enabled" {
   type        = bool
   default     = false
 }
+
+variable "browserless_api_key" {
+  description = "Optional shared Browserless credential for Atlas website capture."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

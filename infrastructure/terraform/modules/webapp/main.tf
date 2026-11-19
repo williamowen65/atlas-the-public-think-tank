@@ -32,6 +32,11 @@ variable "seo_public_origin" {
   default = null
 }
 
+variable "browserless_api_key" {
+  type      = string
+  sensitive = true
+}
+
 variable "seo_indexing_enabled" {
   type    = bool
   default = false
@@ -73,6 +78,8 @@ resource "azurerm_linux_web_app" "atlas" {
     Atlas__Seo__IndexingEnabled           = tostring(var.seo_indexing_enabled)
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
+    }, var.browserless_api_key == "" ? {} : {
+    BROWSERLESS_IO_API_KEY = var.browserless_api_key
     }, var.account_mail_enabled ? {
     Atlas__AccountMail__Transport    = "Smtp"
     Atlas__AccountMail__Host         = var.account_mail_host

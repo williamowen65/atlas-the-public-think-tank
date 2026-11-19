@@ -112,3 +112,16 @@ Repeat the moderated request with an authorized session to ensure its head
 stays generic. Verify that the share image loads and that browser navigation
 clears metadata from the previous direct response. Repeat checks for both
 HTTPS production hosts and compare sitemap contents before submission.
+
+## Browserless credential for website screenshots
+
+Add `BROWSERLESS_IO_API_KEY` under the GitHub Actions environment secrets for
+`atlas-infra-apply`. Terraform passes the same credential to the live and demo
+website apps. An absent secret leaves the setting unset. The key is carried
+in protected Terraform state and plan data, like the SMTP password.
+
+The legacy capture code connected to `wss://production-sfo.browserless.io`
+over CDP. For the new capture worker, keep the token server-side, use local
+Chromium for local captures, and coordinate live and demo through a single
+consumer if the Browserless account allows only one concurrent session.
+The credential setup is independent of the screenshot queue and storage.
