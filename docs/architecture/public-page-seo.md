@@ -145,7 +145,8 @@ npm run capture:share -- --node 00000000-0000-0000-0000-000000000001
 ```
 
 Replace the example UUID with a node from your local database. Discover defaults
-to a wide viewport and nodes default to a narrow viewport. Use
+to a wide viewport and nodes use the same compact card as the feed. The
+node capture view is available at `/nodes?id=PUBLIC_NODE_ID&share=feed`. Use
 `--layout mobile` or `--layout wide` to compare 1200 × 630 outputs, and
 `--origin http://localhost:5173` to select a different loopback origin.
 The capture runs in a signed-out local Chromium session and writes to
@@ -158,9 +159,10 @@ automatic HTTP flow, use the ASP.NET host that serves the SPA and its Open Graph
 metadata. Install Chromium for the API's Microsoft.Playwright version by running
 `pwsh bin/Debug/net10.0/playwright.ps1 install chromium` after building
 `src/hosts/Atlas.Api`. Set `Atlas__Seo__CaptureOrigin` on the development API
-to the loopback origin Chromium should open (default `http://127.0.0.1:5173`).
+to the loopback origin Chromium should open (default `https://localhost:7240`).
 The server cache defaults to `src/hosts/Atlas.Web/.share-captures/server/`
-when the API is run from its project directory.
+when the API is run from its project directory. The API capture also accepts
+`ATLAS_LOCAL_CHROMIUM` as a local browser executable override.
 
 When a reader requests a share image, Atlas reuses a current PNG on disk.
 A missing or stale image queues one capture per target. The request waits up to

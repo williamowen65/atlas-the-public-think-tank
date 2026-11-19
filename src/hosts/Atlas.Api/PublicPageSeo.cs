@@ -118,7 +118,9 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             _ => null
         };
 
-        if (preview is null || preview.Target is { Kind: not SharePage.Node } || !CanIndex(request)) response.Headers[NoIndexHeader] = "noindex";
+        var captureView = path == "/nodes" && request.Query["share"] == "feed";
+        if (captureView || preview is null || preview.Target is { Kind: not SharePage.Node } || !CanIndex(request))
+            response.Headers[NoIndexHeader] = "noindex";
         response.ContentType = "text/html; charset=utf-8";
         if (HttpMethods.IsHead(request.Method)) return;
 

@@ -42,14 +42,18 @@ try {
     colorScheme: 'light',
   });
   const url = new URL(isNode ? '/nodes' : '/', origin);
-  if (isNode) url.searchParams.set('id', id);
+  if (isNode) {
+    url.searchParams.set('id', id);
+    url.searchParams.set('share', 'feed');
+  }
   const response = await page.goto(url.href, { waitUntil: 'domcontentloaded' });
   if (!response?.ok() || new URL(page.url()).origin !== origin.origin) {
     throw new Error(`Could not load the local Atlas page (${response?.status() ?? 'no response'}).`);
   }
 
-  const target = page.locator(isNode ? '#main-content article.node-page' : '#main-content article.node-card').first();
+  const target = page.locator(isNode ? '#main-content [data-share-node] article.node-card' : '#main-content article.node-card').first();
   await target.waitFor({ state: 'visible', timeout: 30_000 });
+  if (isNode) await target.locator("[data-feed-preview-ready='true']").waitFor({ state: 'attached' });
   await page.evaluate(() => document.fonts.ready);
   if (isNode) {
     // Keep the published node's title and opening content in frame.

@@ -69,6 +69,10 @@ public sealed class SqlWorkflowTests
                 .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
             using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
             await VerifyNodeSeo(seo, node, true, "HTTP idea");
+            var capturePage = await seo.GetAsync($"/nodes?id={node:D}&share=feed");
+            Assert.AreEqual("noindex", capturePage.Headers.GetValues("X-Robots-Tag").Single());
+            StringAssert.Contains(await capturePage.Content.ReadAsStringAsync(),
+                $"rel=\"canonical\" href=\"https://atlas.thepublicthinktank.com/nodes?id={node:D}\"");
             var community = await database.CommunityRows.AsNoTracking().SingleAsync();
             var participant = await database.ParticipantRows.AsNoTracking()
                 .SingleAsync(person => person.Id == community.OwnerParticipantId);
@@ -89,7 +93,7 @@ public sealed class SqlWorkflowTests
             var imagePath = $"/share-images/nodes/{node:D}.png";
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
-            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v4"));
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v5"));
             await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
             CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
@@ -582,6 +586,9 @@ public sealed class SqlWorkflowTests
         var html = await page.Content.ReadAsStringAsync();
         Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
         StringAssert.Contains(html, "property=\"og:title\" content=\"Atlas | The Public Think Tank\"");
+        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=5";
+        Assert.AreEqual(eligible, html.Contains($"property=\"og:image\" content=\"{image}\"", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains($"name=\"twitter:image\" content=\"{image}\"", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains($"href=\"{canonical}\"", StringComparison.Ordinal));
         var sitemap = await client.GetStringAsync("/sitemap.xml");

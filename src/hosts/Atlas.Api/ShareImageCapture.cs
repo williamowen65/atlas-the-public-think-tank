@@ -13,6 +13,8 @@ internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
         _ => $"/nodes?id={Id:D}"
     };
 
+    internal string CapturePath => Kind == SharePage.Node ? PagePath + "&share=feed" : PagePath;
+
     internal string ImagePath => Kind switch
     {
         SharePage.Community => $"/share-images/communities/{Id:D}.png",
@@ -20,7 +22,7 @@ internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
         _ => $"/share-images/nodes/{Id:D}.png"
     };
     internal string Selector => Kind is SharePage.Node
-        ? "#main-content article.node-page"
+        ? "#main-content [data-share-node] article.node-card"
         : "#main-content [data-share-preview]";
 }
 
@@ -28,7 +30,7 @@ internal sealed class ShareImageCapture(
     IConfiguration configuration, IWebHostEnvironment environment, ILogger<ShareImageCapture> logger)
 {
     // Bump the URL and disk cache together when the capture layout changes.
-    internal const string LayoutVersion = "4";
+    private static string LayoutVersion(ShareTarget? target) => target is { Kind: SharePage.Node } ? "5" : "4";
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
     private const string CaptureStyle = """
@@ -49,14 +51,14 @@ internal sealed class ShareImageCapture(
     private readonly SemaphoreSlim browserSlot = new(1);
     private readonly string? key = configuration["BROWSERLESS_IO_API_KEY"];
     private readonly Uri? origin = PublicPageSeo.ReadOrigin(environment.IsDevelopment()
-        ? configuration["Atlas:Seo:CaptureOrigin"] ?? "http://127.0.0.1:5173"
+        ? configuration["Atlas:Seo:CaptureOrigin"] ?? "https://localhost:7240"
         : configuration["Atlas:Seo:PublicOrigin"]);
     private readonly string? directory = ResolveDirectory(configuration, environment);
 
     internal bool Enabled => directory is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
-    internal static string ImagePath(ShareTarget? id) => (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion;
+    internal static string ImagePath(ShareTarget? id) => (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion(id);
 
     internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
@@ -66,7 +68,7 @@ internal sealed class ShareImageCapture(
 
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
-        var file = Path.Combine(directory!, $"v{LayoutVersion}", name + ".png");
+        var file = Path.Combine(directory!, $"v{LayoutVersion(id)}", name + ".png");
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
         var job = Schedule(name, file, id);
@@ -81,6 +83,7 @@ internal sealed class ShareImageCapture(
         if (revision is null) return Results.NotFound();
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
+        context.Response.Headers.CacheControl = "no-store";
         var fallback = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
@@ -101,13 +104,18 @@ internal sealed class ShareImageCapture(
     {
         await browserSlot.WaitAsync();
         var temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        var stage = "starting Chromium";
         try
         {
             var started = DateTime.UtcNow;
-            var url = new Uri(origin!, id?.PagePath ?? "/");
+            var url = new Uri(origin!, id?.CapturePath ?? "/");
             using var playwright = await Playwright.CreateAsync();
             await using var browser = environment.IsDevelopment()
-                ? await playwright.Chromium.LaunchAsync(new() { Timeout = 12000 })
+                ? await playwright.Chromium.LaunchAsync(new()
+                {
+                    Timeout = 12000,
+                    ExecutablePath = configuration["ATLAS_LOCAL_CHROMIUM"]
+                })
                 : await playwright.Chromium.ConnectOverCDPAsync(
                     "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
                     new() { Timeout = 12000 });
@@ -123,17 +131,44 @@ internal sealed class ShareImageCapture(
                 ColorScheme = ColorScheme.Light
             });
             var page = await session.NewPageAsync();
-            await page.RouteAsync("**/*", route =>
+            await page.RouteAsync("**/*", async route =>
             {
                 var request = route.Request;
-                if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var requestedUri) ||
-                    requestedUri.GetLeftPart(UriPartial.Authority) != origin!.GetLeftPart(UriPartial.Authority) ||
-                    request.Method != "GET" ||
-                    (request.IsNavigationRequest && requestedUri != url) ||
-                    requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase))
-                    return route.AbortAsync();
-                return route.ContinueAsync();
+                if (request.Method == "GET" && Uri.TryCreate(request.Url, UriKind.Absolute, out var requestedUri))
+                {
+                    if (requestedUri.GetLeftPart(UriPartial.Authority) == origin!.GetLeftPart(UriPartial.Authority) &&
+                        (!request.IsNavigationRequest || requestedUri == url) &&
+                        !requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await route.ContinueAsync();
+                        return;
+                    }
+                    // Demo seed photos use this CDN. Never follow third-party redirects from the capture browser.
+                    if (id is { Kind: SharePage.Node } && request.ResourceType == "image" &&
+                        !request.IsNavigationRequest && requestedUri.GetLeftPart(UriPartial.Authority) == "https://images.unsplash.com" &&
+                        requestedUri.AbsolutePath.StartsWith("/photo-", StringComparison.Ordinal) &&
+                        requestedUri.Query == "?w=900&fit=max")
+                    {
+                        try
+                        {
+                            var photo = await route.FetchAsync(new() { MaxRedirects = 0, Timeout = 2000 });
+                            try
+                            {
+                                if (photo.Ok && photo.Headers.TryGetValue("content-type", out var type) &&
+                                    type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    await route.FulfillAsync(new() { Response = photo });
+                                    return;
+                                }
+                            }
+                            finally { await photo.DisposeAsync(); }
+                        }
+                        catch (PlaywrightException) { /* A missing seed photo should not fail the entire capture. */ }
+                    }
+                }
+                await route.AbortAsync();
             });
+            stage = "loading the page";
             var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
             if (response?.Ok != true || page.Url != url.AbsoluteUri)
             {
@@ -142,9 +177,19 @@ internal sealed class ShareImageCapture(
                 return;
             }
 
+            stage = "waiting for the share card";
             var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
             await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
             await page.AddStyleTagAsync(new() { Content = CaptureStyle });
+            if (id is { Kind: SharePage.Node })
+            {
+                stage = "waiting for the feed preview";
+                await card.ScrollIntoViewIfNeededAsync();
+                // Title-only cards can finish loading with a zero-height preview body.
+                // The marker signals that loading settled, even when the body has no visible content.
+                await card.Locator("[data-feed-preview-ready='true']")
+                    .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
+            }
             var top = 0;
             if (id is null)
             {
@@ -164,6 +209,29 @@ internal sealed class ShareImageCapture(
                 if (bounds is null) return;
                 top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
             }
+            if (id is { Kind: SharePage.Node })
+            {
+                // The card can be visible while its lazy photos are still downloading.
+                // Wait only for images that overlap the actual crop.
+                await card.EvaluateAsync("""
+                    async (element, crop) => {
+                        const images = Array.from(element.querySelectorAll('img')).filter(image => {
+                            const bounds = image.getBoundingClientRect();
+                            return bounds.width > 0 && bounds.bottom > crop.top &&
+                                bounds.top < crop.top + crop.height &&
+                                bounds.right > 0 && bounds.left < window.innerWidth;
+                        });
+                        await Promise.race([
+                            Promise.allSettled(images.map(image => {
+                                image.loading = 'eager';
+                                return image.decode();
+                            })),
+                            new Promise(resolve => setTimeout(resolve, 2500))
+                        ]);
+                    }
+                    """, new { top, height = captureHeight });
+            }
+            stage = "writing the screenshot";
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var image = await page.ScreenshotAsync(new()
             {
@@ -181,7 +249,8 @@ internal sealed class ShareImageCapture(
         catch (Exception error)
         {
             // Browser connection errors can contain the credential-bearing URL.
-            logger.LogWarning("Atlas share capture for {Image} failed ({ErrorType}).", name, error.GetType().Name);
+            logger.LogWarning("Atlas share capture for {Image} failed while {Stage} ({ErrorType}).",
+                name, stage, error.GetType().Name);
         }
         finally
         {
