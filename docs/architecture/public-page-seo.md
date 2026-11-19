@@ -125,3 +125,27 @@ over CDP. For the new capture worker, keep the token server-side, use local
 Chromium for local captures, and coordinate live and demo through a single
 consumer if the Browserless account allows only one concurrent session.
 The credential setup is independent of the screenshot queue and storage.
+
+## Capture screenshots locally
+
+Start the Atlas API and the web development server with published sample data.
+From `src/hosts/Atlas.Web`, install local Chromium once and capture Discover
+or a published node by its UUID:
+
+```sh
+npx playwright install chromium
+npm run capture:share
+npm run capture:share -- --node 00000000-0000-0000-0000-000000000001
+```
+
+Replace the example UUID with a node from your local database. Discover defaults
+to a wide viewport and nodes default to a narrow viewport. Use
+`--layout mobile` or `--layout wide` to compare 1200 × 630 outputs, and
+`--origin http://localhost:5173` to select a different loopback origin.
+The capture runs in a signed-out local Chromium session and writes to
+`src/hosts/Atlas.Web/.share-captures/`. Git ignores this directory and the web
+build does not publish it. Set `ATLAS_LOCAL_CHROMIUM` only to override the
+Playwright-managed browser with a local executable.
+
+These commands generate files for development review. The application does
+not yet serve these files as Open Graph images.
