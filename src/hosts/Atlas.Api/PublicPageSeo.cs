@@ -48,7 +48,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
 
             if (string.Equals(request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
             {
-                context.Response.Redirect("/" + request.QueryString, permanent: true);
+                context.Response.Redirect("/", permanent: true);
                 return;
             }
         }

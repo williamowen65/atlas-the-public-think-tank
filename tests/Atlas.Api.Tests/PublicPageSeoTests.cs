@@ -34,7 +34,9 @@ public sealed class PublicPageSeoTests
         StringAssert.Contains(robots, "Allow: /");
         Assert.IsFalse(robots.Contains("Sitemap:", StringComparison.Ordinal));
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/sitemap.xml")).StatusCode);
-        Assert.AreEqual(HttpStatusCode.MovedPermanently, (await client.GetAsync("/index.html")).StatusCode);
+        var legacy = await client.GetAsync("/index.html?sort=recent");
+        Assert.AreEqual(HttpStatusCode.MovedPermanently, legacy.StatusCode);
+        Assert.AreEqual("/", legacy.Headers.Location?.OriginalString);
     }
 
     [TestMethod]
