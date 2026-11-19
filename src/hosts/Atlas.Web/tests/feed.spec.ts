@@ -10,7 +10,15 @@ async function mockFeed(page: Page, failSecond = false) {
     const url = new URL(route.request().url());
     if (url.pathname.includes('/communities/') || url.pathname.endsWith('/parents')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
+    if (/\/nodes\/[^/]+$/.test(url.pathname)) return route.fulfill({ json: { requestedTypeIds: [], status: 'Active' } });
     const current = Number(url.searchParams.get('Page'));
+    const nodeId = url.searchParams.get('NodeId');
+    if (nodeId) {
+      const items = [entry(Number(nodeId.slice(-12)))];
+      return route.fulfill({ json: { items, totalCount: 1, page: current, pageSize: 3, hasNextPage: false } });
+    }
     requested.push(current);
     if (current === 2 && fail) { fail = false; return route.fulfill({ status: 503 }); }
     const items = current === 1 ? [entry(1), entry(2), entry(3)] : [entry(3), entry(4), { ...entry(5), card: { ...entry(5).card, isHidden: true, title: '[Hidden by moderator: Spam]' } }, entry(6)];
@@ -61,6 +69,35 @@ test('SPA composes the shared shell and live feed at narrow widths', async ({ pa
   await page.getByRole('link', { name: 'Skip to content' }).focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#main-content$/);
+});
+
+test('Back from a node returns to the paginated feed and restores its card position', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 400 });
+  const requests = await mockFeed(page);
+  await page.goto('/');
+  await expect(page.locator('.node-card')).toHaveCount(3);
+  await page.locator('.feed-tail').scrollIntoViewIfNeeded();
+  const card = page.getByRole('article', { name: 'Feed question 4' });
+  const open = card.getByRole('button', { name: 'Read more', exact: true });
+  await expect(open).toBeVisible();
+  await card.evaluate(element => window.scrollBy(0, element.getBoundingClientRect().top - 24));
+  const offset = (await card.boundingBox())!.y;
+  await open.click();
+  await expect(page.locator('.node-page')).toBeVisible();
+  await expect(page).toHaveURL(/\/nodes\?id=/);
+
+  // Leaving while a node-page scroll is pending must preserve the feed history entry.
+  const requestIndex = requests.length;
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    window.dispatchEvent(new Event('scroll'));
+    history.back();
+  });
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.node-page')).toHaveCount(0);
+  await expect(card).toBeVisible();
+  expect(requests[requestIndex]).toBe(2);
+  await expect.poll(async () => Math.abs(((await card.boundingBox())?.y ?? Infinity) - offset)).toBeLessThan(8);
 });
 
 test('header and footer each have a separate isolated Playground', async ({ page }) => {

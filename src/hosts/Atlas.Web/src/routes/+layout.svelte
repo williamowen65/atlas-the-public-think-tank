@@ -52,6 +52,7 @@
   let restoreResizeObserver: ResizeObserver | undefined;
   let restoreFrame = 0;
   let restoreTimeout: ReturnType<typeof setTimeout> | undefined;
+  let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let restoringScroll = false;
 
   function visibleAnchor(): ScrollAnchor | undefined {
@@ -76,7 +77,9 @@
   }
 
   function saveScrollPosition() {
-    if (restoringScroll) return;
+    // Back updates the browser URL before SvelteKit finishes rendering the destination.
+    // A pending scroll save must not write the outgoing route into that history entry.
+    if (restoringScroll || page.url.href !== window.location.href) return;
     const state = page.state as Record<string, unknown>;
     const position: SavedScrollPosition = {
       y: window.scrollY,
@@ -162,6 +165,7 @@
     const saved = (page.state as Record<string, unknown>)[scrollStateKey] as
       | SavedScrollPosition
       | undefined;
+    if (saved?.route && saved.route !== page.url.pathname + page.url.search) return;
     // Feed routes resume the ranked page around this anchor; replaying earlier pages would
     // recreate the expensive load-up-to-the-old-offset behavior this state is meant to avoid.
     if (saved?.anchor?.kind === 'node' && Number.isInteger(saved.anchor.page) && saved.anchor.page! > 0)
@@ -172,7 +176,10 @@
   // Capture immediately before route navigation as well as during scrolling, so a quick click
   // after a swipe cannot leave the history entry with an older position.
   beforeNavigate(({ from, type }) => {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
     if (from && type !== 'popstate' && !restoringScroll) saveScrollPosition();
+    finishScrollRestore();
   });
 
   // Once mounted in the browser, read the session and listen for sign-in/out changes.
@@ -213,7 +220,6 @@
     // This reads the existing session; it does not require the visitor to sign in.
     void refresh();
     window.addEventListener('atlas-session-changed', refresh);
-    let saveTimer: ReturnType<typeof setTimeout> | undefined;
     const scheduleSave = () => {
       if (restoringScroll || saveTimer) return;
       saveTimer = setTimeout(() => {
