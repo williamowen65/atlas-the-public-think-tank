@@ -14,9 +14,9 @@
   // Embedded sign-in controls (comments, node creation, etc.) stay in context.
   function signedIn(participantId: string | null) {
     if (participantId) {
-      // Only allow the local Create route, including its draft query; never an external redirect.
+      // Allow the local Create route and the fixed globe invitation URL.
       const returnTo = page.url.searchParams.get('returnTo') ?? '/';
-      void goto(returnTo === '/new' || returnTo.startsWith('/new?') ? returnTo : '/');
+      void goto(returnTo === '/new' || returnTo.startsWith('/new?') || returnTo === '/?globe=open' ? returnTo : '/');
     }
   }
 </script>

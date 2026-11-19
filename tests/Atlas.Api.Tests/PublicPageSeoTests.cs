@@ -30,6 +30,13 @@ public sealed class PublicPageSeoTests
         StringAssert.Contains(html, "property=\"og:image:width\" content=\"1200\"");
         StringAssert.Contains(html, "property=\"og:image:height\" content=\"630\"");
 
+        var globe = await client.GetAsync("/?globe=open");
+        Assert.AreEqual("noindex", globe.Headers.GetValues("X-Robots-Tag").Single());
+        var globeHtml = await globe.Content.ReadAsStringAsync();
+        StringAssert.Contains(globeHtml, "property=\"og:title\" content=\"Put your pin on the Atlas globe\"");
+        StringAssert.Contains(globeHtml, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open\"");
+        StringAssert.Contains(globeHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1\"");
+
         var about = await client.GetStringAsync("/about");
         StringAssert.Contains(about, "<title>About Atlas | The Public Think Tank</title>");
         var robots = await client.GetStringAsync("/robots.txt");

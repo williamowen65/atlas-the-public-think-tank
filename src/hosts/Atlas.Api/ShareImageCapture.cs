@@ -2,12 +2,15 @@ using Microsoft.Playwright;
 
 namespace Atlas.Api;
 
-internal enum SharePage { Node, Community, Profile }
+internal enum SharePage { Node, Community, Profile, Globe }
 
 internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
 {
+    internal static ShareTarget Globe => new(SharePage.Globe, Guid.Empty);
+
     internal string PagePath => Kind switch
     {
+        SharePage.Globe => "/?globe=open",
         SharePage.Community => $"/communities/{Id:D}",
         SharePage.Profile => $"/profiles?id={Id:D}",
         _ => $"/nodes?id={Id:D}"
@@ -17,13 +20,17 @@ internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
 
     internal string ImagePath => Kind switch
     {
+        SharePage.Globe => "/share-images/globe.png",
         SharePage.Community => $"/share-images/communities/{Id:D}.png",
         SharePage.Profile => $"/share-images/profiles/{Id:D}.png",
         _ => $"/share-images/nodes/{Id:D}.png"
     };
-    internal string Selector => Kind is SharePage.Node
-        ? "#main-content [data-share-node] article.node-card"
-        : "#main-content [data-share-preview]";
+    internal string Selector => Kind switch
+    {
+        SharePage.Node => "#main-content [data-share-node] article.node-card",
+        SharePage.Globe => "dialog[data-globe-share][open]",
+        _ => "#main-content [data-share-preview]"
+    };
 }
 
 internal sealed class ShareImageCapture(
@@ -34,6 +41,7 @@ internal sealed class ShareImageCapture(
     {
         null => "5",
         { Kind: SharePage.Node } => "6",
+        { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
@@ -53,6 +61,34 @@ internal sealed class ShareImageCapture(
     private const string DiscoverCaptureStyle = """
         .app-shell > :not(main, .atlas-header, .mini-launcher) { display: none !important; }
         .app-shell > .mini-launcher { right: 4.67vw !important; }
+        """;
+    private const string GlobeCaptureStyle = """
+        .app-shell > :not([data-globe-share]) { display: none !important; }
+        dialog[data-globe-share] {
+            inset: 25px 56px !important;
+            box-sizing: border-box;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 32px !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            align-items: center;
+            gap: 0 32px;
+            --globe-size: 415px !important;
+        }
+        [data-globe-share] > .toolbar { grid-area: 1 / 1; }
+        [data-globe-share] > .world { grid-area: 2 / 1; margin: auto; }
+        [data-globe-share] > .globe-caption { grid-area: 3 / 1; justify-content: center; }
+        [data-globe-share] > .globe-actions,
+        [data-globe-share] > .feedback,
+        [data-globe-share] .close,
+        [data-globe-share] .connection { display: none !important; }
+        [data-globe-invite] { display: block !important; grid-area: 1 / 2 / 4; padding-inline: 12px; }
+        [data-globe-invite] strong { color: var(--atlas-accent); font-size: 19px; }
+        [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
+        [data-globe-invite] p { font-size: 23px; line-height: 1.4; }
         """;
 
     private readonly object gate = new();
@@ -77,6 +113,7 @@ internal sealed class ShareImageCapture(
 
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
+        if (id is { Kind: SharePage.Globe }) name = "globe";
         var file = Path.Combine(directory!, $"v{LayoutVersion(id)}", name + ".png");
         if (Current(file, revision.Value)) return Results.File(file, "image/png");
 
@@ -118,22 +155,25 @@ internal sealed class ShareImageCapture(
         {
             var started = DateTime.UtcNow;
             var url = new Uri(origin!, id?.CapturePath ?? "/");
+            var globe = id is { Kind: SharePage.Globe };
+            var fullFrame = id is null || globe;
             using var playwright = await Playwright.CreateAsync();
             await using var browser = environment.IsDevelopment()
                 ? await playwright.Chromium.LaunchAsync(new()
                 {
                     Timeout = 12000,
-                    ExecutablePath = configuration["ATLAS_LOCAL_CHROMIUM"]
+                    ExecutablePath = configuration["ATLAS_LOCAL_CHROMIUM"],
+                    Args = globe ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : null
                 })
                 : await playwright.Chromium.ConnectOverCDPAsync(
                     "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
                     new() { Timeout = 12000 });
-            var scale = id is null ? 1f : 2.5f;
+            var scale = fullFrame ? 1f : 2.5f;
             var captureWidth = (int)(ImageWidth / scale);
             var captureHeight = (int)(ImageHeight / scale);
             await using var session = await browser.NewContextAsync(new()
             {
-                ViewportSize = new() { Width = captureWidth, Height = id is null ? captureHeight : 1000 },
+                ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
                 DeviceScaleFactor = scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
@@ -147,7 +187,8 @@ internal sealed class ShareImageCapture(
                 {
                     if (requestedUri.GetLeftPart(UriPartial.Authority) == origin!.GetLeftPart(UriPartial.Authority) &&
                         (!request.IsNavigationRequest || requestedUri == url) &&
-                        !requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase))
+                        (!requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase) ||
+                            (globe && requestedUri.AbsolutePath == "/atlas-session-api/globe/snapshot")))
                     {
                         await route.ContinueAsync();
                         return;
@@ -193,7 +234,7 @@ internal sealed class ShareImageCapture(
             {
                 Content = CaptureStyle + (id is null
                     ? DiscoverCaptureStyle
-                    : ".app-shell > :not(main) { display: none !important; }")
+                    : globe ? GlobeCaptureStyle : ".app-shell > :not(main) { display: none !important; }")
             });
             if (id is { Kind: SharePage.Node })
             {
@@ -211,6 +252,12 @@ internal sealed class ShareImageCapture(
                 await card.Locator("[data-feed-preview-ready='true']")
                     .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
                 await page.EvaluateAsync("window.scrollTo({ top: 0, behavior: 'instant' })");
+            }
+            else if (globe)
+            {
+                stage = "waiting for the globe renderer";
+                await card.Locator(".world [data-map-ready='true'] canvas[data-ready='true']")
+                    .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
             }
             else
             {
@@ -252,7 +299,7 @@ internal sealed class ShareImageCapture(
             {
                 Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
                 Animations = ScreenshotAnimations.Disabled,
-                Style = id is { Kind: not SharePage.Node }
+                Style = id is { Kind: SharePage.Community or SharePage.Profile }
                     ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
                     : null,
                 Timeout = 12000
