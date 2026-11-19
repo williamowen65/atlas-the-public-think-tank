@@ -29,6 +29,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{55555555-5555-4555-8555-555555555555}"
 	ProjectSection(SolutionItems) = preProject
+		docs\atlas_milestone_timeline.excalidraw = docs\atlas_milestone_timeline.excalidraw
 		docs\PTT-87-SQL-Server.md = docs\PTT-87-SQL-Server.md
 		docs\PTT-94-Identity.md = docs\PTT-94-Identity.md
 		docs\README.md = docs\README.md
