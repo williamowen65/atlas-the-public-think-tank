@@ -63,11 +63,17 @@ public sealed class SqlWorkflowTests
             await GrantGlobalModeratorRole(factory);
             using var web = PublicPageSeoTests.CreateWebRoot();
             using var seoHost = factory.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
+                .UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
                 .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
                 .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
                 .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
             using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
             await VerifyNodeSeo(seo, node, true, "HTTP idea");
+            var imagePath = $"/share-images/nodes/{node:D}.png";
+            byte[] cached = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
+            await File.WriteAllBytesAsync(Path.Combine(web.Path, $"{node:D}.png"), cached);
+            CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
             await VerifyNodeSeo(seo, node, true, "Revised after moderation");
 
@@ -532,6 +538,7 @@ public sealed class SqlWorkflowTests
             );
         }
         await VerifyNodeSeo(seo, node, false, "HTTP idea");
+        Assert.AreEqual(HttpStatusCode.NotFound, (await seo.GetAsync($"/share-images/nodes/{node:D}.png")).StatusCode);
         // Restoration follows the existing author-edit -> review-request workflow.
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new
         {

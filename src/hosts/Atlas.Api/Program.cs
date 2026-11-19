@@ -40,6 +40,7 @@ if (!builder.Environment.IsDevelopment() &&
         (_, meter) => meter.AddMeter("Atlas.Observability"));
 }
 builder.Services.AddAtlasApi(builder.Configuration);
+builder.Services.AddSingleton<ShareImageCapture>();
 // Globe routes use the existing API host in every environment; schema updates remain explicit.
 builder.Services.AddSingleton<Atlas.Persistence.Globe.IGlobeHistory, Atlas.Persistence.Globe.SqlGlobeHistory>();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -136,6 +137,8 @@ app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 app.MapMethods("/robots.txt", ["GET", "HEAD"], (HttpRequest request) => seo.Robots(request));
 app.MapMethods("/sitemap.xml", ["GET", "HEAD"], (Func<HttpContext, Task<IResult>>)seo.Sitemap);
+app.MapGet("/share-images/discover.png", (HttpContext context, ShareImageCapture capture) => capture.Image(context, null));
+app.MapGet("/share-images/nodes/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) => capture.Image(context, id));
 app.MapFallback(context => seo.ServePage(context, app.Environment));
 app.Run();
 // Top-level statements generate a Program type containing Main. This declaration

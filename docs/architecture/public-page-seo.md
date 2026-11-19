@@ -124,7 +124,10 @@ The legacy capture code connected to `wss://production-sfo.browserless.io`
 over CDP. For the new capture worker, keep the token server-side, use local
 Chromium for local captures, and coordinate live and demo through a single
 consumer if the Browserless account allows only one concurrent session.
-The credential setup is independent of the screenshot queue and storage.
+Each website process queues up to eight distinct images and runs one capture
+at a time. Browserless enforces the account limit across live and demo.
+Production and demo save their respective cache files under each App Service's
+persistent `/home/data/atlas-share-captures` directory, outside the web root.
 
 ## Capture screenshots locally
 
@@ -147,5 +150,18 @@ The capture runs in a signed-out local Chromium session and writes to
 build does not publish it. Set `ATLAS_LOCAL_CHROMIUM` only to override the
 Playwright-managed browser with a local executable.
 
-These commands generate files for development review. The application does
-not yet serve these files as Open Graph images.
+The manual commands generate files for development review. To exercise the
+automatic HTTP flow, use the ASP.NET host that serves the SPA and its Open Graph
+metadata. Install Chromium for the API's Microsoft.Playwright version by running
+`pwsh bin/Debug/net10.0/playwright.ps1 install chromium` after building
+`src/hosts/Atlas.Api`. Set `Atlas__Seo__CaptureOrigin` on the development API
+to the loopback origin Chromium should open (default `http://127.0.0.1:5173`).
+The server cache defaults to `src/hosts/Atlas.Web/.share-captures/server/`
+when the API is run from its project directory.
+
+When a reader requests a share image, Atlas reuses a current PNG on disk.
+A missing or stale image queues one capture per target. The request waits up to
+seven seconds, then serves the current Discover capture or the static fallback
+while the queued capture continues. Node edits invalidate captures via the
+node and document timestamps. Home captures expire after 24 hours and are also
+invalidated by moderation decisions. Clients may cache their own link previews.

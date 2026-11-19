@@ -154,7 +154,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             }
         }
         return new Preview(node.Title, text.Length == 0 ? HomeDescription : Excerpt(text),
-            NodePath(id), "article", image);
+            NodePath(id), "article", image, id);
     }
 
     private static void ReadSection(SectionedBlock sectioned, ref string text, ref Uri? image)
@@ -180,6 +180,29 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             !db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
                 report.Status == (int)ModerationStatus.Actioned && report.VisibilityRestoredAt == null));
 
+    internal static async Task<DateTimeOffset?> ShareRevision(HttpContext context, Guid? id)
+    {
+        using var db = context.RequestServices.GetRequiredService<Func<AtlasDataContext>>()();
+        if (id is null)
+        {
+            var moderation = await db.ModerationCaseRows.MaxAsync(
+                report => report.VisibilityRestoredAt ?? report.DecidedAt, context.RequestAborted);
+            return moderation ?? DateTimeOffset.MinValue;
+        }
+        var revision = await (from node in EligibleNodes(db)
+                              join document in db.DocumentRows on node.DescriptionId equals (Guid?)document.Id
+                              where node.Id == id
+                              select new
+                              {
+                                  Node = node.UpdatedAt,
+                                  Document = document.UpdatedAt,
+                                  Block = (from link in document.Blocks
+                                           join block in db.BlockRows on link.BlockId equals block.Id
+                                           select (DateTimeOffset?)block.UpdatedAt).Max()
+                              }).SingleOrDefaultAsync(context.RequestAborted);
+        return revision is null ? null : new[] { revision.Node, revision.Document, revision.Block ?? DateTimeOffset.MinValue }.Max();
+    }
+
     private string Head(HttpRequest request, Preview preview, bool canonical)
     {
         var url = Url(request, preview.Path);
@@ -197,7 +220,10 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         Meta("property", "og:type", preview.Type);
         Meta("property", "og:site_name", "Atlas");
         if (url is not null) Meta("property", "og:url", url);
-        var image = preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
+        var capture = request.HttpContext.RequestServices.GetRequiredService<ShareImageCapture>();
+        var image = capture.Enabled
+            ? Url(request, ShareImageCapture.ImagePath(preview.NodeId))
+            : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
         if (image is not null) Meta("property", "og:image", image);
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");
         Meta("name", "twitter:title", preview.Title);
@@ -216,7 +242,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         return authority is null ? null : authority + path;
     }
 
-    private static Uri? ReadOrigin(string? value) =>
+    internal static Uri? ReadOrigin(string? value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)) &&
         uri.AbsolutePath == "/" && uri.Query == "" && uri.Fragment == "" && uri.UserInfo == "" ? uri : null;
@@ -249,5 +275,5 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         or "/confirm-email" or "/forgot-password" or "/reset-password"
         || path.StartsWith("/communities/", StringComparison.Ordinal);
 
-    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null);
+    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null, Guid? NodeId = null);
 }
