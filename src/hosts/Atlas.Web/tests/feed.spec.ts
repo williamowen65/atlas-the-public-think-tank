@@ -82,22 +82,29 @@ test('Back from a node returns to the paginated feed and restores its card posit
   await expect(open).toBeVisible();
   await card.evaluate(element => window.scrollBy(0, element.getBoundingClientRect().top - 24));
   const offset = (await card.boundingBox())!.y;
+  const documentToken = await page.evaluate(() => {
+    const token = crypto.randomUUID();
+    document.documentElement.dataset.navigationTestToken = token;
+    return token;
+  });
   await open.click();
   await expect(page.locator('.node-page')).toBeVisible();
   await expect(page).toHaveURL(/\/nodes\?id=/);
+  await expect(page.locator('html')).toHaveAttribute('data-navigation-test-token', documentToken);
 
   // Back must change routes even when it follows a scroll on the node page.
   const requestIndex = requests.length;
   await page.evaluate(() => {
     window.scrollTo(0, document.documentElement.scrollHeight);
+    window.dispatchEvent(new Event('scroll'));
   });
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('.node-page')).toHaveCount(0);
   await expect(card).toBeVisible();
-  // A browser-cached document can resume without issuing another feed request.
-  if (requests.length > requestIndex) expect(requests[requestIndex]).toBe(2);
+  await expect(page.locator('html')).toHaveAttribute('data-navigation-test-token', documentToken);
+  expect(requests[requestIndex]).toBe(2);
   await expect.poll(async () => Math.abs(((await card.boundingBox())?.y ?? Infinity) - offset)).toBeLessThan(8);
 });
 

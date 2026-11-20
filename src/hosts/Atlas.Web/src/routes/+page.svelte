@@ -24,6 +24,10 @@
 
 <LiveNodeFeed
   onOpenProfile={(id) => void goto('/profiles?id=' + encodeURIComponent(id))}
+  onOpenNode={(id, typeId) =>
+    void goto(
+      `/nodes?id=${encodeURIComponent(id)}${typeId ? `&type=${encodeURIComponent(typeId)}#contributions` : ''}`,
+    )}
 />
 
 <style>
