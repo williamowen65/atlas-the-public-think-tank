@@ -65,10 +65,11 @@ return 404.
 
 ## Host and rollout
 
-The canonical production hostname is `atlas.thepublicthinktank.com`.
-`www.thepublicthinktank.com` permanently redirects to it, preserving the path
-and query. The redirect activates once the live app is configured with the
-canonical Atlas origin. Keep the demo origin separate.
+The live SEO origin determines the canonical production hostname. An optional
+live redirect hostname permanently redirects to that origin, preserving the
+path and query. Without either setting, the site uses its Azure hostname and
+has no redirect alias. Terraform only configures application settings here.
+The `site_urls` output reports the Azure-provided URLs.
 
 1. Set up Azure custom hostname bindings, DNS, and HTTPS for the two live
    hostnames and the demo hostname. Bind `www` to the live app so it can issue
@@ -76,7 +77,8 @@ canonical Atlas origin. Keep the demo origin separate.
 2. In the GitHub environment used for Terraform plan and apply, set
    `ATLAS_SEO_PUBLIC_ORIGINS` to
    `{"live":"https://atlas.thepublicthinktank.com","demo":"https://demo.thepublicthinktank.com"}`
-   once those bindings are ready. Terraform defaults each unset origin to its
+   once those bindings are ready. Set `ATLAS_SEO_LIVE_REDIRECT_HOST` to
+   `www.thepublicthinktank.com` if using that bound alias. Terraform defaults each unset origin to its
    App Service hostname. Keep `ATLAS_SEO_INDEXING_ENABLED` false for the
    first rollout.
 3. Deploy the branch to demo and verify the two share cards below. Demo and

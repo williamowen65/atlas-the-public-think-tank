@@ -78,18 +78,19 @@ public sealed class PublicPageSeoTests
         using var root = new ApiFactory();
         using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
             .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
-            .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
+            .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.example.org")
+            .UseSetting("Atlas:Seo:RedirectHost", "www.example.org")
             .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
-        using var live = Client(factory, "https://atlas.thepublicthinktank.com");
-        using var www = Client(factory, "https://www.thepublicthinktank.com");
+        using var live = Client(factory, "https://atlas.example.org");
+        using var www = Client(factory, "https://www.example.org");
         using var azure = Client(factory, "https://atlas-live.azurewebsites.net");
 
         var redirect = await www.GetAsync("/nodes?id=example&type=comments");
         Assert.AreEqual(HttpStatusCode.PermanentRedirect, redirect.StatusCode);
-        Assert.AreEqual("https://atlas.thepublicthinktank.com/nodes?id=example&type=comments",
+        Assert.AreEqual("https://atlas.example.org/nodes?id=example&type=comments",
             redirect.Headers.Location?.AbsoluteUri);
         StringAssert.Contains(await live.GetStringAsync("/robots.txt"),
-            "Sitemap: https://atlas.thepublicthinktank.com/sitemap.xml");
+            "Sitemap: https://atlas.example.org/sitemap.xml");
         Assert.IsFalse((await live.GetAsync("/")).Headers.Contains("X-Robots-Tag"));
         Assert.IsTrue((await azure.GetAsync("/")).Headers.Contains("X-Robots-Tag"));
         Assert.AreEqual(HttpStatusCode.NotFound, (await azure.GetAsync("/sitemap.xml")).StatusCode);

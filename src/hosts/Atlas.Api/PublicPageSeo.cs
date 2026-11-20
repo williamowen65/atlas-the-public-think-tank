@@ -16,8 +16,6 @@ namespace Atlas.Api;
 
 internal sealed class PublicPageSeo(IConfiguration configuration)
 {
-    private const string ProductionHost = "atlas.thepublicthinktank.com";
-    private const string AlternateHost = "www.thepublicthinktank.com";
     private const string ShareTitle = "Atlas | The Public Think Tank";
     private const string HomeDescription =
         "Explore connected questions, evidence, and ideas in Atlas, the Public Think Tank.";
@@ -30,17 +28,20 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
     private readonly bool live = configuration["ATLAS_DEPLOYMENT_VARIANT"] == "live";
     private readonly bool indexingEnabled = configuration.GetValue<bool>("Atlas:Seo:IndexingEnabled");
 
-    private bool HasProductionOrigin => origin?.GetLeftPart(UriPartial.Authority) == $"https://{ProductionHost}";
+    private readonly string? redirectHost = configuration["Atlas:Seo:RedirectHost"];
+
+    private bool HasProductionOrigin => origin is { Scheme: "https", IsLoopback: false, IsDefaultPort: true };
 
     private bool CanIndex(HttpRequest request) =>
-        live && indexingEnabled && HasProductionOrigin && IsHost(request, ProductionHost);
+        live && indexingEnabled && HasProductionOrigin && IsHost(request, origin!.Host);
 
     public async Task RedirectAliases(HttpContext context, RequestDelegate next)
     {
         var request = context.Request;
         if (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method))
         {
-            if (live && HasProductionOrigin && IsHost(request, AlternateHost))
+            if (live && HasProductionOrigin && redirectHost is not null &&
+                !IsHost(request, origin!.Host) && IsHost(request, redirectHost))
             {
                 context.Response.Redirect(origin!.GetLeftPart(UriPartial.Authority) +
                     request.PathBase.ToUriComponent() + request.Path.ToUriComponent() + request.QueryString,

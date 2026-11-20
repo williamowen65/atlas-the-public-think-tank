@@ -132,6 +132,16 @@ variable "seo_public_origins" {
   }
 }
 
+variable "seo_live_redirect_host" {
+  description = "Optional alternate live hostname already bound to the App Service; redirects to the configured SEO origin."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.seo_live_redirect_host == "" || can(regex("^([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$", var.seo_live_redirect_host))
+    error_message = "Use a hostname without a scheme, port, or path."
+  }
+}
+
 variable "seo_indexing_enabled" {
   description = "Enable indexing and the sitemap on the configured canonical live Atlas hostname."
   type        = bool

@@ -37,6 +37,11 @@ variable "browserless_api_key" {
   sensitive = true
 }
 
+variable "seo_redirect_host" {
+  type    = string
+  default = ""
+}
+
 variable "seo_indexing_enabled" {
   type    = bool
   default = false
@@ -76,6 +81,8 @@ resource "azurerm_linux_web_app" "atlas" {
     ATLAS_DEPLOYMENT_VARIANT              = var.variant
     Atlas__Seo__PublicOrigin              = coalesce(var.seo_public_origin, format("https://%s.azurewebsites.net", var.name))
     Atlas__Seo__IndexingEnabled           = tostring(var.seo_indexing_enabled)
+    }, var.seo_redirect_host == "" ? {} : {
+    Atlas__Seo__RedirectHost = var.seo_redirect_host
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
     }, var.browserless_api_key == "" ? {} : {
