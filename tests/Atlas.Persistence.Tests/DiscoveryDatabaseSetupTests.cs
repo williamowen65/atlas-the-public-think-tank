@@ -46,7 +46,7 @@ public sealed class DiscoveryDatabaseSetupTests
     }
 
     [TestMethod]
-    public void ExplicitSetupUpgradesAnExistingFullTextIndexedBlockTable()
+    public void ExplicitSetupUpgradesExistingFullTextIndexedContent()
     {
         const string previousMigration = "20261108221754_AddGlobePinColor";
         using var fixture = SqlTestDatabase.Create();
@@ -54,6 +54,9 @@ public sealed class DiscoveryDatabaseSetupTests
 
         db.Database.Migrate(previousMigration);
         AtlasDatabaseSetup.InstallSupplementalSchema(db);
+        db.Database.ExecuteSqlRaw("""
+            ALTER FULLTEXT INDEX ON dbo.NodeRows ADD (ShortDescription LANGUAGE 1033);
+            """);
         Assert.AreEqual(1, db.Database.SqlQuery<int>($"""
             SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes
             WHERE object_id = OBJECT_ID(N'dbo.BlockRows')
@@ -62,6 +65,10 @@ public sealed class DiscoveryDatabaseSetupTests
         AtlasDatabaseSetup.Apply(db);
 
         Assert.IsFalse(db.Database.GetPendingMigrations().Any());
+        Assert.AreEqual(0, db.Database.SqlQuery<int>($"""
+            SELECT COUNT(*) AS [Value] FROM sys.columns
+            WHERE object_id = OBJECT_ID(N'dbo.NodeRows') AND name = N'ShortDescription'
+            """).Single());
         Assert.AreEqual(4, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes WHERE is_enabled = 1").Single());
     }
 
