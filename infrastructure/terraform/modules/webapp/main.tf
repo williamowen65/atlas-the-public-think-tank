@@ -7,6 +7,8 @@ variable "app_subnet_id" { type = string }
 variable "app_service_sku" { type = string }
 variable "insights_connection" { type = string }
 variable "identity_id" { type = string }
+variable "identity_client_id" { type = string }
+variable "identity_principal_id" { type = string }
 variable "connection_string" {
   type      = string
   default   = null
@@ -48,6 +50,8 @@ variable "seo_indexing_enabled" {
 }
 
 resource "azurerm_linux_web_app" "atlas" {
+  depends_on = [azurerm_role_assignment.share_images]
+
   name                                           = var.name
   resource_group_name                            = var.resource_group_name
   location                                       = var.location
@@ -80,6 +84,8 @@ resource "azurerm_linux_web_app" "atlas" {
     APPLICATIONINSIGHTS_CONNECTION_STRING = var.insights_connection
     ATLAS_DEPLOYMENT_VARIANT              = var.variant
     Atlas__Seo__PublicOrigin              = coalesce(var.seo_public_origin, format("https://%s.azurewebsites.net", var.name))
+    Atlas__Seo__BlobContainerUrl          = "${azurerm_storage_account.share_images.primary_blob_endpoint}${azurerm_storage_container.share_images.name}"
+    Atlas__Seo__BlobIdentityClientId      = var.identity_client_id
     Atlas__Seo__IndexingEnabled           = tostring(var.seo_indexing_enabled)
     }, var.seo_redirect_host == "" ? {} : {
     Atlas__Seo__RedirectHost = var.seo_redirect_host

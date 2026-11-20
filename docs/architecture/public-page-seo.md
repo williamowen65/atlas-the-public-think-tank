@@ -131,8 +131,12 @@ Chromium for local captures, and coordinate live and demo through a single
 consumer if the Browserless account allows only one concurrent session.
 Each website process queues up to eight distinct images and runs one capture
 at a time. Browserless enforces the account limit across live and demo.
-Production and demo save their respective cache files under each App Service's
-persistent `/home/data/atlas-share-captures` directory, outside the web root.
+Terraform creates a dedicated Azure Storage account and private share-image
+container for each website. Each website uses its existing runtime managed
+identity to read and write its own container. Atlas serves the images through
+the existing share-image URLs. Azure removes cache blobs after seven days
+without modification. The previous App Service filesystem cache is not migrated;
+Azure generates fresh images when requested.
 
 ## Capture screenshots locally
 
@@ -166,7 +170,7 @@ The server cache defaults to `src/hosts/Atlas.Web/.share-captures/server/`
 when the API is run from its project directory. The API capture also accepts
 `ATLAS_LOCAL_CHROMIUM` as a local browser executable override.
 
-When a reader requests a share image, Atlas reuses a current PNG on disk.
+When a reader requests a share image, Atlas reuses a current PNG from its cache.
 A missing or stale image queues one capture per target. The request waits up to
 seven seconds, then serves the static Atlas fallback
 while the queued capture continues. Node edits invalidate captures via the

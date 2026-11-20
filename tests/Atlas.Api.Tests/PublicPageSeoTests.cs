@@ -49,6 +49,34 @@ public sealed class PublicPageSeoTests
     }
 
     [TestMethod]
+    [DataRow(false, "/atlas-share.png")]
+    [DataRow(true, "/share-images/globe.png?v=1")]
+    public async Task Deployed_share_images_require_blob_storage(bool configureBlobStorage, string expectedImage)
+    {
+        using var web = CreateWebRoot();
+        using var root = new ApiFactory();
+        using var factory = root.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production").UseWebRoot(web.Path)
+                .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "demo")
+                .UseSetting("Atlas:Seo:PublicOrigin", "https://demo.example.org")
+                .UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
+                .UseSetting("BROWSERLESS_IO_API_KEY", "test-key");
+            if (configureBlobStorage)
+            {
+                builder.UseSetting("Atlas:Seo:BlobContainerUrl", "https://example.blob.core.windows.net/share-images")
+                    .UseSetting("Atlas:Seo:BlobIdentityClientId", "11111111-1111-1111-1111-111111111111");
+            }
+        });
+        using var client = Client(factory, "https://demo.example.org");
+
+        var html = await client.GetStringAsync("/?globe=open");
+        StringAssert.Contains(html, $"property=\"og:image\" content=\"https://demo.example.org{expectedImage}\"");
+        if (!configureBlobStorage)
+            Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/share-images/globe.png")).StatusCode);
+    }
+
+    [TestMethod]
     public async Task Anonymous_private_links_redirect_to_feed_without_forwarding_queries()
     {
         using var web = CreateWebRoot();

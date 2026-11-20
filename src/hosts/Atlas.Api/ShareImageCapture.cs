@@ -98,9 +98,9 @@ internal sealed class ShareImageCapture(
     private readonly Uri? origin = PublicPageSeo.ReadOrigin(environment.IsDevelopment()
         ? configuration["Atlas:Seo:CaptureOrigin"] ?? "https://localhost:7240"
         : configuration["Atlas:Seo:PublicOrigin"]);
-    private readonly string? directory = ResolveDirectory(configuration, environment);
+    private readonly ShareImageCache? cache = ShareImageCache.Create(configuration, environment);
 
-    internal bool Enabled => directory is not null && origin is not null &&
+    internal bool Enabled => cache is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
     internal static string ImagePath(ShareTarget? id) => (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion(id);
@@ -114,10 +114,10 @@ internal sealed class ShareImageCapture(
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
         if (id is { Kind: SharePage.Globe }) name = "globe";
-        var file = Path.Combine(directory!, $"v{LayoutVersion(id)}", name + ".png");
-        if (Current(file, revision.Value)) return Results.File(file, "image/png");
+        var cacheKey = $"v{LayoutVersion(id)}/{name}.png";
+        if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } cached) return cached;
 
-        var job = Schedule(name, file, id);
+        var job = Schedule(name, cacheKey, id);
         if (job is not null)
         {
             try { await job.WaitAsync(TimeSpan.FromSeconds(7), context.RequestAborted); }
@@ -127,29 +127,41 @@ internal sealed class ShareImageCapture(
         // The node might have been edited or hidden while Chromium was rendering it.
         revision = await PublicPageSeo.ShareRevision(context, id);
         if (revision is null) return Results.NotFound();
-        if (Current(file, revision.Value)) return Results.File(file, "image/png");
+        if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } generated) return generated;
 
         context.Response.Headers.CacheControl = "no-store";
         var fallback = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
 
-    private Task? Schedule(string name, string file, ShareTarget? id)
+    private async Task<IResult?> ReadCached(string cacheKey, DateTimeOffset revision, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await cache!.Read(cacheKey, revision, cancellationToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("Atlas share image cache read failed ({ErrorType}).", error.GetType().Name);
+            return null;
+        }
+    }
+
+    private Task? Schedule(string name, string cacheKey, ShareTarget? id)
     {
         lock (gate)
         {
             if (pending.TryGetValue(name, out var existing)) return existing;
             if (pending.Count >= 8) return null;
-            var job = Task.Run(() => Capture(name, file, id));
+            var job = Task.Run(() => Capture(name, cacheKey, id));
             pending.Add(name, job);
             return job;
         }
     }
 
-    private async Task Capture(string name, string file, ShareTarget? id)
+    private async Task Capture(string name, string cacheKey, ShareTarget? id)
     {
         await browserSlot.WaitAsync();
-        var temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         var stage = "starting Chromium";
         try
         {
@@ -294,7 +306,6 @@ internal sealed class ShareImageCapture(
                     """, new { top, height = captureHeight });
             }
             stage = "writing the screenshot";
-            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var image = await page.ScreenshotAsync(new()
             {
                 Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
@@ -304,9 +315,7 @@ internal sealed class ShareImageCapture(
                     : null,
                 Timeout = 12000
             });
-            await File.WriteAllBytesAsync(temporary, image);
-            File.SetLastWriteTimeUtc(temporary, started);
-            File.Move(temporary, file, overwrite: true);
+            await cache!.Write(cacheKey, image, started);
         }
         catch (Exception error)
         {
@@ -316,28 +325,8 @@ internal sealed class ShareImageCapture(
         }
         finally
         {
-            try { File.Delete(temporary); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
-            finally
-            {
-                lock (gate) pending.Remove(name);
-                browserSlot.Release();
-            }
+            lock (gate) pending.Remove(name);
+            browserSlot.Release();
         }
-    }
-
-    private static bool Current(string path, DateTimeOffset revision)
-    {
-        var modified = File.GetLastWriteTimeUtc(path);
-        return modified >= revision.UtcDateTime && modified >= DateTime.UtcNow.AddHours(-24) && File.Exists(path);
-    }
-
-    private static string? ResolveDirectory(IConfiguration config, IWebHostEnvironment environment)
-    {
-        var configured = config["Atlas:Seo:CaptureDirectory"];
-        if (!string.IsNullOrWhiteSpace(configured)) return Path.GetFullPath(configured, environment.ContentRootPath);
-        if (environment.IsDevelopment())
-            return Path.GetFullPath("../Atlas.Web/.share-captures/server", environment.ContentRootPath);
-        return OperatingSystem.IsLinux() ? "/home/data/atlas-share-captures" : null;
     }
 }

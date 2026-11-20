@@ -74,15 +74,17 @@ module "sites" {
   for_each = local.variants
   source   = "./modules/webapp"
 
-  name                = format("%s-%s", var.name_prefix, each.key)
-  variant             = each.key
-  location            = azurerm_resource_group.atlas.location
-  resource_group_name = azurerm_resource_group.atlas.name
-  service_plan_id     = azurerm_service_plan.atlas.id
-  app_subnet_id       = module.network.app_subnet_id
-  app_service_sku     = var.app_service_sku
-  insights_connection = module.observability.insights_connection
-  identity_id         = azurerm_user_assigned_identity.runtime[each.key].id
+  name                  = format("%s-%s", var.name_prefix, each.key)
+  variant               = each.key
+  location              = azurerm_resource_group.atlas.location
+  resource_group_name   = azurerm_resource_group.atlas.name
+  service_plan_id       = azurerm_service_plan.atlas.id
+  app_subnet_id         = module.network.app_subnet_id
+  app_service_sku       = var.app_service_sku
+  insights_connection   = module.observability.insights_connection
+  identity_id           = azurerm_user_assigned_identity.runtime[each.key].id
+  identity_client_id    = azurerm_user_assigned_identity.runtime[each.key].client_id
+  identity_principal_id = azurerm_user_assigned_identity.runtime[each.key].principal_id
   connection_string = format(
     "Server=tcp:%s,1433;Database=%s;Authentication=Active Directory Managed Identity;User Id=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30",
     module.sql.server_fqdn,
