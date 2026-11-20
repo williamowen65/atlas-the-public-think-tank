@@ -46,6 +46,26 @@ public sealed class DiscoveryDatabaseSetupTests
     }
 
     [TestMethod]
+    public void ExplicitSetupUpgradesAnExistingFullTextIndexedBlockTable()
+    {
+        const string previousMigration = "20261108221754_AddGlobePinColor";
+        using var fixture = SqlTestDatabase.Create();
+        using var db = fixture.Open();
+
+        db.Database.Migrate(previousMigration);
+        AtlasDatabaseSetup.InstallSupplementalSchema(db);
+        Assert.AreEqual(1, db.Database.SqlQuery<int>($"""
+            SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes
+            WHERE object_id = OBJECT_ID(N'dbo.BlockRows')
+            """).Single());
+
+        AtlasDatabaseSetup.Apply(db);
+
+        Assert.IsFalse(db.Database.GetPendingMigrations().Any());
+        Assert.AreEqual(4, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes WHERE is_enabled = 1").Single());
+    }
+
+    [TestMethod]
     public void SupplementalSetupRejectsAnOuterTransaction()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
