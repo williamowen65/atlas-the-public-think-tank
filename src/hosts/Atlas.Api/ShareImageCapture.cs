@@ -40,7 +40,7 @@ internal sealed class ShareImageCapture(
     private static string LayoutVersion(ShareTarget? target) => target switch
     {
         null => "6",
-        { Kind: SharePage.Node } => "7",
+        { Kind: SharePage.Node } => "8",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
