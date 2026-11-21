@@ -33,11 +33,23 @@
         !canvas.closest('dialog[data-globe-share]') ||
         new URLSearchParams(location.search).get('capture') !== 'globe') return;
 
-      const { angles, frames } = event.detail as { angles: number[]; frames: string[] };
+      const { angles, frames, size = canvas.width } = event.detail as {
+        angles: number[]; frames: string[]; size?: number;
+      };
+      const originalWidth = canvas.width;
+      const originalHeight = canvas.height;
+      if (originalWidth !== size || originalHeight !== size) {
+        canvas.width = size;
+        canvas.height = size;
+      }
       for (const captureAngle of angles) {
-        engine.draw(captureAngle, width);
+        engine.draw(captureAngle, size);
         // Read the drawing buffer synchronously before Chromium can discard it.
         frames.push(canvas.toDataURL('image/png').split(',')[1]);
+      }
+      if (canvas.width !== originalWidth || canvas.height !== originalHeight) {
+        canvas.width = originalWidth;
+        canvas.height = originalHeight;
       }
       engine.draw(angle, width);
     };
