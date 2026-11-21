@@ -293,6 +293,7 @@
           {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
         {/if}
         <hr />
+        <a href="/share" onclick={closeOnNavigation}>Share Atlas</a>
         <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
           href="/feedback"
           onclick={closeOnNavigation}>Give feedback</a
@@ -373,6 +374,7 @@
               <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
             {/if}
             <hr />
+            <a href="/share" onclick={closeOnNavigation}>Share Atlas</a>
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
             <hr />
@@ -423,6 +425,7 @@
               <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
             {/if}
             <hr />
+            <a href="/share" onclick={closeOnNavigation}>Share Atlas</a>
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
             <hr />

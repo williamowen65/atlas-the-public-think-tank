@@ -45,6 +45,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import CopyNodeLink from "./CopyNodeLink.svelte";
   import { relativeDate } from '../format/relativeDate';
   import NodeEditControl from './NodeEditControl.svelte';
   import type { Snippet } from 'svelte';
@@ -317,6 +318,7 @@
           nodeId={node.id}
           names={node.communities}
         />{/if}
+    {#if !inspectionOnly && !node.isHidden && node.status !== 'Archived'}<CopyNodeLink nodeId={node.id} />{/if}
     </p>
     {#if node.status === 'Archived'}<p>Archived</p>{/if}
   </header>
@@ -425,7 +427,7 @@
     padding: 0;
   }
   header {
-    padding: var(--card-padding) var(--card-padding) 0.5rem;
+    padding: var(--atlas-node-header-inset) var(--card-padding) 0;
   }
 
   header:has(> :global(.ancestry)) { padding-top: 0; }
@@ -437,7 +439,7 @@
   h1 {
     line-height: var(--atlas-node-line-height);
     font-size: clamp(1.4rem, 4vw, 2rem);
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--atlas-node-title-gap);
   }
   .byline {
     font-size: var(--atlas-node-meta-size);
@@ -458,12 +460,17 @@
   }
   .post-body {
     display: flow-root;
-    padding: 0.5rem var(--card-padding) 0;
+    padding: var(--atlas-node-content-gap) var(--card-padding) 0;
     --atlas-markdown-line-height: var(--atlas-node-line-height);
     line-height: var(--atlas-node-line-height);
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
+  }
+  .description :global(.content-blocks > :first-child),
+  .description :global(.content-blocks > .markdown:first-child > :first-child),
+  .plain-description {
+    margin-block-start: 0;
   }
   .plain-description {
     white-space: pre-line;
@@ -599,7 +606,7 @@
     gap: .4rem .6rem;
     min-width: 0;
     container-type: inline-size;
-    margin-bottom: .5rem;
+    margin-block-end: var(--atlas-node-title-gap);
   }
   .node-type {
     margin: 0 auto 0 0;

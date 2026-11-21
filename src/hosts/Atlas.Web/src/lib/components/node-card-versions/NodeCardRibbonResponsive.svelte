@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import CopyNodeLink from "../CopyNodeLink.svelte";
   import NodeEditControl from '../NodeEditControl.svelte';
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
@@ -133,6 +134,7 @@
           nodeId={node.id}
           names={node.communities}
         />{/if}
+    {#if !node.isHidden && node.status !== 'Archived'}<CopyNodeLink nodeId={node.id} />{/if}
     </p>
   </header>
 

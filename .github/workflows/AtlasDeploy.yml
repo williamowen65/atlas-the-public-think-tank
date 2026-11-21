@@ -92,19 +92,23 @@ jobs:
         run: |
           npm ci
           npm run build
-          test -f dist/index.html
+          test -f ../Atlas.Api/wwwroot/index.html
       - name: Publish ASP.NET Core API
         run: dotnet publish src/hosts/Atlas.Api/Atlas.Api.csproj --configuration Release --output "$RUNNER_TEMP/atlas-publish"
-      - name: Bundle frontend into the same-origin API host
+      - name: Verify and package published application
+        working-directory: ${{ runner.temp }}/atlas-publish
         run: |
-          mkdir -p "$RUNNER_TEMP/atlas-publish/wwwroot"
-          cp -a src/hosts/Atlas.Web/dist/. "$RUNNER_TEMP/atlas-publish/wwwroot/"
-          test -f "$RUNNER_TEMP/atlas-publish/wwwroot/index.html"
+          test -f wwwroot/index.html
+          .playwright/node/linux-x64/node .playwright/package/cli.js --version
+          # Keep the hidden Playwright driver and Linux executable permissions.
+          zip -qr "$RUNNER_TEMP/atlas-publish.zip" .
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:
           name: atlas-api-with-web
-          path: ${{ runner.temp }}/atlas-publish/
+          path: ${{ runner.temp }}/atlas-publish.zip
+          if-no-files-found: error
+          compression-level: 0
           retention-days: 7
 
   deploy:
@@ -129,7 +133,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: atlas-api-with-web
-          path: ./atlas-publish
+          path: ${{ runner.temp }}/atlas-release
       - name: Require a configured Azure App Service target
         env:
           APP_NAME: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
@@ -145,7 +149,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ inputs.variant == 'live' && needs.validate-target.outputs.live_app || needs.validate-target.outputs.demo_app }}
-          package: ./atlas-publish
+          package: ${{ runner.temp }}/atlas-release/atlas-publish.zip
 
   verify:
     name: Check site readiness (no deployment)

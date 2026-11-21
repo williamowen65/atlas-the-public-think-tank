@@ -40,6 +40,7 @@ if (!builder.Environment.IsDevelopment() &&
         (_, meter) => meter.AddMeter("Atlas.Observability"));
 }
 builder.Services.AddAtlasApi(builder.Configuration);
+builder.Services.AddSingleton<ShareImageCapture>();
 // Globe routes use the existing API host in every environment; schema updates remain explicit.
 builder.Services.AddSingleton<Atlas.Persistence.Globe.IGlobeHistory, Atlas.Persistence.Globe.SqlGlobeHistory>();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -78,12 +79,14 @@ builder.Services.AddRateLimiter(options =>
 });
 // 2. Create the host, then assemble the middleware pipeline in request order.
 var app = builder.Build();
+var seo = new PublicPageSeo(app.Configuration);
 // Observe the final status after error handling, including early middleware denials.
 app.UseMiddleware<HttpTelemetryMiddleware>();
 // Wrap downstream execution so exceptions become safe JSON ProblemDetails.
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseHttpsRedirection();
+app.Use(seo.RedirectAliases);
 
 // Production forwards the browser's two API prefixes to the existing /api routes.
 // Vite already performs this mapping in development, but does not run in Azure.
@@ -118,7 +121,6 @@ app.Use(async (context, next) =>
     await next();
 });
 // The release pipeline places the SvelteKit static build under API wwwroot.
-app.UseDefaultFiles();
 var staticContentTypes = new FileExtensionContentTypeProvider();
 staticContentTypes.Mappings[".geojson"] = "application/geo+json";
 app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = staticContentTypes });
@@ -130,30 +132,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 // Resolve the participant and enrich the existing HTTP telemetry scope.
 app.UseMiddleware<OperationContextMiddleware>();
-// 3. Expose controller actions and start listening. No view/static-file fallback exists.
-// Deployment liveness probe: confirms that the HTTP process can respond,
-// not that SQL, migrations, Full-Text Search, or downstream systems are ready.
+// Deployment liveness checks the HTTP process independently of SQL readiness.
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
-// Fall back to the static SPA only for known UI pages, never for unknown APIs
-// or missing assets (which must keep an HTTP 404 status).
-app.MapFallback(async context =>
-{
-    var path = context.Request.Path.Value ?? "/";
-    var clientRoute = path is "/" or "/about" or "/communities" or "/components"
-        or "/login" or "/me" or "/moderation" or "/my-drafts" or "/my-settings"
-        or "/new" or "/nodes" or "/profiles" or "/profiles/me" or "/register"
-        or "/confirm-email" or "/forgot-password" or "/reset-password"
-        || path.StartsWith("/communities/", StringComparison.OrdinalIgnoreCase);
-    var indexFile = Path.Combine(app.Environment.WebRootPath ?? "", "index.html");
-    if (!clientRoute || !File.Exists(indexFile))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        return;
-    }
-    context.Response.ContentType = "text/html; charset=utf-8";
-    await context.Response.SendFileAsync(indexFile);
-});
+app.MapMethods("/robots.txt", ["GET", "HEAD"], (HttpRequest request) => seo.Robots(request));
+app.MapMethods("/sitemap.xml", ["GET", "HEAD"], (Func<HttpContext, Task<IResult>>)seo.Sitemap);
+app.MapGet("/share-images/discover.png", (HttpContext context, ShareImageCapture capture) => capture.Image(context, null));
+app.MapGet("/share-images/globe.png", (HttpContext context, ShareImageCapture capture) => capture.Image(context, ShareTarget.GlobeView(context.Request.Query["view"])));
+app.MapGet("/share-images/globe.gif", (HttpContext context, ShareImageCapture capture) => capture.Image(context, ShareTarget.GlobeAnimation));
+app.MapGet("/share-images/nodes/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) => capture.Image(context, new(SharePage.Node, id)));
+app.MapGet("/share-images/communities/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) =>
+    capture.Image(context, new(SharePage.Community, id)));
+app.MapGet("/share-images/profiles/{id:guid}.png", (HttpContext context, ShareImageCapture capture, Guid id) =>
+    capture.Image(context, new(SharePage.Profile, id)));
+app.MapFallback(context => seo.ServePage(context, app.Environment));
 app.Run();
 // Top-level statements generate a Program type containing Main. This declaration
 // merges with that generated type (partial) and makes it public so the separate

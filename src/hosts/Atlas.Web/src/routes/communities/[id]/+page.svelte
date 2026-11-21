@@ -179,9 +179,11 @@
   </div>
   {#if loading}<p role="status">Loading community…</p>{:else if community}
     <header>
-      <h1>{community.name}</h1>
-      <p>{community.description}</p>
-      <p class="stats">{community.memberCount} active members · {community.nodeCount} nodes</p>
+      <div data-share-preview>
+        <h1>{community.name}</h1>
+        <p>{community.description}</p>
+        <p class="stats">{community.memberCount} active members · {community.nodeCount} nodes</p>
+      </div>
       {#if community.status !== 'Active'}<p>This community is archived.</p>{/if}
       {#if signedIn && community.status === 'Active' && owned}
         <button onclick={() => (editing = !editing)}

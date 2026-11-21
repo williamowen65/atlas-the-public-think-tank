@@ -1,5 +1,5 @@
 name: Atlas Azure Terraform apply (manual)
-run-name: "Terraform apply · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · apps=${{ inputs.deployment_shape }} · branch=${{ github.ref_name }}"
+run-name: "Terraform ${{ inputs.recover_demo_preview_storage && 'state recovery' || 'apply' }} · ${{ inputs.installation }} · ${{ inputs.rehearsal_name || 'profile' }} · apps=${{ inputs.deployment_shape }} · branch=${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
@@ -26,6 +26,10 @@ on:
         options:
           - rehearsal
           - main
+      recover_demo_preview_storage:
+        description: "Recover the demo preview storage account in Terraform state (no infrastructure apply)"
+        type: boolean
+        default: false
       enable_sql_bootstrap:
         description: Temporarily enable SQL bootstrap credentials for both admin WebJobs
         type: boolean
@@ -70,6 +74,7 @@ jobs:
 
   azure-plan:
     needs: validate-target
+    if: inputs.recover_demo_preview_storage == false
     name: Create the infrastructure plan for review
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -105,6 +110,10 @@ jobs:
       TF_VAR_account_mail_address: ${{ vars.ATLAS_MAIL_ADDRESS }}
       TF_VAR_account_mail_password: ${{ secrets.ATLAS_MAIL_PASSWORD }}
       TF_VAR_account_mail_public_origins: ${{ vars.ATLAS_MAIL_PUBLIC_ORIGINS || '{}' }}
+      TF_VAR_seo_public_origins: ${{ vars.ATLAS_SEO_PUBLIC_ORIGINS || '{}' }}
+      TF_VAR_seo_live_redirect_host: ${{ vars.ATLAS_SEO_LIVE_REDIRECT_HOST }}
+      TF_VAR_seo_indexing_enabled: ${{ vars.ATLAS_SEO_INDEXING_ENABLED || 'false' }}
+      TF_VAR_browserless_api_key: ${{ secrets.BROWSERLESS_IO_API_KEY }}
       TF_VAR_app_service_sku: "B1"
       TF_VAR_deployment_variants: ${{ needs.validate-target.outputs.variants_json }}
       ATLAS_VARIANTS_JSON: ${{ needs.validate-target.outputs.variants_json }}
@@ -285,3 +294,110 @@ jobs:
             -in "$encrypted_plan" -out "$plan_file"
           terraform show -json "$plan_file" | python ../scripts/check-terraform-changes.py plan
           terraform apply -no-color -input=false -lock-timeout=2m "$plan_file"
+
+  recover-demo-preview-storage:
+    name: Recover the demo preview storage account in state
+    needs: validate-target
+    if: inputs.recover_demo_preview_storage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: atlas-infra-apply
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+        shell: bash
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
+      TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
+      TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
+      TF_BACKEND_KEY: ${{ needs.validate-target.outputs.state_key }}
+      ATLAS_RESOURCE_GROUP: ${{ needs.validate-target.outputs.resource_group }}
+      ATLAS_INSTALLATION: ${{ inputs.installation }}
+      ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+      ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.deployment_shape }}
+      ATLAS_NAME_PREFIX: ${{ needs.validate-target.outputs.name_prefix }}
+      AZURE_TFSTATE_KEY: ${{ needs.validate-target.outputs.state_key }}
+      ATLAS_REQUIRE_FRESH_RUN: "true"
+    steps:
+      - name: Require a recorded environment approval
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLY_ENVIRONMENT: atlas-infra-apply
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" |
+            jq -e --arg environment "$APPLY_ENVIRONMENT" 'any(.[]; .state == "approved" and any(.environments[]; .name == $environment))' >/dev/null ||
+            { echo "::error::Configure required reviewers on $APPLY_ENVIRONMENT and approve this run."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify the demo recovery target
+        working-directory: .
+        env:
+          SQL_BOOTSTRAP: ${{ inputs.enable_sql_bootstrap }}
+        run: |
+          set -euo pipefail
+          [[ "$ATLAS_INSTALLATION" == main && "$ATLAS_DEPLOYMENT_SHAPE" == demo &&
+             -z "$ATLAS_REHEARSAL_NAME" && "$SQL_BOOTSTRAP" == false ]] ||
+            { echo "::error::Recovery requires installation main, shape demo, a blank rehearsal name, and SQL bootstrap off."; exit 1; }
+          python infrastructure/scripts/check-deployment-target.py infrastructure
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '1.13.5'
+          terraform_wrapper: false
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Initialize the existing Azure state backend
+        run: |
+          set -euo pipefail
+          exists="$(az storage blob exists --account-name "$TF_BACKEND_STORAGE" --container-name "$TF_BACKEND_CONTAINER" --name "$TF_BACKEND_KEY" --auth-mode login --query exists -o tsv)"
+          [[ "$exists" == true ]] || { echo "::error::The configured state blob does not exist."; exit 1; }
+          terraform init -no-color -input=false \
+            -backend-config="resource_group_name=$TF_BACKEND_RG" \
+            -backend-config="storage_account_name=$TF_BACKEND_STORAGE" \
+            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+      - name: Verify Blob service health and clear the demo taint
+        run: |
+          set -euo pipefail
+          module='module.sites["demo"]'
+          address="$module.azurerm_storage_account.share_images"
+          # State contains secrets. Print only targeted diagnostics.
+          instance="$(terraform state pull | jq -cer --arg module "$module" '
+            [.resources[] | select(.module == $module and .mode == "managed" and
+              .type == "azurerm_storage_account" and .name == "share_images") |
+              .instances[] | select(has("deposed") | not)] |
+            if length == 1 then .[0] | {id: .attributes.id, status: .status}
+            else error("Expected exactly one existing demo preview storage account") end
+          ')"
+          if [[ "$(jq -r '.status' <<<"$instance")" != tainted ]]; then
+            echo "Demo preview storage is already untainted. No state change was made."
+            exit 0
+          fi
+          account_id="$(jq -er '.id' <<<"$instance")"
+          account_prefix="/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/$ATLAS_RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/"
+          account_name="${account_id##*/}"
+          [[ "${account_id,,}" == "${account_prefix,,}$account_name" && "$account_name" =~ ^atlas[0-9a-f]{19}$ ]] ||
+            { echo "::error::State does not identify a preview storage account in the expected Azure resource group."; exit 1; }
+          status="$(az storage account show --ids "$account_id" --query provisioningState -o tsv)"
+          [[ "$status" == Succeeded ]] || { echo "::error::The preview storage account is not fully provisioned."; exit 1; }
+          az storage blob service-properties show --account-name "$account_name" --auth-mode login --output none
+          terraform untaint -no-color -lock-timeout=2m "$address"
+          echo "Run a fresh demo Terraform Plan and verify zero resources to destroy."

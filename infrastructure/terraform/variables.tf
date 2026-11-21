@@ -119,3 +119,38 @@ variable "account_mail_public_origins" {
     error_message = "Map live/demo to HTTPS origins without paths, query strings or fragments."
   }
 }
+
+variable "seo_public_origins" {
+  description = "Optional public HTTPS origins for share metadata by deployment variant."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition = alltrue([for variant, origin in var.seo_public_origins :
+      contains(["live", "demo"], variant) && can(regex("^https://[A-Za-z0-9.-]+/?$", origin))
+    ])
+    error_message = "Set an HTTPS hostname without a port, path, query or fragment for live/demo."
+  }
+}
+
+variable "seo_live_redirect_host" {
+  description = "Optional alternate live hostname already bound to the App Service; redirects to the configured SEO origin."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.seo_live_redirect_host == "" || can(regex("^([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$", var.seo_live_redirect_host))
+    error_message = "Use a hostname without a scheme, port, or path."
+  }
+}
+
+variable "seo_indexing_enabled" {
+  description = "Enable indexing and the sitemap on the configured canonical live Atlas hostname."
+  type        = bool
+  default     = false
+}
+
+variable "browserless_api_key" {
+  description = "Optional shared Browserless credential for Atlas website capture."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

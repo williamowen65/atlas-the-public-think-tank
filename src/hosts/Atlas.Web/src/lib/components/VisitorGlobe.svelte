@@ -82,7 +82,7 @@
   });
 </script>
 
-<div class="globe-art" class:mini>
+<div class="globe-art" class:mini data-map-ready={!!land}>
   <WebGLGlobe
     {angle}
     options={{

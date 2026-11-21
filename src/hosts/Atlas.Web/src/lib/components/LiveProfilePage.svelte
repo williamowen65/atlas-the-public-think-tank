@@ -259,7 +259,7 @@
   {#if loading && !profile}<p role="status">Loading profile…</p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
   {#if profile}
-    <header class="profile-header">
+    <header class="profile-header" data-share-preview>
       <div class="profile-title">
         <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
         <h1>{profile.displayName}</h1>

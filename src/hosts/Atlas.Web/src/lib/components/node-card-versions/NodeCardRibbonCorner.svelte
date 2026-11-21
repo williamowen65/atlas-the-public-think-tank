@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import CopyNodeLink from "../CopyNodeLink.svelte";
   import { relativeDate } from '../../format/relativeDate';
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
@@ -156,6 +157,7 @@
           nodeId={node.id}
           names={node.communities}
         />{/if}{/if}
+    {#if !draft && !node.isHidden && node.status !== 'Archived'}<CopyNodeLink nodeId={node.id} />{/if}
     </p>
   </header>
 
@@ -202,7 +204,7 @@
 
 {#snippet legacyDescription(text: string)}
   <div class="description" id={`${instance}-description`}>
-    <span class="fallback-text">{text}</span>
+    {#if text.trim()}<span class="fallback-text">{text}</span>{/if}
     {@render detailsToggle()}
     <span class="read-more">
       <ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} />
@@ -271,16 +273,14 @@
     color: var(--atlas-text);
     overflow-wrap: anywhere;
     header {
-      padding: var(--card-padding) var(--card-padding) 0.5rem;
+      padding: var(--atlas-node-header-inset) var(--card-padding) 0;
     }
     h2 {
-      margin: 0 0 var(--atlas-heading-gap, 0.5rem);
+      margin: 0 0 var(--atlas-heading-gap, var(--atlas-node-title-gap));
       font-size: calc(clamp(1.35rem, 4vw, 1.9rem) * var(--atlas-heading-scale, 1.5) / 1.5);
       line-height: var(--atlas-node-line-height);
     }
   }
-
-  .node-card header:has(> :global(.ancestry)) { padding-top: 0; }
 
   .node-card:has(> :is(:global(.edit-node.corner), .hidden-edit-link)) {
     --ancestry-end-padding: 5rem;
@@ -383,11 +383,13 @@
   .body {
     --atlas-markdown-line-height: var(--atlas-node-line-height);
     line-height: var(--atlas-node-line-height);
-    padding: 0.5rem var(--card-padding) 0;
+    padding: var(--atlas-node-content-gap) var(--card-padding) 0;
     display: flow-root;
   }
 
-  .authoring-body { padding-bottom: var(--card-padding); }
+  header:has(+ .authoring-body) { padding-block: var(--card-padding) .5rem; }
+  header:has(> :global(.ancestry)) { padding-block-start: 0; }
+  .authoring-body { padding-block: .5rem var(--card-padding); }
 
   .fallback-vote, .fallback-vote-dialog {
     color: var(--atlas-text); background: var(--atlas-surface);
@@ -466,7 +468,7 @@
     gap: .4rem .6rem;
     min-width: 0;
     container-type: inline-size;
-    margin-bottom: .5rem;
+    margin-block-end: var(--atlas-node-title-gap);
   }
   .node-type-row .mobile-type {
     margin: 0 auto 0 0;

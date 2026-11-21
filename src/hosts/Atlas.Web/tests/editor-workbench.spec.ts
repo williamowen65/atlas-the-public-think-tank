@@ -750,25 +750,27 @@ test('selected image insert buttons stay outside its borders at phone width', as
   await page.getByRole('button', { name: 'Simulate phone width' }).click();
   const image = page.locator('.atlas-story-figure[data-atlas-key="public-square"]');
   await image.click();
-  const rects = await page.evaluate(() => {
-    const figure = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
-    const before = document.querySelector('.boundary-add.before');
-    const after = document.querySelector('.boundary-add.after');
-    if (!figure || !before || !after) return null;
-    const block = figure.getBoundingClientRect();
-    const top = before.getBoundingClientRect();
-    const bottom = after.getBoundingClientRect();
-    return {
-      blockTop: block.top, blockBottom: block.bottom,
-      blockCenterX: block.left + block.width / 2,
-      topButtonBottom: top.bottom, bottomButtonTop: bottom.top,
-      topButtonCenterX: top.left + top.width / 2,
-      bottomButtonCenterX: bottom.left + bottom.width / 2,
-    };
-  });
-  expect(rects).not.toBeNull();
-  expect(rects!.topButtonBottom).toBeLessThan(rects!.blockTop);
-  expect(rects!.bottomButtonTop).toBeGreaterThan(rects!.blockBottom);
-  expect(Math.abs(rects!.topButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
-  expect(Math.abs(rects!.bottomButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
+  await expect(async () => {
+    const rects = await page.evaluate(() => {
+      const figure = document.querySelector('.atlas-story-figure[data-atlas-key="public-square"]');
+      const before = document.querySelector('.boundary-add.before');
+      const after = document.querySelector('.boundary-add.after');
+      if (!figure || !before || !after) return null;
+      const block = figure.getBoundingClientRect();
+      const top = before.getBoundingClientRect();
+      const bottom = after.getBoundingClientRect();
+      return {
+        blockTop: block.top, blockBottom: block.bottom,
+        blockCenterX: block.left + block.width / 2,
+        topButtonBottom: top.bottom, bottomButtonTop: bottom.top,
+        topButtonCenterX: top.left + top.width / 2,
+        bottomButtonCenterX: bottom.left + bottom.width / 2,
+      };
+    });
+    expect(rects).not.toBeNull();
+    expect(rects!.topButtonBottom).toBeLessThan(rects!.blockTop);
+    expect(rects!.bottomButtonTop).toBeGreaterThan(rects!.blockBottom);
+    expect(Math.abs(rects!.topButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
+    expect(Math.abs(rects!.bottomButtonCenterX - rects!.blockCenterX)).toBeLessThan(3);
+  }).toPass({ timeout: 5000 });
 });

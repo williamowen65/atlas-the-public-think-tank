@@ -81,6 +81,8 @@ and Azure permissions are separate. The shared identity needs:
 | Capability | Role/scope to consider |
 | --- | --- |
 | Provision the declared application resources | Contributor over the intended deployment scope |
+| Manage the screenshot container role grants | Role assignment write/delete permissions over the intended deployment scope. Contributor alone does not grant these permissions. |
+| Read the preview Blob service during Terraform provisioning and refresh | Entra ID access to the preview storage data plane for the CI identity, inherited from the deployment scope if needed for initial provisioning |
 | Read/write/lock Terraform state | Storage Blob Data Contributor on the state container |
 | Publish websites/admin tools and trigger bootstrap | Website Contributor on each target App Service, unless already covered by Contributor at a containing scope |
 
