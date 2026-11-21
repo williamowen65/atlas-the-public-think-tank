@@ -173,7 +173,8 @@ internal sealed class ShareImageCapture(
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            logger.LogWarning("Atlas share image cache read failed ({ErrorType}).", error.GetType().Name);
+            logger.LogWarning("Atlas share image cache read for {CacheKey} failed ({ErrorType}, root cause {RootErrorType}).",
+                cacheKey, error.GetType().Name, error.GetBaseException().GetType().Name);
             return null;
         }
     }
@@ -365,15 +366,31 @@ internal sealed class ShareImageCapture(
             {
                 logger.LogInformation("Atlas globe GIF captured {FrameCount} frames in {ElapsedMs} ms.",
                     globeFrames.Frames.Count, elapsed.ElapsedMilliseconds);
+                stage = "compositing globe GIF frames";
+                elapsed.Restart();
+                using var animation = new MagickImageCollection();
+                logger.LogInformation("Atlas globe GIF compositing started for {CacheKey} ({WorkingSetMiB} MiB process memory).",
+                    cacheKey, Environment.WorkingSet / (1024 * 1024));
+                CompositeGlobeFrames(globeFrames, animation, elapsed);
+                logger.LogInformation(
+                    "Atlas globe GIF composited {FrameCount} frames in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
+                    animation.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));
+
                 stage = "encoding the globe GIF";
                 elapsed.Restart();
-                image = await EncodeGlobeAnimation(globeFrames);
+                logger.LogInformation("Atlas globe GIF encoding started for {CacheKey}.", cacheKey);
+                using var output = new MemoryStream();
+                await animation.WriteAsync(output, MagickFormat.Gif);
+                image = output.ToArray();
                 logger.LogInformation("Atlas globe GIF encoded in {ElapsedMs} ms ({ImageBytes} bytes).",
                     elapsed.ElapsedMilliseconds, image.Length);
             }
 
             stage = "uploading the share image";
             elapsed.Restart();
+            if (globeFrames is not null)
+                logger.LogInformation("Atlas globe GIF upload started for {CacheKey} ({ImageBytes} bytes).",
+                    cacheKey, image!.Length);
             await cache!.Write(cacheKey, image!, started);
             if (globeFrames is not null)
                 logger.LogInformation("Atlas globe GIF saved as {CacheKey} in {ElapsedMs} ms.",
@@ -429,7 +446,7 @@ internal sealed class ShareImageCapture(
         return new GlobeFrames(background, bounds, screenshot.Clip!, frames);
     }
 
-    private static async Task<byte[]> EncodeGlobeAnimation(GlobeFrames capture)
+    private void CompositeGlobeFrames(GlobeFrames capture, MagickImageCollection animation, Stopwatch elapsed)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         var frameDelay = (uint)(120 * 100 / capture.Frames.Count);
@@ -454,7 +471,6 @@ internal sealed class ShareImageCapture(
         globeBackground.Crop(new MagickGeometry(left, top, (uint)(right - left), (uint)(bottom - top)));
         globeBackground.ResetPage();
 
-        using var animation = new MagickImageCollection();
         foreach (var frameData in capture.Frames)
         {
             using var globe = new MagickImage(Convert.FromBase64String(frameData));
@@ -473,10 +489,11 @@ internal sealed class ShareImageCapture(
                 frame.AnimationIterations = 0;
             else
                 frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
-        }
 
-        using var output = new MemoryStream();
-        await animation.WriteAsync(output, MagickFormat.Gif);
-        return output.ToArray();
+            if (animation.Count % 120 == 0)
+                logger.LogInformation(
+                    "Atlas globe GIF compositing progress {FramesDone}/{FrameCount} in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
+                    animation.Count, capture.Frames.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));
+        }
     }
 }
