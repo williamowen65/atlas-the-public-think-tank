@@ -1,8 +1,5 @@
 using Microsoft.Playwright;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Gif;
-using SixLabors.ImageSharp.PixelFormats;
-using RasterImage = SixLabors.ImageSharp.Image;
+using ImageMagick;
 
 namespace Atlas.Api;
 
@@ -370,9 +367,9 @@ internal sealed class ShareImageCapture(
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
-        using var animation = RasterImage.Load<Rgba32>(await page.ScreenshotAsync(screenshot));
-        animation.Metadata.GetGifMetadata().RepeatCount = 0;
-        animation.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = frameDelay;
+        using var animation = new MagickImageCollection();
+        animation.Add(new MagickImage(await page.ScreenshotAsync(screenshot)) { AnimationDelay = frameDelay });
+        animation[0].AnimationIterations = 0;
 
         for (var index = 1; index < frames; index++)
         {
@@ -383,12 +380,11 @@ internal sealed class ShareImageCapture(
             await using var painted = await page.WaitForFunctionAsync("""
                 angle => document.querySelector('dialog[data-globe-share] .world canvas')?.dataset.angle === String(angle)
                 """, angle, new() { Timeout = 2000 });
-            using var frame = RasterImage.Load<Rgba32>(await page.ScreenshotAsync(screenshot));
-            animation.Frames.AddFrame(frame.Frames.RootFrame).Metadata.GetGifMetadata().FrameDelay = frameDelay;
+            animation.Add(new MagickImage(await page.ScreenshotAsync(screenshot)) { AnimationDelay = frameDelay });
         }
 
         using var output = new MemoryStream();
-        await animation.SaveAsGifAsync(output);
+        await animation.WriteAsync(output, MagickFormat.Gif);
         return output.ToArray();
     }
 }
