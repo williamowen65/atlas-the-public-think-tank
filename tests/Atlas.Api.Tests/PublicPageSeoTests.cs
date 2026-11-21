@@ -35,7 +35,7 @@ public sealed class PublicPageSeoTests
         var globeHtml = await globe.Content.ReadAsStringAsync();
         StringAssert.Contains(globeHtml, "property=\"og:title\" content=\"Put your pin on the Atlas globe\"");
         StringAssert.Contains(globeHtml, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open\"");
-        StringAssert.Contains(globeHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1\"");
+        StringAssert.Contains(globeHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=2\"");
 
         var animatedGlobe = await client.GetStringAsync("/?globe=open&motion=gif");
         StringAssert.Contains(animatedGlobe, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open&amp;motion=gif\"");
@@ -45,7 +45,7 @@ public sealed class PublicPageSeoTests
 
         var globeView = await client.GetStringAsync("/?globe=open&view=90");
         StringAssert.Contains(globeView, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open&amp;view=90\"");
-        StringAssert.Contains(globeView, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1&amp;view=90\"");
+        StringAssert.Contains(globeView, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=2&amp;view=90\"");
 
         var connections = await client.GetAsync("/share?design=connections");
         Assert.AreEqual(HttpStatusCode.OK, connections.StatusCode);
@@ -69,7 +69,7 @@ public sealed class PublicPageSeoTests
 
     [TestMethod]
     [DataRow(false, "/atlas-share.png")]
-    [DataRow(true, "/share-images/globe.png?v=1")]
+    [DataRow(true, "/share-images/globe.png?v=2")]
     public async Task Deployed_share_images_require_blob_storage(bool configureBlobStorage, string expectedImage)
     {
         using var web = CreateWebRoot();

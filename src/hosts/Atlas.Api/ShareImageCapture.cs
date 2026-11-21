@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
         null => "7",
         { Kind: SharePage.Node } => "9",
         { Kind: SharePage.Globe, Animated: true } => "6",
-        { Kind: SharePage.Globe } => "1",
+        { Kind: SharePage.Globe } => "2",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
@@ -95,19 +95,19 @@ internal sealed class ShareImageCapture(
             padding: 32px !important;
             display: grid !important;
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto 1fr auto;
+            grid-template-rows: 1fr;
             align-items: center;
             gap: 0 32px;
             --globe-size: 415px !important;
         }
-        [data-globe-share] > .toolbar { grid-area: 1 / 1; }
-        [data-globe-share] > .world { grid-area: 2 / 1; margin: auto; }
-        [data-globe-share] > .globe-caption { grid-area: 3 / 1; justify-content: center; }
+        [data-globe-share] > .world { grid-area: 1 / 1; margin: auto; }
+        [data-globe-share] > .toolbar,
+        [data-globe-share] > .globe-caption,
         [data-globe-share] > .globe-actions,
         [data-globe-share] > .feedback,
         [data-globe-share] .close,
         [data-globe-share] .connection { display: none !important; }
-        [data-globe-invite] { display: block !important; grid-area: 1 / 2 / 4; padding-inline: 12px; }
+        [data-globe-invite] { display: block !important; grid-area: 1 / 2; padding-inline: 12px; }
         [data-globe-invite] strong { color: var(--atlas-accent); font-size: 19px; }
         [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
         [data-globe-invite] p { font-size: 23px; line-height: 1.4; }
@@ -376,7 +376,7 @@ internal sealed class ShareImageCapture(
         // Hide only the WebGL layer. The card provides an opaque background for every update.
         screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
         using var background = new MagickImage(await page.ScreenshotAsync(screenshot));
-        background.Alpha(AlphaOption.Off);
+        background.Alpha(AlphaAction.Off);
 
         var clip = screenshot.Clip!;
         var scaleX = background.Width / (double)clip.Width;
@@ -423,7 +423,7 @@ internal sealed class ShareImageCapture(
                 var x = (int)Math.Round(canvasX);
                 var y = (int)Math.Round(canvasY);
                 frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
-                frame.Alpha(AlphaOption.Off);
+                frame.Alpha(AlphaAction.Off);
                 frame.AnimationDelay = frameDelay;
                 frame.GifDisposeMethod = GifDisposeMethod.None;
                 if (first)
