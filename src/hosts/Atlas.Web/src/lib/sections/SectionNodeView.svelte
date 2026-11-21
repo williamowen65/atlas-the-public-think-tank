@@ -95,7 +95,7 @@
 </div>
 {#if truncated}<div class="cutoff" aria-label="More content follows">…</div>{/if}
 {#if feed}
-  <div class="feed-actions">
+  <div class="feed-actions" class:with-content={sections.length > 0}>
     {@render leadingAction?.()}
     {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
@@ -135,7 +135,8 @@
   figcaption, .cutoff { color: var(--atlas-muted); }
   figcaption { text-align: center; font-size: var(--atlas-node-meta-size); line-height: var(--atlas-node-meta-line-height); margin-top: .25rem; }
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
-  .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; padding-block-start: .5rem; }
+  .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; }
+  .feed-actions.with-content { padding-block-start: .5rem; }
   .feed-actions button {
     font: inherit; line-height: 1.25; min-block-size: 2.25rem; padding: .25rem .65rem; border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius, .5rem); color: var(--atlas-text); background: var(--atlas-surface); cursor: pointer;

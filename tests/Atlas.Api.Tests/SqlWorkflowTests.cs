@@ -586,7 +586,7 @@ public sealed class SqlWorkflowTests
         var html = await page.Content.ReadAsStringAsync();
         Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
         StringAssert.Contains(html, "property=\"og:title\" content=\"Atlas | The Public Think Tank\"");
-        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=8";
+        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=9";
         Assert.AreEqual(eligible, html.Contains($"property=\"og:image\" content=\"{image}\"", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains($"name=\"twitter:image\" content=\"{image}\"", StringComparison.Ordinal));
         Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));

@@ -138,7 +138,7 @@
   .viewport.landscape { height: min(12rem, 50vw); min-height: 8rem; }
   .viewport.portrait { height: min(17rem, 77vw); min-height: 11rem; }
   .feed-block-slide { box-sizing: border-box; display: flex; flex-direction: column;
-    width: 100%; height: 100%; padding: .25rem 1.7rem; overflow: hidden; }
+    width: 100%; height: 100%; padding: 0 1.7rem .25rem; overflow: hidden; }
   .block-preview { min-height: 0; flex: 1 1 auto; overflow: hidden; position: relative; }
   /* Use the existing Atlas block renderer; only constrain its FEED viewport.
      A long Markdown section is still one slide and one original content block. */

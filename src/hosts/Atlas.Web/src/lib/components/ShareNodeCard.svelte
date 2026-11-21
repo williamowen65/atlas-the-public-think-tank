@@ -53,24 +53,3 @@
     {/snippet}
   </NodeFeed>
 </div>
-
-<style>
-  [data-share-node] :global(.node-card > header) {
-    padding-block: 0.4rem 0;
-  }
-
-  [data-share-node] :global(.node-card > header .node-type-row) {
-    margin-block-end: 0.2rem;
-  }
-
-  [data-share-node] :global(.node-card > header h2) {
-    margin-block-end: 0.125rem;
-  }
-
-  [data-share-node] :global(.node-card > .body) {
-    padding-block-start: 0.1rem;
-  }
-  [data-share-node] :global(.feed-block-slide) {
-    padding-block-start: 0;
-  }
-</style>
