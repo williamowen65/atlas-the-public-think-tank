@@ -59,14 +59,14 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "6",
-        { Kind: SharePage.Globe } => "2",
+        { Kind: SharePage.Globe, Animated: true } => "7",
+        { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
-    internal const int AnimationWidth = 960;
-    internal const int AnimationHeight = 504;
+    internal const int AnimationWidth = 1080;
+    internal const int AnimationHeight = 567;
     private const float AnimationScale = (float)AnimationWidth / ImageWidth;
     private const string CaptureStyle = """
         /* A centered 16:9 crop of 1200 × 630 trims 40 pixels from each edge. */
@@ -94,13 +94,17 @@ internal sealed class ShareImageCapture(
             margin: 0 !important;
             padding: 32px !important;
             display: grid !important;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             grid-template-rows: 1fr;
             align-items: center;
             gap: 0 32px;
-            --globe-size: 415px !important;
         }
-        [data-globe-share] > .world { grid-area: 1 / 1; margin: auto; }
+        [data-globe-share] > .world {
+            grid-area: 1 / 1;
+            place-self: center;
+            width: min(100%, 480px) !important;
+            margin: 0 !important;
+        }
         [data-globe-share] > .toolbar,
         [data-globe-share] > .globe-caption,
         [data-globe-share] > .globe-actions,
@@ -108,9 +112,9 @@ internal sealed class ShareImageCapture(
         [data-globe-share] .close,
         [data-globe-share] .connection { display: none !important; }
         [data-globe-invite] { display: block !important; grid-area: 1 / 2; padding-inline: 12px; }
-        [data-globe-invite] strong { color: var(--atlas-accent); font-size: 19px; }
+        [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; }
         [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
-        [data-globe-invite] p { font-size: 23px; line-height: 1.4; }
+        [data-globe-invite] p { font-size: 25px; line-height: 1.4; }
         """;
 
     private readonly object gate = new();
