@@ -8,7 +8,7 @@ namespace Atlas.Api;
 
 internal abstract class ShareImageCache
 {
-    private const string ContentType = "image/png";
+    private static string ContentType(string key) => key.EndsWith(".gif", StringComparison.Ordinal) ? "image/gif" : "image/png";
     private const string CaptureTime = "captured_at";
 
     internal abstract Task<IResult?> Read(string key, DateTimeOffset revision, CancellationToken cancellationToken);
@@ -46,7 +46,7 @@ internal abstract class ShareImageCache
         {
             var path = Path.Combine(directory, key);
             return Task.FromResult<IResult?>(File.Exists(path) && IsCurrent(File.GetLastWriteTimeUtc(path), revision)
-                ? Results.File(path, ContentType)
+                ? Results.File(path, ContentType(key))
                 : null);
         }
 
@@ -78,7 +78,7 @@ internal abstract class ShareImageCache
                 var download = (await container.GetBlobClient(key).DownloadStreamingAsync(
                     cancellationToken: cancellationToken)).Value;
                 if (IsCurrent(ReadCaptureTime(download.Details.Metadata), revision))
-                    return Results.Stream(download.Content, ContentType);
+                    return Results.Stream(download.Content, ContentType(key));
 
                 await download.Content.DisposeAsync();
                 return null;
@@ -106,7 +106,7 @@ internal abstract class ShareImageCache
                 await blob.UploadAsync(BinaryData.FromBytes(image), new BlobUploadOptions
                 {
                     Conditions = conditions,
-                    HttpHeaders = new BlobHttpHeaders { ContentType = ContentType },
+                    HttpHeaders = new BlobHttpHeaders { ContentType = ContentType(key) },
                     Metadata = new Dictionary<string, string>
                     {
                         [CaptureTime] = capturedAt.ToString("O", CultureInfo.InvariantCulture)

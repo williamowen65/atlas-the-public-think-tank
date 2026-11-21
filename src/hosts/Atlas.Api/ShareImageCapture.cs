@@ -1,26 +1,47 @@
 using Microsoft.Playwright;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.PixelFormats;
+using RasterImage = SixLabors.ImageSharp.Image;
 
 namespace Atlas.Api;
 
 internal enum SharePage { Node, Community, Profile, Globe }
 
-internal readonly record struct ShareTarget(SharePage Kind, Guid Id)
+internal readonly record struct ShareTarget(SharePage Kind, Guid Id, bool Animated = false, int? GlobeAngle = null)
 {
     internal static ShareTarget Globe => new(SharePage.Globe, Guid.Empty);
+    internal static ShareTarget GlobeAnimation => Globe with { Animated = true };
+
+    internal static ShareTarget GlobeView(string? view) => view switch
+    {
+        "0" => Globe with { GlobeAngle = 0 },
+        "90" => Globe with { GlobeAngle = 90 },
+        "180" => Globe with { GlobeAngle = 180 },
+        "270" => Globe with { GlobeAngle = 270 },
+        _ => Globe
+    };
+
+    private string GlobeQuery => Animated ? "&motion=gif" : GlobeAngle is { } angle ? $"&view={angle}" : "";
 
     internal string PagePath => Kind switch
     {
-        SharePage.Globe => "/?globe=open",
+        SharePage.Globe => "/?globe=open" + GlobeQuery,
         SharePage.Community => $"/communities/{Id:D}",
         SharePage.Profile => $"/profiles?id={Id:D}",
         _ => $"/nodes?id={Id:D}"
     };
 
-    internal string CapturePath => Kind == SharePage.Node ? PagePath + "&share=feed" : PagePath;
+    internal string CapturePath => Kind switch
+    {
+        SharePage.Node => PagePath + "&share=feed",
+        SharePage.Globe when Animated || GlobeAngle is not null => PagePath + "&capture=globe",
+        _ => PagePath
+    };
 
     internal string ImagePath => Kind switch
     {
-        SharePage.Globe => "/share-images/globe.png",
+        SharePage.Globe => Animated ? "/share-images/globe.gif" : "/share-images/globe.png",
         SharePage.Community => $"/share-images/communities/{Id:D}.png",
         SharePage.Profile => $"/share-images/profiles/{Id:D}.png",
         _ => $"/share-images/nodes/{Id:D}.png"
@@ -46,6 +67,8 @@ internal sealed class ShareImageCapture(
     };
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
+    internal const int AnimationWidth = ImageWidth / 2;
+    internal const int AnimationHeight = ImageHeight / 2;
     private const string CaptureStyle = """
         /* A centered 16:9 crop of 1200 × 630 trims 40 pixels from each edge. */
         body { margin: 0 !important; padding: 0 4.67vw !important; box-sizing: border-box; }
@@ -103,7 +126,9 @@ internal sealed class ShareImageCapture(
     internal bool Enabled => cache is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
-    internal static string ImagePath(ShareTarget? id) => (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion(id);
+    internal static string ImagePath(ShareTarget? id) =>
+        (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion(id) +
+        (id?.GlobeAngle is { } angle ? $"&view={angle}" : "");
 
     internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
@@ -113,14 +138,16 @@ internal sealed class ShareImageCapture(
 
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
-        if (id is { Kind: SharePage.Globe }) name = "globe";
-        var cacheKey = $"v{LayoutVersion(id)}/{name}.png";
+        if (id is { Kind: SharePage.Globe })
+            name = id.Value.Animated ? "globe-motion" : id.Value.GlobeAngle is { } angle ? $"globe-{angle}" : "globe";
+        var extension = id is { Animated: true } ? "gif" : "png";
+        var cacheKey = $"v{LayoutVersion(id)}/{name}.{extension}";
         if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } cached) return cached;
 
         var job = Schedule(name, cacheKey, id);
         if (job is not null)
         {
-            try { await job.WaitAsync(TimeSpan.FromSeconds(7), context.RequestAborted); }
+            try { await job.WaitAsync(TimeSpan.FromSeconds(id is { Animated: true } ? 20 : 7), context.RequestAborted); }
             catch (TimeoutException) { /* The existing capture continues for later requests. */ }
         }
 
@@ -130,6 +157,9 @@ internal sealed class ShareImageCapture(
         if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } generated) return generated;
 
         context.Response.Headers.CacheControl = "no-store";
+        if (id is { Animated: true } &&
+            await ReadCached($"v{LayoutVersion(ShareTarget.Globe)}/globe.png", revision.Value, context.RequestAborted) is { } still)
+            return still;
         var fallback = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
@@ -186,7 +216,7 @@ internal sealed class ShareImageCapture(
             await using var session = await browser.NewContextAsync(new()
             {
                 ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
-                DeviceScaleFactor = scale,
+                DeviceScaleFactor = id is { Animated: true } ? 0.5f : scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
                 ColorScheme = ColorScheme.Light
@@ -306,7 +336,7 @@ internal sealed class ShareImageCapture(
                     """, new { top, height = captureHeight });
             }
             stage = "writing the screenshot";
-            var image = await page.ScreenshotAsync(new()
+            var screenshot = new PageScreenshotOptions
             {
                 Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
                 Animations = ScreenshotAnimations.Disabled,
@@ -314,7 +344,10 @@ internal sealed class ShareImageCapture(
                     ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
                     : null,
                 Timeout = 12000
-            });
+            };
+            var image = id is { Animated: true }
+                ? await CaptureGlobeAnimation(page, screenshot)
+                : await page.ScreenshotAsync(screenshot);
             await cache!.Write(cacheKey, image, started);
         }
         catch (Exception error)
@@ -328,5 +361,34 @@ internal sealed class ShareImageCapture(
             lock (gate) pending.Remove(name);
             browserSlot.Release();
         }
+    }
+
+    private static async Task<byte[]> CaptureGlobeAnimation(IPage page, PageScreenshotOptions screenshot)
+    {
+        const int frames = 24;
+        const int frameDelay = 20; // GIF timing is in hundredths of a second.
+        await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
+            .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
+
+        using var animation = RasterImage.Load<Rgba32>(await page.ScreenshotAsync(screenshot));
+        animation.Metadata.GetGifMetadata().RepeatCount = 0;
+        animation.Frames.RootFrame.Metadata.GetGifMetadata().FrameDelay = frameDelay;
+
+        for (var index = 1; index < frames; index++)
+        {
+            var angle = -25 + index * 360 / frames;
+            await page.EvaluateAsync("""
+                angle => window.dispatchEvent(new CustomEvent('atlas-globe-capture-angle', { detail: angle }))
+                """, angle);
+            await using var painted = await page.WaitForFunctionAsync("""
+                angle => document.querySelector('dialog[data-globe-share] .world canvas')?.dataset.angle === String(angle)
+                """, angle, new() { Timeout = 2000 });
+            using var frame = RasterImage.Load<Rgba32>(await page.ScreenshotAsync(screenshot));
+            animation.Frames.AddFrame(frame.Frames.RootFrame).Metadata.GetGifMetadata().FrameDelay = frameDelay;
+        }
+
+        using var output = new MemoryStream();
+        await animation.SaveAsGifAsync(output);
+        return output.ToArray();
     }
 }

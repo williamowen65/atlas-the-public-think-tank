@@ -37,6 +37,16 @@ public sealed class PublicPageSeoTests
         StringAssert.Contains(globeHtml, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open\"");
         StringAssert.Contains(globeHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1\"");
 
+        var animatedGlobe = await client.GetStringAsync("/?globe=open&motion=gif");
+        StringAssert.Contains(animatedGlobe, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open&amp;motion=gif\"");
+        StringAssert.Contains(animatedGlobe, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.gif?v=1\"");
+        StringAssert.Contains(animatedGlobe, "property=\"og:image:width\" content=\"600\"");
+        StringAssert.Contains(animatedGlobe, "property=\"og:image:height\" content=\"315\"");
+
+        var globeView = await client.GetStringAsync("/?globe=open&view=90");
+        StringAssert.Contains(globeView, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open&amp;view=90\"");
+        StringAssert.Contains(globeView, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1&amp;view=90\"");
+
         var connections = await client.GetAsync("/share?design=connections");
         Assert.AreEqual(HttpStatusCode.OK, connections.StatusCode);
         Assert.AreEqual("noindex", connections.Headers.GetValues("X-Robots-Tag").Single());

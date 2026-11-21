@@ -105,12 +105,15 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         }
 
         var home = new Preview(ShareTitle, HomeDescription, "/", "website");
+        var globe = request.Query["motion"] == "gif"
+            ? ShareTarget.GlobeAnimation
+            : ShareTarget.GlobeView(request.Query["view"]);
         var preview = path switch
         {
             "/" when request.Query["globe"] == "open" => new Preview(
                 "Put your pin on the Atlas globe",
                 "See where people are joining from. Sign in to add your pin.",
-                ShareTarget.Globe.PagePath, "website", Target: ShareTarget.Globe),
+                globe.PagePath, "website", Target: globe),
             "/" => home,
             "/share" when request.Query["design"] == "connections" => new Preview(
                 "See how ideas connect",
@@ -277,8 +280,11 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             Meta("property", "og:image", image);
             if (capture.Enabled || preview.Image is null)
             {
-                Meta("property", "og:image:width", ShareImageCapture.ImageWidth.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                Meta("property", "og:image:height", ShareImageCapture.ImageHeight.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                var animated = capture.Enabled && preview.Target is { Animated: true };
+                var width = animated ? ShareImageCapture.AnimationWidth : ShareImageCapture.ImageWidth;
+                var height = animated ? ShareImageCapture.AnimationHeight : ShareImageCapture.ImageHeight;
+                Meta("property", "og:image:width", width.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Meta("property", "og:image:height", height.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
         }
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");

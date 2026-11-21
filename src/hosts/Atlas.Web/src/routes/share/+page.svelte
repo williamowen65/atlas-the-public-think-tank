@@ -23,9 +23,17 @@
       image: '/share-images/globe.png',
       alt: 'The Atlas globe with community pins and an invitation to add yours',
     },
+    {
+      title: 'Put your pin on the map · GIF',
+      description: 'Share the globe making a full turn.',
+      path: '/?globe=open&motion=gif',
+      image: '/share-images/globe.gif',
+      alt: 'The Atlas globe and community pins rotating through a full turn',
+    },
   ];
 
   const selected = $derived(page.url.searchParams.get('design') === 'connections' ? designs[1] : undefined);
+  let globeView = $state('');
   let message = $state('');
   let manualLink = $state('');
 
@@ -57,15 +65,30 @@
     <p>Choose the preview you want people to see when you share the link.</p>
     <div class="designs">
       {#each designs as design (design.path)}
+        {@const view = design.path === '/?globe=open' ? globeView : ''}
+        {@const link = view ? design.path + '&view=' + view : design.path}
         <article>
-          <img src={design.image} alt={design.alt} width="1200" height="630"
+          {#key view}
+          <img src={view ? design.image + '?view=' + view : design.image} alt={design.alt} width="1200" height="630"
             onerror={(event) => {
               if (event.currentTarget instanceof HTMLImageElement && !event.currentTarget.src.endsWith('/atlas-share.png')) event.currentTarget.src = '/atlas-share.png';
             }} />
+          {/key}
           <div class="details">
             <h2>{design.title}</h2>
             <p>{design.description}</p>
-            <button class="action" type="button" onclick={() => copyLink(design.path)} aria-label={'Copy link: ' + design.title}>Copy link</button>
+            {#if design.path === '/?globe=open'}
+              <label class="globe-view">Globe view
+                <select bind:value={globeView}>
+                  <option value="">Default</option>
+                  <option value="0">0°</option>
+                  <option value="90">90° east</option>
+                  <option value="180">180°</option>
+                  <option value="270">90° west</option>
+                </select>
+              </label>
+            {/if}
+            <button class="action" type="button" onclick={() => copyLink(link)} aria-label={'Copy link: ' + design.title}>Copy link</button>
           </div>
         </article>
       {/each}
@@ -88,5 +111,7 @@
   h2 { font-size: 1.15rem; margin: 0; }
   .details p { margin: .5rem 0 1rem; }
   .action { display: inline-block; font: inherit; margin: auto .75rem 0 0; padding: .55rem .85rem; border: 1px solid var(--atlas-accent); border-radius: var(--atlas-radius); color: var(--atlas-on-accent); background: var(--atlas-accent); text-decoration: none; cursor: pointer; }
+  .globe-view { display: flex; gap: .5rem; align-items: center; margin-block-end: .75rem; }
+  select { font: inherit; }
   input { display: block; width: min(100%, 36rem); font: inherit; padding: .5rem; }
 </style>
