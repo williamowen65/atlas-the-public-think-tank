@@ -37,6 +37,15 @@ public sealed class PublicPageSeoTests
         StringAssert.Contains(globeHtml, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open\"");
         StringAssert.Contains(globeHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.png?v=1\"");
 
+        var connections = await client.GetAsync("/share?design=connections");
+        Assert.AreEqual(HttpStatusCode.OK, connections.StatusCode);
+        Assert.AreEqual("noindex", connections.Headers.GetValues("X-Robots-Tag").Single());
+        var connectionsHtml = await connections.Content.ReadAsStringAsync();
+        StringAssert.Contains(connectionsHtml, "property=\"og:title\" content=\"See how ideas connect\"");
+        StringAssert.Contains(connectionsHtml, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/share?design=connections\"");
+        StringAssert.Contains(connectionsHtml, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/atlas-share-connections.png\"");
+        Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/share")).StatusCode);
+
         var about = await client.GetStringAsync("/about");
         StringAssert.Contains(about, "<title>About Atlas | The Public Think Tank</title>");
         var robots = await client.GetStringAsync("/robots.txt");

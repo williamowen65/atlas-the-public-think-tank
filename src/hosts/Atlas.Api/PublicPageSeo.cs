@@ -112,6 +112,10 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
                 "See where people are joining from. Sign in to add your pin.",
                 ShareTarget.Globe.PagePath, "website", Target: ShareTarget.Globe),
             "/" => home,
+            "/share" when request.Query["design"] == "connections" => new Preview(
+                "See how ideas connect",
+                "Follow a question through an issue to a possible solution on Atlas.",
+                "/share?design=connections", "website", ShareArtwork: "/atlas-share-connections.png"),
             "/about" => new Preview("About Atlas | The Public Think Tank", AboutDescription, "/about", "website"),
             "/nodes" => await ReadNode(context),
             "/profiles" when request.Query.TryGetValue("id", out var ids) &&
@@ -124,7 +128,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         };
 
         var captureView = path == "/nodes" && request.Query["share"] == "feed";
-        if (captureView || preview is null || preview.Target is { Kind: not SharePage.Node } || !CanIndex(request))
+        if (captureView || path == "/share" || preview is null || preview.Target is { Kind: not SharePage.Node } || !CanIndex(request))
             response.Headers[NoIndexHeader] = "noindex";
         response.ContentType = "text/html; charset=utf-8";
         if (HttpMethods.IsHead(request.Method)) return;
@@ -257,14 +261,15 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         Meta("name", "description", preview.Description);
         if (url is not null && canonical)
             html.AppendLine($"<link data-atlas-server-seo rel=\"canonical\" href=\"{encode.Encode(url)}\">");
-        var socialTitle = preview.Target is { Kind: SharePage.Globe } ? preview.Title : ShareTitle;
+        var socialTitle = preview.ShareArtwork is not null || preview.Target is { Kind: SharePage.Globe }
+            ? preview.Title : ShareTitle;
         Meta("property", "og:title", socialTitle);
         Meta("property", "og:description", preview.Description);
         Meta("property", "og:type", preview.Type);
         Meta("property", "og:site_name", ShareTitle);
         if (url is not null) Meta("property", "og:url", url);
         var capture = request.HttpContext.RequestServices.GetRequiredService<ShareImageCapture>();
-        var image = capture.Enabled
+        var image = preview.ShareArtwork is { } artwork ? Url(request, artwork) : capture.Enabled
             ? Url(request, ShareImageCapture.ImagePath(preview.Target))
             : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
         if (image is not null)
@@ -321,10 +326,10 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         path is "/my-drafts" or "/my-settings" or "/me" or "/moderation" or "/profiles/me";
 
     private static bool IsClientRoute(string path) =>
-        RequiresSignIn(path) || path is "/" or "/about" or "/communities" or "/components"
+        RequiresSignIn(path) || path is "/" or "/about" or "/share" or "/communities" or "/components"
         or "/login" or "/new" or "/nodes" or "/profiles" or "/register"
         or "/confirm-email" or "/forgot-password" or "/reset-password"
         || path.StartsWith("/communities/", StringComparison.Ordinal);
 
-    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null, ShareTarget? Target = null);
+    private sealed record Preview(string Title, string Description, string Path, string Type, Uri? Image = null, ShareTarget? Target = null, string? ShareArtwork = null);
 }
