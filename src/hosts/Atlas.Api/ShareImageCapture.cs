@@ -39,8 +39,8 @@ internal sealed class ShareImageCapture(
     // Bump the URL and disk cache together when the capture layout changes.
     private static string LayoutVersion(ShareTarget? target) => target switch
     {
-        null => "5",
-        { Kind: SharePage.Node } => "6",
+        null => "6",
+        { Kind: SharePage.Node } => "7",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };

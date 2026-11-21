@@ -125,6 +125,16 @@
     min-height: 0;
     height: var(--atlas-feed-preview-height, 8.5rem);
   }
+  /* A single text block can size to its contents. Keep a capped preview for
+     long text and the fixed viewport for media and multi-slide carousels. */
+  .viewport.compact:has([data-block-kind='markdown']):not(:has(.nav, :global(img))) {
+    height: auto;
+    max-height: var(--atlas-feed-preview-height, 8.5rem);
+  }
+  .viewport.compact:has([data-block-kind='markdown']):not(:has(.nav, :global(img))) .fade {
+    top: calc(var(--atlas-feed-preview-height, 8.5rem) - 1.7rem);
+    bottom: auto;
+  }
   .viewport.landscape { height: min(12rem, 50vw); min-height: 8rem; }
   .viewport.portrait { height: min(17rem, 77vw); min-height: 11rem; }
   .feed-block-slide { box-sizing: border-box; display: flex; flex-direction: column;
@@ -165,6 +175,9 @@
   .block-preview :global(.content-blocks > :is(.markdown, .story-markdown):first-child > :first-child) {
     margin-block-start: 0;
     padding-block-start: 0;
+  }
+  .block-preview :global(.content-blocks > :is(.markdown, .story-markdown):last-child > :last-child) {
+    margin-block-end: 0;
   }
   .fade { position: absolute; bottom: 0; left: 0; right: 0; height: 1.7rem;
     background: linear-gradient(transparent, var(--atlas-surface));

@@ -273,7 +273,7 @@
     color: var(--atlas-text);
     overflow-wrap: anywhere;
     header {
-      padding: var(--card-padding) var(--card-padding) 0.5rem;
+      padding: var(--card-padding) var(--card-padding) .25rem;
     }
     h2 {
       margin: 0 0 var(--atlas-heading-gap, 0.5rem);
@@ -385,11 +385,12 @@
   .body {
     --atlas-markdown-line-height: var(--atlas-node-line-height);
     line-height: var(--atlas-node-line-height);
-    padding: 0.5rem var(--card-padding) 0;
+    padding: .25rem var(--card-padding) 0;
     display: flow-root;
   }
 
-  .authoring-body { padding-bottom: var(--card-padding); }
+  header:has(+ .authoring-body) { padding-block-end: .5rem; }
+  .authoring-body { padding-block: .5rem var(--card-padding); }
 
   .fallback-vote, .fallback-vote-dialog {
     color: var(--atlas-text); background: var(--atlas-surface);
