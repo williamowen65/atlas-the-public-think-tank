@@ -60,7 +60,7 @@
         <article>
           <img src={design.image} alt={design.alt} width="1200" height="630"
             onerror={(event) => {
-              if (!event.currentTarget.src.endsWith('/atlas-share.png')) event.currentTarget.src = '/atlas-share.png';
+              if (event.currentTarget instanceof HTMLImageElement && !event.currentTarget.src.endsWith('/atlas-share.png')) event.currentTarget.src = '/atlas-share.png';
             }} />
           <div class="details">
             <h2>{design.title}</h2>
