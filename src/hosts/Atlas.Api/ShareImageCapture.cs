@@ -59,7 +59,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "2",
+        { Kind: SharePage.Globe, Animated: true } => "3",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
@@ -364,7 +364,7 @@ internal sealed class ShareImageCapture(
 
     private static async Task<byte[]> CaptureGlobeAnimation(IPage page, PageScreenshotOptions screenshot)
     {
-        const int frames = 48;
+        const int frames = 96;
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         const int frameDelay = 120 * 100 / frames;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
