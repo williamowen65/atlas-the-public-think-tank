@@ -59,7 +59,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "5",
+        { Kind: SharePage.Globe, Animated: true } => "6",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
@@ -364,7 +364,7 @@ internal sealed class ShareImageCapture(
 
     private static async Task<byte[]> CaptureGlobeAnimation(IPage page, PageScreenshotOptions screenshot)
     {
-        const int frames = 240;
+        const int frames = 480;
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         const int frameDelay = 120 * 100 / frames;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
@@ -373,20 +373,31 @@ internal sealed class ShareImageCapture(
         var canvas = page.Locator("dialog[data-globe-share] .world canvas");
         var bounds = await canvas.BoundingBoxAsync() ??
             throw new InvalidOperationException("The globe canvas has no capture bounds.");
-        var x = (int)Math.Round(bounds.X * AnimationScale);
-        var y = (int)Math.Round(bounds.Y * AnimationScale);
-        var width = (uint)Math.Round(bounds.Width * AnimationScale);
-        var height = (uint)Math.Round(bounds.Height * AnimationScale);
-
-        // Hide the transparent WebGL canvas without changing the layout or its backing buffer.
+        // Hide only the WebGL layer. The card provides an opaque background for every update.
         screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
         using var background = new MagickImage(await page.ScreenshotAsync(screenshot));
+        background.Alpha(AlphaOption.Off);
+
+        var clip = screenshot.Clip!;
+        var scaleX = background.Width / (double)clip.Width;
+        var scaleY = background.Height / (double)clip.Height;
+        var canvasX = (bounds.X - clip.X) * scaleX;
+        var canvasY = (bounds.Y - clip.Y) * scaleY;
+        var canvasWidth = (uint)Math.Max(1, Math.Round(bounds.Width * scaleX));
+        var canvasHeight = (uint)Math.Max(1, Math.Round(bounds.Height * scaleY));
+
+        // Cover the entire canvas (including its pin margin) plus a few pixels for rounding.
+        const int padding = 4;
+        var left = Math.Max(0, (int)Math.Floor(canvasX) - padding);
+        var top = Math.Max(0, (int)Math.Floor(canvasY) - padding);
+        var right = Math.Min((int)background.Width, (int)Math.Ceiling(canvasX + bounds.Width * scaleX) + padding);
+        var bottom = Math.Min((int)background.Height, (int)Math.Ceiling(canvasY + bounds.Height * scaleY) + padding);
         using var globeBackground = background.Clone();
-        globeBackground.Crop(new MagickGeometry(x, y, width, height));
+        globeBackground.Crop(new MagickGeometry(left, top, (uint)(right - left), (uint)(bottom - top)));
         globeBackground.ResetPage();
 
         using var animation = new MagickImageCollection();
-        const int batchSize = 12;
+        const int batchSize = 24;
         for (var start = 0; start < frames; start += batchSize)
         {
             var angles = Enumerable.Range(start, Math.Min(batchSize, frames - start))
@@ -404,16 +415,21 @@ internal sealed class ShareImageCapture(
             foreach (var capture in captures)
             {
                 using var globe = new MagickImage(Convert.FromBase64String(capture));
+                if (globe.Width != canvasWidth || globe.Height != canvasHeight)
+                    globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
                 var first = animation.Count == 0;
                 var frame = first ? background.Clone() : globeBackground.Clone();
                 animation.Add(frame);
-                frame.Composite(globe, first ? x : 0, first ? y : 0, CompositeOperator.Over);
+                var x = (int)Math.Round(canvasX);
+                var y = (int)Math.Round(canvasY);
+                frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
+                frame.Alpha(AlphaOption.Off);
                 frame.AnimationDelay = frameDelay;
                 frame.GifDisposeMethod = GifDisposeMethod.None;
                 if (first)
                     frame.AnimationIterations = 0;
                 else
-                    frame.Page = new MagickGeometry(x, y, background.Width, background.Height);
+                    frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
             }
         }
 
