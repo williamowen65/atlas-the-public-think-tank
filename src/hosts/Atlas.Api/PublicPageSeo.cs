@@ -280,11 +280,8 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
             Meta("property", "og:image", image);
             if (capture.Enabled || preview.Image is null)
             {
-                var animated = capture.Enabled && preview.Target is { Animated: true };
-                var width = animated ? ShareImageCapture.AnimationWidth : ShareImageCapture.ImageWidth;
-                var height = animated ? ShareImageCapture.AnimationHeight : ShareImageCapture.ImageHeight;
-                Meta("property", "og:image:width", width.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                Meta("property", "og:image:height", height.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Meta("property", "og:image:width", ShareImageCapture.ImageWidth.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Meta("property", "og:image:height", ShareImageCapture.ImageHeight.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
         }
         Meta("name", "twitter:card", image is null ? "summary" : "summary_large_image");

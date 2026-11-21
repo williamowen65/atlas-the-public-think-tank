@@ -59,15 +59,12 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "7",
+        { Kind: SharePage.Globe, Animated: true } => "8",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
-    internal const int AnimationWidth = 1080;
-    internal const int AnimationHeight = 567;
-    private const float AnimationScale = (float)AnimationWidth / ImageWidth;
     private const string CaptureStyle = """
         /* A centered 16:9 crop of 1200 × 630 trims 40 pixels from each edge. */
         body { margin: 0 !important; padding: 0 4.67vw !important; box-sizing: border-box; }
@@ -219,7 +216,7 @@ internal sealed class ShareImageCapture(
             await using var session = await browser.NewContextAsync(new()
             {
                 ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
-                DeviceScaleFactor = id is { Animated: true } ? AnimationScale : scale,
+                DeviceScaleFactor = scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
                 ColorScheme = ColorScheme.Light
