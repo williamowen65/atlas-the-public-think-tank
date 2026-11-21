@@ -59,13 +59,15 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
+        { Kind: SharePage.Globe, Animated: true } => "2",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
     internal const int ImageHeight = 630;
-    internal const int AnimationWidth = ImageWidth / 2;
-    internal const int AnimationHeight = ImageHeight / 2;
+    internal const int AnimationWidth = 960;
+    internal const int AnimationHeight = 504;
+    private const float AnimationScale = (float)AnimationWidth / ImageWidth;
     private const string CaptureStyle = """
         /* A centered 16:9 crop of 1200 × 630 trims 40 pixels from each edge. */
         body { margin: 0 !important; padding: 0 4.67vw !important; box-sizing: border-box; }
@@ -213,7 +215,7 @@ internal sealed class ShareImageCapture(
             await using var session = await browser.NewContextAsync(new()
             {
                 ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
-                DeviceScaleFactor = id is { Animated: true } ? 0.5f : scale,
+                DeviceScaleFactor = id is { Animated: true } ? AnimationScale : scale,
                 IgnoreHTTPSErrors = environment.IsDevelopment(),
                 ServiceWorkers = ServiceWorkerPolicy.Block,
                 ColorScheme = ColorScheme.Light
@@ -362,8 +364,9 @@ internal sealed class ShareImageCapture(
 
     private static async Task<byte[]> CaptureGlobeAnimation(IPage page, PageScreenshotOptions screenshot)
     {
-        const int frames = 24;
-        const int frameDelay = 20; // GIF timing is in hundredths of a second.
+        const int frames = 48;
+        // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
+        const int frameDelay = 120 * 100 / frames;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
@@ -373,7 +376,7 @@ internal sealed class ShareImageCapture(
 
         for (var index = 1; index < frames; index++)
         {
-            var angle = -25 + index * 360 / frames;
+            var angle = -25 + index * 360.0 / frames;
             await page.EvaluateAsync("""
                 angle => window.dispatchEvent(new CustomEvent('atlas-globe-capture-angle', { detail: angle }))
                 """, angle);
@@ -383,6 +386,7 @@ internal sealed class ShareImageCapture(
             animation.Add(new MagickImage(await page.ScreenshotAsync(screenshot)) { AnimationDelay = frameDelay });
         }
 
+        animation.Optimize();
         using var output = new MemoryStream();
         await animation.WriteAsync(output, MagickFormat.Gif);
         return output.ToArray();
