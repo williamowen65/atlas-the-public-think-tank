@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Playwright;
 using ImageMagick;
 
@@ -199,156 +200,184 @@ internal sealed class ShareImageCapture(
             var url = new Uri(origin!, id?.CapturePath ?? "/");
             var globe = id is { Kind: SharePage.Globe };
             var fullFrame = id is null || globe;
-            using var playwright = await Playwright.CreateAsync();
-            await using var browser = environment.IsDevelopment()
-                ? await playwright.Chromium.LaunchAsync(new()
-                {
-                    Timeout = 12000,
-                    ExecutablePath = configuration["ATLAS_LOCAL_CHROMIUM"],
-                    Args = globe ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : null
-                })
-                : await playwright.Chromium.ConnectOverCDPAsync(
-                    "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
-                    new() { Timeout = 12000 });
-            var scale = fullFrame ? 1f : 2.5f;
-            var captureWidth = (int)(ImageWidth / scale);
-            var captureHeight = (int)(ImageHeight / scale);
-            await using var session = await browser.NewContextAsync(new()
+            var elapsed = Stopwatch.StartNew();
+            GlobeFrames? globeFrames = null;
+            byte[]? image = null;
             {
-                ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
-                DeviceScaleFactor = scale,
-                IgnoreHTTPSErrors = environment.IsDevelopment(),
-                ServiceWorkers = ServiceWorkerPolicy.Block,
-                ColorScheme = ColorScheme.Light
-            });
-            var page = await session.NewPageAsync();
-            await page.RouteAsync("**/*", async route =>
-            {
-                var request = route.Request;
-                if (request.Method == "GET" && Uri.TryCreate(request.Url, UriKind.Absolute, out var requestedUri))
+                using var playwright = await Playwright.CreateAsync();
+                await using var browser = environment.IsDevelopment()
+                    ? await playwright.Chromium.LaunchAsync(new()
+                    {
+                        Timeout = 12000,
+                        ExecutablePath = configuration["ATLAS_LOCAL_CHROMIUM"],
+                        Args = globe ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : null
+                    })
+                    : await playwright.Chromium.ConnectOverCDPAsync(
+                        "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
+                        new() { Timeout = 12000 });
+                var scale = fullFrame ? 1f : 2.5f;
+                var captureWidth = (int)(ImageWidth / scale);
+                var captureHeight = (int)(ImageHeight / scale);
+                await using var session = await browser.NewContextAsync(new()
                 {
-                    if (requestedUri.GetLeftPart(UriPartial.Authority) == origin!.GetLeftPart(UriPartial.Authority) &&
-                        (!request.IsNavigationRequest || requestedUri == url) &&
-                        (!requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase) ||
-                            (globe && requestedUri.AbsolutePath == "/atlas-session-api/globe/snapshot")))
+                    ViewportSize = new() { Width = captureWidth, Height = fullFrame ? captureHeight : 1000 },
+                    DeviceScaleFactor = scale,
+                    IgnoreHTTPSErrors = environment.IsDevelopment(),
+                    ServiceWorkers = ServiceWorkerPolicy.Block,
+                    ColorScheme = ColorScheme.Light
+                });
+                var page = await session.NewPageAsync();
+                await page.RouteAsync("**/*", async route =>
+                {
+                    var request = route.Request;
+                    if (request.Method == "GET" && Uri.TryCreate(request.Url, UriKind.Absolute, out var requestedUri))
                     {
-                        await route.ContinueAsync();
-                        return;
-                    }
-                    // Demo seed photos use this CDN. Never follow third-party redirects from the capture browser.
-                    if (id is { Kind: SharePage.Node } && request.ResourceType == "image" &&
-                        !request.IsNavigationRequest && requestedUri.GetLeftPart(UriPartial.Authority) == "https://images.unsplash.com" &&
-                        requestedUri.AbsolutePath.StartsWith("/photo-", StringComparison.Ordinal) &&
-                        requestedUri.Query == "?w=900&fit=max")
-                    {
-                        try
+                        if (requestedUri.GetLeftPart(UriPartial.Authority) == origin!.GetLeftPart(UriPartial.Authority) &&
+                            (!request.IsNavigationRequest || requestedUri == url) &&
+                            (!requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase) ||
+                                (globe && requestedUri.AbsolutePath == "/atlas-session-api/globe/snapshot")))
                         {
-                            var photo = await route.FetchAsync(new() { MaxRedirects = 0, Timeout = 2000 });
+                            await route.ContinueAsync();
+                            return;
+                        }
+                        // Demo seed photos use this CDN. Never follow third-party redirects from the capture browser.
+                        if (id is { Kind: SharePage.Node } && request.ResourceType == "image" &&
+                            !request.IsNavigationRequest && requestedUri.GetLeftPart(UriPartial.Authority) == "https://images.unsplash.com" &&
+                            requestedUri.AbsolutePath.StartsWith("/photo-", StringComparison.Ordinal) &&
+                            requestedUri.Query == "?w=900&fit=max")
+                        {
                             try
                             {
-                                if (photo.Ok && photo.Headers.TryGetValue("content-type", out var type) &&
-                                    type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                                var photo = await route.FetchAsync(new() { MaxRedirects = 0, Timeout = 2000 });
+                                try
                                 {
-                                    await route.FulfillAsync(new() { Response = photo });
-                                    return;
+                                    if (photo.Ok && photo.Headers.TryGetValue("content-type", out var type) &&
+                                        type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        await route.FulfillAsync(new() { Response = photo });
+                                        return;
+                                    }
                                 }
+                                finally { await photo.DisposeAsync(); }
                             }
-                            finally { await photo.DisposeAsync(); }
+                            catch (PlaywrightException) { /* A missing seed photo should not fail the entire capture. */ }
                         }
-                        catch (PlaywrightException) { /* A missing seed photo should not fail the entire capture. */ }
                     }
+                    await route.AbortAsync();
+                });
+                stage = "loading the page";
+                var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
+                if (response?.Ok != true || page.Url != url.AbsoluteUri)
+                {
+                    logger.LogWarning("Atlas share capture for {Image} did not reach the requested page (HTTP {Status}).",
+                        name, response?.Status);
+                    return;
                 }
-                await route.AbortAsync();
-            });
-            stage = "loading the page";
-            var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
-            if (response?.Ok != true || page.Url != url.AbsoluteUri)
-            {
-                logger.LogWarning("Atlas share capture for {Image} did not reach the requested page (HTTP {Status}).",
-                    name, response?.Status);
-                return;
+
+                stage = "waiting for the share card";
+                var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
+                await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
+                await page.AddStyleTagAsync(new()
+                {
+                    Content = CaptureStyle + (id is null
+                        ? DiscoverCaptureStyle
+                        : globe ? GlobeCaptureStyle : ".app-shell > :not(main) { display: none !important; }")
+                });
+                if (id is { Kind: SharePage.Node })
+                {
+                    stage = "waiting for the feed preview";
+                    await card.ScrollIntoViewIfNeededAsync();
+                    // Title-only cards can finish loading with a zero-height preview body.
+                    // The marker signals that loading settled, even when the body has no visible content.
+                    await card.Locator("[data-feed-preview-ready='true']")
+                        .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
+                }
+                var top = 0;
+                if (id is null)
+                {
+                    await card.ScrollIntoViewIfNeededAsync();
+                    await card.Locator("[data-feed-preview-ready='true']")
+                        .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
+                    await page.EvaluateAsync("window.scrollTo({ top: 0, behavior: 'instant' })");
+                }
+                else if (globe)
+                {
+                    stage = "waiting for the globe renderer";
+                    await card.Locator(".world [data-map-ready='true'] canvas[data-ready='true']")
+                        .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
+                }
+                else
+                {
+                    await card.EvaluateAsync("""
+                        element => {
+                            element.style.setProperty('scroll-margin-block-start', '0', 'important');
+                            element.scrollIntoView({block: 'start', behavior: 'instant'});
+                        }
+                        """);
+                    var bounds = await card.BoundingBoxAsync();
+                    if (bounds is null) return;
+                    top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
+                }
+                if (id is { Kind: SharePage.Node })
+                {
+                    // The card can be visible while its lazy photos are still downloading.
+                    // Wait only for images that overlap the actual crop.
+                    await card.EvaluateAsync("""
+                        async (element, crop) => {
+                            const images = Array.from(element.querySelectorAll('img')).filter(image => {
+                                const bounds = image.getBoundingClientRect();
+                                return bounds.width > 0 && bounds.bottom > crop.top &&
+                                    bounds.top < crop.top + crop.height &&
+                                    bounds.right > 0 && bounds.left < window.innerWidth;
+                            });
+                            await Promise.race([
+                                Promise.allSettled(images.map(image => {
+                                    image.loading = 'eager';
+                                    return image.decode();
+                                })),
+                                new Promise(resolve => setTimeout(resolve, 2500))
+                            ]);
+                        }
+                        """, new { top, height = captureHeight });
+                }
+                stage = "writing the screenshot";
+                var screenshot = new PageScreenshotOptions
+                {
+                    Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
+                    Animations = ScreenshotAnimations.Disabled,
+                    Style = id is { Kind: SharePage.Community or SharePage.Profile }
+                        ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
+                        : null,
+                    Timeout = 12000
+                };
+                if (id is { Animated: true })
+                {
+                    stage = "capturing globe frames";
+                    globeFrames = await CaptureGlobeFrames(page, screenshot);
+                }
+                else
+                {
+                    image = await page.ScreenshotAsync(screenshot);
+                }
             }
 
-            stage = "waiting for the share card";
-            var card = page.Locator(id?.Selector ?? "#main-content article.node-card").First;
-            await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
-            await page.AddStyleTagAsync(new()
+            if (globeFrames is not null)
             {
-                Content = CaptureStyle + (id is null
-                    ? DiscoverCaptureStyle
-                    : globe ? GlobeCaptureStyle : ".app-shell > :not(main) { display: none !important; }")
-            });
-            if (id is { Kind: SharePage.Node })
-            {
-                stage = "waiting for the feed preview";
-                await card.ScrollIntoViewIfNeededAsync();
-                // Title-only cards can finish loading with a zero-height preview body.
-                // The marker signals that loading settled, even when the body has no visible content.
-                await card.Locator("[data-feed-preview-ready='true']")
-                    .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
+                logger.LogInformation("Atlas globe GIF captured {FrameCount} frames in {ElapsedMs} ms.",
+                    globeFrames.Frames.Count, elapsed.ElapsedMilliseconds);
+                stage = "encoding the globe GIF";
+                elapsed.Restart();
+                image = await EncodeGlobeAnimation(globeFrames);
+                logger.LogInformation("Atlas globe GIF encoded in {ElapsedMs} ms ({ImageBytes} bytes).",
+                    elapsed.ElapsedMilliseconds, image.Length);
             }
-            var top = 0;
-            if (id is null)
-            {
-                await card.ScrollIntoViewIfNeededAsync();
-                await card.Locator("[data-feed-preview-ready='true']")
-                    .WaitForAsync(new() { State = WaitForSelectorState.Attached, Timeout = 12000 });
-                await page.EvaluateAsync("window.scrollTo({ top: 0, behavior: 'instant' })");
-            }
-            else if (globe)
-            {
-                stage = "waiting for the globe renderer";
-                await card.Locator(".world [data-map-ready='true'] canvas[data-ready='true']")
-                    .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
-            }
-            else
-            {
-                await card.EvaluateAsync("""
-                    element => {
-                        element.style.setProperty('scroll-margin-block-start', '0', 'important');
-                        element.scrollIntoView({block: 'start', behavior: 'instant'});
-                    }
-                    """);
-                var bounds = await card.BoundingBoxAsync();
-                if (bounds is null) return;
-                top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
-            }
-            if (id is { Kind: SharePage.Node })
-            {
-                // The card can be visible while its lazy photos are still downloading.
-                // Wait only for images that overlap the actual crop.
-                await card.EvaluateAsync("""
-                    async (element, crop) => {
-                        const images = Array.from(element.querySelectorAll('img')).filter(image => {
-                            const bounds = image.getBoundingClientRect();
-                            return bounds.width > 0 && bounds.bottom > crop.top &&
-                                bounds.top < crop.top + crop.height &&
-                                bounds.right > 0 && bounds.left < window.innerWidth;
-                        });
-                        await Promise.race([
-                            Promise.allSettled(images.map(image => {
-                                image.loading = 'eager';
-                                return image.decode();
-                            })),
-                            new Promise(resolve => setTimeout(resolve, 2500))
-                        ]);
-                    }
-                    """, new { top, height = captureHeight });
-            }
-            stage = "writing the screenshot";
-            var screenshot = new PageScreenshotOptions
-            {
-                Clip = new() { X = 0, Y = top, Width = captureWidth, Height = captureHeight },
-                Animations = ScreenshotAnimations.Disabled,
-                Style = id is { Kind: SharePage.Community or SharePage.Profile }
-                    ? "body * { visibility: hidden !important; } [data-share-preview], [data-share-preview] * { visibility: visible !important; }"
-                    : null,
-                Timeout = 12000
-            };
-            var image = id is { Animated: true }
-                ? await CaptureGlobeAnimation(page, screenshot)
-                : await page.ScreenshotAsync(screenshot);
-            await cache!.Write(cacheKey, image, started);
+
+            stage = "uploading the share image";
+            elapsed.Restart();
+            await cache!.Write(cacheKey, image!, started);
+            if (globeFrames is not null)
+                logger.LogInformation("Atlas globe GIF saved as {CacheKey} in {ElapsedMs} ms.",
+                    cacheKey, elapsed.ElapsedMilliseconds);
         }
         catch (Exception error)
         {
@@ -363,11 +392,11 @@ internal sealed class ShareImageCapture(
         }
     }
 
-    private static async Task<byte[]> CaptureGlobeAnimation(IPage page, PageScreenshotOptions screenshot)
+    private sealed record GlobeFrames(byte[] Background, LocatorBoundingBoxResult Bounds, Clip Clip, List<string> Frames);
+
+    private static async Task<GlobeFrames> CaptureGlobeFrames(IPage page, PageScreenshotOptions screenshot)
     {
-        const int frames = 480;
-        // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
-        const int frameDelay = 120 * 100 / frames;
+        const int frameCount = 480;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
@@ -376,33 +405,13 @@ internal sealed class ShareImageCapture(
             throw new InvalidOperationException("The globe canvas has no capture bounds.");
         // Hide only the WebGL layer. The card provides an opaque background for every update.
         screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
-        using var background = new MagickImage(await page.ScreenshotAsync(screenshot));
-        background.Alpha(AlphaAction.Off);
-
-        var clip = screenshot.Clip!;
-        var scaleX = background.Width / (double)clip.Width;
-        var scaleY = background.Height / (double)clip.Height;
-        var canvasX = (bounds.X - clip.X) * scaleX;
-        var canvasY = (bounds.Y - clip.Y) * scaleY;
-        var canvasWidth = (uint)Math.Max(1, Math.Round(bounds.Width * scaleX));
-        var canvasHeight = (uint)Math.Max(1, Math.Round(bounds.Height * scaleY));
-
-        // Cover the entire canvas (including its pin margin) plus a few pixels for rounding.
-        const int padding = 4;
-        var left = Math.Max(0, (int)Math.Floor(canvasX) - padding);
-        var top = Math.Max(0, (int)Math.Floor(canvasY) - padding);
-        var right = Math.Min((int)background.Width, (int)Math.Ceiling(canvasX + bounds.Width * scaleX) + padding);
-        var bottom = Math.Min((int)background.Height, (int)Math.Ceiling(canvasY + bounds.Height * scaleY) + padding);
-        using var globeBackground = background.Clone();
-        globeBackground.Crop(new MagickGeometry(left, top, (uint)(right - left), (uint)(bottom - top)));
-        globeBackground.ResetPage();
-
-        using var animation = new MagickImageCollection();
+        var background = await page.ScreenshotAsync(screenshot);
+        var frames = new List<string>(frameCount);
         const int batchSize = 24;
-        for (var start = 0; start < frames; start += batchSize)
+        for (var start = 0; start < frameCount; start += batchSize)
         {
-            var angles = Enumerable.Range(start, Math.Min(batchSize, frames - start))
-                .Select(index => -25 + index * 360.0 / frames).ToArray();
+            var angles = Enumerable.Range(start, Math.Min(batchSize, frameCount - start))
+                .Select(index => -25 + index * 360.0 / frameCount).ToArray();
             var captures = await canvas.EvaluateAsync<string[]>("""
                 (canvas, angles) => {
                     const frames = [];
@@ -413,25 +422,55 @@ internal sealed class ShareImageCapture(
             if (captures.Length != angles.Length)
                 throw new InvalidOperationException("The globe renderer did not return every requested frame.");
 
-            foreach (var capture in captures)
-            {
-                using var globe = new MagickImage(Convert.FromBase64String(capture));
-                if (globe.Width != canvasWidth || globe.Height != canvasHeight)
-                    globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
-                var first = animation.Count == 0;
-                var frame = first ? background.Clone() : globeBackground.Clone();
-                animation.Add(frame);
-                var x = (int)Math.Round(canvasX);
-                var y = (int)Math.Round(canvasY);
-                frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
-                frame.Alpha(AlphaAction.Off);
-                frame.AnimationDelay = frameDelay;
-                frame.GifDisposeMethod = GifDisposeMethod.None;
-                if (first)
-                    frame.AnimationIterations = 0;
-                else
-                    frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
-            }
+            frames.AddRange(captures);
+        }
+        return new GlobeFrames(background, bounds, screenshot.Clip!, frames);
+    }
+
+    private static async Task<byte[]> EncodeGlobeAnimation(GlobeFrames capture)
+    {
+        // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
+        var frameDelay = (uint)(120 * 100 / capture.Frames.Count);
+        using var background = new MagickImage(capture.Background);
+        background.Alpha(AlphaAction.Off);
+
+        var clip = capture.Clip;
+        var scaleX = background.Width / (double)clip.Width;
+        var scaleY = background.Height / (double)clip.Height;
+        var canvasX = (capture.Bounds.X - clip.X) * scaleX;
+        var canvasY = (capture.Bounds.Y - clip.Y) * scaleY;
+        var canvasWidth = (uint)Math.Max(1, Math.Round(capture.Bounds.Width * scaleX));
+        var canvasHeight = (uint)Math.Max(1, Math.Round(capture.Bounds.Height * scaleY));
+
+        // Cover the entire canvas (including its pin margin) plus a few pixels for rounding.
+        const int padding = 4;
+        var left = Math.Max(0, (int)Math.Floor(canvasX) - padding);
+        var top = Math.Max(0, (int)Math.Floor(canvasY) - padding);
+        var right = Math.Min((int)background.Width, (int)Math.Ceiling(canvasX + capture.Bounds.Width * scaleX) + padding);
+        var bottom = Math.Min((int)background.Height, (int)Math.Ceiling(canvasY + capture.Bounds.Height * scaleY) + padding);
+        using var globeBackground = background.Clone();
+        globeBackground.Crop(new MagickGeometry(left, top, (uint)(right - left), (uint)(bottom - top)));
+        globeBackground.ResetPage();
+
+        using var animation = new MagickImageCollection();
+        foreach (var frameData in capture.Frames)
+        {
+            using var globe = new MagickImage(Convert.FromBase64String(frameData));
+            if (globe.Width != canvasWidth || globe.Height != canvasHeight)
+                globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
+            var first = animation.Count == 0;
+            var frame = first ? background.Clone() : globeBackground.Clone();
+            animation.Add(frame);
+            var x = (int)Math.Round(canvasX);
+            var y = (int)Math.Round(canvasY);
+            frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
+            frame.Alpha(AlphaAction.Off);
+            frame.AnimationDelay = frameDelay;
+            frame.GifDisposeMethod = GifDisposeMethod.None;
+            if (first)
+                frame.AnimationIterations = 0;
+            else
+                frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
         }
 
         using var output = new MemoryStream();
