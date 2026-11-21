@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "10",
+        { Kind: SharePage.Globe, Animated: true } => "11",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -413,7 +413,7 @@ internal sealed class ShareImageCapture(
 
     private static async Task<GlobeFrames> CaptureGlobeFrames(IPage page, PageScreenshotOptions screenshot)
     {
-        const int frameCount = 480;
+        const int frameCount = 720;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
@@ -449,7 +449,8 @@ internal sealed class ShareImageCapture(
     private void CompositeGlobeFrames(GlobeFrames capture, MagickImageCollection animation, Stopwatch elapsed)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
-        var frameDelay = (uint)(120 * 100 / capture.Frames.Count);
+        const int loopDuration = 120 * 100;
+        var previousFrameEnd = 0;
         using var background = new MagickImage(capture.Background);
         background.Alpha(AlphaAction.Off);
 
@@ -483,7 +484,10 @@ internal sealed class ShareImageCapture(
             var y = (int)Math.Round(canvasY);
             frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
             frame.Alpha(AlphaAction.Off);
-            frame.AnimationDelay = frameDelay;
+            // Distribute the rounding across frames to keep the full rotation at 120 seconds.
+            var frameEnd = animation.Count * loopDuration / capture.Frames.Count;
+            frame.AnimationDelay = (uint)(frameEnd - previousFrameEnd);
+            previousFrameEnd = frameEnd;
             frame.GifDisposeMethod = GifDisposeMethod.None;
             if (first)
                 frame.AnimationIterations = 0;
