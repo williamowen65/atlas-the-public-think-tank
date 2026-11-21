@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "8",
+        { Kind: SharePage.Globe, Animated: true } => "9",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -401,6 +401,31 @@ internal sealed class ShareImageCapture(
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
         var canvas = page.Locator("dialog[data-globe-share] .world canvas");
+        // Pin the capture surface to the same geometry as the still preview.
+        // The interactive dialog can resize its canvas while the page settles.
+        await canvas.EvaluateAsync("""
+            canvas => {
+                const world = canvas.closest('.world');
+                world.style.setProperty('width', '480px', 'important');
+                world.style.setProperty('height', '480px', 'important');
+                world.style.setProperty('position', 'fixed', 'important');
+                world.style.setProperty('left', '92.5px', 'important');
+                world.style.setProperty('top', 'calc(50vh - 240px)', 'important');
+                canvas.style.setProperty('width', '480px', 'important');
+                canvas.style.setProperty('height', '480px', 'important');
+            }
+            """);
+        await page.WaitForFunctionAsync("""
+            () => {
+                const canvas = document.querySelector('dialog[data-globe-share] .world canvas');
+                if (!canvas) return false;
+                const bounds = canvas.getBoundingClientRect();
+                return Math.abs(bounds.x + bounds.width / 2 - 332.5) < 2
+                    && Math.abs(bounds.y + bounds.height / 2 - 315) < 2
+                    && bounds.width === 480 && bounds.height === 480
+                    && canvas.width === 480 && canvas.height === 480;
+            }
+            """, null, new() { Timeout = 12000 });
         var bounds = await canvas.BoundingBoxAsync() ??
             throw new InvalidOperationException("The globe canvas has no capture bounds.");
         // Hide only the WebGL layer. The card provides an opaque background for every update.
