@@ -197,15 +197,8 @@
       Math.min(400, window.innerWidth - 64, height - globeTop - globeBottom - 174),
     );
   }
-  function setCaptureAngle(event: Event) {
-    if (capturing && event instanceof CustomEvent && Number.isFinite(event.detail)) {
-      rotation.angle = event.detail;
-    }
-  }
-
   onMount(() => {
     alive = true;
-    window.addEventListener('atlas-globe-capture-angle', setCaptureAngle);
     const mobileQuery = matchMedia('(max-width: 560px)');
     const updateMobile = () => (mobile = mobileQuery.matches);
     updateMobile();
@@ -235,7 +228,6 @@
     }, 60000);
     window.addEventListener('atlas-session-changed', restart);
     return () => {
-      window.removeEventListener('atlas-globe-capture-angle', setCaptureAngle);
       mobileQuery.removeEventListener('change', updateMobile);
       alive = false;
       generation++;

@@ -59,7 +59,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "4",
+        { Kind: SharePage.Globe, Animated: true } => "5",
         { Kind: SharePage.Globe } => "1",
         _ => "4"
     };
@@ -370,23 +370,53 @@ internal sealed class ShareImageCapture(
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
-        using var animation = new MagickImageCollection();
-        animation.Add(new MagickImage(await page.ScreenshotAsync(screenshot)) { AnimationDelay = frameDelay });
-        animation[0].AnimationIterations = 0;
+        var canvas = page.Locator("dialog[data-globe-share] .world canvas");
+        var bounds = await canvas.BoundingBoxAsync() ??
+            throw new InvalidOperationException("The globe canvas has no capture bounds.");
+        var x = (int)Math.Round(bounds.X * AnimationScale);
+        var y = (int)Math.Round(bounds.Y * AnimationScale);
+        var width = (uint)Math.Round(bounds.Width * AnimationScale);
+        var height = (uint)Math.Round(bounds.Height * AnimationScale);
 
-        for (var index = 1; index < frames; index++)
+        // Hide the transparent WebGL canvas without changing the layout or its backing buffer.
+        screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
+        using var background = new MagickImage(await page.ScreenshotAsync(screenshot));
+        using var globeBackground = background.Clone();
+        globeBackground.Crop(new MagickGeometry(x, y, width, height));
+        globeBackground.ResetPage();
+
+        using var animation = new MagickImageCollection();
+        const int batchSize = 12;
+        for (var start = 0; start < frames; start += batchSize)
         {
-            var angle = -25 + index * 360.0 / frames;
-            await page.EvaluateAsync("""
-                angle => window.dispatchEvent(new CustomEvent('atlas-globe-capture-angle', { detail: angle }))
-                """, angle);
-            await using var painted = await page.WaitForFunctionAsync("""
-                angle => document.querySelector('dialog[data-globe-share] .world canvas')?.dataset.angle === String(angle)
-                """, angle, new() { Timeout = 2000 });
-            animation.Add(new MagickImage(await page.ScreenshotAsync(screenshot)) { AnimationDelay = frameDelay });
+            var angles = Enumerable.Range(start, Math.Min(batchSize, frames - start))
+                .Select(index => -25 + index * 360.0 / frames).ToArray();
+            var captures = await canvas.EvaluateAsync<string[]>("""
+                (canvas, angles) => {
+                    const frames = [];
+                    canvas.dispatchEvent(new CustomEvent('atlas-globe-capture-frames', { detail: { angles, frames } }));
+                    return frames;
+                }
+                """, angles);
+            if (captures.Length != angles.Length)
+                throw new InvalidOperationException("The globe renderer did not return every requested frame.");
+
+            foreach (var capture in captures)
+            {
+                using var globe = new MagickImage(Convert.FromBase64String(capture));
+                var first = animation.Count == 0;
+                var frame = first ? background.Clone() : globeBackground.Clone();
+                animation.Add(frame);
+                frame.Composite(globe, first ? x : 0, first ? y : 0, CompositeOperator.Over);
+                frame.AnimationDelay = frameDelay;
+                frame.GifDisposeMethod = GifDisposeMethod.None;
+                if (first)
+                    frame.AnimationIterations = 0;
+                else
+                    frame.Page = new MagickGeometry(x, y, background.Width, background.Height);
+            }
         }
 
-        animation.Optimize();
         using var output = new MemoryStream();
         await animation.WriteAsync(output, MagickFormat.Gif);
         return output.ToArray();
