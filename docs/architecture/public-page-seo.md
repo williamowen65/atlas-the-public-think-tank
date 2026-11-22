@@ -138,13 +138,14 @@ Azure generates fresh images when requested.
 
 ## Animated globe capture on Azure
 
-The animated share card is 1200 × 630. It plays 720 frames at an average
-of 6 fps over a two-minute rotation. Playback duration is independent of
+The animated share card is 1200 × 630. The v15 experiment plays 1,440 frames at an average
+of 12 fps over a two-minute rotation. Playback duration is independent of
 capture time.
 
 - **Browserless capture.** A single 720-frame session hit the two-minute
   free-tier session limit. Two 360-frame sessions also ran close to that
-  limit on demo. Atlas captures four consecutive groups of 180 frames in
+  limit on demo. The confirmed 6 fps version used four groups of 180 frames.
+  The 12 fps experiment uses eight groups of 180 frames in
   fresh, sequential sessions, reusing the same pin snapshot throughout.
   The successful four-session capture in demo logged about 42–63 seconds
   per session. Each session pays its own browser startup and page-load cost.
@@ -155,17 +156,17 @@ capture time.
   encoder processes 24 frames at a time, appends the compressed frames to
   one GIF, and releases each batch before continuing. Demo served the
   resulting animation successfully. Batching reduces retained frame memory.
-  Azure still has to composite and compress all 720 frames.
+  Azure still has to composite and compress every captured frame.
 - **Verify a deployment.** Open the animated globe share page
   (`/?globe=open&motion=gif`) and request its advertised `og:image` URL.
   On a cache miss, Atlas waits up to 20 seconds and may serve a PNG
   fallback while the capture continues. Once ready, the URL returns
-  `Content-Type: image/gif`. For v14, the published blob is
-  `v14/globe-motion.gif` in the site's private `share-images` container.
+  `Content-Type: image/gif`. For v15, the published blob is
+  `v15/globe-motion.gif` in the site's private `share-images` container.
 - **Diagnose a slow or failed run.** In App Service Log stream, look for
-  four `captured 180 frames` messages, then `captured 720 frames`.
+  eight `captured 180 frames` messages, then `captured 1440 frames`.
   Atlas reports compositing and encoding progress every 120 frames with
-  elapsed time and process working set. The `saved as v14/globe-motion.gif`
+  elapsed time and process working set. The `saved as v15/globe-motion.gif`
   message follows upload. `BlobNotFound` is expected on cache reads
   before publication. Use app-level **Memory Working Set** and plan-level
   **Memory Percentage** and **CPU Percentage** around the same timestamps

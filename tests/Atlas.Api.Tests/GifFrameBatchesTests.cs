@@ -7,11 +7,13 @@ namespace Atlas.Api.Tests;
 public sealed class GifFrameBatchesTests
 {
     [TestMethod]
-    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming()
+    [DataRow(720)]
+    [DataRow(1440)]
+    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming(int frameCount)
     {
         using var output = new MemoryStream();
         using var batch = new MemoryStream();
-        for (var start = 0; start < 720; start += 24)
+        for (var start = 0; start < frameCount; start += 24)
         {
             using var frames = new MagickImageCollection();
             for (var index = start; index < start + 24; index++)
@@ -20,7 +22,7 @@ public sealed class GifFrameBatchesTests
                 var color = first ? MagickColors.White : start % 48 == 0 ? MagickColors.Red : MagickColors.Blue;
                 var frame = new MagickImage(color, first ? 8u : 2u, first ? 6u : 2u)
                 {
-                    AnimationDelay = (uint)((index + 1) * 12000 / 720 - index * 12000 / 720),
+                    AnimationDelay = (uint)((index + 1) * 12000 / frameCount - index * 12000 / frameCount),
                     GifDisposeMethod = GifDisposeMethod.None
                 };
                 if (first)
@@ -38,7 +40,7 @@ public sealed class GifFrameBatchesTests
         output.WriteByte(0x3b);
         output.Position = 0;
         using var decoded = new MagickImageCollection(output);
-        Assert.AreEqual(720, decoded.Count);
+        Assert.AreEqual(frameCount, decoded.Count);
         Assert.AreEqual(12000L, decoded.Sum(frame => (long)frame.AnimationDelay));
         Assert.AreEqual(0u, decoded[0].AnimationIterations);
         decoded.Coalesce();

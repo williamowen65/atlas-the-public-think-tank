@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "14",
+        { Kind: SharePage.Globe, Animated: true } => "15",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -204,7 +204,7 @@ internal sealed class ShareImageCapture(
             var elapsed = Stopwatch.StartNew();
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
-            var sessionCount = id is { Animated: true } ? 4 : 1;
+            var sessionCount = id is { Animated: true } ? 8 : 1;
             const int framesPerSession = 180;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;

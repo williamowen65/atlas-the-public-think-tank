@@ -39,7 +39,7 @@ public sealed class PublicPageSeoTests
 
         var animatedGlobe = await client.GetStringAsync("/?globe=open&motion=gif");
         StringAssert.Contains(animatedGlobe, "property=\"og:url\" content=\"https://demo.thepublicthinktank.com/?globe=open&amp;motion=gif\"");
-        StringAssert.Contains(animatedGlobe, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.gif?v=14\"");
+        StringAssert.Contains(animatedGlobe, "property=\"og:image\" content=\"https://demo.thepublicthinktank.com/share-images/globe.gif?v=15\"");
         StringAssert.Contains(animatedGlobe, "property=\"og:image:width\" content=\"1200\"");
         StringAssert.Contains(animatedGlobe, "property=\"og:image:height\" content=\"630\"");
 
