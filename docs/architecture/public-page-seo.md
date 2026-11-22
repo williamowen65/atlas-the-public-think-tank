@@ -125,10 +125,8 @@ Add `BROWSERLESS_IO_API_KEY` under the GitHub Actions environment secrets for
 website apps. An absent secret leaves the setting unset. The key is carried
 in protected Terraform state and plan data, like the SMTP password.
 
-The legacy capture code connected to `wss://production-sfo.browserless.io`
-over CDP. For the new capture worker, keep the token server-side, use local
-Chromium for local captures, and coordinate live and demo through a single
-consumer if the Browserless account allows only one concurrent session.
+Atlas connects to `wss://production-sfo.browserless.io` over CDP in Azure
+and uses local Chromium for development. The API keeps the token server-side.
 Each website process queues up to eight distinct images and runs one capture
 at a time. Browserless enforces the account limit across live and demo.
 Terraform creates a dedicated Azure Storage account and private share-image
@@ -137,6 +135,43 @@ identity to read and write its own container. Atlas serves the images through
 the existing share-image URLs. Azure removes cache blobs after seven days
 without modification. The previous App Service filesystem cache is not migrated;
 Azure generates fresh images when requested.
+
+## Animated globe capture on Azure
+
+The animated share card is 1200 × 630. It plays 720 frames at an average
+of 6 fps over a two-minute rotation. Playback duration is independent of
+capture time.
+
+- **Browserless capture.** A single 720-frame session hit the two-minute
+  free-tier session limit. Two 360-frame sessions also ran close to that
+  limit on demo. Atlas captures four consecutive groups of 180 frames in
+  fresh, sequential sessions, reusing the same pin snapshot throughout.
+  The successful four-session capture in demo logged about 42–63 seconds
+  per session. Each session pays its own browser startup and page-load cost.
+- **Azure compositing and encoding.** After capture, Atlas places each
+  globe frame on the share-card background, then compresses the composited
+  frames into GIF data. Keeping all 720 composited frames resident coincided
+  with peaks of 97% memory and 100% CPU on the shared demo plan. The v14
+  encoder processes 24 frames at a time, appends the compressed frames to
+  one GIF, and releases each batch before continuing. Demo served the
+  resulting animation successfully. Batching reduces retained frame memory.
+  Azure still has to composite and compress all 720 frames.
+- **Verify a deployment.** Open the animated globe share page
+  (`/?globe=open&motion=gif`) and request its advertised `og:image` URL.
+  On a cache miss, Atlas waits up to 20 seconds and may serve a PNG
+  fallback while the capture continues. Once ready, the URL returns
+  `Content-Type: image/gif`. For v14, the published blob is
+  `v14/globe-motion.gif` in the site's private `share-images` container.
+- **Diagnose a slow or failed run.** In App Service Log stream, look for
+  four `captured 180 frames` messages, then `captured 720 frames`.
+  Atlas reports compositing and encoding progress every 120 frames with
+  elapsed time and process working set. The `saved as v14/globe-motion.gif`
+  message follows upload. `BlobNotFound` is expected on cache reads
+  before publication. Use app-level **Memory Working Set** and plan-level
+  **Memory Percentage** and **CPU Percentage** around the same timestamps
+  to distinguish process growth from pressure across the shared worker.
+  Local tests verify GIF structure and timing. Use Azure demo for
+  Browserless session timing, worker resource usage, and blob publication.
 
 ## Capture screenshots locally
 

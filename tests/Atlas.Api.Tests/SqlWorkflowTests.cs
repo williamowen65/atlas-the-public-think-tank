@@ -10,6 +10,7 @@ using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -90,10 +91,11 @@ public sealed class SqlWorkflowTests
             }
             Assert.AreEqual(HttpStatusCode.NotFound,
                 (await seo.GetAsync($"/share-images/profiles/{Guid.NewGuid():D}.png")).StatusCode);
-            var imagePath = $"/share-images/nodes/{node:D}.png";
+            var imagePath = ShareImageCapture.ImagePath(new ShareTarget(SharePage.Node, node));
+            var version = QueryHelpers.ParseQuery(new Uri(seo.BaseAddress!, imagePath).Query)["v"];
             byte[] cached = Convert.FromBase64String(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
-            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, "v6"));
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, $"v{version}"));
             await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
             CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
             await HideVerifyAndRestoreNode(factory, client, seo, node);
