@@ -119,3 +119,14 @@ variable "account_mail_public_origins" {
     error_message = "Map live/demo to HTTPS origins without paths, query strings or fragments."
   }
 }
+
+variable "discovery_cache_variants" {
+  description = "Deployment variants that use the optional external Discovery read cache."
+  type        = set(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for variant in var.discovery_cache_variants : contains(["demo", "live"], variant)])
+    error_message = "Discovery cache variants must be demo or live."
+  }
+}

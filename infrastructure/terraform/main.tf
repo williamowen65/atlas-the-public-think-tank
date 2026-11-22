@@ -70,6 +70,18 @@ resource "azurerm_user_assigned_identity" "operations" {
   tags                = merge(local.tags, { variant = each.key, role = "database-operations" })
 }
 
+module "discovery_cache" {
+  for_each  = setintersection(local.variants, var.discovery_cache_variants)
+  source    = "./modules/discovery-cache"
+  providers = { azurerm = azurerm.discovery_cache }
+
+  name                = "atlasdc${substr(sha256("${var.subscription_id}/${var.name_prefix}/${each.key}"), 0, 17)}"
+  location            = azurerm_resource_group.atlas.location
+  resource_group_name = azurerm_resource_group.atlas.name
+  principal_id        = azurerm_user_assigned_identity.runtime[each.key].principal_id
+  tags                = merge(local.tags, { variant = each.key, role = "discovery-cache" })
+}
+
 module "sites" {
   for_each = local.variants
   source   = "./modules/webapp"
@@ -89,13 +101,15 @@ module "sites" {
     module.sql.database_names[each.key],
     azurerm_user_assigned_identity.runtime[each.key].client_id
   )
-  account_mail_enabled       = var.account_mail_enabled
-  account_mail_host          = var.account_mail_host
-  account_mail_port          = var.account_mail_port
-  account_mail_address       = var.account_mail_address
-  account_mail_password      = var.account_mail_password
-  account_mail_public_origin = lookup(var.account_mail_public_origins, each.key, null)
-  tags                       = merge(local.tags, { variant = each.key })
+  discovery_cache_container_uri = try(module.discovery_cache[each.key].container_uri, null)
+  discovery_cache_client_id     = azurerm_user_assigned_identity.runtime[each.key].client_id
+  account_mail_enabled          = var.account_mail_enabled
+  account_mail_host             = var.account_mail_host
+  account_mail_port             = var.account_mail_port
+  account_mail_address          = var.account_mail_address
+  account_mail_password         = var.account_mail_password
+  account_mail_public_origin    = lookup(var.account_mail_public_origins, each.key, null)
+  tags                          = merge(local.tags, { variant = each.key })
 }
 
 # Management-only WebJob hosts share the existing B1 plan but do not share SQL

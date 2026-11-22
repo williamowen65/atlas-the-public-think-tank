@@ -1,5 +1,7 @@
 # Discovery reads, pagination and caching (PTT-132)
 
+See [Discovery cache across API restarts](discovery-external-cache.md) for the optional external cache and measurement procedure.
+
 ## Start here
 
 - **Discovery runs in the database.** EF builds the filtering, statistics, ranking and paging queries. There is no production in-memory ranking implementation.

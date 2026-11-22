@@ -1,4 +1,6 @@
 using System.Data;
+using System.Diagnostics;
+using Atlas.Contracts.Observability;
 using System.Text.Json;
 using Atlas.Discovery;
 using Microsoft.Data.SqlClient;
@@ -109,7 +111,10 @@ public sealed class SqlDiscoveryReadQuery(
             // The revision and all page/card rows come from the same committed snapshot.
             // Writers can advance generations without waiting for search's read transaction.
             // Later requests see the new revision and cannot reuse an older cached page.
-            var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking().Single(row => row.Id == 1);
+            var revisionStarted = Stopwatch.GetTimestamp();
+            var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking()
+                .TagWith("Discovery revision check").Single(row => row.Id == 1);
+            Telemetry.MeasureDiscovery(DiscoveryPhase.RevisionCheck, DiscoveryMeasurementOutcome.Completed, revisionStarted);
 
             // 5. Look for a ranked page matching the request and current page revision.
             // PageKey is a static helper, so it can be called without a cache instance.
@@ -128,8 +133,30 @@ public sealed class SqlDiscoveryReadQuery(
             var cachePage = paged && query.SearchText is null;
             var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
 
+            var external = cache?.External;
+            var externalKey = external is not null && paged && !includeHidden &&
+                query.Page <= 10 && (query.ReactionDefinitionIds?.Count ?? 0) == 0 &&
+                (query with { ReactionDefinitionIds = null }) == new DiscoveryQuery(Page: query.Page)
+                ? cache!.ExternalKey(key, revision.DetailVersion)
+                : null;
+            if (pageMiss && externalKey is not null && external!.Read(externalKey) is { } stored)
+            {
+                var remaining = stored.ExpiresAt - DateTimeOffset.UtcNow;
+                if (remaining > TimeSpan.Zero)
+                {
+                    transaction.Commit();
+                    if (remaining > cache!.Expiration) remaining = cache.Expiration;
+                    var ranked = stored.Page.Items.Select(item => item with { Card = null }).ToArray();
+                    cache!.PutPage(key, stored.Page with { Items = Array.AsReadOnly(ranked) }, remaining);
+                    foreach (var item in stored.Page.Items)
+                        cache.PutDetail(revision.DetailVersion, item.Card!, false, remaining);
+                    return stored.Page with { Items = Array.AsReadOnly(stored.Page.Items.ToArray()) };
+                }
+            }
+
             if (pageMiss)
             {
+                var rebuildStarted = Stopwatch.GetTimestamp();
                 // 6. Build deferred EF query expressions, then execute count and page.
                 // Count and page use the same filter predicates. The count includes all
                 // matches; OFFSET/FETCH limits only the ranked rows returned to the host.
@@ -174,6 +201,7 @@ public sealed class SqlDiscoveryReadQuery(
                     row.AverageVote))
                     .ToArray();
                 page = new DiscoveryPage(Array.AsReadOnly(items), total, query.Page, IDiscoveryService.PageSize);
+                Telemetry.MeasureDiscovery(DiscoveryPhase.PageRebuild, DiscoveryMeasurementOutcome.Completed, rebuildStarted);
             }
 
             // 7. Resolve public display cards for the ranked IDs.
@@ -201,7 +229,10 @@ public sealed class SqlDiscoveryReadQuery(
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
+            var detailStarted = Stopwatch.GetTimestamp();
             var loaded = ReadCards(db, missing.ToArray(), moderatorVisible);
+            if (missing.Count > 0)
+                Telemetry.MeasureDiscovery(DiscoveryPhase.DetailRebuild, DiscoveryMeasurementOutcome.Completed, detailStarted);
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
@@ -224,12 +255,15 @@ public sealed class SqlDiscoveryReadQuery(
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
             // separate from detail entries; personalized participant votes are not included.
-            return page with
+            var result = page with
             {
                 Items = Array.AsReadOnly(page.Items
                     .Select(item => item with { Card = cards.GetValueOrDefault(item.NodeId) })
                     .ToArray())
             };
+            if (pageMiss && externalKey is not null && result.Items.Count > 0)
+                external!.Write(externalKey, result, TimeSpan.FromMinutes(10));
+            return result;
         }
     }
 

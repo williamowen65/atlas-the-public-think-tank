@@ -219,6 +219,14 @@ jobs:
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
           dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+      - name: Start Azurite for Discovery restart tests
+        if: matrix.name == 'Discovery read model'
+        run: |
+          docker run -d --name atlas-azurite -p 127.0.0.1:10000:10000 \
+            mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+          curl --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 \
+            --output /dev/null http://127.0.0.1:10000/devstoreaccount1
+          echo 'ATLAS_DISCOVERY_CACHE_TEST_EMULATOR=UseDevelopmentStorage=true' >> "$GITHUB_ENV"
       - name: Test ${{ matrix.name }} against SQL Server
         run: dotnet test "${{ matrix.project }}" --configuration Release --verbosity normal ${{ matrix.filter }}
 

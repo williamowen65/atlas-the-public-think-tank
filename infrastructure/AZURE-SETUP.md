@@ -82,6 +82,7 @@ and Azure permissions are separate. The shared identity needs:
 | --- | --- |
 | Provision the declared application resources | Contributor over the intended deployment scope |
 | Read/write/lock Terraform state | Storage Blob Data Contributor on the state container |
+| Assign the API identity its Blob role when the Discovery cache is enabled | Role Based Access Control Administrator at the cache resource group or a suitable delegated scope |
 | Publish websites/admin tools and trigger bootstrap | Website Contributor on each target App Service, unless already covered by Contributor at a containing scope |
 
 The Terraform root creates resource groups itself, so initial provisioning normally

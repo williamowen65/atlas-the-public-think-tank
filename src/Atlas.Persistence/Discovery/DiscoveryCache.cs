@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Atlas.Discovery;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Atlas.Persistence.Discovery;
@@ -20,6 +21,12 @@ public sealed class DiscoveryCache : IDisposable
     private readonly long _detailBudget;
     private readonly long _pageBudget;
     private string? _database;
+    private string? _externalNamespace;
+    internal BlobDiscoveryCache? External { get; }
+    internal TimeSpan Expiration => _expiration;
+
+    internal string ExternalKey(string pageKey, long detailVersion) =>
+        $"{_externalNamespace}/{pageKey.Replace(':', '-')}-{detailVersion}.json";
 
     // SqlDiscoveryReadQuery holds this gate while reading or publishing cache entries.
     // It coordinates misses and counter updates; no DbContext is stored in the cache.
@@ -34,13 +41,15 @@ public sealed class DiscoveryCache : IDisposable
     public DiscoveryCache(
         long pageBudgetBytes = 1024 * 1024,
         long detailBudgetBytes = 8 * 1024 * 1024,
-        TimeSpan? expiration = null)
+        TimeSpan? expiration = null,
+        BlobDiscoveryCache? external = null)
     {
         if (pageBudgetBytes < 1024 || detailBudgetBytes < 1024)
         {
             throw new ArgumentOutOfRangeException(nameof(pageBudgetBytes));
         }
 
+        External = external;
         _detailBudget = detailBudgetBytes;
         _pageBudget = pageBudgetBytes;
         _expiration = expiration ?? TimeSpan.FromSeconds(30);
@@ -61,6 +70,12 @@ public sealed class DiscoveryCache : IDisposable
             throw new InvalidOperationException("A Discovery cache cannot be shared across different databases.");
         }
 
+        if (_database is null && External is not null)
+        {
+            var sql = new SqlConnectionStringBuilder(connectionString);
+            var identity = JsonSerializer.Serialize(new[] { sql.DataSource, sql.InitialCatalog });
+            _externalNamespace = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)));
+        }
         _database = connectionString;
     }
 
@@ -128,7 +143,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores a completed page with an estimated size charged to its budget.</summary>
-    internal void PutPage(string key, DiscoveryPage page)
+    internal void PutPage(string key, DiscoveryPage page, TimeSpan? remaining = null)
     {
         // Estimates cover projection/object overhead, not an exact managed-heap measurement.
         var size = 512 + page.Items.Count * 128;
@@ -140,7 +155,7 @@ public sealed class DiscoveryCache : IDisposable
 
         _pages.Set(key, page, new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = _expiration,
+            AbsoluteExpirationRelativeToNow = remaining ?? _expiration,
             Size = size
         });
     }
@@ -163,7 +178,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores display text scoped to public or moderator visibility, without personal ratings.</summary>
-    internal void PutDetail(long version, DiscoveryCard card, bool moderatorVisible)
+    internal void PutDetail(long version, DiscoveryCard card, bool moderatorVisible, TimeSpan? remaining = null)
     {
         // Strings use approximately two bytes per character. Include object/key overhead;
         // oversized content still reaches the caller, but does not occupy the cache.
@@ -187,7 +202,7 @@ public sealed class DiscoveryCache : IDisposable
 
         _details.Set((version, card.NodeId, moderatorVisible), card, new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = _expiration,
+            AbsoluteExpirationRelativeToNow = remaining ?? _expiration,
             Size = size
         });
     }

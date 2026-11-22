@@ -12,6 +12,14 @@ variable "connection_string" {
   default   = null
   sensitive = true
 }
+variable "discovery_cache_container_uri" {
+  type    = string
+  default = null
+}
+variable "discovery_cache_client_id" {
+  type    = string
+  default = null
+}
 variable "tags" { type = map(string) }
 
 variable "account_mail_enabled" { type = bool }
@@ -61,6 +69,9 @@ resource "azurerm_linux_web_app" "atlas" {
     ATLAS_DEPLOYMENT_VARIANT              = var.variant
     }, var.connection_string == null ? {} : {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
+    }, var.discovery_cache_container_uri == null ? {} : {
+    ATLAS_DISCOVERY_CACHE_CONTAINER_URI = var.discovery_cache_container_uri
+    ATLAS_DISCOVERY_CACHE_CLIENT_ID     = var.discovery_cache_client_id
     }, var.account_mail_enabled ? {
     Atlas__AccountMail__Transport    = "Smtp"
     Atlas__AccountMail__Host         = var.account_mail_host

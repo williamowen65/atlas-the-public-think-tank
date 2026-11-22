@@ -17,6 +17,7 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
     // that a collector can aggregate into distributions (for example latency).
     private readonly Counter<long> _events;
     private readonly Counter<long> _cache;
+    private readonly Histogram<double> _discoveryDuration;
     private readonly Histogram<double> _duration;
     private readonly JsonLineFile _diagnostics;
     private readonly JsonLineFile _metrics;
@@ -37,6 +38,7 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         _metrics = new(directory, "metrics", maxBytes, retainedFiles);
         _traces = new(directory, "traces", maxBytes, retainedFiles);
         _events = _meter.CreateCounter<long>("atlas.events.count");
+        _discoveryDuration = _meter.CreateHistogram<double>("atlas.discovery.phase.duration", "ms");
         _cache = _meter.CreateCounter<long>("atlas.discovery.cache.lookups");
         _duration = _meter.CreateHistogram<double>("atlas.operation.duration", "ms");
         // Observable gauges expose the latest value when a metric collector polls.
@@ -98,6 +100,19 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
                 name = "atlas.operation.duration", unit = "ms", value = value.DurationMs,
                 operation = name, outcome
             })));
+    }
+
+    public void MeasureDiscovery(DiscoveryPhase phase, DiscoveryMeasurementOutcome outcome, double durationMs)
+    {
+        var phaseName = phase.ToString();
+        var outcomeName = outcome.ToString();
+        _discoveryDuration.Record(durationMs, new("phase", phaseName), new("outcome", outcomeName));
+        TryOutput(() => _metrics.Write(JsonSerializer.Serialize(new
+        {
+            signal = "metric", observed_at_utc = DateTimeOffset.UtcNow,
+            name = "atlas.discovery.phase.duration", unit = "ms", value = durationMs,
+            phase = phaseName, outcome = outcomeName
+        })));
     }
 
     public void CacheLookup(bool detail, bool hit)

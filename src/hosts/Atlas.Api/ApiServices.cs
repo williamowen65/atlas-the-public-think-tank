@@ -91,7 +91,24 @@ public static class ApiServices
 
         // 5. Share the read cache across requests, but keep queries and actors request-scoped.
         services.AddScoped<IPublicSearch>(_ => new SqlPublicSearch(open));
-        services.AddSingleton<DiscoveryCache>();
+        services.AddSingleton(_ =>
+        {
+            var uri = configuration["ATLAS_DISCOVERY_CACHE_CONTAINER_URI"];
+            var clientId = configuration["ATLAS_DISCOVERY_CACHE_CLIENT_ID"];
+            var localConnection = configuration["ATLAS_DISCOVERY_CACHE_EMULATOR"];
+            BlobDiscoveryCache? external = null;
+            if (!string.IsNullOrWhiteSpace(uri))
+            {
+                external = BlobDiscoveryCache.ForAzure(new Uri(uri), clientId ??
+                    throw new InvalidOperationException("Set ATLAS_DISCOVERY_CACHE_CLIENT_ID."));
+            }
+            else if (!string.IsNullOrWhiteSpace(localConnection))
+            {
+                external = BlobDiscoveryCache.ForEmulator(localConnection, "discovery");
+            }
+
+            return new DiscoveryCache(external: external);
+        });
         services.AddScoped<IDiscoveryReadQuery>(s => new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>()));
         services.AddScoped<IDiscoveryService>(s => new DiscoveryService(s.GetRequiredService<IDiscoveryReadQuery>()));
         services.AddScoped<RequestActor>();
