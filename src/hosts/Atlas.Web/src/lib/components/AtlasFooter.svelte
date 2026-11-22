@@ -30,6 +30,7 @@
       title: 'About',
       links: [
         { text: 'About Atlas', href: '/about' },
+        { text: 'Share Atlas', href: '/share' },
         { text: 'Our mission', href: '/about#mission' },
         { text: 'GitHub', href: 'https://github.com/williamowen65/atlas-the-public-think-tank' },
       ],
@@ -37,7 +38,6 @@
     {
       title: 'Get involved',
       links: [
-        { text: 'Share Atlas', href: '/share' },
         { text: 'Give feedback', href: '/feedback' },
         { text: 'Become a tester', href: '/testers' },
         { text: 'Support Atlas', href: '/support' },

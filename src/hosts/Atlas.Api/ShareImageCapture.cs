@@ -60,8 +60,8 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "17",
-        { Kind: SharePage.Globe } => "4",
+        { Kind: SharePage.Globe, Animated: true } => "14",
+        { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
@@ -112,17 +112,7 @@ internal sealed class ShareImageCapture(
         [data-globe-invite] { display: block !important; grid-area: 1 / 2; padding-inline: 12px; }
         [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; }
         [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
-        [data-globe-invite] p { font-size: 25px; line-height: 1.4; margin: 0; }
-        [data-globe-share-cta] {
-            display: inline-block;
-            margin: 20px 0 12px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            background: var(--atlas-accent);
-            color: var(--atlas-on-accent);
-            font-size: 25px;
-            font-weight: 700;
-        }
+        [data-globe-invite] p { font-size: 25px; line-height: 1.4; }
         """;
 
     private readonly object gate = new();
@@ -214,7 +204,7 @@ internal sealed class ShareImageCapture(
             var elapsed = Stopwatch.StartNew();
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
-            var sessionCount = id is { Animated: true } ? 8 : 1;
+            var sessionCount = id is { Animated: true } ? 4 : 1;
             const int framesPerSession = 180;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
@@ -507,7 +497,7 @@ internal sealed class ShareImageCapture(
 
         using var output = new MemoryStream();
         using var encodedBatch = new MemoryStream();
-        const int batchSize = 6;
+        const int batchSize = 24;
         for (var batchStart = 0; batchStart < capture.Frames.Count; batchStart += batchSize)
         {
             using var animation = new MagickImageCollection();
@@ -541,7 +531,7 @@ internal sealed class ShareImageCapture(
             encodedBatch.SetLength(0);
             await animation.WriteAsync(encodedBatch, MagickFormat.Gif);
             GifFrameBatches.Append(output, encodedBatch.GetBuffer().AsSpan(0, (int)encodedBatch.Length), batchStart == 0);
-            if (batchEnd == batchSize || batchEnd % 30 == 0 || batchEnd == capture.Frames.Count)
+            if (batchEnd % 120 == 0 || batchEnd == capture.Frames.Count)
                 logger.LogInformation(
                     "Atlas globe GIF compositing and encoding progress {FramesDone}/{FrameCount} in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
                     batchEnd, capture.Frames.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));

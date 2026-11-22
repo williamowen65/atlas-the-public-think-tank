@@ -7,22 +7,20 @@ namespace Atlas.Api.Tests;
 public sealed class GifFrameBatchesTests
 {
     [TestMethod]
-    [DataRow(720, 24)]
-    [DataRow(1440, 6)]
-    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming(int frameCount, int batchSize)
+    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming()
     {
         using var output = new MemoryStream();
         using var batch = new MemoryStream();
-        for (var start = 0; start < frameCount; start += batchSize)
+        for (var start = 0; start < 720; start += 24)
         {
             using var frames = new MagickImageCollection();
-            for (var index = start; index < start + batchSize; index++)
+            for (var index = start; index < start + 24; index++)
             {
                 var first = index == 0;
-                var color = first ? MagickColors.White : start % (2 * batchSize) == 0 ? MagickColors.Red : MagickColors.Blue;
+                var color = first ? MagickColors.White : start % 48 == 0 ? MagickColors.Red : MagickColors.Blue;
                 var frame = new MagickImage(color, first ? 8u : 2u, first ? 6u : 2u)
                 {
-                    AnimationDelay = (uint)((index + 1) * 12000 / frameCount - index * 12000 / frameCount),
+                    AnimationDelay = (uint)((index + 1) * 12000 / 720 - index * 12000 / 720),
                     GifDisposeMethod = GifDisposeMethod.None
                 };
                 if (first)
@@ -40,11 +38,11 @@ public sealed class GifFrameBatchesTests
         output.WriteByte(0x3b);
         output.Position = 0;
         using var decoded = new MagickImageCollection(output);
-        Assert.AreEqual(frameCount, decoded.Count);
+        Assert.AreEqual(720, decoded.Count);
         Assert.AreEqual(12000L, decoded.Sum(frame => (long)frame.AnimationDelay));
         Assert.AreEqual(0u, decoded[0].AnimationIterations);
         decoded.Coalesce();
-        using var pixels = decoded[batchSize].GetPixels();
+        using var pixels = decoded[24].GetPixels();
         Assert.AreEqual(MagickColors.White, pixels.GetPixel(0, 0).ToColor());
         Assert.AreEqual(MagickColors.Blue, pixels.GetPixel(2, 3).ToColor());
     }

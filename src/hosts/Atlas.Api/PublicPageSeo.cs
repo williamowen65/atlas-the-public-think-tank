@@ -112,7 +112,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         {
             "/" when request.Query["globe"] == "open" => new Preview(
                 "Put your pin on the Atlas globe",
-                "See where people are joining from. Join the Public Think Tank and sign up to add your pin.",
+                "See where people are joining from. Sign in to add your pin.",
                 globe.PagePath, "website", Target: globe),
             "/" => home,
             "/share" when request.Query["design"] == "connections" => new Preview(
