@@ -7,19 +7,19 @@ namespace Atlas.Api.Tests;
 public sealed class GifFrameBatchesTests
 {
     [TestMethod]
-    [DataRow(720)]
-    [DataRow(1440)]
-    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming(int frameCount)
+    [DataRow(720, 24)]
+    [DataRow(1440, 6)]
+    public void EncodedBatchesPreserveFrameOffsetsColorsAndTiming(int frameCount, int batchSize)
     {
         using var output = new MemoryStream();
         using var batch = new MemoryStream();
-        for (var start = 0; start < frameCount; start += 24)
+        for (var start = 0; start < frameCount; start += batchSize)
         {
             using var frames = new MagickImageCollection();
-            for (var index = start; index < start + 24; index++)
+            for (var index = start; index < start + batchSize; index++)
             {
                 var first = index == 0;
-                var color = first ? MagickColors.White : start % 48 == 0 ? MagickColors.Red : MagickColors.Blue;
+                var color = first ? MagickColors.White : start % (2 * batchSize) == 0 ? MagickColors.Red : MagickColors.Blue;
                 var frame = new MagickImage(color, first ? 8u : 2u, first ? 6u : 2u)
                 {
                     AnimationDelay = (uint)((index + 1) * 12000 / frameCount - index * 12000 / frameCount),
@@ -44,7 +44,7 @@ public sealed class GifFrameBatchesTests
         Assert.AreEqual(12000L, decoded.Sum(frame => (long)frame.AnimationDelay));
         Assert.AreEqual(0u, decoded[0].AnimationIterations);
         decoded.Coalesce();
-        using var pixels = decoded[24].GetPixels();
+        using var pixels = decoded[batchSize].GetPixels();
         Assert.AreEqual(MagickColors.White, pixels.GetPixel(0, 0).ToColor());
         Assert.AreEqual(MagickColors.Blue, pixels.GetPixel(2, 3).ToColor());
     }

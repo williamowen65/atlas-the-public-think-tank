@@ -161,12 +161,13 @@ capture time.
   (`/?globe=open&motion=gif`) and request its advertised `og:image` URL.
   On a cache miss, Atlas waits up to 20 seconds and may serve a PNG
   fallback while the capture continues. Once ready, the URL returns
-  `Content-Type: image/gif`. For v16, the published blob is
-  `v16/globe-motion.gif` in the site's private `share-images` container.
+  `Content-Type: image/gif`. For v17, the published blob is
+  `v17/globe-motion.gif` in the site's private `share-images` container.
 - **Diagnose a slow or failed run.** In App Service Log stream, look for
   eight `captured 180 frames` messages, then `captured 1440 frames`.
-  Atlas reports compositing and encoding progress every 120 frames with
-  elapsed time and process working set. The `saved as v16/globe-motion.gif`
+  The v17 encoder reduces the batch size to six frames. Atlas reports
+  progress after the first batch and every 30 frames with
+  elapsed time and process working set. The `saved as v17/globe-motion.gif`
   message follows upload. `BlobNotFound` is expected on cache reads
   before publication. Use app-level **Memory Working Set** and plan-level
   **Memory Percentage** and **CPU Percentage** around the same timestamps
