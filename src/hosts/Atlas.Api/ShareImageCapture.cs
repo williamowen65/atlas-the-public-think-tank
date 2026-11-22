@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "13",
+        { Kind: SharePage.Globe, Animated: true } => "14",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -399,22 +399,9 @@ internal sealed class ShareImageCapture(
             {
                 logger.LogInformation("Atlas globe GIF captured {FrameCount} frames in {ElapsedMs} ms.",
                     globeFrames.Frames.Count, elapsed.ElapsedMilliseconds);
-                stage = "compositing globe GIF frames";
+                stage = "compositing and encoding globe GIF batches";
                 elapsed.Restart();
-                using var animation = new MagickImageCollection();
-                logger.LogInformation("Atlas globe GIF compositing started for {CacheKey} ({WorkingSetMiB} MiB process memory).",
-                    cacheKey, Environment.WorkingSet / (1024 * 1024));
-                CompositeGlobeFrames(globeFrames, animation, elapsed);
-                logger.LogInformation(
-                    "Atlas globe GIF composited {FrameCount} frames in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
-                    animation.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));
-
-                stage = "encoding the globe GIF";
-                elapsed.Restart();
-                logger.LogInformation("Atlas globe GIF encoding started for {CacheKey}.", cacheKey);
-                using var output = new MemoryStream();
-                await animation.WriteAsync(output, MagickFormat.Gif);
-                image = output.ToArray();
+                image = await EncodeGlobeFrames(globeFrames, elapsed);
                 logger.LogInformation("Atlas globe GIF encoded in {ElapsedMs} ms ({ImageBytes} bytes).",
                     elapsed.ElapsedMilliseconds, image.Length);
             }
@@ -482,7 +469,7 @@ internal sealed class ShareImageCapture(
         return previous;
     }
 
-    private void CompositeGlobeFrames(GlobeFrames capture, MagickImageCollection animation, Stopwatch elapsed)
+    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         const int loopDuration = 120 * 100;
@@ -508,32 +495,49 @@ internal sealed class ShareImageCapture(
         globeBackground.Crop(new MagickGeometry(left, top, (uint)(right - left), (uint)(bottom - top)));
         globeBackground.ResetPage();
 
-        foreach (var frameData in capture.Frames)
+        using var output = new MemoryStream();
+        using var encodedBatch = new MemoryStream();
+        const int batchSize = 24;
+        for (var batchStart = 0; batchStart < capture.Frames.Count; batchStart += batchSize)
         {
-            using var globe = new MagickImage(Convert.FromBase64String(frameData));
-            if (globe.Width != canvasWidth || globe.Height != canvasHeight)
-                globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
-            var first = animation.Count == 0;
-            var frame = first ? background.Clone() : globeBackground.Clone();
-            animation.Add(frame);
-            var x = (int)Math.Round(canvasX);
-            var y = (int)Math.Round(canvasY);
-            frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
-            frame.Alpha(AlphaAction.Off);
-            // Distribute the rounding across frames to keep the full rotation at 120 seconds.
-            var frameEnd = animation.Count * loopDuration / capture.Frames.Count;
-            frame.AnimationDelay = (uint)(frameEnd - previousFrameEnd);
-            previousFrameEnd = frameEnd;
-            frame.GifDisposeMethod = GifDisposeMethod.None;
-            if (first)
-                frame.AnimationIterations = 0;
-            else
-                frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
+            using var animation = new MagickImageCollection();
+            var batchEnd = Math.Min(batchStart + batchSize, capture.Frames.Count);
+            for (var frameIndex = batchStart; frameIndex < batchEnd; frameIndex++)
+            {
+                var frameData = capture.Frames[frameIndex];
+                capture.Frames[frameIndex] = string.Empty;
+                using var globe = new MagickImage(Convert.FromBase64String(frameData));
+                if (globe.Width != canvasWidth || globe.Height != canvasHeight)
+                    globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
+                var first = frameIndex == 0;
+                var frame = first ? background.Clone() : globeBackground.Clone();
+                animation.Add(frame);
+                var x = (int)Math.Round(canvasX);
+                var y = (int)Math.Round(canvasY);
+                frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
+                frame.Alpha(AlphaAction.Off);
+                // Distribute the rounding across frames to keep the full rotation at 120 seconds.
+                var frameEnd = (frameIndex + 1) * loopDuration / capture.Frames.Count;
+                frame.AnimationDelay = (uint)(frameEnd - previousFrameEnd);
+                previousFrameEnd = frameEnd;
+                frame.GifDisposeMethod = GifDisposeMethod.None;
+                if (first)
+                    frame.AnimationIterations = 0;
+                else
+                    frame.Page = new MagickGeometry(left, top, background.Width, background.Height);
 
-            if (animation.Count % 120 == 0)
+            }
+
+            encodedBatch.SetLength(0);
+            await animation.WriteAsync(encodedBatch, MagickFormat.Gif);
+            GifFrameBatches.Append(output, encodedBatch.GetBuffer().AsSpan(0, (int)encodedBatch.Length), batchStart == 0);
+            if (batchEnd % 120 == 0 || batchEnd == capture.Frames.Count)
                 logger.LogInformation(
-                    "Atlas globe GIF compositing progress {FramesDone}/{FrameCount} in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
-                    animation.Count, capture.Frames.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));
+                    "Atlas globe GIF compositing and encoding progress {FramesDone}/{FrameCount} in {ElapsedMs} ms ({WorkingSetMiB} MiB process memory).",
+                    batchEnd, capture.Frames.Count, elapsed.ElapsedMilliseconds, Environment.WorkingSet / (1024 * 1024));
         }
+
+        output.WriteByte(0x3b); // GIF trailer
+        return output.ToArray();
     }
 }
