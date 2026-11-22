@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "12",
+        { Kind: SharePage.Globe, Animated: true } => "13",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -204,8 +204,9 @@ internal sealed class ShareImageCapture(
             var elapsed = Stopwatch.StartNew();
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
-            var sessionCount = id is { Animated: true } ? 2 : 1;
-            const int framesPerSession = 360;
+            var sessionCount = id is { Animated: true } ? 4 : 1;
+            const int framesPerSession = 180;
+            var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
             for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
             {
@@ -223,7 +224,8 @@ internal sealed class ShareImageCapture(
                     })
                     : await playwright.Chromium.ConnectOverCDPAsync(
                         "wss://production-sfo.browserless.io?token=" + Uri.EscapeDataString(key!),
-                        new() { Timeout = 12000 });
+                        new() { Timeout = browserStartupTimeout });
+                stage = "creating capture context";
                 var scale = fullFrame ? 1f : 2.5f;
                 var captureWidth = (int)(ImageWidth / scale);
                 var captureHeight = (int)(ImageHeight / scale);
@@ -235,6 +237,7 @@ internal sealed class ShareImageCapture(
                     ServiceWorkers = ServiceWorkerPolicy.Block,
                     ColorScheme = ColorScheme.Light
                 });
+                stage = "creating capture page";
                 var page = await session.NewPageAsync();
                 await page.RouteAsync("**/*", async route =>
                 {
@@ -294,7 +297,7 @@ internal sealed class ShareImageCapture(
                     await route.AbortAsync();
                 });
                 stage = "loading the page";
-                var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = 12000, WaitUntil = WaitUntilState.DOMContentLoaded });
+                var response = await page.GotoAsync(url.AbsoluteUri, new() { Timeout = browserStartupTimeout, WaitUntil = WaitUntilState.DOMContentLoaded });
                 if (response?.Ok != true || page.Url != url.AbsoluteUri)
                 {
                     logger.LogWarning("Atlas share capture for {Image} did not reach the requested page (HTTP {Status}).",
