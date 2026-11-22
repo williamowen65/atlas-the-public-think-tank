@@ -60,7 +60,7 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "11",
+        { Kind: SharePage.Globe, Animated: true } => "12",
         { Kind: SharePage.Globe } => "3",
         _ => "4"
     };
@@ -204,7 +204,15 @@ internal sealed class ShareImageCapture(
             var elapsed = Stopwatch.StartNew();
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
+            var sessionCount = id is { Animated: true } ? 2 : 1;
+            const int framesPerSession = 360;
+            string? globeSnapshot = null;
+            for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
             {
+                stage = id is { Animated: true }
+                    ? $"starting Chromium for globe GIF session {sessionIndex + 1}/{sessionCount}"
+                    : "starting Chromium";
+                var sessionElapsed = Stopwatch.StartNew();
                 using var playwright = await Playwright.CreateAsync();
                 await using var browser = environment.IsDevelopment()
                     ? await playwright.Chromium.LaunchAsync(new()
@@ -238,6 +246,25 @@ internal sealed class ShareImageCapture(
                             (!requestedUri.AbsolutePath.StartsWith("/atlas-session-api", StringComparison.OrdinalIgnoreCase) ||
                                 (globe && requestedUri.AbsolutePath == "/atlas-session-api/globe/snapshot")))
                         {
+                            if (id is { Animated: true } && requestedUri.AbsolutePath == "/atlas-session-api/globe/snapshot")
+                            {
+                                if (globeSnapshot is null)
+                                {
+                                    var snapshot = await route.FetchAsync(new() { MaxRedirects = 0, Timeout = 10000 });
+                                    try
+                                    {
+                                        if (!snapshot.Ok)
+                                        {
+                                            await route.FulfillAsync(new() { Response = snapshot });
+                                            return;
+                                        }
+                                        globeSnapshot = await snapshot.TextAsync();
+                                    }
+                                    finally { await snapshot.DisposeAsync(); }
+                                }
+                                await route.FulfillAsync(new() { Body = globeSnapshot, ContentType = "application/json" });
+                                return;
+                            }
                             await route.ContinueAsync();
                             return;
                         }
@@ -353,8 +380,11 @@ internal sealed class ShareImageCapture(
                 };
                 if (id is { Animated: true })
                 {
-                    stage = "capturing globe frames";
-                    globeFrames = await CaptureGlobeFrames(page, screenshot);
+                    stage = $"capturing globe frames in session {sessionIndex + 1}/{sessionCount}";
+                    globeFrames = await CaptureGlobeFrames(page, screenshot, globeFrames,
+                        sessionIndex * framesPerSession, framesPerSession, sessionCount * framesPerSession);
+                    logger.LogInformation("Atlas globe GIF session {Session}/{SessionCount} captured {FrameCount} frames in {ElapsedMs} ms.",
+                        sessionIndex + 1, sessionCount, framesPerSession, sessionElapsed.ElapsedMilliseconds);
                 }
                 else
                 {
@@ -411,26 +441,29 @@ internal sealed class ShareImageCapture(
 
     private sealed record GlobeFrames(byte[] Background, LocatorBoundingBoxResult Bounds, Clip Clip, List<string> Frames);
 
-    private static async Task<GlobeFrames> CaptureGlobeFrames(IPage page, PageScreenshotOptions screenshot)
+    private static async Task<GlobeFrames> CaptureGlobeFrames(IPage page, PageScreenshotOptions screenshot,
+        GlobeFrames? previous, int firstFrame, int sessionFrameCount, int totalFrameCount)
     {
-        const int frameCount = 720;
         await page.Locator("dialog[data-globe-share][data-globe-pins-ready='true']")
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 12000 });
 
         var canvas = page.Locator("dialog[data-globe-share] .world canvas");
-        // Match the still image's left column in the 1200 × 630 capture viewport.
-        // The frame export has its own drawing buffer and does not depend on live dialog sizing.
         const int globeSize = 480;
-        var bounds = new LocatorBoundingBoxResult { X = 92.5f, Y = 75, Width = globeSize, Height = globeSize };
-        // Hide only the WebGL layer. The card provides an opaque background for every update.
-        screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
-        var background = await page.ScreenshotAsync(screenshot);
-        var frames = new List<string>(frameCount);
-        const int batchSize = 24;
-        for (var start = 0; start < frameCount; start += batchSize)
+        if (previous is null)
         {
-            var angles = Enumerable.Range(start, Math.Min(batchSize, frameCount - start))
-                .Select(index => -25 + index * 360.0 / frameCount).ToArray();
+            // Match the still image's left column in the 1200 × 630 viewport.
+            var bounds = new LocatorBoundingBoxResult { X = 92.5f, Y = 75, Width = globeSize, Height = globeSize };
+            screenshot.Style = "dialog[data-globe-share] .world canvas { visibility: hidden !important; }";
+            var background = await page.ScreenshotAsync(screenshot);
+            previous = new GlobeFrames(background, bounds, screenshot.Clip!, new List<string>(totalFrameCount));
+        }
+
+        var endFrame = firstFrame + sessionFrameCount;
+        const int batchSize = 24;
+        for (var start = firstFrame; start < endFrame; start += batchSize)
+        {
+            var angles = Enumerable.Range(start, Math.Min(batchSize, endFrame - start))
+                .Select(index => -25 + index * 360.0 / totalFrameCount).ToArray();
             var captures = await canvas.EvaluateAsync<string[]>("""
                 (canvas, { angles, size }) => {
                     const frames = [];
@@ -441,9 +474,9 @@ internal sealed class ShareImageCapture(
             if (captures.Length != angles.Length)
                 throw new InvalidOperationException("The globe renderer did not return every requested frame.");
 
-            frames.AddRange(captures);
+            previous.Frames.AddRange(captures);
         }
-        return new GlobeFrames(background, bounds, screenshot.Clip!, frames);
+        return previous;
     }
 
     private void CompositeGlobeFrames(GlobeFrames capture, MagickImageCollection animation, Stopwatch elapsed)
