@@ -60,8 +60,8 @@ internal sealed class ShareImageCapture(
     {
         null => "7",
         { Kind: SharePage.Node } => "9",
-        { Kind: SharePage.Globe, Animated: true } => "15",
-        { Kind: SharePage.Globe } => "3",
+        { Kind: SharePage.Globe, Animated: true } => "16",
+        { Kind: SharePage.Globe } => "4",
         _ => "4"
     };
     internal const int ImageWidth = 1200;
@@ -112,7 +112,17 @@ internal sealed class ShareImageCapture(
         [data-globe-invite] { display: block !important; grid-area: 1 / 2; padding-inline: 12px; }
         [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; }
         [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
-        [data-globe-invite] p { font-size: 25px; line-height: 1.4; }
+        [data-globe-invite] p { font-size: 25px; line-height: 1.4; margin: 0; }
+        [data-globe-share-cta] {
+            display: inline-block;
+            margin: 20px 0 12px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: var(--atlas-accent);
+            color: var(--atlas-on-accent);
+            font-size: 25px;
+            font-weight: 700;
+        }
         """;
 
     private readonly object gate = new();

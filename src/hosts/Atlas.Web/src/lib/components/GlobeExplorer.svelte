@@ -410,7 +410,9 @@
   <div hidden data-globe-invite>
     <strong>Atlas · The Public Think Tank</strong>
     <h2>Put your pin on the Atlas globe</h2>
-    <p>See where people are joining from. Sign in to add your pin.</p>
+    <p>See where people are joining from.</p>
+    <span data-globe-share-cta>Join the Public Think Tank</span>
+    <p>Sign up to add your pin.</p>
   </div>
   <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
