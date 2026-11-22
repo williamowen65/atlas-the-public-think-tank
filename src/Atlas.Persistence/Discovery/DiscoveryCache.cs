@@ -22,11 +22,9 @@ public sealed class DiscoveryCache : IDisposable
     private readonly long _pageBudget;
     private string? _database;
     private string? _externalNamespace;
-    internal BlobDiscoveryCache? External { get; }
-    internal TimeSpan Expiration => _expiration;
+    internal RedisDiscoveryCache? External { get; }
 
-    internal string ExternalKey(string pageKey, long detailVersion) =>
-        $"{_externalNamespace}/{pageKey.Replace(':', '-')}-{detailVersion}.json";
+    internal string ExternalKey(string key) => $"atlas:discovery:v1:{_externalNamespace}:{key}";
 
     // SqlDiscoveryReadQuery holds this gate while reading or publishing cache entries.
     // It coordinates misses and counter updates; no DbContext is stored in the cache.
@@ -42,7 +40,7 @@ public sealed class DiscoveryCache : IDisposable
         long pageBudgetBytes = 1024 * 1024,
         long detailBudgetBytes = 8 * 1024 * 1024,
         TimeSpan? expiration = null,
-        BlobDiscoveryCache? external = null)
+        RedisDiscoveryCache? external = null)
     {
         if (pageBudgetBytes < 1024 || detailBudgetBytes < 1024)
         {
@@ -143,7 +141,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores a completed page with an estimated size charged to its budget.</summary>
-    internal void PutPage(string key, DiscoveryPage page, TimeSpan? remaining = null)
+    internal void PutPage(string key, DiscoveryPage page)
     {
         // Estimates cover projection/object overhead, not an exact managed-heap measurement.
         var size = 512 + page.Items.Count * 128;
@@ -155,7 +153,7 @@ public sealed class DiscoveryCache : IDisposable
 
         _pages.Set(key, page, new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = remaining ?? _expiration,
+            AbsoluteExpirationRelativeToNow = _expiration,
             Size = size
         });
     }
@@ -178,7 +176,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores display text scoped to public or moderator visibility, without personal ratings.</summary>
-    internal void PutDetail(long version, DiscoveryCard card, bool moderatorVisible, TimeSpan? remaining = null)
+    internal void PutDetail(long version, DiscoveryCard card, bool moderatorVisible)
     {
         // Strings use approximately two bytes per character. Include object/key overhead;
         // oversized content still reaches the caller, but does not occupy the cache.
@@ -202,7 +200,7 @@ public sealed class DiscoveryCache : IDisposable
 
         _details.Set((version, card.NodeId, moderatorVisible), card, new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = remaining ?? _expiration,
+            AbsoluteExpirationRelativeToNow = _expiration,
             Size = size
         });
     }
@@ -212,5 +210,6 @@ public sealed class DiscoveryCache : IDisposable
     {
         _pages.Dispose();
         _details.Dispose();
+        External?.Dispose();
     }
 }

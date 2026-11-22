@@ -131,27 +131,18 @@ public sealed class SqlDiscoveryReadQuery(
             // Full-text population is asynchronous and does not bump DiscoveryRevisions.
             // Never cache text-search pages: an early empty result must not mask later indexing.
             var cachePage = paged && query.SearchText is null;
+            // Only public projections leave process memory. Keep the existing
+            // page eligibility and use detail keys independently of page keys.
+            var external = paged && !includeHidden ? cache?.External : null;
+            var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + key) : null;
             var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
-
-            var external = cache?.External;
-            var externalKey = external is not null && paged && !includeHidden &&
-                query.Page <= 10 && (query.ReactionDefinitionIds?.Count ?? 0) == 0 &&
-                (query with { ReactionDefinitionIds = null }) == new DiscoveryQuery(Page: query.Page)
-                ? cache!.ExternalKey(key, revision.DetailVersion)
+            var externalPage = pageMiss && externalPageKey is not null
+                ? external!.Read<DiscoveryPage>([externalPageKey])[0]
                 : null;
-            if (pageMiss && externalKey is not null && external!.Read(externalKey) is { } stored)
+            if (externalPage is not null)
             {
-                var remaining = stored.ExpiresAt - DateTimeOffset.UtcNow;
-                if (remaining > TimeSpan.Zero)
-                {
-                    transaction.Commit();
-                    if (remaining > cache!.Expiration) remaining = cache.Expiration;
-                    var ranked = stored.Page.Items.Select(item => item with { Card = null }).ToArray();
-                    cache!.PutPage(key, stored.Page with { Items = Array.AsReadOnly(ranked) }, remaining);
-                    foreach (var item in stored.Page.Items)
-                        cache.PutDetail(revision.DetailVersion, item.Card!, false, remaining);
-                    return stored.Page with { Items = Array.AsReadOnly(stored.Page.Items.ToArray()) };
-                }
+                page = externalPage;
+                pageMiss = false;
             }
 
             if (pageMiss)
@@ -226,6 +217,21 @@ public sealed class SqlDiscoveryReadQuery(
                 }
             }
 
+            var externalCards = new List<DiscoveryCard>();
+            string DetailKey(Guid id) => cache!.ExternalKey($"card:{revision.DetailVersion}:{id:N}");
+            if (external is not null && missing.Count > 0)
+            {
+                var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray());
+                for (var index = missing.Count - 1; index >= 0; index--)
+                {
+                    var card = remote[index];
+                    if (card is null || card.NodeId != missing[index]) continue;
+                    externalCards.Add(card);
+                    cards.Add(card.NodeId, card);
+                    missing.RemoveAt(index);
+                }
+            }
+
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
@@ -244,7 +250,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             // Publish only successfully completed committed reads. Detail entries are immutable
             // and independent of filters/ordered page IDs and contain no participant-specific votes.
-            if (pageMiss && cachePage)
+            if ((pageMiss || externalPage is not null) && cachePage)
             {
                 cache?.PutPage(key, page);
             }
@@ -252,6 +258,15 @@ public sealed class SqlDiscoveryReadQuery(
             {
                 cache?.PutDetail(revision.DetailVersion, card, moderatorVisible);
             }
+
+            foreach (var card in externalCards)
+                cache!.PutDetail(revision.DetailVersion, card, moderatorVisible);
+
+            if (pageMiss && externalPageKey is not null && page.Items.Count > 0)
+                external!.Write(externalPageKey, page);
+            if (external is not null)
+                foreach (var card in loaded.Values)
+                    external.Write(DetailKey(card.NodeId), card);
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
             // separate from detail entries; personalized participant votes are not included.
@@ -261,8 +276,6 @@ public sealed class SqlDiscoveryReadQuery(
                     .Select(item => item with { Card = cards.GetValueOrDefault(item.NodeId) })
                     .ToArray())
             };
-            if (pageMiss && externalKey is not null && result.Items.Count > 0)
-                external!.Write(externalKey, result, TimeSpan.FromMinutes(10));
             return result;
         }
     }

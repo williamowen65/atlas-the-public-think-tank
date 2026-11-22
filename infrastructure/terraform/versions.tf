@@ -19,15 +19,3 @@ provider "azurerm" {
   features {}
   subscription_id = var.subscription_id
 }
-
-# Discovery storage is provisioned through ARM. Shared key data access is disabled.
-provider "azurerm" {
-  alias           = "discovery_cache"
-  subscription_id = var.subscription_id
-
-  features {
-    storage {
-      data_plane_available = false
-    }
-  }
-}

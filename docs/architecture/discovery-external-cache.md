@@ -1,93 +1,111 @@
 # Discovery cache across API restarts (PTT-184)
 
-Discovery reads the singleton `DiscoveryRevisions` row in the same SQL snapshot
-as its ranked results and display cards. A vote can advance the page revision
-alone. Content or moderation changes can advance both. A rollback advances
-neither. Even an external cache hit still needs a SQL connection, snapshot
-transaction and revision read. Reducing refills and preventing SQL wake-ups are
-different goals.
+Redis stores ranked pages and public display cards under separate keys.
+A ranked page key includes the normalized filters, page number and committed
+page revision. A card key includes the node ID and committed detail revision.
+Both include the SQL database namespace and the payload format version. A vote
+can invalidate rankings while still allowing card reuse across filters. Atlas
+reads the committed revisions in the same SQL snapshot used to rebuild results.
+Even a Redis hit requires that revision read.
 
-## Backend choice
+The external cache covers paged public Discovery, including non-search filters
+and all page numbers. Full-text result rankings bypass caching because SQL's
+index can update independently. Public cards from those results can still be
+reused. Authored and moderator views retain their existing in-process behavior.
+Personalized votes stay outside Redis.
 
-- **Azure Blob Storage (pilot)** uses a small Hot LRS account per enabled variant.
-  Cost depends on stored bytes and operations. The API uses managed identity
-  and can test the same data protocol locally with Azurite. One blob per page
-  avoids remote calls for each card.
-- **Azure Managed Redis** offers lower-latency cache primitives and native TTL,
-  with a separately priced compute tier. Revisit it if Blob latency or more
-  general cross-instance caching warrants the additional infrastructure.
-- **Upstash Redis** has a command-limited free tier and usage-based plans.
-  It would add a separate service account, region selection and credentials.
-  Its free allocation covers one database, which limits a two-instance trial.
+A running API checks its bounded, 30-second in-process cache first. On a local
+miss, it fetches the ranked page and batches missing cards in Redis. Redis keys
+expire after ten minutes. Entries are limited to 128 KiB, and connection and
+command timeouts are bounded. If Redis is unavailable, the API falls back to SQL
+and briefly backs off Redis attempts. If restoring or replacing SQL at the same
+server and database name, stop the API and clear its Redis cache before restarting
+against the restored database because revision numbers can recur.
 
-Pricing references are [Azure Blob Storage](https://azure.microsoft.com/en-us/pricing/details/storage/blobs/),
-[Azure Managed Redis](https://azure.microsoft.com/en-us/pricing/details/managed-redis/)
-and [Upstash](https://upstash.com/pricing/redis). The separate share-image cache
-serves a different workload.
+## Test an API restart locally
 
-## Scope and invalidation
+From the repository root in PowerShell, use your existing seeded local SQL
+database. Start Redis in Docker Desktop and verify that it responds.
 
-The pilot stores nonempty pages 1–10 of the unfiltered public Discovery feed.
-The existing in-process page and card caches retain their separate revisions,
-visibility keys, 30-second lifetime and budgets. The external bundle is
-limited to 512 KiB and has a ten-minute absolute lifetime. Azure lifecycle
-cleanup deletes old objects asynchronously after one day. A warm local hit
-avoids Blob I/O. A remote hit can repopulate local entries for up to their
-normal lifetime. Search, authored and moderator pages use the existing local
-path. Participant-specific votes remain outside the shared cache.
-
-The external key includes a payload version, a hash of the SQL server/database
-pair, the ranked page key, and the committed detail revision. Both revisions
-must match before a bundle can be used. A failed Blob operation falls back to
-SQL and briefly backs off Blob requests. The SDK uses a 400 ms per-operation
-deadline and zero retries. API instances can independently fill a cold key.
-If replacing or restoring a database at the same server and database name,
-stop the API and clear that variant's cache before restarting against the
-restored database. Revision counters can repeat after a restore.
-
-## Local verification
-
-Start Azurite with a volume so it stays available during app restarts.
-
-```sh
-docker run --rm --name atlas-azurite -p 127.0.0.1:10000:10000 \
-  -v atlas-discovery-azurite:/data mcr.microsoft.com/azure-storage/azurite:3.35.0 \
-  azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+```powershell
+docker run -d --name atlas-discovery-redis -p 127.0.0.1:6379:6379 redis:7.4-alpine
+docker exec atlas-discovery-redis redis-cli ping
 ```
 
-Run the integration tests with your existing disposable SQL Server test
-connection configured. The tests create their own Azurite containers.
+In the API terminal, set the connection and start the API. Keep the same
+terminal and settings when restarting.
 
-```sh
-export ATLAS_DISCOVERY_CACHE_TEST_EMULATOR='UseDevelopmentStorage=true'
-dotnet test tests/Atlas.Persistence.Tests --filter FullyQualifiedName~BlobDiscoveryCacheTests
+```powershell
+$env:ATLAS_DISCOVERY_REDIS_CONNECTION = 'localhost:6379'
+$env:ATLAS_TELEMETRY_DIRECTORY = Join-Path $env:TEMP 'atlas-redis-evidence'
+dotnet run --project src/hosts/Atlas.Api --launch-profile https
 ```
 
-For a manual API restart, create a container named `discovery` in Azurite
-and start the local API with
-`ATLAS_DISCOVERY_CACHE_EMULATOR='UseDevelopmentStorage=true'`. As an anonymous
-visitor load page 1 twice, stop only the API, start it again and reload within
-ten minutes. Then edit or hide a result and reload. Repeat with Azurite stopped
-to check the SQL fallback. Keep the same SQL server and database across the
-API restart.
+1. In a second terminal request a populated page. Use the exact same URL
+   before and after the restart.
 
-## Demo trial
+   ```powershell
+   Invoke-RestMethod 'https://localhost:7240/api/nodes?page=1'
+   docker exec atlas-discovery-redis redis-cli --scan --pattern 'atlas:discovery:*'
+   ```
 
-Leave Azure deployments on hold until demo SQL is available. Terraform defaults
-to no external caches. For the demo trial, set the repository variable
-`ATLAS_DISCOVERY_CACHE_VARIANTS` to `["demo"]` and review the demo plan before
-applying. The Terraform identity needs permission to create the storage
-resources and write the container-scoped role assignment. The runtime identity
-needs only the Blob data role on its own variant container. Use the API's
-managed identity in Azure and keep live disabled during the demo trial.
+   The scan should show a page key and card keys if the response has items.
+2. Press **Ctrl+C in the API terminal**, leave Redis and SQL running, and
+   rerun the same `dotnet run` command. Request the same URL again before
+   the ten-minute Redis expiration.
+3. Examine the newest phase records from the API.
 
-Measure anonymous requests to the same page cold, warm, and immediately after
-an API restart. Keep the restart within the external lifetime and run the
-sequence with the cache disabled and enabled. Break down
-`atlas.discovery.phase.duration` by `variant`, `phase` and `outcome`. Histogram
-counts give completed revision checks, page rebuilds, detail rebuilds and
-external read results. Compare durations for each phase independently.
-Revision timing starts after transaction setup. Rebuild timings exclude Blob
-operations. Each rebuild can issue several SQL commands. Compare the phase
-counts with SQL reads, connection/startup latency and storage operations over
-the same window before attributing Azure SQL usage to cold cache refills.
+   ```powershell
+   Get-ChildItem (Join-Path $env:TEMP 'atlas-redis-evidence') -Filter 'metrics*.jsonl' |
+     Sort-Object LastWriteTime | Select-Object -Last 1 |
+     Get-Content | Select-String 'atlas.discovery.phase.duration' | Select-Object -Last 12
+   ```
+
+   The restart request should record one `RevisionCheck` and Redis
+   `ExternalRead` hits, with no `PageRebuild` or `DetailRebuild` for that request.
+   For a comparison, stop Redis with `docker stop atlas-discovery-redis`,
+   restart the API again, and repeat the request. The same page should load
+   with SQL rebuilds.
+4. To run the automated equivalent with a disposable SQL test database, set
+   `ATLAS_DISCOVERY_REDIS_TEST_CONNECTION=localhost:6379` and your existing
+   `ATLAS_SQL_TEST_CONNECTION_STRING`, then run
+   `dotnet test tests/Atlas.Persistence.Tests --filter FullyQualifiedName~RedisDiscoveryCacheTests`.
+
+[Local API setup](../api/README.md) covers SQL credentials and development HTTPS.
+
+## Configure Demo in Azure
+
+Once demo SQL is available:
+
+1. Create a Free Redis database in the [Upstash Console](https://console.upstash.com/)
+   in the closest available region. Copy its Redis protocol host, port and
+   password from the connection details. The HTTP REST endpoint and token are
+   for HTTP clients.
+2. Set the GitHub Actions secret `ATLAS_DISCOVERY_REDIS_CONNECTIONS` on the
+   repository, or in the environment used by Azure Plan and Apply. Store a JSON
+   object with the demo TLS connection (substitute your actual host, port,
+   and password).
+
+   ```json
+   {"demo":"YOUR_HOST:6379,ssl=true,user=default,password=YOUR_PASSWORD"}
+   ```
+
+   The same secret format accepts a `live` key with a separate database and
+   credential when live is ready. Keep this value in secrets because Terraform
+   configures it as an App Service setting and persists it in the protected state.
+3. Run **Atlas Azure Terraform plan** on `ptt-184-discovery-read-cache`
+   with `installation=main` and `deployment_shape=demo`. Verify the demo API
+   app settings change. Run the matching **Atlas Azure Terraform apply** with
+   the same inputs, then deploy the API from that branch to demo. Terraform wires the
+   service into App Service. Upstash database creation is handled in the
+   console so the Free plan can be selected directly.
+4. Warm a populated page, restart only the demo API, and repeat the exact
+   request within ten minutes. In Application Insights, compare
+   `atlas.discovery.phase.duration` by phase and outcome for revision checks,
+   page rebuilds, detail rebuilds and Redis reads. Compare Redis command usage
+   and request latency in the same window.
+
+[Upstash pricing](https://upstash.com/pricing/redis) lists the Free plan limits
+and Pay-as-you-go pricing. Azure Managed Redis uses a separately priced cache
+tier. Both the demo and live API use the same Redis protocol and App Service
+settings, with deployment-specific credentials.

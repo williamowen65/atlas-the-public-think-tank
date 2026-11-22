@@ -120,13 +120,14 @@ variable "account_mail_public_origins" {
   }
 }
 
-variable "discovery_cache_variants" {
-  description = "Deployment variants that use the optional external Discovery read cache."
-  type        = set(string)
-  default     = []
+variable "discovery_redis_connections" {
+  description = "Optional Redis TLS connection strings keyed by deployment variant."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
 
   validation {
-    condition     = alltrue([for variant in var.discovery_cache_variants : contains(["demo", "live"], variant)])
-    error_message = "Discovery cache variants must be demo or live."
+    condition     = alltrue([for variant in keys(var.discovery_redis_connections) : contains(["demo", "live"], variant)])
+    error_message = "Discovery Redis connection keys must be demo or live."
   }
 }
