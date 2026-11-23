@@ -73,6 +73,33 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
 
 [Local API setup](../api/README.md) covers SQL credentials and development HTTPS.
 
+## Watch cache sources while browsing
+
+Start the API with `ATLAS_TELEMETRY_DIRECTORY` set as above. In a second
+PowerShell window, run the following, then scroll the feed in your browser.
+
+```powershell
+$log = Get-ChildItem (Join-Path $env:TEMP 'atlas-redis-evidence') -Filter 'metrics-*.jsonl' |
+  Sort-Object LastWriteTime | Select-Object -Last 1
+Get-Content -LiteralPath $log.FullName -Tail 0 -Wait |
+  Select-String '"name":"atlas.discovery.cache.request"' |
+  ForEach-Object { $_.Line | ConvertFrom-Json } |
+  Format-Table page, ranking_source, memory_cards, redis_cards, sql_cards, missing_cards
+```
+
+Each row is one completed Discovery read. A page ranking comes from
+`ProcessMemory`, `Redis`, or `Sql`. Card counts can be mixed because each card is
+looked up separately. A cold fetch may show SQL for the ranking and three
+cards. Repeat the same request promptly to see process memory. Restart only
+the API and repeat it within the Redis lifetime to see Redis. If scrolling
+only reuses results in the browser, there is no new API row. Use the
+browser's Network tab or repeat the exact feed URL to force a request.
+
+After an API restart, rerun the watcher to follow the new metrics file.
+Match `operation_id` with the phase records in that file to inspect the SQL
+revision check or Redis failure/backoff. The summary records counts and cache
+sources locally. Cloud telemetry continues to report aggregate phase metrics.
+
 ## Configure Demo in Azure
 
 Once demo SQL is available:

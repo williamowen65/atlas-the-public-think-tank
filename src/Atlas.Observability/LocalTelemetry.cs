@@ -111,7 +111,19 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         {
             signal = "metric", observed_at_utc = DateTimeOffset.UtcNow,
             name = "atlas.discovery.phase.duration", unit = "ms", value = durationMs,
-            phase = phaseName, outcome = outcomeName
+            phase = phaseName, outcome = outcomeName, operation_id = Telemetry.OperationId
+        })));
+    }
+
+    public void RecordDiscoveryCache(DiscoveryCacheSummary summary, Guid? operationId)
+    {
+        TryOutput(() => _metrics.Write(JsonSerializer.Serialize(new
+        {
+            signal = "diagnostic", observed_at_utc = DateTimeOffset.UtcNow,
+            name = "atlas.discovery.cache.request", operation_id = operationId,
+            page = summary.Page, ranking_source = summary.Ranking.ToString(),
+            memory_cards = summary.MemoryCards, redis_cards = summary.RedisCards,
+            sql_cards = summary.SqlCards, missing_cards = summary.MissingCards
         })));
     }
 

@@ -217,6 +217,7 @@ public sealed class SqlDiscoveryReadQuery(
                 }
             }
 
+            var memoryCardCount = cards.Count;
             var externalCards = new List<DiscoveryCard>();
             string DetailKey(Guid id) => cache!.ExternalKey($"card:{revision.DetailVersion}:{id:N}");
             if (external is not null && missing.Count > 0)
@@ -276,6 +277,10 @@ public sealed class SqlDiscoveryReadQuery(
                     .Select(item => item with { Card = cards.GetValueOrDefault(item.NodeId) })
                     .ToArray())
             };
+            var rankingSource = pageMiss ? DiscoveryCacheSource.Sql
+                : externalPage is not null ? DiscoveryCacheSource.Redis : DiscoveryCacheSource.ProcessMemory;
+            Telemetry.RecordDiscoveryCache(new(page.Page, rankingSource, memoryCardCount,
+                externalCards.Count, loaded.Count, page.Items.Count - cards.Count));
             return result;
         }
     }
