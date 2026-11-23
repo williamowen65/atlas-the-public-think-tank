@@ -37,7 +37,7 @@ terminal and settings when restarting.
 
 ```powershell
 $env:ATLAS_DISCOVERY_REDIS_CONNECTION = 'localhost:6379'
-$env:ATLAS_TELEMETRY_DIRECTORY = Join-Path $env:TEMP 'atlas-redis-evidence'
+$env:ATLAS_TELEMETRY_DIRECTORY = Join-Path (Get-Location).Path 'logs/observability'
 dotnet run --project src/hosts/Atlas.Api --launch-profile https
 ```
 
@@ -56,7 +56,7 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
 3. Examine the newest phase records from the API.
 
    ```powershell
-   Get-ChildItem (Join-Path $env:TEMP 'atlas-redis-evidence') -Filter 'metrics*.jsonl' |
+   Get-ChildItem (Join-Path (Get-Location).Path 'logs/observability') -Filter 'metrics*.jsonl' |
      Sort-Object LastWriteTime | Select-Object -Last 1 |
      Get-Content | Select-String 'atlas.discovery.phase.duration' | Select-Object -Last 12
    ```
@@ -75,17 +75,22 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
 
 ## Watch cache sources while browsing
 
-Start the API with `ATLAS_TELEMETRY_DIRECTORY` set as above. In a second
-PowerShell window, run the following, then scroll the feed in your browser.
+For LAN development, add `ATLAS_DISCOVERY_REDIS_CONNECTION=127.0.0.1:6379`
+to `src/hosts/Atlas.Web/.env.lan.local` while using local Docker Redis. Remove
+any old shell override of `ATLAS_TELEMETRY_DIRECTORY` to use the default
+gitignored `logs/observability/` at the checkout root. The LAN launcher prints
+the active path.
+
+From `src/hosts/Atlas.Web`, start `npm run dev:lan:api`, then open or scroll
+Discovery. In a second terminal in the Web directory, run:
 
 ```powershell
-$log = Get-ChildItem (Join-Path $env:TEMP 'atlas-redis-evidence') -Filter 'metrics-*.jsonl' |
-  Sort-Object LastWriteTime | Select-Object -Last 1
-Get-Content -LiteralPath $log.FullName -Tail 0 -Wait |
-  Select-String '"name":"atlas.discovery.cache.request"' |
-  ForEach-Object { $_.Line | ConvertFrom-Json } |
-  Format-Table page, ranking_source, memory_cards, redis_cards, sql_cards, missing_cards
+npm run audit:discovery-cache
 ```
+
+Rerun the command for a fresh snapshot of the newest metrics file. It reads
+the same LAN settings file as the launcher, and an explicit shell override
+should be set in both terminals if used.
 
 Each row is one completed Discovery read. A page ranking comes from
 `ProcessMemory`, `Redis`, or `Sql`. Card counts can be mixed because each card is
@@ -95,7 +100,7 @@ the API and repeat it within the Redis lifetime to see Redis. If scrolling
 only reuses results in the browser, there is no new API row. Use the
 browser's Network tab or repeat the exact feed URL to force a request.
 
-After an API restart, rerun the watcher to follow the new metrics file.
+After an API restart, rerun the command to read the new metrics file.
 Match `operation_id` with the phase records in that file to inspect the SQL
 revision check or Redis failure/backoff. The summary records counts and cache
 sources locally. Cloud telemetry continues to report aggregate phase metrics.
