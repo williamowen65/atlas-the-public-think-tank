@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.10.4" />
+    <PackageReference Include="AngleSharp" Version="1.10.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.23" />
     <PackageReference Include="Microsoft.Build" Version="17.14.28" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.23" />
