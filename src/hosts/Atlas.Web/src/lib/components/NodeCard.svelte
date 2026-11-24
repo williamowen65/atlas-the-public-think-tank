@@ -74,7 +74,7 @@
 {#if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
 {:else if presentation === 'mobile-experiment' || presentation === 'ribbon-corner'}
-  <NodeCardRibbonCorner {...props} {node} blocks={current?.blocks} mobileLayout={presentation === 'mobile-experiment'}>
+  <NodeCardRibbonCorner {...props} {node} blocks={current?.blocks ?? node.previewBlocks} mobileLayout={presentation === 'mobile-experiment'}>
     {#snippet cornerControl()}
       <NodeEditControl corner {node} apiBase={props.apiBase} average={props.average} totalVotes={props.totalVotes}
         onSaved={(update) => saved = { id: node.id, ...update }} />

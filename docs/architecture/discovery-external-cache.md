@@ -26,6 +26,16 @@ against the restored database because revision numbers can recur. The new
 format uses the `atlas:discovery:v2:` prefix. Old v1 entries expire on their
 original timers, and the new format warms on use.
 
+Discovery cards now include up to eight ordered rich preview blocks in the
+existing SQL card batch. Oversized blocks are omitted, and a preview exceeding
+the total JSON size limit uses the card's text excerpt. The frontend receives
+these blocks with the ranking response; opening the full post still loads its
+full description. Images can finish loading independently.
+
+The new `card-preview-v1:` Redis keys warm on use. Existing ranking keys can
+still be reused. A Redis flush is unnecessary. Older persistent card keys
+are left for the configured eviction policy.
+
 ## Test an API restart locally
 
 From the repository root in PowerShell, use your existing seeded local SQL

@@ -50,7 +50,8 @@ public sealed class RedisDiscoveryCacheTests
 
         using (var original = OpenCache())
         {
-            new SqlDiscoveryReadQuery(Open, original).DiscoverPage(query);
+            var card = new SqlDiscoveryReadQuery(Open, original).DiscoverPage(query).Items.Single().Card!;
+            Assert.AreEqual(candidate.SearchableContent, card.PreviewBlocks.Single().Content.Markdown);
             Assert.AreEqual(1, commands.RevisionChecks);
             Assert.IsGreaterThan(0, commands.OtherReads);
             RecordReads("Cold", commands);
@@ -59,8 +60,9 @@ public sealed class RedisDiscoveryCacheTests
         using (var restarted = OpenCache())
         {
             commands.Reset();
-            Assert.AreEqual("Before edit", new SqlDiscoveryReadQuery(Open, restarted)
-                .DiscoverPage(query).Items.Single().Card!.Title);
+            var card = new SqlDiscoveryReadQuery(Open, restarted).DiscoverPage(query).Items.Single().Card!;
+            Assert.AreEqual("Before edit", card.Title);
+            Assert.AreEqual(candidate.SearchableContent, card.PreviewBlocks.Single().Content.Markdown);
             Assert.AreEqual(1, commands.RevisionChecks);
             Assert.AreEqual(0, commands.OtherReads);
             RecordReads("Restart hit", commands);

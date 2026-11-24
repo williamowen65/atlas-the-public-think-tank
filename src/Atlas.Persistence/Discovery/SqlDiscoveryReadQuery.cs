@@ -220,7 +220,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             var memoryCardCount = cards.Count;
             var externalCards = new List<DiscoveryCard>();
-            string DetailKey(Guid id) => cache!.ExternalKey($"card:{id:N}");
+            string DetailKey(Guid id) => cache!.ExternalKey($"card-preview-v1:{id:N}");
             if (external is not null && missing.Count > 0)
             {
                 var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray(), revision.DetailVersion);
@@ -354,9 +354,14 @@ public sealed class SqlDiscoveryReadQuery(
             {
                 AuthorId = row.IsHidden && !showHidden ? null : metadata[row.NodeId].AuthorId,
                 ChildTypes = row.IsHidden && !showHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
+                PreviewBlocks = row.PreviewJson.Length <= 48 * 1024
+                    ? JsonSerializer.Deserialize<DiscoveryPreviewBlock[]>(row.PreviewJson, PreviewJsonOptions) ?? []
+                    : [],
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
     }
+
+    private static readonly JsonSerializerOptions PreviewJsonOptions = new(JsonSerializerDefaults.Web);
 
     private static IReadOnlyList<DiscoveryChildType> ReadChildTypes(string json)
     {
@@ -403,6 +408,7 @@ public sealed class SqlDiscoveryReadQuery(
         public Guid NodeId { get; set; }
         public string Title { get; set; } = "";
         public string Description { get; set; } = "";
+        public string PreviewJson { get; set; } = "[]";
         public string SubNodes { get; set; } = "";
         public string Reactions { get; set; } = "";
         public string Communities { get; set; } = "";
