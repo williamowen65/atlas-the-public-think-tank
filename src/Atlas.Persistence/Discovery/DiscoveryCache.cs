@@ -24,7 +24,7 @@ public sealed class DiscoveryCache : IDisposable
     private string? _externalNamespace;
     internal RedisDiscoveryCache? External { get; }
 
-    internal string ExternalKey(string key) => $"atlas:discovery:v1:{_externalNamespace}:{key}";
+    internal string ExternalKey(string key) => $"atlas:discovery:v2:{_externalNamespace}:{key}";
 
     // SqlDiscoveryReadQuery holds this gate while reading or publishing cache entries.
     // It coordinates misses and counter updates; no DbContext is stored in the cache.
@@ -79,13 +79,12 @@ public sealed class DiscoveryCache : IDisposable
 
     /// <summary>
     /// Identifies one requested page: its filters, authored scope, visibility policy,
-    /// page number, page size, ordering policy and committed page revision.
+    /// page number, page size, and ordering policy.
     /// This is a cache lookup key, not a SQL paging cursor or an authorization token.
     /// </summary>
     internal static string PageKey(
         DiscoveryQuery query,
         IReadOnlyCollection<Guid>? scope,
-        long version,
         bool includeHidden)
     {
         // Set-like inputs are sorted and deduplicated so their input order cannot
@@ -116,11 +115,10 @@ public sealed class DiscoveryCache : IDisposable
         };
 
         // Hashing keeps potentially large filter/scope payloads out of cache keys.
-        // order-v2 names the ordering contract; version changes after relevant writes,
-        // so entries from an older committed revision can no longer be found.
+        // order-v2 names the ordering contract. Callers handle revision checks.
         var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
-        return "order-v2:" + version + ":" + hash;
+        return "order-v2:" + hash;
     }
 
     /// <summary>Looks up ranked IDs and totals; public cards are resolved separately.</summary>

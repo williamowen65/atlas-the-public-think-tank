@@ -9,7 +9,7 @@ namespace Atlas.Persistence.Discovery;
 public sealed class RedisDiscoveryCache : IDisposable
 {
     private const int MaxEntryBytes = 128 * 1024;
-    private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(10);
+    private sealed record Entry<T>(long Revision, T Value);
     private readonly ConfigurationOptions _options;
     private ConnectionMultiplexer? _connection;
     private long _unavailableSince;
@@ -24,7 +24,7 @@ public sealed class RedisDiscoveryCache : IDisposable
         _options.BacklogPolicy = BacklogPolicy.FailFast;
     }
 
-    internal T?[] Read<T>(string[] keys) where T : class
+    internal T?[] Read<T>(string[] keys, long revision) where T : class
     {
         var results = new T?[keys.Length];
         Measure(DiscoveryPhase.ExternalRead, () =>
@@ -37,7 +37,11 @@ public sealed class RedisDiscoveryCache : IDisposable
             {
                 var bytes = (byte[]?)values[i];
                 if (bytes is { Length: > 0 and <= MaxEntryBytes })
-                    results[i] = JsonSerializer.Deserialize<T>(bytes);
+                {
+                    var entry = JsonSerializer.Deserialize<Entry<T>>(bytes);
+                    if (entry?.Revision == revision)
+                        results[i] = entry.Value;
+                }
             }
             return results.All(value => value is not null)
                 ? DiscoveryMeasurementOutcome.Hit
@@ -46,13 +50,13 @@ public sealed class RedisDiscoveryCache : IDisposable
         return results;
     }
 
-    internal void Write<T>(string key, T value)
+    internal void Write<T>(string key, long revision, T value)
     {
         Measure(DiscoveryPhase.ExternalWrite, () =>
         {
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(new Entry<T>(revision, value));
             if (bytes.Length > MaxEntryBytes) return DiscoveryMeasurementOutcome.Skipped;
-            return Database().StringSet(key, bytes, Lifetime)
+            return Database().StringSet(key, bytes)
                 ? DiscoveryMeasurementOutcome.Completed
                 : DiscoveryMeasurementOutcome.Failed;
         });

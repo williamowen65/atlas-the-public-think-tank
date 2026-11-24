@@ -1,9 +1,9 @@
 # Discovery cache across API restarts (PTT-184)
 
 Redis stores ranked pages and public display cards under separate keys.
-A ranked page key includes the normalized filters, page number and committed
-page revision. A card key includes the node ID and committed detail revision.
-Both include the SQL database namespace and the payload format version. A vote
+A ranked page key includes the normalized filters and page number. A card key
+includes the node ID. Both keys include the SQL database namespace and payload
+format version. Each value carries its committed page or detail revision. A vote
 can invalidate rankings while still allowing card reuse across filters. Atlas
 reads the committed revisions in the same SQL snapshot used to rebuild results.
 Even a Redis hit requires that revision read.
@@ -15,12 +15,16 @@ reused. Authored and moderator views retain their existing in-process behavior.
 Personalized votes stay outside Redis.
 
 A running API checks its bounded, 30-second in-process cache first. On a local
-miss, it fetches the ranked page and batches missing cards in Redis. Redis keys
-expire after ten minutes. Entries are limited to 128 KiB, and connection and
-command timeouts are bounded. If Redis is unavailable, the API falls back to SQL
+miss, it fetches the ranked page and batches missing cards in Redis. Redis
+entries have no time-based expiration. A revision mismatch is a cache miss,
+and a rebuild overwrites the same key. Enable eviction on the dedicated Redis
+cache so unused keys can be displaced when it fills. Entries are limited to
+128 KiB, and connection and command timeouts are bounded. If Redis is unavailable, the API falls back to SQL
 and briefly backs off Redis attempts. If restoring or replacing SQL at the same
 server and database name, stop the API and clear its Redis cache before restarting
-against the restored database because revision numbers can recur.
+against the restored database because revision numbers can recur. The new
+format uses the `atlas:discovery:v2:` prefix. Old v1 entries expire on their
+original timers, and the new format warms on use.
 
 ## Test an API restart locally
 
@@ -52,7 +56,7 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
    The scan should show a page key and card keys if the response has items.
 2. Press **Ctrl+C in the API terminal**, leave Redis and SQL running, and
    rerun the same `dotnet run` command. Request the same URL again before
-   the ten-minute Redis expiration.
+   any changes that invalidate the cached results.
 3. Examine the newest phase records from the API.
 
    ```powershell
@@ -110,7 +114,8 @@ sources locally. Cloud telemetry continues to report aggregate phase metrics.
 Once demo SQL is available:
 
 1. Create a Free Redis database in the [Upstash Console](https://console.upstash.com/)
-   in the closest available region. Copy its Redis protocol host, port and
+   in the closest available region. Enable **Eviction** under the database’s
+   configuration so Redis can make room for new cache entries. Copy its Redis protocol host, port and
    password from the connection details. The HTTP REST endpoint and token are
    for HTTP clients.
 2. Set the GitHub Actions secret `ATLAS_DISCOVERY_REDIS_CONNECTIONS` on the
@@ -132,7 +137,8 @@ Once demo SQL is available:
    service into App Service. Upstash database creation is handled in the
    console so the Free plan can be selected directly.
 4. Warm a populated page, restart only the demo API, and repeat the exact
-   request within ten minutes. In Application Insights, compare
+   request before making changes that invalidate the cached results. In
+   Application Insights, compare
    `atlas.discovery.phase.duration` by phase and outcome for revision checks,
    page rebuilds, detail rebuilds and Redis reads. Compare Redis command usage
    and request latency in the same window.

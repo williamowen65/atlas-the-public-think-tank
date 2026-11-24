@@ -13,21 +13,24 @@ public sealed class RedisDiscoveryCacheTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public void Redis_entries_round_trip_across_connections_and_have_a_ttl()
+    public void Redis_entries_persist_without_expiration_and_only_match_the_requested_revision()
     {
         var connection = ConnectionString();
         var key = $"atlas:test:{Guid.NewGuid():N}";
         using (var writer = new RedisDiscoveryCache(connection))
-            writer.Write(key, "test value");
+            writer.Write(key, 1, "test value");
 
         using var reader = new RedisDiscoveryCache(connection);
-        Assert.AreEqual("test value", reader.Read<string>([key]).Single());
+        Assert.AreEqual("test value", reader.Read<string>([key], 1).Single());
         using var inspection = ConnectionMultiplexer.Connect(connection);
         var database = inspection.GetDatabase();
-        var remaining = database.KeyTimeToLive(key);
-        Assert.IsTrue(remaining > TimeSpan.Zero && remaining <= TimeSpan.FromMinutes(10));
+        Assert.IsNull(database.KeyTimeToLive(key));
+        Assert.IsNull(reader.Read<string>([key], 2).Single());
+        reader.Write(key, 2, "updated value");
+        Assert.IsNull(reader.Read<string>([key], 1).Single());
+        Assert.AreEqual("updated value", reader.Read<string>([key], 2).Single());
         database.KeyDelete(key);
-        Assert.IsNull(reader.Read<string>([key]).Single());
+        Assert.IsNull(reader.Read<string>([key], 1).Single());
     }
 
     [TestMethod]

@@ -118,7 +118,8 @@ public sealed class SqlDiscoveryReadQuery(
 
             // 5. Look for a ranked page matching the request and current page revision.
             // PageKey is a static helper, so it can be called without a cache instance.
-            var key = DiscoveryCache.PageKey(query, authoredIds, revision.PageVersion, includeHidden);
+            var pageKey = DiscoveryCache.PageKey(query, authoredIds, includeHidden);
+            var key = $"{revision.PageVersion}:{pageKey}";
             // null! suppresses the nullable warning; it does not create a page.
             // A successful TryPage supplies it, otherwise the database branch below does.
             DiscoveryPage page = null!;
@@ -134,10 +135,10 @@ public sealed class SqlDiscoveryReadQuery(
             // Only public projections leave process memory. Keep the existing
             // page eligibility and use detail keys independently of page keys.
             var external = paged && !includeHidden ? cache?.External : null;
-            var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + key) : null;
+            var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + pageKey) : null;
             var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
             var externalPage = pageMiss && externalPageKey is not null
-                ? external!.Read<DiscoveryPage>([externalPageKey])[0]
+                ? external!.Read<DiscoveryPage>([externalPageKey], revision.PageVersion)[0]
                 : null;
             if (externalPage is not null)
             {
@@ -219,10 +220,10 @@ public sealed class SqlDiscoveryReadQuery(
 
             var memoryCardCount = cards.Count;
             var externalCards = new List<DiscoveryCard>();
-            string DetailKey(Guid id) => cache!.ExternalKey($"card:{revision.DetailVersion}:{id:N}");
+            string DetailKey(Guid id) => cache!.ExternalKey($"card:{id:N}");
             if (external is not null && missing.Count > 0)
             {
-                var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray());
+                var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray(), revision.DetailVersion);
                 for (var index = missing.Count - 1; index >= 0; index--)
                 {
                     var card = remote[index];
@@ -264,10 +265,10 @@ public sealed class SqlDiscoveryReadQuery(
                 cache!.PutDetail(revision.DetailVersion, card, moderatorVisible);
 
             if (pageMiss && externalPageKey is not null && page.Items.Count > 0)
-                external!.Write(externalPageKey, page);
+                external!.Write(externalPageKey, revision.PageVersion, page);
             if (external is not null)
                 foreach (var card in loaded.Values)
-                    external.Write(DetailKey(card.NodeId), card);
+                    external.Write(DetailKey(card.NodeId), revision.DetailVersion, card);
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
             // separate from detail entries; personalized participant votes are not included.
