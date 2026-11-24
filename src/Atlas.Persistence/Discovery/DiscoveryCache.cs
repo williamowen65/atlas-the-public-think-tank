@@ -121,14 +121,17 @@ public sealed class DiscoveryCache : IDisposable
         return "order-v2:" + hash;
     }
 
+    internal RedisDiscoveryCache.Entry<DiscoveryPage>? PeekPage(string key) =>
+        _pages.Get<RedisDiscoveryCache.Entry<DiscoveryPage>>(key);
+
     /// <summary>Looks up ranked IDs and totals; public cards are resolved separately.</summary>
-    internal bool TryPage(string key, out DiscoveryPage page)
+    internal bool TryPage(string key, long revision, out DiscoveryPage page)
     {
-        if (_pages.TryGetValue(key, out DiscoveryPage? value))
+        if (PeekPage(key) is { } entry && entry.Revision == revision)
         {
             PageHits++;
             Telemetry.CacheLookup(detail: false, hit: true);
-            page = value!;
+            page = entry.Value;
             return true;
         }
 
@@ -139,7 +142,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores a completed page with an estimated size charged to its budget.</summary>
-    internal void PutPage(string key, DiscoveryPage page)
+    internal void PutPage(string key, long revision, DiscoveryPage page)
     {
         // Estimates cover projection/object overhead, not an exact managed-heap measurement.
         var size = 512 + page.Items.Count * 128;
@@ -149,7 +152,7 @@ public sealed class DiscoveryCache : IDisposable
             return;
         }
 
-        _pages.Set(key, page, new MemoryCacheEntryOptions
+        _pages.Set(key, new RedisDiscoveryCache.Entry<DiscoveryPage>(revision, page), new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = _expiration,
             Size = size

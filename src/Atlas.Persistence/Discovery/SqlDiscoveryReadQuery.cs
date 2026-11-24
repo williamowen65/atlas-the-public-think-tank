@@ -103,42 +103,25 @@ public sealed class SqlDiscoveryReadQuery(
             if (query.SearchText is not null)
                 DiscoveryFullTextSchema.EnsureAvailable(db);
 
+            var cachePage = paged && query.SearchText is null;
+            var external = paged && !includeHidden ? cache?.External : null;
+            var pageKey = DiscoveryCache.PageKey(query, authoredIds, includeHidden);
+            var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + pageKey) : null;
+            var memoryPage = cachePage ? cache?.PeekPage(pageKey) : null;
+            var remotePage = memoryPage is null && externalPageKey is not null
+                ? external!.ReadEntries<DiscoveryPage>([externalPageKey])[0]
+                : null;
+            var candidateIds = (memoryPage ?? remotePage)?.Value.Items.Select(item => item.NodeId).ToArray() ?? [];
+
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
-            // 4. Read the committed freshness counters, even when cache is absent.
-            // The singleton row has Id = 1. PageVersion and DetailVersion are generation
-            // numbers, not page numbers, node limits or timestamps. Relevant writes bump
-            // them atomically; new versions make older cache keys unusable.
-            // The revision and all page/card rows come from the same committed snapshot.
-            // Writers can advance generations without waiting for search's read transaction.
-            // Later requests see the new revision and cannot reuse an older cached page.
             var revisionStarted = Stopwatch.GetTimestamp();
-            var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking()
-                .TagWith("Discovery revision check").Single(row => row.Id == 1);
+            var revision = DiscoveryEntityCache.ReadVersions(db, external is null ? [] : candidateIds);
             Telemetry.MeasureDiscovery(DiscoveryPhase.RevisionCheck, DiscoveryMeasurementOutcome.Completed, revisionStarted);
 
-            // 5. Look for a ranked page matching the request and current page revision.
-            // PageKey is a static helper, so it can be called without a cache instance.
-            var pageKey = DiscoveryCache.PageKey(query, authoredIds, includeHidden);
-            var key = $"{revision.PageVersion}:{pageKey}";
-            // null! suppresses the nullable warning; it does not create a page.
-            // A successful TryPage supplies it, otherwise the database branch below does.
             DiscoveryPage page = null!;
-
-            // || short-circuits from left to right. Query storage when:
-            // - this is an unpaged request (ranked-page caching is bypassed), or
-            // - no cache was injected, or
-            // - TryPage cannot find this key (first use, new revision, expiry/eviction).
-            // Unpaged requests can still reuse detail cards if a cache exists.
-            // Full-text population is asynchronous and does not bump DiscoveryRevisions.
-            // Never cache text-search pages: an early empty result must not mask later indexing.
-            var cachePage = paged && query.SearchText is null;
-            // Only public projections leave process memory. Keep the existing
-            // page eligibility and use detail keys independently of page keys.
-            var external = paged && !includeHidden ? cache?.External : null;
-            var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + pageKey) : null;
-            var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
-            var externalPage = pageMiss && externalPageKey is not null
-                ? external!.Read<DiscoveryPage>([externalPageKey], revision.PageVersion)[0]
+            var pageMiss = !cachePage || cache is null || !cache.TryPage(pageKey, revision.PageVersion, out page!);
+            var externalPage = pageMiss && remotePage?.Revision == revision.PageVersion
+                ? remotePage.Value
                 : null;
             if (externalPage is not null)
             {
@@ -220,7 +203,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             var memoryCardCount = cards.Count;
             var externalCards = new List<DiscoveryCard>();
-            string DetailKey(Guid id) => cache!.ExternalKey($"card-preview-v1:{id:N}");
+            string DetailKey(Guid id) => cache!.ExternalKey($"card-metadata-v1:{id:N}");
             if (external is not null && missing.Count > 0)
             {
                 var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray(), revision.DetailVersion);
@@ -238,13 +221,26 @@ public sealed class SqlDiscoveryReadQuery(
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
             var detailStarted = Stopwatch.GetTimestamp();
-            var loaded = ReadCards(db, missing.ToArray(), moderatorVisible);
-            if (missing.Count > 0)
-                Telemetry.MeasureDiscovery(DiscoveryPhase.DetailRebuild, DiscoveryMeasurementOutcome.Completed, detailStarted);
+            var loaded = ReadCards(db, missing.ToArray(), moderatorVisible, components: external is not null);
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
             }
+
+            var entityWrites = new List<(string Key, DiscoveryEntityCache.Payload Value)>();
+            if (external is not null && (externalCards.Count > 0 || loaded.Count > 0))
+            {
+                var components = externalCards.Concat(loaded.Values).ToDictionary(card => card.NodeId);
+                // A ranking rebuild can select nodes outside the candidate page.
+                var manifest = components.Keys.All(candidateIds.Contains)
+                    ? revision
+                    : DiscoveryEntityCache.ReadVersions(db, components.Keys.ToArray(), checkPage: false);
+                foreach (var id in components.Keys) cards.Remove(id);
+                foreach (var (id, card) in DiscoveryEntityCache.Assemble(db, cache!, manifest, components, entityWrites))
+                    cards.Add(id, card);
+            }
+            if (missing.Count > 0 || entityWrites.Count > 0)
+                Telemetry.MeasureDiscovery(DiscoveryPhase.DetailRebuild, DiscoveryMeasurementOutcome.Completed, detailStarted);
 
             // 9. Finish the consistent read before publishing any newly loaded entries.
             // Exceptions before this point leave these attempted results out of the cache.
@@ -254,21 +250,22 @@ public sealed class SqlDiscoveryReadQuery(
             // and independent of filters/ordered page IDs and contain no participant-specific votes.
             if ((pageMiss || externalPage is not null) && cachePage)
             {
-                cache?.PutPage(key, page);
+                cache?.PutPage(pageKey, revision.PageVersion, page);
             }
-            foreach (var card in loaded.Values)
-            {
-                cache?.PutDetail(revision.DetailVersion, card, moderatorVisible);
-            }
-
-            foreach (var card in externalCards)
-                cache!.PutDetail(revision.DetailVersion, card, moderatorVisible);
+            foreach (var id in loaded.Keys.Concat(externalCards.Select(card => card.NodeId)))
+                if (cards.TryGetValue(id, out var card))
+                    cache?.PutDetail(revision.DetailVersion, card, moderatorVisible);
 
             if (pageMiss && externalPageKey is not null && page.Items.Count > 0)
                 external!.Write(externalPageKey, revision.PageVersion, page);
             if (external is not null)
+            {
+                foreach (var (key, payload) in entityWrites)
+                    external.Write(key, 0, payload);
                 foreach (var card in loaded.Values)
-                    external.Write(DetailKey(card.NodeId), revision.DetailVersion, card);
+                    if (cards.ContainsKey(card.NodeId))
+                        external.Write(DetailKey(card.NodeId), revision.DetailVersion, card);
+            }
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
             // separate from detail entries; personalized participant votes are not included.
@@ -300,7 +297,7 @@ public sealed class SqlDiscoveryReadQuery(
     }
 
     /// <summary>Loads missing display cards using fixed EF metadata and SQL summary batches.</summary>
-    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids, bool showHidden = false)
+    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids, bool showHidden = false, bool components = false)
     {
         if (ids.Length == 0)
         {
@@ -332,7 +329,8 @@ public sealed class SqlDiscoveryReadQuery(
         var rows = db.Database.SqlQueryRaw<CardRow>(
             sql,
             new SqlParameter("@ids", JsonSerializer.Serialize(ids)),
-            new SqlParameter("@showHidden", SqlDbType.Bit) { Value = showHidden })
+            new SqlParameter("@showHidden", SqlDbType.Bit) { Value = showHidden },
+            new SqlParameter("@components", SqlDbType.Bit) { Value = components })
             .ToList();
         var breadcrumbs = DiscoveryBreadcrumbReader.ReadFirstPages(db, ids);
         return rows.ToDictionary(

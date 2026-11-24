@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Text.Json;
 using Atlas.Discovery;
 using Atlas.Persistence.Discovery;
 using StackExchange.Redis;
@@ -113,6 +114,48 @@ public sealed class RedisDiscoveryCacheTests
             RecordReads("After committed edit", commands);
         }
 
+        Guid editedId;
+        var siblingId = Guid.NewGuid();
+        using (var db = fixture.Open())
+        {
+            editedId = db.BlockRows.Single().Id;
+            var document = db.DocumentRows.Include(row => row.Blocks).Single();
+            db.BlockRows.Add(new BlockRow
+            {
+                Id = siblingId, Kind = "markdown", Markdown = "Second block",
+                CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+            });
+            document.Blocks.Add(new DocumentBlockRow
+            {
+                DocumentId = document.Id, BlockId = siblingId, Position = 1
+            });
+            db.SaveChanges();
+        }
+        using (var afterLayoutEdit = OpenCache())
+        {
+            commands.Reset();
+            var card = new SqlDiscoveryReadQuery(Open, afterLayoutEdit).DiscoverPage(query).Items.Single().Card!;
+            CollectionAssert.AreEqual(new[] { editedId, siblingId }, card.PreviewBlocks.Select(block => block.Id).ToArray());
+            CollectionAssert.AreEqual(new[] { siblingId }, commands.BlockPayloadIds);
+        }
+
+        using (var db = fixture.Open())
+        {
+            db.BlockRows.Single(row => row.Id == editedId).Markdown = "Changed block only";
+            db.SaveChanges();
+        }
+        using (var afterBlockEdit = OpenCache())
+        {
+            commands.Reset();
+            var card = new SqlDiscoveryReadQuery(Open, afterBlockEdit).DiscoverPage(query).Items.Single().Card!;
+            Assert.AreEqual("Committed edit", card.Title);
+            Assert.AreEqual("Changed block only\n\nSecond block", card.Description);
+            Assert.AreEqual("Changed block only", card.PreviewBlocks[0].Content.Markdown);
+            Assert.AreEqual(1, commands.RevisionChecks);
+            Assert.AreEqual(0, commands.TitlePayloadReads);
+            CollectionAssert.AreEqual(new[] { editedId }, commands.BlockPayloadIds);
+        }
+
         using var offline = new DiscoveryCache(external: new RedisDiscoveryCache("127.0.0.1:1"));
         commands.Reset();
         Assert.AreEqual("Committed edit", new SqlDiscoveryReadQuery(Open, offline)
@@ -150,6 +193,8 @@ public sealed class RedisDiscoveryCacheTests
     {
         public int RevisionChecks { get; private set; }
         public int OtherReads { get; private set; }
+        public int TitlePayloadReads { get; private set; }
+        public List<Guid> BlockPayloadIds { get; } = [];
         public double RevisionMs { get; private set; }
         public double RebuildMs { get; private set; }
 
@@ -164,11 +209,19 @@ public sealed class RedisDiscoveryCacheTests
             else
             {
                 OtherReads++;
+                if (command.CommandText.Contains("Discovery missing titles", StringComparison.Ordinal))
+                    TitlePayloadReads++;
+                if (command.CommandText.Contains("Discovery missing blocks", StringComparison.Ordinal))
+                    BlockPayloadIds.AddRange(JsonSerializer.Deserialize<Guid[]>((string)command.Parameters["@ids"].Value!)!);
                 RebuildMs += eventData.Duration.TotalMilliseconds;
             }
             return result;
         }
 
-        public void Reset() => (RevisionChecks, OtherReads, RevisionMs, RebuildMs) = (0, 0, 0, 0);
+        public void Reset()
+        {
+            (RevisionChecks, OtherReads, TitlePayloadReads, RevisionMs, RebuildMs) = (0, 0, 0, 0, 0);
+            BlockPayloadIds.Clear();
+        }
     }
 }

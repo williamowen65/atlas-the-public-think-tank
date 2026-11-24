@@ -1,12 +1,17 @@
 # Discovery cache across API restarts (PTT-184)
 
-Redis stores ranked pages and public display cards under separate keys.
-A ranked page key includes the normalized filters and page number. A card key
-includes the node ID. Both keys include the SQL database namespace and payload
-format version. Each value carries its committed page or detail revision. A vote
-can invalidate rankings while still allowing card reuse across filters. Atlas
-reads the committed revisions in the same SQL snapshot used to rebuild results.
-Even a Redis hit requires that revision read.
+Redis stores ranked pages, card metadata, titles, and document blocks in
+separate entries. A cached ranking provides the candidate node IDs. In one SQL
+round trip, Atlas checks the ranking and metadata revisions and returns the
+public title and block versions in document order. Atlas batches Redis reads
+and fetches payloads from SQL only for missing or changed titles and blocks.
+When a cold or reranked page selects new IDs, Atlas checks those entities in
+a follow-up batch within the same SQL snapshot.
+
+SQL computes versions from content, including composition JSON. This requires
+no database migration. The batch still reads and hashes content on SQL Server,
+so measure CPU and database reads on demo to quantify the savings. Shared card
+metadata retains its detail revision.
 
 The external cache covers paged public Discovery, including non-search filters
 and all page numbers. Full-text result rankings bypass caching because SQL's
@@ -32,7 +37,7 @@ the total JSON size limit uses the card's text excerpt. The frontend receives
 these blocks with the ranking response; opening the full post still loads its
 full description. Images can finish loading independently.
 
-The new `card-preview-v1:` Redis keys warm on use. Existing ranking keys can
+The `card-metadata-v1:`, `title-v1:`, and `block-v1:` Redis keys warm on use. Existing ranking keys can
 still be reused. A Redis flush is unnecessary. Older persistent card keys
 are left for the configured eviction policy.
 

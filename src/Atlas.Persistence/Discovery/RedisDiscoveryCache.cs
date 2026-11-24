@@ -9,7 +9,7 @@ namespace Atlas.Persistence.Discovery;
 public sealed class RedisDiscoveryCache : IDisposable
 {
     private const int MaxEntryBytes = 128 * 1024;
-    private sealed record Entry<T>(long Revision, T Value);
+    internal sealed record Entry<T>(long Revision, T Value);
     private readonly ConfigurationOptions _options;
     private ConnectionMultiplexer? _connection;
     private long _unavailableSince;
@@ -25,8 +25,12 @@ public sealed class RedisDiscoveryCache : IDisposable
     }
 
     internal T?[] Read<T>(string[] keys, long revision) where T : class
+        => ReadEntries<T>(keys).Select(entry => entry?.Revision == revision ? entry.Value : null).ToArray();
+
+    internal Entry<T>?[] ReadEntries<T>(string[] keys) where T : class
     {
-        var results = new T?[keys.Length];
+        var results = new Entry<T>?[keys.Length];
+        if (keys.Length == 0) return results;
         Measure(DiscoveryPhase.ExternalRead, () =>
         {
             var database = Database();
@@ -37,11 +41,7 @@ public sealed class RedisDiscoveryCache : IDisposable
             {
                 var bytes = (byte[]?)values[i];
                 if (bytes is { Length: > 0 and <= MaxEntryBytes })
-                {
-                    var entry = JsonSerializer.Deserialize<Entry<T>>(bytes);
-                    if (entry?.Revision == revision)
-                        results[i] = entry.Value;
-                }
+                    results[i] = JsonSerializer.Deserialize<Entry<T>>(bytes);
             }
             return results.All(value => value is not null)
                 ? DiscoveryMeasurementOutcome.Hit
