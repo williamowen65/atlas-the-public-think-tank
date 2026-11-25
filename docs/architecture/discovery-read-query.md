@@ -26,8 +26,8 @@ See [Discovery cache across API restarts](discovery-external-cache.md) for the o
    - Both have `DiscoverPage` methods. The service delegates to the adapter; this does not execute the query twice.
 
 3. **The adapter resolves a page and its cards.**
-   - `Read` opens its own EF context and serializable read transaction.
-   - It checks committed cache revisions, then looks for reusable ranked results.
+   - `Read` opens its own EF context and snapshot read transaction.
+   - It checks committed versions for candidate ranked results from memory or Redis.
    - On a page miss, it executes count and paging queries.
    - It resolves selected cards separately, loading only missing details.
    - After the read transaction commits, it publishes new cache entries and returns the results.
@@ -62,7 +62,7 @@ See [Discovery cache across API restarts](discovery-external-cache.md) for the o
   - An offset at or beyond the total returns an empty page without running the ranked-row query.
   - An offset below the int-sized count safely fits EF's `Skip(int)`.
 
-- A request's count, ranked IDs, card details and breadcrumb hops share one serializable read transaction.
+- A request's count, ranked IDs, card details and breadcrumb hops share one snapshot read transaction.
   - A later request can see a changed ordering after a vote or edit.
   - This is offset paging, not a frozen multi-request snapshot or cursor API.
   - Unpaged contracts remain for existing callers/tests; normal Console browsing uses pages.
@@ -135,7 +135,7 @@ IDiscoveryService discovery = new DiscoveryService(
 
 - This is host-wiring guidance, not an implemented API registration. Review the serializing gate and transaction behavior for concurrent HTTP workloads before reusing them unchanged.
 
-## Two bounded cache layers
+## Bounded in-process caches
 
 | Layer | Stored data | Default budget/lifetime |
 |---|---|---|
@@ -143,12 +143,12 @@ IDiscoveryService discovery = new DiscoveryService(
 | Detail card | Immutable public node display fields and bounded breadcrumb segment | 8 MiB estimated sizes; 30-second absolute expiration; maximum entry 128 KiB |
 | Personal ratings | Queried fresh for the authenticated participant and selected IDs | Not shared/cached |
 
-- **Page key** — [`PageKey` construction](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L71): a hash of filters, page number/size, authored scope and visibility policy, plus an ordering-policy prefix and committed page revision.
+- **Page key** — [`PageKey` construction](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L71): a hash of filters, page number/size, authored scope and visibility policy, plus an ordering-policy prefix. The cached value carries the committed page revision.
   - It is a cache lookup key, not a cursor or authorization token.
   - Search text is trimmed; set-like inputs are sorted/deduplicated.
   - Case/accents are preserved in the key rather than assuming SQL and .NET normalization are identical.
 
-- **Detail key** — [lookup in `TryDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L143) and [storage in `PutDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L158): `(DetailVersion, NodeId)`. It is independent of the filter and result-page number.
+- **Detail key** — [lookup in `TryDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L143) and [storage in `PutDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L158): `(DetailVersion, NodeId, ModeratorVisible)`. It is independent of the filter and result-page number.
   - Example: changing a filter returns the same three IDs → recompute the ranked page → reuse those three display cards.
   - If it returns uncached IDs, their cards must be loaded.
 
@@ -229,7 +229,7 @@ double? hitRate = lookups == 0
   - Old entries can expire or be evicted normally; a prefix bump does not physically delete them.
   - It does not update the database revision row or require a schema migration by itself.
 
-- **Current limitation:** caches are process-local and normally start empty after an application restart. A normal restarted deployment already loses its old entries; the prefix still makes compatibility explicit in code and protects against reuse if entries survive a behavior transition or caching is later extended.
+- Redis entries can survive API restarts. Update the ordering-policy prefix when a change makes existing ranked results incompatible.
   - It is not a deployment coordination mechanism: an old running instance continues using its old code/prefix.
   - It does not invalidate detail cards or fix direct writes that bypass revision updates.
 
@@ -259,17 +259,14 @@ double? hitRate = lookups == 0
 
 - Invalidation is deliberately database-wide, not per-node. Relevant metadata changes make older detail keys unusable across all cards. Finer-grained invalidation is a later optimization to measure.
 
-- [Revision-aware page-key lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L98) and [detail lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L168) make old entries unusable without deleting them immediately: new revisions produce different keys. Expiration/eviction governs retention; revision checking governs committed freshness.
+- [Revision checks](../../src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs) reject stale entries. A rebuilt ranking replaces the value under the same page key. The in-process detail key includes its revision, while Redis uses stable keys and checks the version stored in each value.
 
 ## Transactions, commits and rollbacks
 
 - A relevant write and its revision increment happen in the **same transaction**. SaveChanges joins an existing repository transaction or owns one when needed.
   - Failure or outer rollback undoes both the data and the counter increments.
 
-- Each read checks the committed revision under a shared serializable lock before using caches. Writers update that row under an exclusive transaction lock.
-  - The read holds its lock until count/page/card work finishes.
-  - A committed visibility change cannot be bypassed by using an older cache generation.
-  - Another write may commit after the read finishes; this guarantee concerns that read's committed view, not indefinite freshness of data already displayed.
+- Each read checks committed versions in a SQL snapshot. Ranking and card rebuilds use the same snapshot, so a concurrent write can commit while the read continues against its original view.
 
 - [Read transaction commit](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L189) precedes [page publication](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L195) and [detail publication](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L199). New cache entries are published only after the read transaction commits. Failed read attempts are not published.
 
@@ -282,7 +279,7 @@ SET PageVersion = PageVersion + 1,
 WHERE Id = 1;
 ```
 
-- Do not reset the live revision row while processes retain cached entries. Stop/restart application processes for a complete database reset.
+- Do not reset the live revision row while processes retain cached entries. For a database reset, stop the application processes and clear any Redis entries for that database before restarting.
 
 ## Breadcrumb pages toward the root
 
@@ -347,6 +344,8 @@ WHERE Id = 1;
 - EF expresses more of the implementation, but portability is not automatic. Changing providers still requires reviewing collations, translations and these SQL helpers.
 
 ## Database reads and performance limits
+
+The counts below describe the in-process cache path. The [Redis guide](discovery-external-cache.md) covers the additional entity version and payload batches on misses.
 
 | Request | Expected reads |
 |---|---:|

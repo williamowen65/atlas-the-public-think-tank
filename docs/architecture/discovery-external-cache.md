@@ -1,45 +1,56 @@
-# Discovery cache across API restarts (PTT-184)
+# Discovery cache (PTT-184)
 
-Redis stores ranked pages, card metadata, titles, and document blocks in
-separate entries. A cached ranking provides the candidate node IDs. In one SQL
-round trip, Atlas checks the ranking and metadata revisions and returns the
-public title and block versions in document order. Atlas batches Redis reads
-and fetches payloads from SQL only for missing or changed titles and blocks.
-When a cold or reranked page selects new IDs, Atlas checks those entities in
-a follow-up batch within the same SQL snapshot.
+Atlas keeps Discovery rankings and assembled cards in process memory for up to
+30 seconds by default. An optional Redis cache preserves public feed data across
+API restarts. SQL Server owns freshness, ranking, and visibility.
 
-SQL computes versions from content, including composition JSON. This requires
-no database migration. The batch still reads and hashes content on SQL Server,
-so measure CPU and database reads on demo to quantify the savings. Shared card
-metadata retains its detail revision.
+## What Redis stores
 
-The external cache covers paged public Discovery, including non-search filters
-and all page numbers. Full-text result rankings bypass caching because SQL's
-index can update independently. Public cards from those results can still be
-reused. Authored and moderator views retain their existing in-process behavior.
-Personalized votes stay outside Redis.
+| Entry | How Atlas checks freshness |
+| --- | --- |
+| Ranked page | SQL page revision for the cached ranking, keyed by query and page |
+| Card metadata | Shared SQL detail revision for author, breadcrumbs, reactions, and other card details |
+| Title | SQL hash of the title |
+| Document block | SQL hash of the block fields, including composition JSON |
 
-A running API checks its bounded, 30-second in-process cache first. On a local
-miss, it fetches the ranked page and batches missing cards in Redis. Redis
-entries have no time-based expiration. A revision mismatch is a cache miss,
-and a rebuild overwrites the same key. Enable eviction on the dedicated Redis
-cache so unused keys can be displaced when it fills. Entries are limited to
-128 KiB, and connection and command timeouts are bounded. If Redis is unavailable, the API falls back to SQL
-and briefly backs off Redis attempts. If restoring or replacing SQL at the same
-server and database name, stop the API and clear its Redis cache before restarting
-against the restored database because revision numbers can recur. The new
-format uses the `atlas:discovery:v2:` prefix. Old v1 entries expire on their
-original timers, and the new format warms on use.
+Redis covers paged public Discovery, including filtered pages. Full-text search
+rankings run in SQL so asynchronous index updates can appear in the results.
+Those results can still reuse public card data. Authored and moderator views
+use in-process caching. Atlas queries personalized votes separately.
 
-Discovery cards now include up to eight ordered rich preview blocks in the
-existing SQL card batch. Oversized blocks are omitted, and a preview exceeding
-the total JSON size limit uses the card's text excerpt. The frontend receives
-these blocks with the ranking response; opening the full post still loads its
-full description. Images can finish loading independently.
+## How a request resolves a page
 
-The `card-metadata-v1:`, `title-v1:`, and `block-v1:` Redis keys warm on use. Existing ranking keys can
-still be reused. A Redis flush is unnecessary. Older persistent card keys
-are left for the configured eviction policy.
+1. A cached ranking supplies candidate node IDs. In one SQL round trip, Atlas
+   checks the ranking and detail revisions and reads public title and block
+   versions in document order.
+2. Atlas uses matching in-process cards where available. For remaining cards,
+   it reads metadata and batches title and block lookups in Redis. SQL supplies
+   missing or changed payloads. Editing one block can reuse the title and sibling
+   blocks, even if the ranking or shared metadata also needs rebuilding.
+3. A cold page or changed ranking can select new IDs. Atlas checks those IDs in
+   a follow-up batch within the same snapshot. New entries are published after
+   the read transaction commits.
+
+Cards include up to eight eligible rich preview blocks in document order.
+Oversized blocks are omitted from the preview. When the combined preview
+exceeds the JSON size limit, the card uses its text excerpt. The full post
+loads its own description.
+
+## Retention and SQL fallback
+
+Redis keys use the database-scoped `atlas:discovery:v2:` namespace. Entries
+have no time-based expiration and are limited to 128 KiB each. A rebuild
+overwrites the entry for the same key. Enable eviction on the dedicated Redis
+database so it can make room for new entries.
+
+Redis failures fall back to SQL with a brief retry cooldown. When restoring or
+replacing SQL under the same server and database name, stop the API and clear
+the associated Redis entries before restarting. A restored database can reuse
+revision numbers.
+
+A warm page still opens a SQL connection and reads and hashes content on the
+server. The cache reduces payload loads and rebuild work. A warm Redis hit can
+still wait for Azure SQL to resume. The version checks require no migration.
 
 ## Test an API restart locally
 
@@ -68,7 +79,7 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
    docker exec atlas-discovery-redis redis-cli --scan --pattern 'atlas:discovery:*'
    ```
 
-   The scan should show a page key and card keys if the response has items.
+   A populated page normally writes a ranking key, card metadata, titles, and blocks.
 2. Press **Ctrl+C in the API terminal**, leave Redis and SQL running, and
    rerun the same `dotnet run` command. Request the same URL again before
    any changes that invalidate the cached results.
@@ -111,10 +122,9 @@ the same LAN settings file as the launcher, and an explicit shell override
 should be set in both terminals if used.
 
 Each row is one completed Discovery read. A page ranking comes from
-`ProcessMemory`, `Redis`, or `Sql`. Card counts can be mixed because each card is
-looked up separately. A cold fetch may show SQL for the ranking and three
+`ProcessMemory`, `Redis`, or `Sql`. Card counts can be mixed. The Redis and SQL columns report where card metadata was obtained. Individual title or block misses can still trigger SQL reads. A cold fetch may show SQL for the ranking and three
 cards. Repeat the same request promptly to see process memory. Restart only
-the API and repeat it within the Redis lifetime to see Redis. If scrolling
+the API and repeat it while the entries are still in Redis to see Redis. If scrolling
 only reuses results in the browser, there is no new API row. Use the
 browser's Network tab or repeat the exact feed URL to force a request.
 
@@ -155,7 +165,7 @@ Once demo SQL is available:
    Application Insights, compare
    `atlas.discovery.phase.duration` by phase and outcome for revision checks,
    page rebuilds, detail rebuilds and Redis reads. Compare Redis command usage
-   and request latency in the same window.
+   and request latency in the same window. Compare Azure SQL CPU and reads under a matched workload, and record wake-up latency separately.
 
 [Upstash pricing](https://upstash.com/pricing/redis) lists the Free plan limits
 and Pay-as-you-go pricing. Azure Managed Redis uses a separately priced cache

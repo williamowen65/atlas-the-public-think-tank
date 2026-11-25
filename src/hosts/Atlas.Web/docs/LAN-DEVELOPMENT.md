@@ -36,7 +36,8 @@ The launcher saves API development telemetry under the checkout's gitignored
 `logs/observability/` by default. Set `ATLAS_DISCOVERY_REDIS_CONNECTION=127.0.0.1:6379`
 in `.env.lan.local` to use a running local Redis container. After loading
 Discovery, run `npm run audit:discovery-cache` from a second Web terminal to
-see ranking sources and card counts.
+see ranking sources and card counts. For a restart test and help interpreting
+those counts, see the [Discovery cache guide](../../../../docs/architecture/discovery-external-cache.md).
 
 Missing origin or certificate files now stop the LAN launcher with guidance instead of falling back to HTTP. Existing Vite validation still requires a private HTTPS origin. This does not generate certificates or install phone trust. If your Wi-Fi IP changes, update the saved origin and regenerate the server certificate to include the new IP; the phone can continue trusting the same mkcert CA.
 
