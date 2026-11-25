@@ -19,6 +19,7 @@ public sealed class CloudTelemetry : ITelemetryObserver, ICacheTelemetryObserver
     private readonly Meter _meter = new(MeterName);
     private readonly Counter<long> _events;
     private readonly Counter<long> _cache;
+    private readonly Histogram<double> _discoveryDuration;
     private readonly Histogram<double> _durations;
     private readonly ILogger<CloudTelemetry> _logger;
     private readonly string _variant;
@@ -28,6 +29,7 @@ public sealed class CloudTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         _logger = logger;
         _variant = deploymentVariant is "demo" or "live" ? deploymentVariant : "unknown";
         _events = _meter.CreateCounter<long>("atlas.events.count");
+        _discoveryDuration = _meter.CreateHistogram<double>("atlas.discovery.phase.duration", "ms");
         _cache = _meter.CreateCounter<long>("atlas.discovery.cache.lookups");
         _durations = _meter.CreateHistogram<double>("atlas.operation.duration", "ms");
     }
@@ -48,6 +50,13 @@ public sealed class CloudTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         _logger.LogInformation(
             "Atlas event {EventName} {Outcome} {ReasonCode} {DeploymentVariant}",
             name, outcome, reason, _variant);
+    }
+
+    public void MeasureDiscovery(DiscoveryPhase phase, DiscoveryMeasurementOutcome outcome, double durationMs)
+    {
+        var phaseName = phase.ToString();
+        var outcomeName = outcome.ToString();
+        _discoveryDuration.Record(durationMs, new("phase", phaseName), new("outcome", outcomeName), new("variant", _variant));
     }
 
     public void CacheLookup(bool detail, bool hit)

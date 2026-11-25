@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
-import { lanEnvironment } from './lanEnvironment.mjs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { lanEnvironment, lanTelemetryDirectory } from './lanEnvironment.mjs';
 
 test('missing origin fails instead of launching HTTP', () => {
   assert.throws(() => lanEnvironment({}, () => true), /ATLAS_LAN_ORIGIN/);
@@ -15,7 +16,12 @@ test('Windows certificate defaults are derived without mutating the parent envir
 });
 test('explicit paths work without Windows defaults', () => {
   const env = { ATLAS_LAN_ORIGIN: 'https://192.168.50.55:5173', ATLAS_LAN_CERT: '/cert', ATLAS_LAN_KEY: '/key' };
-  assert.deepEqual(lanEnvironment(env, () => true), env);
+  assert.deepEqual(lanEnvironment(env, () => true), { ...env, ATLAS_TELEMETRY_DIRECTORY: lanTelemetryDirectory({}) });
+});
+test('telemetry defaults to the checkout and honors a relative override', () => {
+  assert.equal(lanTelemetryDirectory({}), resolve(fileURLToPath(new URL('../../../../logs/observability/', import.meta.url))));
+  assert.equal(lanTelemetryDirectory({ ATLAS_TELEMETRY_DIRECTORY: 'custom-logs' }),
+    fileURLToPath(new URL('../custom-logs', import.meta.url)));
 });
 test('missing certificate files stop startup with actionable guidance', () => {
   assert.throws(() => lanEnvironment({ LOCALAPPDATA: '/local', ATLAS_LAN_ORIGIN: 'https://192.168.50.55:5173' }, () => false), /ATLAS_LAN_CERT/);

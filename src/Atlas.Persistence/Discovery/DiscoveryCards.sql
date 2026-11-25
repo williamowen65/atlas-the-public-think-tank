@@ -34,9 +34,9 @@ WITH Selected AS (
 )
 -- Assemble one card per selected ID. Empty summaries receive Console-friendly defaults.
 SELECT n.Id AS NodeId,
-       CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN n.Notice ELSE n.Title END AS Title,
+       CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN n.Notice WHEN @components = 1 THEN N'' ELSE n.Title END AS Title,
        CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
-            ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
+            WHEN @components = 1 THEN N'' ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
        COALESCE(children.Text, N'None') AS SubNodes,
        CASE
            WHEN reactions.Text IS NULL THEN N'—'
@@ -46,6 +46,7 @@ SELECT n.Id AS NodeId,
                    ELSE N'' END)
        END AS Reactions,
        COALESCE(communities.Text, N'None') AS Communities,
+       COALESCE(preview.Json, N'[]') AS PreviewJson,
        n.IsHidden
 FROM Selected s
     JOIN PublicNodes n ON n.Id = s.Id
@@ -62,8 +63,31 @@ OUTER APPLY (
         WHEN N'chart-reference' THEN CONCAT(N'Chart: ', b.Title) ELSE b.Kind COLLATE Latin1_General_100_CI_AI_SC END), NCHAR(10) + NCHAR(10))
         WITHIN GROUP (ORDER BY link.Position) AS Text
     FROM DocumentBlocks link
-    JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND (n.IsHidden = 0 OR @showHidden = 1)
+    JOIN BlockRows b ON b.Id = link.BlockId WHERE @components = 0 AND link.DocumentId = n.DescriptionId AND (n.IsHidden = 0 OR @showHidden = 1)
 ) description
+-- Include an ordered, bounded rich preview in the existing card batch.
+OUTER APPLY (
+    SELECT (
+        SELECT TOP (8) b.Id AS id, b.Kind AS kind,
+            b.Markdown AS [content.markdown], b.Composition AS [content.composition],
+            b.Url AS [content.url], b.AltText AS [content.altText],
+            b.Caption AS [content.caption],
+            CASE WHEN b.Kind = N'image' THEN b.Description END AS [content.layout],
+            b.Title AS [content.title],
+            CASE WHEN b.Kind = N'link-preview' THEN b.Description END AS [content.description],
+            CASE WHEN b.Kind = N'poll-reference' THEN b.ReferenceId END AS [content.pollId],
+            CASE WHEN b.Kind = N'chart-reference' THEN b.ReferenceId END AS [content.chartId]
+        FROM DocumentBlocks link
+        JOIN BlockRows b ON b.Id = link.BlockId
+        WHERE @components = 0 AND link.DocumentId = n.DescriptionId AND n.IsHidden = 0
+          AND COALESCE(DATALENGTH(b.Markdown), 0) + COALESCE(DATALENGTH(b.Composition), 0)
+            + COALESCE(DATALENGTH(b.Url), 0) + COALESCE(DATALENGTH(b.AltText), 0)
+            + COALESCE(DATALENGTH(b.Caption), 0) + COALESCE(DATALENGTH(b.Title), 0)
+            + COALESCE(DATALENGTH(b.Description), 0) <= 65536
+        ORDER BY link.Position
+        FOR JSON PATH, INCLUDE_NULL_VALUES
+    ) AS Json
+) preview
 -- Include requested child types even when their count is zero.
 -- Return JSON so C# can apply the shared count-aware pluralization rules.
 OUTER APPLY (

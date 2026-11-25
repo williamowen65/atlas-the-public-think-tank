@@ -14,6 +14,11 @@ variable "connection_string" {
   default   = null
   sensitive = true
 }
+variable "discovery_redis_connection" {
+  type      = string
+  sensitive = true
+  default   = null
+}
 variable "tags" { type = map(string) }
 
 variable "account_mail_enabled" { type = bool }
@@ -93,6 +98,8 @@ resource "azurerm_linux_web_app" "atlas" {
     ATLAS_SQL_CONNECTION_STRING = var.connection_string
     }, var.browserless_api_key == "" ? {} : {
     BROWSERLESS_IO_API_KEY = var.browserless_api_key
+    }, var.discovery_redis_connection == null ? {} : {
+    ATLAS_DISCOVERY_REDIS_CONNECTION = var.discovery_redis_connection
     }, var.account_mail_enabled ? {
     Atlas__AccountMail__Transport    = "Smtp"
     Atlas__AccountMail__Host         = var.account_mail_host

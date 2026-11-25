@@ -49,9 +49,18 @@ public sealed record TelemetryEvent(
 }
 
 /// <summary>Host-owned output port; domain/application code never selects files or cloud vendors.</summary>
+public enum DiscoveryPhase { RevisionCheck, PageRebuild, DetailRebuild, ExternalRead, ExternalWrite }
+public enum DiscoveryMeasurementOutcome { Completed, Hit, Miss, Failed, Skipped }
+public enum DiscoveryCacheSource { ProcessMemory, Redis, Sql }
+
+public readonly record struct DiscoveryCacheSummary(
+    int Page, DiscoveryCacheSource Ranking, int MemoryCards, int RedisCards, int SqlCards, int MissingCards);
+
 public interface ICacheTelemetryObserver
 {
     void CacheLookup(bool detail, bool hit);
+    void RecordDiscoveryCache(DiscoveryCacheSummary summary, Guid? operationId) { }
+    void MeasureDiscovery(DiscoveryPhase phase, DiscoveryMeasurementOutcome outcome, double durationMs);
 }
 
 public interface ITelemetryObserver
@@ -188,6 +197,22 @@ public static class Telemetry
         // Cache metrics are an optional capability of the installed observer.
         // Ordinary event observers need not implement this separate interface.
         try { (Ambient.Value?.Observer as ICacheTelemetryObserver)?.CacheLookup(detail, hit); }
+        catch (Exception) { Interlocked.Increment(ref _observerFailures); }
+    }
+
+    public static void MeasureDiscovery(DiscoveryPhase phase, DiscoveryMeasurementOutcome outcome, long started)
+    {
+        try
+        {
+            (Ambient.Value?.Observer as ICacheTelemetryObserver)?.MeasureDiscovery(
+                phase, outcome, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+        }
+        catch (Exception) { Interlocked.Increment(ref _observerFailures); }
+    }
+
+    public static void RecordDiscoveryCache(DiscoveryCacheSummary summary)
+    {
+        try { (Ambient.Value?.Observer as ICacheTelemetryObserver)?.RecordDiscoveryCache(summary, OperationId); }
         catch (Exception) { Interlocked.Increment(ref _observerFailures); }
     }
 

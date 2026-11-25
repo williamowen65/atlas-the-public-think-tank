@@ -1,3 +1,4 @@
+import type { ContentBlock } from '../../api/nodePage';
 import type { Snippet } from 'svelte';
 import type { BreadcrumbItem, LoadOlderAncestors } from '../breadcrumb.types';
 /** Presentation data: adapt API projections to this model at the application boundary. */
@@ -25,6 +26,9 @@ export interface NodeCardData {
 
   /** Short introduction displayed by the card, rather than the full content blocks. */
   description: string;
+
+  /** Rich feed preview supplied by Discovery. */
+  previewBlocks?: ContentBlock[];
 
   /** Community display names associated with the node; these are not community IDs. */
   communities: string[];

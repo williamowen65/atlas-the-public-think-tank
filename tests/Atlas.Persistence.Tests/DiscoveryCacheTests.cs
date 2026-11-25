@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Atlas.Discovery;
 using Atlas.Persistence.Discovery;
 using Microsoft.EntityFrameworkCore;
@@ -253,7 +254,9 @@ public sealed class DiscoveryCacheTests
         var first = query.DiscoverPage(new());
         await Task.Delay(100);
         var second = query.DiscoverPage(new());
-        Assert.AreEqual(first.Items.Single(), second.Items.Single());
+        // Rebuilt cards contain fresh collection instances, so compare their serialized values.
+        Assert.AreEqual(JsonSerializer.Serialize(first.Items.Single()),
+            JsonSerializer.Serialize(second.Items.Single()));
         Assert.AreEqual(2L, cache.PageMisses);
         Assert.AreEqual(2L, cache.DetailMisses);
     }

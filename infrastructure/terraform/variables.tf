@@ -154,3 +154,15 @@ variable "browserless_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "discovery_redis_connections" {
+  description = "Optional Redis TLS connection strings keyed by deployment variant."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+
+  validation {
+    condition     = alltrue([for variant in keys(var.discovery_redis_connections) : contains(["demo", "live"], variant)])
+    error_message = "Discovery Redis connection keys must be demo or live."
+  }
+}

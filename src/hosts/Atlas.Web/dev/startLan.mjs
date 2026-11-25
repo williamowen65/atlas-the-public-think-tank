@@ -1,10 +1,9 @@
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
-import { loadEnvFile } from 'node:process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { lanEnvironment } from './lanEnvironment.mjs';
+import { lanEnvironment, loadLanSettings } from './lanEnvironment.mjs';
 
 /**
  * Load machine-local settings before either host starts. Node preserves explicit
@@ -12,8 +11,7 @@ import { lanEnvironment } from './lanEnvironment.mjs';
  * origin and reads certificate contents using the existing LAN guard/configuration.
  */
 function start() {
-  const localFile = fileURLToPath(new URL('../.env.lan.local', import.meta.url));
-  if (existsSync(localFile)) loadEnvFile(localFile);
+  loadLanSettings();
   const env = lanEnvironment();
   // Use the package's declared executable instead of assuming an internal filename.
   const require = createRequire(import.meta.url);
