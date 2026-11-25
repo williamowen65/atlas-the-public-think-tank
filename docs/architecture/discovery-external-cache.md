@@ -18,18 +18,38 @@ rankings run in SQL so asynchronous index updates can appear in the results.
 Those results can still reuse public card data. Authored and moderator views
 use in-process caching. Atlas queries personalized votes separately.
 
-## How a request resolves a page
+## Request walkthrough: counters and hashes
 
-1. A cached ranking supplies candidate node IDs. In one SQL round trip, Atlas
-   checks the ranking and detail revisions and reads public title and block
-   versions in document order.
-2. Atlas uses matching in-process cards where available. For remaining cards,
-   it reads metadata and batches title and block lookups in Redis. SQL supplies
-   missing or changed payloads. Editing one block can reuse the title and sibling
-   blocks, even if the ranking or shared metadata also needs rebuilding.
-3. A cold page or changed ranking can select new IDs. Atlas checks those IDs in
-   a follow-up batch within the same snapshot. New entries are published after
-   the read transaction commits.
+The counters answer whether Atlas can reuse a ranked page or card details.
+`PageVersion` protects the ranking. `DetailVersion` protects assembled cards
+in memory and shared card metadata in Redis. Content hashes answer a narrower
+question: whether a specific title or block in Redis still matches SQL. Atlas
+gets both kinds of versions in the same SQL batch for candidate IDs from a
+cached ranking.
+
+```mermaid
+flowchart TD
+    Start["Find candidate ranking in memory or Redis"] --> Batch["Read SQL counters and candidate content hashes"]
+    Batch --> Page{"Ranking matches PageVersion?"}
+    Page -- Yes --> Cards{"Card in memory matches DetailVersion?"}
+    Page -- "Missing or stale" --> Rank["Rebuild ranking in SQL and check hashes for new IDs if needed"]
+    Rank --> Cards
+    Cards -- Yes --> Done["Commit read and return ranked cards"]
+    Cards -- "Missing or stale" --> Metadata{"Redis metadata matches DetailVersion?"}
+    Metadata -- Yes --> Pieces{"Redis title or block matches its SQL hash?"}
+    Metadata -- "Missing or stale" --> ReadMetadata["Load card metadata from SQL"]
+    ReadMetadata --> Pieces
+    Pieces -- Yes --> Assemble["Assemble card in SQL document order"]
+    Pieces -- "Missing or stale" --> ReadPiece["Load only missing or changed payloads from SQL"]
+    ReadPiece --> Assemble
+    Assemble --> Done
+```
+
+Atlas resolves each selected card and batches the Redis title and block
+lookups. For example, when one block is edited, the ranking and card metadata
+can need rebuilding while the title and sibling blocks still match their SQL
+hashes. Atlas reuses those payloads and fetches the edited block. Newly loaded
+entries are published after the SQL snapshot commits.
 
 Cards include up to eight eligible rich preview blocks in document order.
 Oversized blocks are omitted from the preview. When the combined preview
