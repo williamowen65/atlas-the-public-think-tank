@@ -6,9 +6,9 @@ Other SEO images continue using the existing Atlas API capture path.
 
 The worker first optimizes a full v14 rotation with a shared 128-color
 palette and changed-pixel encoding. If that exceeds 7 MB, it samples the
-same captured rotation at progressively wider intervals while keeping the
-display frame rate near 6 FPS. This speeds up the rotation and preserves
-the 1200 × 630 canvas. Logs show each candidate's loop duration and size.
+same captured rotation to try 100, 80, 60, and 40 seconds, in that order.
+Each candidate keeps playback near 6 FPS and preserves the 1200 × 630 canvas.
+The worker publishes the first candidate smaller than 7 MB. Logs show each candidate's loop duration and size.
 A GIF that exceeds the budget at every tested speed fails the execution
 before it publishes a new generation.
 

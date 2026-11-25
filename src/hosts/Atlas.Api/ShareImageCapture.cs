@@ -552,26 +552,28 @@ internal sealed class ShareImageCapture(
         return previous;
     }
 
+    private const int BaselineGlobeLoopSeconds = 120;
+
     private async Task<byte[]> EncodeShareableGlobe(GlobeFrames capture, Stopwatch elapsed)
     {
         const int byteBudget = 7_000_000;
-        foreach (var stride in new[] { 1, 2, 3, 4, 6, 8 })
+        for (var loopSeconds = BaselineGlobeLoopSeconds; loopSeconds >= 40; loopSeconds -= 20)
         {
-            var encoded = await EncodeGlobeFrames(capture, elapsed, stride, preserveFrames: true);
+            var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, preserveFrames: true);
             var optimized = await GlobeGifOptimizer.Optimize(encoded);
             logger.LogInformation(
-                "Globe GIF candidate: frame stride {FrameStride}, {LoopSeconds} s rotation, {OriginalBytes} encoded bytes, {OptimizedBytes} optimized bytes, budget {ByteBudget}.",
-                stride, 120 / stride, encoded.Length, optimized.Length, byteBudget);
-            if (optimized.Length <= byteBudget) return optimized;
+                "Globe GIF candidate: {LoopSeconds} s rotation, {OriginalBytes} encoded bytes, {OptimizedBytes} optimized bytes, budget {ByteBudget}.",
+                loopSeconds, encoded.Length, optimized.Length, byteBudget);
+            if (optimized.Length < byteBudget) return optimized;
         }
 
         throw new InvalidOperationException("Globe GIF exceeded the publication budget at every tested speed.");
     }
 
-    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int stride = 1, bool preserveFrames = false)
+    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, bool preserveFrames = false)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
-        const int loopDuration = 120 * 100;
+        var loopDuration = loopSeconds * 100;
         var previousFrameEnd = 0;
         using var background = new MagickImage(capture.Background);
         background.Alpha(AlphaAction.Off);
@@ -597,14 +599,15 @@ internal sealed class ShareImageCapture(
         using var output = new MemoryStream();
         using var encodedBatch = new MemoryStream();
         const int batchSize = 24;
-        var frameCount = (capture.Frames.Count + stride - 1) / stride;
+        var frameCount = capture.Frames.Count * loopSeconds / BaselineGlobeLoopSeconds;
         for (var batchStart = 0; batchStart < frameCount; batchStart += batchSize)
         {
             using var animation = new MagickImageCollection();
             var batchEnd = Math.Min(batchStart + batchSize, frameCount);
             for (var frameIndex = batchStart; frameIndex < batchEnd; frameIndex++)
             {
-                var sourceIndex = frameIndex * stride;
+                // Sample across the whole rotation, including when the stride is fractional.
+                var sourceIndex = frameIndex * capture.Frames.Count / frameCount;
                 var frameData = capture.Frames[sourceIndex];
                 if (!preserveFrames) capture.Frames[sourceIndex] = string.Empty;
                 using var globe = new MagickImage(Convert.FromBase64String(frameData));
@@ -618,7 +621,7 @@ internal sealed class ShareImageCapture(
                 frame.Composite(globe, first ? x : x - left, first ? y : y - top, CompositeOperator.Over);
                 frame.Alpha(AlphaAction.Off);
                 // Distribute rounding across frames. Sampling speeds up the full rotation.
-                var frameEnd = (frameIndex + 1) * loopDuration / (frameCount * stride);
+                var frameEnd = (frameIndex + 1) * loopDuration / frameCount;
                 frame.AnimationDelay = (uint)(frameEnd - previousFrameEnd);
                 previousFrameEnd = frameEnd;
                 frame.GifDisposeMethod = GifDisposeMethod.None;
