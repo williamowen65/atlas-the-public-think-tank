@@ -33,7 +33,7 @@ internal readonly record struct ShareTarget(SharePage Kind, Guid Id, bool Animat
     internal string CapturePath => Kind switch
     {
         SharePage.Node => PagePath + "&share=feed",
-        SharePage.Globe when Animated || GlobeAngle is not null => PagePath + "&capture=globe",
+        SharePage.Globe => PagePath + "&capture=globe",
         _ => PagePath
     };
 
@@ -113,6 +113,16 @@ internal sealed class ShareImageCapture(
         [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; }
         [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
         [data-globe-invite] p { font-size: 25px; line-height: 1.4; }
+        [data-globe-invite] span {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 18px;
+            border: 2px solid var(--atlas-accent);
+            border-radius: 999px;
+            color: var(--atlas-accent);
+            font-size: 22px;
+            font-weight: 700;
+        }
         """;
 
     private readonly object gate = new();
@@ -557,20 +567,28 @@ internal sealed class ShareImageCapture(
     private async Task<byte[]> EncodeShareableGlobe(GlobeFrames capture, Stopwatch elapsed)
     {
         const int byteBudget = 7_000_000;
-        for (var loopSeconds = BaselineGlobeLoopSeconds; loopSeconds >= 40; loopSeconds -= 20)
+        const int facebookLimit = 8_000_000;
+        // Try a lower frame rate before speeding up beyond an 80-second rotation.
+        foreach (var (loopSeconds, fps) in new[] { (120, 6), (100, 6), (80, 6), (80, 4), (60, 6), (40, 6) })
         {
-            var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, preserveFrames: true);
+            var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
             var optimized = await GlobeGifOptimizer.Optimize(encoded);
             logger.LogInformation(
-                "Globe GIF candidate: {LoopSeconds} s rotation, {OriginalBytes} encoded bytes, {OptimizedBytes} optimized bytes, budget {ByteBudget}.",
-                loopSeconds, encoded.Length, optimized.Length, byteBudget);
-            if (optimized.Length < byteBudget) return optimized;
+                "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {OriginalMb:F2} MB encoded, {OptimizedMb:F2} MB optimized. Target under {BudgetMb:F2} MB, Facebook limit {FacebookMb:F2} MB.",
+                loopSeconds, fps, encoded.Length / 1_000_000d, optimized.Length / 1_000_000d,
+                byteBudget / 1_000_000d, facebookLimit / 1_000_000d);
+            if (optimized.Length < byteBudget)
+            {
+                logger.LogInformation("Selected globe GIF: {LoopSeconds} s at {Fps} FPS, {SizeMb:F2} MB.",
+                    loopSeconds, fps, optimized.Length / 1_000_000d);
+                return optimized;
+            }
         }
 
         throw new InvalidOperationException("Globe GIF exceeded the publication budget at every tested speed.");
     }
 
-    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, bool preserveFrames = false)
+    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, int fps = 6, bool preserveFrames = false)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         var loopDuration = loopSeconds * 100;
@@ -599,7 +617,7 @@ internal sealed class ShareImageCapture(
         using var output = new MemoryStream();
         using var encodedBatch = new MemoryStream();
         const int batchSize = 24;
-        var frameCount = capture.Frames.Count * loopSeconds / BaselineGlobeLoopSeconds;
+        var frameCount = Math.Min(capture.Frames.Count, loopSeconds * fps);
         for (var batchStart = 0; batchStart < frameCount; batchStart += batchSize)
         {
             using var animation = new MagickImageCollection();
