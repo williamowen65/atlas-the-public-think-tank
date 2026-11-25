@@ -4,6 +4,14 @@ PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
+The worker first optimizes a full v14 rotation with a shared 128-color
+palette and changed-pixel encoding. If that exceeds 7 MB, it samples the
+same captured rotation at progressively wider intervals while keeping the
+display frame rate near 6 FPS. This speeds up the rotation and preserves
+the 1200 × 630 canvas. Logs show each candidate's loop duration and size.
+A GIF that exceeds the budget at every tested speed fails the execution
+before it publishes a new generation.
+
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
 generation in the image URL. A failed run leaves the current pointer intact.
