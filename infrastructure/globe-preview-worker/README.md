@@ -21,32 +21,76 @@ rejects a competing publication. Check execution history before starting another
 run. The first trial is manual. Pin-count triggers and the 12 FPS trial come
 after baseline verification.
 
-## Test with Docker
+## Test locally with Docker Desktop and PowerShell
 
-Start Atlas with its normal local database and frontend. Give both the API
-and worker the same capture directory. In the API terminal, set the following
-before starting Atlas. Use an absolute path.
+Use Docker Desktop in Linux-container mode, your usual local Atlas database,
+and two PowerShell terminals. Start both terminals at the repository root.
+
+### 1. Build the frontend and start the API
+
+In the first terminal, build the frontend into the API's web root and start
+Atlas with worker-generated globe previews enabled.
 
 ```powershell
+Push-Location src/hosts/Atlas.Web
+npm ci
+npm run build
+Pop-Location
+
 $env:Atlas__Seo__ExternalGlobeCapture = 'true'
-$env:Atlas__Seo__CaptureDirectory = Join-Path (Get-Location) 'globe-output'
+$env:Atlas__Seo__CaptureDirectory = Join-Path (Get-Location).Path 'globe-output'
+dotnet run --project src/hosts/Atlas.Api --launch-profile https
 ```
 
-In another terminal at the repo root:
+Keep this terminal running. Open [the local globe](https://localhost:7240/?globe=open)
+and confirm it renders. If another Atlas API is using port 7240, stop it before
+starting this instance.
+
+### 2. Build and run the worker
+
+In the second terminal, build the image from the current branch. Wait for the
+build to succeed before running the worker.
 
 ```powershell
 docker build -f infrastructure/globe-preview-worker/Dockerfile -t atlas-globe-preview .
-$output = (New-Item -ItemType Directory -Force globe-output).FullName
-docker run --rm --mount "type=bind,source=$output,target=/output" -e ASPNETCORE_ENVIRONMENT=Development -e Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240 -e Atlas__Seo__CaptureDirectory=/output atlas-globe-preview
 ```
 
-Use a host address and port reachable from Docker. On Linux Docker Engine,
-add `--add-host=host.docker.internal:host-gateway` and bind the local Atlas
-listener to an interface reachable from the container. Development capture
-accepts the local development certificate. Inspect the globe page HTML and
-open its `og:image` URL. Run again to check the URL changes. Stop Atlas before
-another run to force a capture failure, restart it, and verify the old URL
-and file are still served.
+Run the following commands in order. Keep the entire `docker run` command on
+one line, including all three `-e` options. If PowerShell shows the `>>`
+continuation prompt after a partial paste, press **Ctrl+C** and paste the
+complete command again.
+
+```powershell
+$output = (New-Item -ItemType Directory -Force globe-output).FullName
+docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
+```
+
+Docker starts the capture immediately. The worker logs each candidate in MB
+and stops trying shorter rotations once it logs **Selected globe GIF**. Wait
+for **Published globe preview generation** before inspecting the output.
+Development capture accepts the local development certificate. On Linux
+Docker Engine, add `--add-host=host.docker.internal:host-gateway` and bind
+Atlas to an interface reachable from the container.
+
+### 3. View the published GIF
+
+In the second terminal, get the published file and its size in decimal MB.
+
+```powershell
+$generation = (Get-Content .\globe-output\globe-published\current -Raw).Trim()
+$gif = Get-Item ".\globe-output\globe-published\$generation\globe-motion.gif"
+$gif.FullName
+'{0:F2} MB' -f ($gif.Length / 1000000)
+```
+
+Open that file in a browser to judge the motion. To check what Atlas serves,
+view the page source for `https://localhost:7240/?globe=open&motion=gif`
+and open the `og:image` URL. It should reference the same generation.
+
+For artwork changes, rebuild the frontend and restart the API. For worker
+code or Dockerfile changes, rebuild the image before running it again. To
+verify failure behavior, stop Atlas, run the worker again, then restart
+Atlas and confirm the last published generation is still available.
 
 ## Enable on the redis03 demo rehearsal
 
