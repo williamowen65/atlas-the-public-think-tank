@@ -110,9 +110,9 @@ internal sealed class ShareImageCapture(
         [data-globe-share] .close,
         [data-globe-share] .connection { display: none !important; }
         [data-globe-invite] { display: block !important; grid-area: 1 / 2; padding-inline: 12px; }
-        [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; }
-        [data-globe-invite] h2 { font-size: 54px; line-height: 1.04; margin: 18px 0; }
-        [data-globe-invite] p { font-size: 25px; line-height: 1.4; }
+        [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; font-weight: 800; }
+        [data-globe-invite] h2 { font-size: 54px; font-weight: 800; line-height: 1.04; margin: 18px 0; }
+        [data-globe-invite] p { font-size: 25px; font-weight: 700; line-height: 1.4; }
         [data-globe-invite] span {
             display: inline-block;
             margin-top: 12px;
@@ -121,7 +121,7 @@ internal sealed class ShareImageCapture(
             border-radius: 999px;
             color: var(--atlas-accent);
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 800;
         }
         """;
 
@@ -568,8 +568,8 @@ internal sealed class ShareImageCapture(
     {
         const int byteBudget = 7_000_000;
         const int facebookLimit = 8_000_000;
-        // Try a lower frame rate before speeding up beyond an 80-second rotation.
-        foreach (var (loopSeconds, fps) in new[] { (120, 6), (100, 6), (80, 6), (80, 4), (60, 6), (40, 6) })
+        // Try smoother five-FPS rotations before falling back to a faster spin.
+        foreach (var (loopSeconds, fps) in new[] { (120, 6), (100, 6), (80, 6), (80, 5), (70, 5), (65, 5), (60, 6), (60, 5), (40, 6) })
         {
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
             var optimized = await GlobeGifOptimizer.Optimize(encoded);

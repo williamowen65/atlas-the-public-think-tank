@@ -6,12 +6,9 @@
   let engine = $state.raw<ReturnType<typeof createWebGLGlobe>>();
   let width = $state(0);
   let pixelRatio = $state(1);
-  let roll = $state(0);
   let unavailable = $state(false);
   let lost = $state(false);
   onMount(() => {
-    roll = canvas.closest('dialog[data-globe-share]') &&
-      new URLSearchParams(location.search).get('capture') === 'globe' ? -23.4 : 0;
     const initialize = () => {
       try {
         engine = createWebGLGlobe(canvas);
@@ -46,7 +43,7 @@
         canvas.height = size;
       }
       for (const captureAngle of angles) {
-        engine.draw(captureAngle, size, roll);
+        engine.draw(captureAngle, size);
         // Read the drawing buffer synchronously before Chromium can discard it.
         frames.push(canvas.toDataURL('image/png').split(',')[1]);
       }
@@ -54,7 +51,7 @@
         canvas.width = originalWidth;
         canvas.height = originalHeight;
       }
-      engine.draw(angle, width, roll);
+      engine.draw(angle, width);
     };
     canvas.addEventListener('atlas-globe-capture-frames', captureFrames);
     canvas.addEventListener('webglcontextlost', contextLost);
@@ -91,7 +88,7 @@
       canvas.width = pixels;
       canvas.height = pixels;
     }
-    engine.draw(angle, width, roll);
+    engine.draw(angle, width);
   });
 </script>
 

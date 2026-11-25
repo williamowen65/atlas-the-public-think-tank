@@ -409,7 +409,7 @@
 >
   <div hidden data-globe-invite>
     <strong>Atlas · The Public Think Tank</strong>
-    <h2>Put yourself on the map</h2>
+    <h2>Explore the Atlas globe</h2>
     <p>See where people are joining Atlas from.</p>
     <span>Add your pin on Atlas</span>
   </div>

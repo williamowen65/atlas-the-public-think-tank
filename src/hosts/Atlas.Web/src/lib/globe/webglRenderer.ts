@@ -22,10 +22,8 @@ const camera = `
 vec3 camera(vec3 p) {
   float c = cos(angle), s = sin(angle);
   float forward = p.x*c-p.y*s;
-  vec3 view=vec3(p.x*s+p.y*c, p.z*0.9510565163-forward*0.3090169944,
+  return vec3(p.x*s+p.y*c, p.z*0.9510565163-forward*0.3090169944,
     forward*0.9510565163+p.z*0.3090169944);
-  float ct=cos(roll), st=sin(roll);
-  return vec3(ct*view.x-st*view.y, st*view.x+ct*view.y, view.z);
 }`;
 const quad = `const vec2 corners[6] = vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));`;
 const earthVertex = `#version 300 es
@@ -38,7 +36,7 @@ const earthFragment = `#version 300 es
 precision highp float;
 precision highp int;
 in vec2 position;
-uniform float angle, roll;
+uniform float angle;
 uniform sampler2D mapTexture;
 uniform vec3 ocean, edge, outline;
 out vec4 color;
@@ -48,13 +46,11 @@ void main() {
   if(radius>176.0) discard;
   // Solve x^2 + y^2 + depth^2 = r^2 for the front intersection.
   float depth=sqrt(max(0.0,176.0*176.0-dot(position,position)));
-  // Undo the preview roll, the 18-degree camera tilt, and the spin.
-  float ct=cos(roll), st=sin(roll);
-  vec2 upright=vec2(ct*position.x+st*position.y, -st*position.x+ct*position.y);
-  float forward=depth*0.9510565163-upright.y*0.3090169944;
-  float north=upright.y*0.9510565163+depth*0.3090169944;
-  float x=forward*cos(angle)+upright.x*sin(angle);
-  float y=-forward*sin(angle)+upright.x*cos(angle);
+  // Undo the 18-degree tilt, then undo the spin around the north axis.
+  float forward=depth*0.9510565163-position.y*0.3090169944;
+  float north=position.y*0.9510565163+depth*0.3090169944;
+  float x=forward*cos(angle)+position.x*sin(angle);
+  float y=-forward*sin(angle)+position.x*cos(angle);
   // Shift signed longitude and latitude into the texture range [0, 1].
   vec2 uv=vec2(atan(y,x)/6.28318530718+0.5,asin(clamp(north/176.0,-1.0,1.0))/3.14159265359+0.5);
   vec4 map=texture(mapTexture,uv);
@@ -71,7 +67,7 @@ precision highp int;
 layout(location=0) in vec3 base;
 layout(location=1) in vec3 head;
 layout(location=2) in vec3 headColor;
-uniform float angle, roll, radius, shaftWidth;
+uniform float angle, radius, shaftWidth;
 uniform int kind;
 out vec2 local;
 out vec3 tint;
@@ -247,7 +243,7 @@ export function createWebGLGlobe(canvas: HTMLCanvasElement) {
         gl.uniform1i(location(pins, 'miniature'), o.mini ? 1 : 0);
         gl.uniform1i(location(pins, 'roundHead'), o.pinStyle === 'round' ? 1 : 0);
       },
-      draw(angle: number, cssSize: number, rollDegrees = 0) {
+      draw(angle: number, cssSize: number) {
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -261,12 +257,10 @@ export function createWebGLGlobe(canvas: HTMLCanvasElement) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(location(earth, 'mapTexture'), 0);
         gl.uniform1f(location(earth, 'angle'), (angle * Math.PI) / 180);
-        gl.uniform1f(location(earth, 'roll'), (rollDegrees * Math.PI) / 180);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.useProgram(pins);
         gl.bindVertexArray(pinVao);
         gl.uniform1f(location(pins, 'angle'), (angle * Math.PI) / 180);
-        gl.uniform1f(location(pins, 'roll'), (rollDegrees * Math.PI) / 180);
         // Minimum CSS-pixel sizing keeps tiny launcher pins legible on any pixel density.
         const unitsPerPixel = 440 / Math.max(1, cssSize);
         const minimum = current.mini ? Math.max(0, Math.min(3, current.miniPinSize)) : 0;
