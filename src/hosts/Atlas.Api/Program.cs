@@ -12,6 +12,26 @@ using System.Threading.RateLimiting;
 // the web host; this file chooses services and the order requests pass through them.
 
 // 1. Build configuration and register services (no HTTP requests are handled yet).
+if (args is ["--publish-globe-previews"])
+{
+    var worker = WebApplication.CreateBuilder();
+    await using var host = worker.Build();
+    var services = host.Services;
+    var capture = new ShareImageCapture(worker.Configuration, worker.Environment,
+        services.GetRequiredService<ILogger<ShareImageCapture>>());
+    try
+    {
+        Environment.ExitCode = await capture.PublishGlobe() ? 0 : 1;
+    }
+    catch (Exception error)
+    {
+        services.GetRequiredService<ILogger<ShareImageCapture>>()
+            .LogError("Globe preview publication failed ({ErrorType}).", error.GetType().Name);
+        Environment.ExitCode = 1;
+    }
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 // Avoid routine framework logs containing raw URLs/search strings or SQL commands.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);

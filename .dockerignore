@@ -1,0 +1,10 @@
+.git
+**/bin
+**/obj
+**/node_modules
+**/.svelte-kit
+**/.terraform
+**/*.tfstate*
+**/.env*
+**/.share-captures
+logs

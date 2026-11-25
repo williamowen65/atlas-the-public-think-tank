@@ -415,3 +415,5 @@ http-client.env.json.user
 
 # Local Playwright share captures
 /src/hosts/Atlas.Web/.share-captures/
+
+/globe-output/

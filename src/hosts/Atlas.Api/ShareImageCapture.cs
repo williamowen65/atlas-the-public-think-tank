@@ -124,6 +124,11 @@ internal sealed class ShareImageCapture(
         : configuration["Atlas:Seo:PublicOrigin"]);
     private readonly ShareImageCache? cache = ShareImageCache.Create(configuration, environment);
 
+    private bool GlobeWorkerEnabled => configuration.GetValue<bool>("Atlas:Seo:ExternalGlobeCapture");
+
+    internal bool CanServe(ShareTarget? target) =>
+        GlobeWorkerEnabled && target is { Kind: SharePage.Globe } ? cache is not null : Enabled;
+
     internal bool Enabled => cache is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
 
@@ -131,8 +136,81 @@ internal sealed class ShareImageCapture(
         (id?.ImagePath ?? "/share-images/discover.png") + "?v=" + LayoutVersion(id) +
         (id?.GlobeAngle is { } angle ? $"&view={angle}" : "");
 
+    internal async Task<string> PreviewPath(ShareTarget? target, CancellationToken cancellationToken)
+    {
+        if (!GlobeWorkerEnabled || target is not { Kind: SharePage.Globe })
+            return ImagePath(target);
+
+        var version = await ReadGlobeVersion(cancellationToken);
+        return version is null ? ImagePath(target) : ImagePath(target) + "&generation=" + version;
+    }
+
+    private static string GlobeImageName(ShareTarget target) =>
+        target.Animated ? "globe-motion.gif" : target.GlobeAngle is { } angle ? $"globe-{angle}.png" : "globe.png";
+
+    private async Task<string?> ReadGlobeVersion(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return cache is null ? null : await cache.ReadGlobeVersion(cancellationToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("Could not read the published globe preview version ({ErrorType}).", error.GetType().Name);
+            return null;
+        }
+    }
+
+    internal async Task<bool> PublishGlobe()
+    {
+        if (cache is null || origin is null)
+        {
+            logger.LogError("Configure the globe capture origin and output storage.");
+            return false;
+        }
+
+        var version = Guid.NewGuid().ToString("N");
+        var targets = new[] { ShareTarget.Globe, ShareTarget.GlobeView("0"), ShareTarget.GlobeView("90"),
+            ShareTarget.GlobeView("180"), ShareTarget.GlobeView("270"), ShareTarget.GlobeAnimation };
+        var previous = await cache.ReadGlobeVersion(CancellationToken.None);
+        foreach (var target in targets)
+        {
+            var name = GlobeImageName(target);
+            if (!await Capture(name, $"globe-published/{version}/{name}", target, worker: true))
+                return false;
+        }
+
+        if (!await cache.PublishGlobeVersion(version, previous))
+        {
+            logger.LogWarning("Another globe execution published while this worker was running.");
+            return false;
+        }
+
+        logger.LogInformation("Published globe preview generation {Generation}.", version);
+        return true;
+    }
+
     internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
+        if (GlobeWorkerEnabled && id is { Kind: SharePage.Globe } globe)
+        {
+            if (cache is null) return Results.NotFound();
+            var requested = context.Request.Query["generation"].ToString();
+            if (requested.Length > 0 && !ShareImageCache.IsGlobeVersion(requested)) return Results.NotFound();
+            var version = requested.Length == 0 ? await ReadGlobeVersion(context.RequestAborted) : requested;
+            if (version is not null && await ReadCached($"globe-published/{version}/{GlobeImageName(globe)}",
+                    DateTimeOffset.MinValue, context.RequestAborted) is { } published)
+                return published;
+
+            // Keep serving the previous layout while waiting for the first worker publication.
+            if (await ReadCached($"v{LayoutVersion(globe)}/{GlobeImageName(globe)}",
+                    DateTimeOffset.MinValue, context.RequestAborted) is { } previous)
+                return previous;
+            context.Response.Headers.CacheControl = "no-store";
+            var placeholder = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
+            return placeholder.Exists ? Results.File(placeholder.CreateReadStream(), "image/png") : Results.NotFound();
+        }
+
         if (!Enabled) return Results.NotFound();
         var revision = await PublicPageSeo.ShareRevision(context, id);
         if (revision is null) return Results.NotFound();
@@ -191,13 +269,14 @@ internal sealed class ShareImageCapture(
         }
     }
 
-    private async Task Capture(string name, string cacheKey, ShareTarget? id)
+    private async Task<bool> Capture(string name, string cacheKey, ShareTarget? id, bool worker = false)
     {
         await browserSlot.WaitAsync();
         var stage = "starting Chromium";
         try
         {
             var started = DateTime.UtcNow;
+            if (worker) logger.LogInformation("Capturing globe preview {Image}.", name);
             var url = new Uri(origin!, id?.CapturePath ?? "/");
             var globe = id is { Kind: SharePage.Globe };
             var fullFrame = id is null || globe;
@@ -215,7 +294,7 @@ internal sealed class ShareImageCapture(
                     : "starting Chromium";
                 var sessionElapsed = Stopwatch.StartNew();
                 using var playwright = await Playwright.CreateAsync();
-                await using var browser = environment.IsDevelopment()
+                await using var browser = worker || environment.IsDevelopment()
                     ? await playwright.Chromium.LaunchAsync(new()
                     {
                         Timeout = 12000,
@@ -302,7 +381,7 @@ internal sealed class ShareImageCapture(
                 {
                     logger.LogWarning("Atlas share capture for {Image} did not reach the requested page (HTTP {Status}).",
                         name, response?.Status);
-                    return;
+                    return false;
                 }
 
                 stage = "waiting for the share card";
@@ -346,7 +425,7 @@ internal sealed class ShareImageCapture(
                         }
                         """);
                     var bounds = await card.BoundingBoxAsync();
-                    if (bounds is null) return;
+                    if (bounds is null) return false;
                     top = (int)Math.Ceiling(Math.Max(0, bounds.Y));
                 }
                 if (id is { Kind: SharePage.Node })
@@ -415,12 +494,14 @@ internal sealed class ShareImageCapture(
             if (globeFrames is not null)
                 logger.LogInformation("Atlas globe GIF saved as {CacheKey} in {ElapsedMs} ms.",
                     cacheKey, elapsed.ElapsedMilliseconds);
+            return true;
         }
         catch (Exception error)
         {
             // Browser connection errors can contain the credential-bearing URL.
             logger.LogWarning("Atlas share capture for {Image} failed while {Stage} ({ErrorType}).",
                 name, stage, error.GetType().Name);
+            return false;
         }
         finally
         {

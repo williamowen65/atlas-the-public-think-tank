@@ -166,3 +166,14 @@ variable "discovery_redis_connections" {
     error_message = "Discovery Redis connection keys must be demo or live."
   }
 }
+
+variable "globe_preview_worker_image" {
+  description = "Optional public, digest-pinned globe preview worker image for demo."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.globe_preview_worker_image == "" ? true : can(regex("^ghcr\\.io/[^@ ]+@sha256:[a-f0-9]{64}$", var.globe_preview_worker_image))
+    error_message = "Use a public GHCR image pinned with an sha256 digest."
+  }
+}

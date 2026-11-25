@@ -139,7 +139,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         using var reader = new StreamReader(shell.CreateReadStream());
         var html = await reader.ReadToEndAsync(context.RequestAborted);
         var endOfHead = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
-        if (endOfHead >= 0) html = html.Insert(endOfHead, Head(request, preview ?? home, preview is not null));
+        if (endOfHead >= 0) html = html.Insert(endOfHead, await Head(request, preview ?? home, preview is not null));
         await response.WriteAsync(html, context.RequestAborted);
     }
 
@@ -252,7 +252,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         return revision is null ? null : new[] { revision.Node, revision.Document, revision.Block ?? DateTimeOffset.MinValue }.Max();
     }
 
-    private string Head(HttpRequest request, Preview preview, bool canonical)
+    private async Task<string> Head(HttpRequest request, Preview preview, bool canonical)
     {
         var url = Url(request, preview.Path);
         var html = new StringBuilder();
@@ -272,13 +272,13 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
         Meta("property", "og:site_name", ShareTitle);
         if (url is not null) Meta("property", "og:url", url);
         var capture = request.HttpContext.RequestServices.GetRequiredService<ShareImageCapture>();
-        var image = preview.ShareArtwork is { } artwork ? Url(request, artwork) : capture.Enabled
-            ? Url(request, ShareImageCapture.ImagePath(preview.Target))
+        var image = preview.ShareArtwork is { } artwork ? Url(request, artwork) : capture.CanServe(preview.Target)
+            ? Url(request, await capture.PreviewPath(preview.Target, request.HttpContext.RequestAborted))
             : preview.Image?.AbsoluteUri ?? Url(request, "/atlas-share.png");
         if (image is not null)
         {
             Meta("property", "og:image", image);
-            if (capture.Enabled || preview.Image is null)
+            if (capture.CanServe(preview.Target) || preview.Image is null)
             {
                 Meta("property", "og:image:width", ShareImageCapture.ImageWidth.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 Meta("property", "og:image:height", ShareImageCapture.ImageHeight.ToString(System.Globalization.CultureInfo.InvariantCulture));

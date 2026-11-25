@@ -9,9 +9,15 @@ namespace Atlas.Api;
 internal abstract class ShareImageCache
 {
     private static string ContentType(string key) => key.EndsWith(".gif", StringComparison.Ordinal) ? "image/gif" : "image/png";
+    private const string GlobePointer = "globe-published/current";
     private const string CaptureTime = "captured_at";
 
     internal abstract Task<IResult?> Read(string key, DateTimeOffset revision, CancellationToken cancellationToken);
+    internal abstract Task<string?> ReadGlobeVersion(CancellationToken cancellationToken);
+    internal abstract Task<bool> PublishGlobeVersion(string version, string? previous);
+    internal static bool IsGlobeVersion(string value) => Guid.TryParseExact(value, "N", out _);
+    private static bool IsPublishedGlobe(string key) => key.StartsWith("globe-published/", StringComparison.Ordinal);
+
     internal abstract Task Write(string key, byte[] image, DateTimeOffset capturedAt);
 
     internal static ShareImageCache? Create(IConfiguration configuration, IWebHostEnvironment environment)
@@ -42,10 +48,27 @@ internal abstract class ShareImageCache
 
     private sealed class FileCache(string directory) : ShareImageCache
     {
+        internal override async Task<string?> ReadGlobeVersion(CancellationToken cancellationToken)
+        {
+            var path = Path.Combine(directory, GlobePointer);
+            if (!File.Exists(path)) return null;
+            var value = await File.ReadAllTextAsync(path, cancellationToken);
+            return IsGlobeVersion(value) ? value : null;
+        }
+
+        internal override async Task<bool> PublishGlobeVersion(string version, string? previous)
+        {
+            var path = Path.Combine(directory, GlobePointer);
+            await using var publicationLock = File.Open(path + ".lock", FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            if (await ReadGlobeVersion(CancellationToken.None) != previous) return false;
+            await Write(GlobePointer, System.Text.Encoding.UTF8.GetBytes(version), DateTimeOffset.UtcNow);
+            return true;
+        }
+
         internal override Task<IResult?> Read(string key, DateTimeOffset revision, CancellationToken cancellationToken)
         {
             var path = Path.Combine(directory, key);
-            return Task.FromResult<IResult?>(File.Exists(path) && IsCurrent(File.GetLastWriteTimeUtc(path), revision)
+            return Task.FromResult<IResult?>(File.Exists(path) && (IsPublishedGlobe(key) || IsCurrent(File.GetLastWriteTimeUtc(path), revision))
                 ? Results.File(path, ContentType(key))
                 : null);
         }
@@ -71,13 +94,53 @@ internal abstract class ShareImageCache
 
     private sealed class BlobCache(BlobContainerClient container) : ShareImageCache
     {
+        internal override async Task<string?> ReadGlobeVersion(CancellationToken cancellationToken)
+        {
+            var pointer = await ReadPointer(cancellationToken);
+            var value = pointer?.Content.ToString();
+            return value is not null && IsGlobeVersion(value) ? value : null;
+        }
+
+        internal override async Task<bool> PublishGlobeVersion(string version, string? previous)
+        {
+            var pointer = await ReadPointer(CancellationToken.None);
+            if (pointer?.Content.ToString() != previous) return false;
+            try
+            {
+                await container.GetBlobClient(GlobePointer).UploadAsync(BinaryData.FromString(version), new BlobUploadOptions
+                {
+                    Conditions = pointer is null
+                        ? new BlobRequestConditions { IfNoneMatch = ETag.All }
+                        : new BlobRequestConditions { IfMatch = pointer.Details.ETag }
+                });
+                return true;
+            }
+            catch (RequestFailedException error) when (error.Status == 412 ||
+                (error.Status == 409 && error.ErrorCode == "BlobAlreadyExists"))
+            {
+                return false;
+            }
+        }
+
+        private async Task<BlobDownloadResult?> ReadPointer(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return (await container.GetBlobClient(GlobePointer).DownloadContentAsync(cancellationToken)).Value;
+            }
+            catch (RequestFailedException error) when (error.Status == 404 && error.ErrorCode == "BlobNotFound")
+            {
+                return null;
+            }
+        }
+
         internal override async Task<IResult?> Read(string key, DateTimeOffset revision, CancellationToken cancellationToken)
         {
             try
             {
                 var download = (await container.GetBlobClient(key).DownloadStreamingAsync(
                     cancellationToken: cancellationToken)).Value;
-                if (IsCurrent(ReadCaptureTime(download.Details.Metadata), revision))
+                if (IsPublishedGlobe(key) || IsCurrent(ReadCaptureTime(download.Details.Metadata), revision))
                     return Results.Stream(download.Content, ContentType(key));
 
                 await download.Content.DisposeAsync();

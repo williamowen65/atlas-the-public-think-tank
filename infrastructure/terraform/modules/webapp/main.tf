@@ -55,7 +55,7 @@ variable "seo_indexing_enabled" {
 }
 
 resource "azurerm_linux_web_app" "atlas" {
-  depends_on = [azurerm_role_assignment.share_images]
+  depends_on = [azurerm_role_assignment.share_images, azurerm_role_assignment.globe_preview_worker, azurerm_container_app_job.globe_preview]
 
   name                                           = var.name
   resource_group_name                            = var.resource_group_name
@@ -92,6 +92,8 @@ resource "azurerm_linux_web_app" "atlas" {
     Atlas__Seo__BlobContainerUrl          = "${azurerm_storage_account.share_images.primary_blob_endpoint}${azurerm_storage_container.share_images.name}"
     Atlas__Seo__BlobIdentityClientId      = var.identity_client_id
     Atlas__Seo__IndexingEnabled           = tostring(var.seo_indexing_enabled)
+    }, var.globe_preview_worker_image == null ? {} : {
+    Atlas__Seo__ExternalGlobeCapture = "true"
     }, var.seo_redirect_host == "" ? {} : {
     Atlas__Seo__RedirectHost = var.seo_redirect_host
     }, var.connection_string == null ? {} : {

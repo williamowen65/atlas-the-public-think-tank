@@ -31,7 +31,7 @@ resource "azurerm_storage_management_policy" "share_images" {
     enabled = true
 
     filters {
-      prefix_match = ["share-images/"]
+      prefix_match = var.variant == "demo" ? ["share-images/v"] : ["share-images/"]
       blob_types   = ["blockBlob"]
     }
 

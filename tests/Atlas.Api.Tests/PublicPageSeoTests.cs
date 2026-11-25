@@ -68,6 +68,36 @@ public sealed class PublicPageSeoTests
     }
 
     [TestMethod]
+    public async Task External_globe_previews_reference_the_published_generation()
+    {
+        using var web = CreateWebRoot();
+        using var root = new ApiFactory();
+        const string published = "0123456789abcdef0123456789abcdef";
+        const string unfinished = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var directory = Directory.CreateDirectory(Path.Combine(web.Path, "capture", "globe-published"));
+        foreach (var version in new[] { published, unfinished })
+        {
+            var generation = Directory.CreateDirectory(Path.Combine(directory.FullName, version));
+            await File.WriteAllTextAsync(Path.Combine(generation.FullName, "globe-motion.gif"), version);
+        }
+        await File.WriteAllTextAsync(Path.Combine(directory.FullName, "current"), published);
+
+        using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
+            .UseSetting("Atlas:Seo:CaptureDirectory", Path.Combine(web.Path, "capture"))
+            .UseSetting("Atlas:Seo:ExternalGlobeCapture", "true"));
+        using var client = Client(factory, "https://localhost");
+
+        var html = await client.GetStringAsync("/?globe=open&motion=gif");
+        StringAssert.Contains(html, "/share-images/globe.gif?v=14&amp;generation=" + published);
+        using var image = await client.GetAsync("/share-images/globe.gif?generation=" + published);
+        Assert.AreEqual("image/gif", image.Content.Headers.ContentType?.MediaType);
+        Assert.AreEqual(published, await image.Content.ReadAsStringAsync());
+
+        var home = await client.GetStringAsync("/");
+        StringAssert.Contains(home, "/share-images/discover.png?v=7");
+    }
+
+    [TestMethod]
     [DataRow(false, "/atlas-share.png")]
     [DataRow(true, "/share-images/globe.png?v=3")]
     public async Task Deployed_share_images_require_blob_storage(bool configureBlobStorage, string expectedImage)

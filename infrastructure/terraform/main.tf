@@ -102,6 +102,8 @@ module "sites" {
   seo_redirect_host          = each.key == "live" ? var.seo_live_redirect_host : ""
   browserless_api_key        = var.browserless_api_key
   seo_indexing_enabled       = each.key == "live" && var.seo_indexing_enabled
+  globe_preview_worker_image = each.key == "demo" && var.globe_preview_worker_image != "" ? var.globe_preview_worker_image : null
+  log_analytics_workspace_id = module.observability.log_analytics_workspace_id
   tags                       = merge(local.tags, { variant = each.key })
 }
 
