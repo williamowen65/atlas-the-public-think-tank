@@ -2,6 +2,7 @@ using Atlas.Persistence;
 using Atlas.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 
 namespace Atlas.Persistence.Tests;
@@ -37,6 +38,9 @@ internal sealed class SqlTestDatabase : IDisposable
         return new SqlTestDatabase(connection, useCurrentModel, installFullText);
     }
     public AtlasDataContext Open() => new(_options);
+
+    public AtlasDataContext OpenWithInterceptor(IInterceptor interceptor) =>
+        new(new DbContextOptionsBuilder<AtlasDataContext>(_options).AddInterceptors(interceptor).Options);
     public AtlasDataContext OpenForDiscovery()
     {
         using var configuration = Open();

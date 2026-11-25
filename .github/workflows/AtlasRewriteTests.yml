@@ -219,6 +219,19 @@ jobs:
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
           dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+      - name: Start Redis for Discovery restart tests
+        if: matrix.name == 'Discovery read model'
+        run: |
+          docker run -d --name atlas-redis -p 127.0.0.1:6379:6379 redis:7.4-alpine
+          for attempt in {1..15}; do
+            if docker exec atlas-redis redis-cli ping | grep -q PONG; then
+              echo 'ATLAS_DISCOVERY_REDIS_TEST_CONNECTION=localhost:6379' >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs atlas-redis
+          exit 1
       - name: Test ${{ matrix.name }} against SQL Server
         run: dotnet test "${{ matrix.project }}" --configuration Release --verbosity normal ${{ matrix.filter }}
 

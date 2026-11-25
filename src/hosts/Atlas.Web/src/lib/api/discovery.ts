@@ -1,3 +1,4 @@
+import type { ContentBlock } from './nodePage';
 import type { BreadcrumbPage } from '../components/breadcrumb.types';
 import type { NodeCardData } from '../components/node-card-versions/types';
 
@@ -106,6 +107,7 @@ interface DiscoveryCard {
 
   /** Description supplied for this record. */
   description: string;
+  previewBlocks?: ContentBlock[];
 
   /** Short introduction shown before full node content. */
 
@@ -263,6 +265,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     status: card.status === 'Archived' ? 'Archived' : 'Active',
     createdAt: card.createdAt,
     description: card.description ?? '',
+    previewBlocks: card.previewBlocks,
     communities:
       card.communities && card.communities.trim().toLowerCase() !== 'none'
         ? card.communities

@@ -1,5 +1,19 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { loadEnvFile } from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+const webDirectory = fileURLToPath(new URL('..', import.meta.url));
+const telemetryDirectory = fileURLToPath(new URL('../../../../logs/observability/', import.meta.url));
+
+export function loadLanSettings() {
+  const localFile = fileURLToPath(new URL('../.env.lan.local', import.meta.url));
+  if (existsSync(localFile)) loadEnvFile(localFile);
+}
+
+export function lanTelemetryDirectory(env = process.env) {
+  return resolve(webDirectory, env.ATLAS_TELEMETRY_DIRECTORY || telemetryDirectory);
+}
 
 /**
  * Prepare only the LAN launcher's environment; ordinary dev/build commands stay unchanged.
@@ -10,7 +24,7 @@ import { join } from 'node:path';
  * @throws {Error} If the origin or certificate files are missing.
  */
 export function lanEnvironment(env = process.env, exists = existsSync) {
-  const prepared = { ...env };
+  const prepared = { ...env, ATLAS_TELEMETRY_DIRECTORY: lanTelemetryDirectory(env) };
   if (!prepared.ATLAS_LAN_ORIGIN)
     throw new Error('Set ATLAS_LAN_ORIGIN in .env.lan.local (copy .env.lan.example first).');
   const directory = prepared.LOCALAPPDATA && join(prepared.LOCALAPPDATA, 'Atlas', 'dev-certs');

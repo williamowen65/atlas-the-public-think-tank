@@ -89,6 +89,7 @@ module "sites" {
     module.sql.database_names[each.key],
     azurerm_user_assigned_identity.runtime[each.key].client_id
   )
+  discovery_redis_connection = lookup(var.discovery_redis_connections, each.key, null)
   account_mail_enabled       = var.account_mail_enabled
   account_mail_host          = var.account_mail_host
   account_mail_port          = var.account_mail_port

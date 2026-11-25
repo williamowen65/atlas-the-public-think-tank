@@ -119,3 +119,15 @@ variable "account_mail_public_origins" {
     error_message = "Map live/demo to HTTPS origins without paths, query strings or fragments."
   }
 }
+
+variable "discovery_redis_connections" {
+  description = "Optional Redis TLS connection strings keyed by deployment variant."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+
+  validation {
+    condition     = alltrue([for variant in keys(var.discovery_redis_connections) : contains(["demo", "live"], variant)])
+    error_message = "Discovery Redis connection keys must be demo or live."
+  }
+}

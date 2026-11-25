@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Atlas.Discovery;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Atlas.Persistence.Discovery;
@@ -20,6 +21,10 @@ public sealed class DiscoveryCache : IDisposable
     private readonly long _detailBudget;
     private readonly long _pageBudget;
     private string? _database;
+    private string? _externalNamespace;
+    internal RedisDiscoveryCache? External { get; }
+
+    internal string ExternalKey(string key) => $"atlas:discovery:v2:{_externalNamespace}:{key}";
 
     // SqlDiscoveryReadQuery holds this gate while reading or publishing cache entries.
     // It coordinates misses and counter updates; no DbContext is stored in the cache.
@@ -34,13 +39,15 @@ public sealed class DiscoveryCache : IDisposable
     public DiscoveryCache(
         long pageBudgetBytes = 1024 * 1024,
         long detailBudgetBytes = 8 * 1024 * 1024,
-        TimeSpan? expiration = null)
+        TimeSpan? expiration = null,
+        RedisDiscoveryCache? external = null)
     {
         if (pageBudgetBytes < 1024 || detailBudgetBytes < 1024)
         {
             throw new ArgumentOutOfRangeException(nameof(pageBudgetBytes));
         }
 
+        External = external;
         _detailBudget = detailBudgetBytes;
         _pageBudget = pageBudgetBytes;
         _expiration = expiration ?? TimeSpan.FromSeconds(30);
@@ -61,18 +68,23 @@ public sealed class DiscoveryCache : IDisposable
             throw new InvalidOperationException("A Discovery cache cannot be shared across different databases.");
         }
 
+        if (_database is null && External is not null)
+        {
+            var sql = new SqlConnectionStringBuilder(connectionString);
+            var identity = JsonSerializer.Serialize(new[] { sql.DataSource, sql.InitialCatalog });
+            _externalNamespace = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)));
+        }
         _database = connectionString;
     }
 
     /// <summary>
     /// Identifies one requested page: its filters, authored scope, visibility policy,
-    /// page number, page size, ordering policy and committed page revision.
+    /// page number, page size, and ordering policy.
     /// This is a cache lookup key, not a SQL paging cursor or an authorization token.
     /// </summary>
     internal static string PageKey(
         DiscoveryQuery query,
         IReadOnlyCollection<Guid>? scope,
-        long version,
         bool includeHidden)
     {
         // Set-like inputs are sorted and deduplicated so their input order cannot
@@ -103,21 +115,23 @@ public sealed class DiscoveryCache : IDisposable
         };
 
         // Hashing keeps potentially large filter/scope payloads out of cache keys.
-        // order-v2 names the ordering contract; version changes after relevant writes,
-        // so entries from an older committed revision can no longer be found.
+        // order-v2 names the ordering contract. Callers handle revision checks.
         var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
-        return "order-v2:" + version + ":" + hash;
+        return "order-v2:" + hash;
     }
 
+    internal RedisDiscoveryCache.Entry<DiscoveryPage>? PeekPage(string key) =>
+        _pages.Get<RedisDiscoveryCache.Entry<DiscoveryPage>>(key);
+
     /// <summary>Looks up ranked IDs and totals; public cards are resolved separately.</summary>
-    internal bool TryPage(string key, out DiscoveryPage page)
+    internal bool TryPage(string key, long revision, out DiscoveryPage page)
     {
-        if (_pages.TryGetValue(key, out DiscoveryPage? value))
+        if (PeekPage(key) is { } entry && entry.Revision == revision)
         {
             PageHits++;
             Telemetry.CacheLookup(detail: false, hit: true);
-            page = value!;
+            page = entry.Value;
             return true;
         }
 
@@ -128,7 +142,7 @@ public sealed class DiscoveryCache : IDisposable
     }
 
     /// <summary>Stores a completed page with an estimated size charged to its budget.</summary>
-    internal void PutPage(string key, DiscoveryPage page)
+    internal void PutPage(string key, long revision, DiscoveryPage page)
     {
         // Estimates cover projection/object overhead, not an exact managed-heap measurement.
         var size = 512 + page.Items.Count * 128;
@@ -138,7 +152,7 @@ public sealed class DiscoveryCache : IDisposable
             return;
         }
 
-        _pages.Set(key, page, new MemoryCacheEntryOptions
+        _pages.Set(key, new RedisDiscoveryCache.Entry<DiscoveryPage>(revision, page), new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = _expiration,
             Size = size
@@ -179,6 +193,11 @@ public sealed class DiscoveryCache : IDisposable
             card.Communities.Length);
         // Structured breadcrumb segments are also retained by the cached card.
         size += card.BreadcrumbSegment?.Items.Sum(item => 128L + 2L * item.Label.Length) ?? 0;
+        size += card.PreviewBlocks.Sum(block => 192L + 2L * (
+            (block.Content.Markdown?.Length ?? 0) + (block.Content.Composition?.Length ?? 0) +
+            (block.Content.Url?.Length ?? 0) + (block.Content.AltText?.Length ?? 0) +
+            (block.Content.Caption?.Length ?? 0) + (block.Content.Layout?.Length ?? 0) +
+            (block.Content.Title?.Length ?? 0) + (block.Content.Description?.Length ?? 0)));
         if (size > Math.Min(128 * 1024, _detailBudget))
         {
             RejectedEntries++;
@@ -197,5 +216,6 @@ public sealed class DiscoveryCache : IDisposable
     {
         _pages.Dispose();
         _details.Dispose();
+        External?.Dispose();
     }
 }
