@@ -13,7 +13,6 @@ import { lanEnvironment, loadLanSettings } from './lanEnvironment.mjs';
 function start() {
   loadLanSettings();
   const env = lanEnvironment();
-  console.log('Atlas telemetry directory:', env.ATLAS_TELEMETRY_DIRECTORY);
   // Use the package's declared executable instead of assuming an internal filename.
   const require = createRequire(import.meta.url);
   const manifestPath = require.resolve('concurrently/package.json');

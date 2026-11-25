@@ -97,8 +97,7 @@ dotnet run --project src/hosts/Atlas.Api --launch-profile https
 For LAN development, add `ATLAS_DISCOVERY_REDIS_CONNECTION=127.0.0.1:6379`
 to `src/hosts/Atlas.Web/.env.lan.local` while using local Docker Redis. Remove
 any old shell override of `ATLAS_TELEMETRY_DIRECTORY` to use the default
-gitignored `logs/observability/` at the checkout root. The LAN launcher prints
-the active path.
+gitignored `logs/observability/` at the checkout root.
 
 From `src/hosts/Atlas.Web`, start `npm run dev:lan:api`, then open or scroll
 Discovery. In a second terminal in the Web directory, run:
