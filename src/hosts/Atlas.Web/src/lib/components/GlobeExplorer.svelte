@@ -49,6 +49,7 @@
   let message = $state('');
   let shareLink = $state('');
   let shareFeedback = $state('');
+  let copyingGif = $state(false);
   let alive = false;
   let request: AbortController | undefined;
   let generation = 0;
@@ -70,21 +71,67 @@
     expanded = true;
     void refresh();
   }
-  async function shareGlobe() {
+  async function copyGlobeLink() {
     const url = new URL('/?globe=open', window.location.origin).href;
     shareFeedback = '';
     shareLink = '';
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Put your pin on the Atlas globe', url });
-        return;
-      }
       await navigator.clipboard.writeText(url);
       shareFeedback = 'Globe link copied';
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       shareLink = url;
       shareFeedback = 'Select and copy the globe link';
+    }
+  }
+
+  async function copyGlobeGifAndLink() {
+    if (copyingGif) return;
+    const url = new URL('/?globe=open', window.location.origin).href;
+    shareFeedback = '';
+    shareLink = '';
+    copyingGif = true;
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+        shareFeedback = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
+        return;
+      }
+
+      // Start the clipboard write during the click, before the network request completes.
+      const gif = fetch('/share-images/globe.gif').then(async (response) => {
+        const image = await response.blob();
+        if (!response.ok || image.type !== 'image/gif' || !image.size) {
+          throw new Error('The animated globe image is unavailable.');
+        }
+        return image;
+      });
+      const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error);
+        reader.onload = () => {
+          const fragment = document.createElement('div');
+          const animation = document.createElement('img');
+          animation.src = String(reader.result);
+          animation.alt = 'Animated Atlas globe';
+          const link = document.createElement('a');
+          link.href = url;
+          link.textContent = url;
+          fragment.append(animation, document.createElement('br'), link);
+          resolve(new Blob([fragment.innerHTML], { type: 'text/html' }));
+        };
+        reader.readAsDataURL(image);
+      }));
+      const item: Record<string, Blob | Promise<Blob>> = {
+        'text/html': html,
+        'text/plain': new Blob([url], { type: 'text/plain' })
+      };
+      if (ClipboardItem.supports?.('image/gif')) item['image/gif'] = gif;
+      await Promise.all([navigator.clipboard.write([new ClipboardItem(item)]), html]);
+      shareFeedback = 'Copied. Paste into your Facebook post and check that the GIF plays.';
+    } catch {
+      shareFeedback = 'Could not copy the GIF. You can still copy the Atlas link.';
+    } finally {
+      copyingGif = false;
     }
   }
 
@@ -503,7 +550,12 @@
         }}>Share my location on this globe</button
       >
     {/if}
-    <button type="button" onclick={shareGlobe}>Share globe</button>
+    {#if !capturing}
+      <button type="button" onclick={copyGlobeLink}>Copy link</button>
+      <button type="button" disabled={copyingGif} onclick={copyGlobeGifAndLink}>
+        {copyingGif ? 'Copying GIF…' : 'Copy GIF + link'}
+      </button>
+    {/if}
     {#if status === 'failed'}<button type="button" onclick={() => void refresh()}>Retry now</button
       >{/if}
     <button
@@ -517,7 +569,8 @@
       }}>ⓘ</button
     >
   </div>
-  <p class="feedback" role="status">{message || shareFeedback}</p>
+  {#if !capturing}<p class="globe-share-hint">Sharing on Facebook? Try Copy GIF + link.</p>{/if}
+  <p class="feedback" role="status">{shareFeedback || message}</p>
   {#if shareLink}
     <input aria-label="Globe share link" readonly value={shareLink} onfocus={(event) => event.currentTarget.select()} />
   {/if}
@@ -866,6 +919,12 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: 0.6rem;
+  }
+  .globe-share-hint {
+    margin: 0.35rem 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--atlas-muted);
   }
   .sign-in {
     font-size: 0.8rem;
