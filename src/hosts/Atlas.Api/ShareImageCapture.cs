@@ -294,8 +294,8 @@ internal sealed class ShareImageCapture(
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
             var sessionCount = id is { Animated: true } ? 4 : 1;
-            // Four local sessions capture 1,052 source frames for the 1,050-frame trial.
-            var framesPerSession = worker && environment.IsDevelopment() ? 263 : 180;
+            // Four worker sessions capture 1,052 source frames for the 1,050-frame GIF.
+            var framesPerSession = worker ? 263 : 180;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
             for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
@@ -568,47 +568,25 @@ internal sealed class ShareImageCapture(
     private async Task<byte[]> EncodeShareableGlobe(GlobeFrames capture, Stopwatch elapsed)
     {
         const int loopSeconds = 70;
+        const int fps = 15;
+        const int colors = 128;
+        const int loss = 110;
         const int byteBudget = 7_000_000;
-        var comparison = environment.IsDevelopment() ? Guid.NewGuid().ToString("N") : null;
-        var settings = comparison is null ? (Colors: 128, Loss: 20) : (Colors: 128, Loss: 110);
-        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 15, 14, 13, 12, 11 };
-        byte[]? selected = null;
-        var selectedFps = 0;
 
-        foreach (var fps in frameRates)
-        {
-            var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
-            var (colors, loss) = settings;
-            var optimized = await GlobeGifOptimizer.Optimize(
-                encoded, colors: colors, loss: loss, disableMemoryConservation: comparison is not null);
-            logger.LogInformation(
-                "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB, Facebook limit 8 MB.",
-                loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
+        var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps);
+        var optimized = await GlobeGifOptimizer.Optimize(
+            encoded, colors: colors, loss: loss, disableMemoryConservation: true);
+        logger.LogInformation(
+            "Globe GIF: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB.",
+            loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
 
-            if (comparison is not null)
-            {
-                var path = $"globe-comparison/{comparison}/globe-{loopSeconds}s-{fps}fps-{colors}colors-lossy{loss}.gif";
-                await cache!.Write(path, optimized, DateTimeOffset.UtcNow);
-                logger.LogInformation("Saved local globe GIF comparison: {Path}.", path);
-            }
+        if (optimized.Length >= byteBudget)
+            throw new InvalidOperationException($"The globe GIF is {optimized.Length} bytes and must be under {byteBudget} bytes.");
 
-            if (selected is null && optimized.Length < byteBudget)
-            {
-                selected = optimized;
-                selectedFps = fps;
-                if (comparison is null) break;
-            }
-        }
-
-        if (selected is null)
-            throw new InvalidOperationException("No 70-second globe GIF met the 7 MB publication budget.");
-
-        logger.LogInformation("Selected globe GIF: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB.",
-            loopSeconds, selectedFps, settings.Colors, settings.Loss, selected.Length / 1_000_000d);
-        return selected;
+        return optimized;
     }
 
-    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, int fps = 6, bool preserveFrames = false)
+    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, int fps = 6)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         var loopDuration = loopSeconds * 100;
@@ -647,7 +625,7 @@ internal sealed class ShareImageCapture(
                 // Sample across the whole rotation, including when the stride is fractional.
                 var sourceIndex = frameIndex * capture.Frames.Count / frameCount;
                 var frameData = capture.Frames[sourceIndex];
-                if (!preserveFrames) capture.Frames[sourceIndex] = string.Empty;
+                capture.Frames[sourceIndex] = string.Empty;
                 using var globe = new MagickImage(Convert.FromBase64String(frameData));
                 if (globe.Width != canvasWidth || globe.Height != canvasHeight)
                     globe.Resize(new MagickGeometry(canvasWidth, canvasHeight) { IgnoreAspectRatio = true });
