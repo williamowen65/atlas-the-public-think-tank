@@ -4,15 +4,14 @@ PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
-The worker uses one capture and keeps the 70-second rotation and 1200 × 630
-canvas. Local runs test 8 and 7 FPS with 128 colors at lossy levels 20, 25,
-and 30, then 96 colors at level 20. They also save 6 FPS with 128 colors
-at level 20 as a reference. Look under `globe-output/globe-comparison/<run-id>/`
-for the GIFs. Filenames and logs identify the settings and the logs show
-file sizes. The first candidate under 7 MB becomes current, in highest-FPS
-order and then in the compression trial order above. If none fits, the
-previous generation remains current. Azure uses 128 colors at lossy level
-20 and stops at the first fitting frame rate.
+The worker uses one capture and keeps the 70-second rotation, 1200 × 630
+canvas, and 128-color palette. Local runs test 9 FPS at lossy levels 30, 35,
+and 40, then save the 8 FPS reference at level 30 and the 7 and 6 FPS
+fallbacks at level 20. Look under `globe-output/globe-comparison/<run-id>/`
+for the GIFs. The logs identify each setting and file size. The first
+candidate under 7 MB becomes current. If none fits, the previous generation
+remains current. Azure still tries 8, 7, and 6 FPS at lossy level 20 and stops
+at the first candidate under budget.
 
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
