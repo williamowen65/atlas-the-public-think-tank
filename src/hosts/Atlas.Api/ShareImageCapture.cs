@@ -579,7 +579,8 @@ internal sealed class ShareImageCapture(
         {
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
             var (colors, loss) = settings;
-            var optimized = await GlobeGifOptimizer.Optimize(encoded, colors: colors, loss: loss);
+            var optimized = await GlobeGifOptimizer.Optimize(
+                encoded, colors: colors, loss: loss, disableMemoryConservation: comparison is not null);
             logger.LogInformation(
                 "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB, Facebook limit 8 MB.",
                 loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
