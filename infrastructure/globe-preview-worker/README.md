@@ -6,7 +6,7 @@ Other SEO images continue using the existing Atlas API capture path.
 
 The worker first optimizes a full v14 rotation with a shared 128-color
 palette and changed-pixel encoding. If that exceeds 7 MB, it samples the
-same captured rotation. It tries 100 and 80 seconds at 6 FPS, then 80, 70,
+same captured rotation. It tries 100, 80, and 70 seconds at 6 FPS, then 80, 70,
 and 65 seconds at 5 FPS. The remaining trials are 60 seconds at 6 or 5 FPS
 and 40 seconds at 6 FPS. Each candidate preserves the 1200 × 630 canvas. Logs show size
 in decimal MB, the Facebook limit, and which candidate met the 7 MB budget.
