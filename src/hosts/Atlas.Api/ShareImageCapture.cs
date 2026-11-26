@@ -568,8 +568,8 @@ internal sealed class ShareImageCapture(
     {
         const int byteBudget = 7_000_000;
         const int facebookLimit = 8_000_000;
-        // Try smoother five-FPS rotations before falling back to a faster spin.
-        foreach (var (loopSeconds, fps) in new[] { (120, 6), (100, 6), (80, 6), (80, 5), (70, 5), (65, 5), (60, 6), (60, 5), (40, 6) })
+        // Try smoother five-FPS rotations after testing 70 seconds at six FPS.
+        foreach (var (loopSeconds, fps) in new[] { (120, 6), (100, 6), (80, 6), (70, 6), (80, 5), (70, 5), (65, 5), (60, 6), (60, 5), (40, 6) })
         {
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
             var optimized = await GlobeGifOptimizer.Optimize(encoded);
