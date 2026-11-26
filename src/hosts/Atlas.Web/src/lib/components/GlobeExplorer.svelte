@@ -434,7 +434,14 @@
     >
   </div>
   <div class="world">
-    {#if expanded}<VisitorGlobe angle={rotation.angle} pins={previewPins} showGrid={!capturingGif} />{/if}
+    {#if expanded}
+      <VisitorGlobe
+        angle={rotation.angle}
+        pins={previewPins}
+        showGrid={!capturingGif}
+        flatOcean={capturingGif}
+      />
+    {/if}
     {#if consent && manual}<button
         class="pick-surface"
         type="button"
