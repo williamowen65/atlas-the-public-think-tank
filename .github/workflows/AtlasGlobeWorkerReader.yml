@@ -1,4 +1,4 @@
-name: Grant Atlas globe bootstrap Reader
+name: Configure Atlas globe worker access
 on:
   workflow_dispatch:
     inputs:
@@ -9,6 +9,10 @@ on:
       rehearsal_name:
         description: Rehearsal suffix (blank uses the tracked profile)
         type: string
+      variant:
+        type: choice
+        options: [demo, live]
+        default: demo
 
 permissions:
   contents: read
@@ -29,6 +33,7 @@ jobs:
         id: target
         env:
           ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.variant }}
           ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
         run: python3 infrastructure/scripts/check-deployment-target.py selection
       - uses: azure/login@v2
@@ -54,3 +59,17 @@ jobs:
             --assignee-object-id "$BOOTSTRAP_PRINCIPAL_ID" \
             --assignee-principal-type ServicePrincipal --output none
           echo "Reader is assigned to the globe bootstrap identity on $RESOURCE_GROUP."
+      - name: Configure the worker storage delegation
+        env:
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          RESOURCE_GROUP: ${{ steps.target.outputs.resource_group }}
+          NAME_PREFIX: ${{ steps.target.outputs.name_prefix }}
+          VARIANT: ${{ inputs.variant }}
+          APPLY_PRINCIPAL_ID: ${{ vars.AZURE_INFRA_APPLY_PRINCIPAL_ID }}
+        run: |
+          python3 infrastructure/scripts/bootstrap-globe-preview-worker.py \
+            --subscription "$SUBSCRIPTION_ID" \
+            --resource-group "$RESOURCE_GROUP" \
+            --site "$NAME_PREFIX-$VARIANT" \
+            --apply-principal "$APPLY_PRINCIPAL_ID" \
+            --skip-provider-registration
