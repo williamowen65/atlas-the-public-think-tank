@@ -294,7 +294,8 @@ internal sealed class ShareImageCapture(
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
             var sessionCount = id is { Animated: true } ? 4 : 1;
-            const int framesPerSession = 180;
+            // Four local sessions must cover all 770 frames of the 11 FPS trial.
+            var framesPerSession = worker && environment.IsDevelopment() ? 193 : 180;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
             for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
@@ -570,7 +571,7 @@ internal sealed class ShareImageCapture(
         const int byteBudget = 7_000_000;
         var comparison = environment.IsDevelopment() ? Guid.NewGuid().ToString("N") : null;
         var baseline = new[] { (Colors: 128, Loss: 20) };
-        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 9 };
+        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 11, 10, 9 };
         byte[]? selected = null;
         var selectedFps = 0;
         var selectedSettings = baseline[0];
@@ -580,7 +581,7 @@ internal sealed class ShareImageCapture(
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
             var settings = comparison is null
                 ? baseline
-                : Enumerable.Range(0, 7).Select(step => (Colors: 128, Loss: 40 + 5 * step)).ToArray();
+                : new[] { (Colors: 128, Loss: 70) };
             foreach (var (colors, loss) in settings)
             {
                 var optimized = await GlobeGifOptimizer.Optimize(encoded, colors: colors, loss: loss);
