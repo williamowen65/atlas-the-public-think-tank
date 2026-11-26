@@ -96,8 +96,8 @@ Atlas and confirm the last published generation is still available.
    `ATLAS_GLOBE_PREVIEW_WORKER_IMAGE` to its `ghcr.io/…@sha256:…` reference.
 2. Run the Terraform plan and reviewed apply on this branch using
    `installation=rehearsal`, `rehearsal_name=redis03`,
-   `deployment_shape=demo`, and `enable_globe_preview_worker=true`. Use the same
-   input on subsequent applies for this rehearsal to retain the job. The optional job shares the rehearsal Log Analytics
+   `deployment_shape=demo`. Plan and Apply provision the worker for `redis03`
+   automatically. Both require the image digest configured in step 1. The job shares the rehearsal Log Analytics
    workspace and uses its own managed identity. The regular demo uses a
    separate Terraform installation. Review its inputs before using the variable there.
 3. Allow **Atlas infra apply** to assign **Storage Blob Data Contributor** to
