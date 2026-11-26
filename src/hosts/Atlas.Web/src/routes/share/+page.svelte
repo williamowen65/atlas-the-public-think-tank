@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/state';
 
   const designs = [
@@ -38,99 +37,6 @@
   let globeView = $state('');
   let message = $state('');
   let manualLink = $state('');
-  let gifMessage = $state('');
-  let copyingGif = $state(false);
-  let sharingGif = $state(false);
-  let canShareGif = $state(false);
-  let gifFile: File | undefined;
-
-  async function loadGif(imagePath: string, signal?: AbortSignal) {
-    const response = await fetch(imagePath, { signal });
-    const image = await response.blob();
-    if (!response.ok || image.type !== 'image/gif' || !image.size) {
-      throw new Error('The animated globe image is unavailable.');
-    }
-    return image;
-  }
-
-  onMount(() => {
-    const design = designs.find((item) => item.id === 'globe-gif');
-    if (selected || !design || !navigator.share || !navigator.canShare?.({
-      files: [new File([], 'atlas-globe.gif', { type: 'image/gif' })]
-    })) return;
-
-    // Prepare the file before the click so share() retains user activation.
-    const controller = new AbortController();
-    void loadGif(design.image, controller.signal).then((image) => {
-      if (controller.signal.aborted) return;
-      const file = new File([image], 'atlas-globe.gif', { type: 'image/gif' });
-      if (navigator.canShare({ files: [file] })) {
-        gifFile = file;
-        canShareGif = true;
-      }
-    }).catch(() => {});
-    return () => controller.abort();
-  });
-
-  async function shareGlobeGif() {
-    if (!gifFile || sharingGif) return;
-    gifMessage = '';
-    sharingGif = true;
-    try {
-      await navigator.share({ files: [gifFile] });
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        gifMessage = 'Could not open the share sheet for the GIF.';
-      }
-    } finally {
-      sharingGif = false;
-    }
-  }
-
-  async function copyGlobeGif(imagePath: string, format: 'gif' | 'html') {
-    if (copyingGif) return;
-    gifMessage = '';
-    copyingGif = true;
-    try {
-      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-        gifMessage = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
-        return;
-      }
-
-      if (format === 'gif' && !ClipboardItem.supports?.('image/gif')) {
-        gifMessage = 'This browser does not support direct GIF copying. Try Copy as rich content.';
-        return;
-      }
-
-      // Start the clipboard write during the click, before the network request completes.
-      const gif = loadGif(imagePath);
-      if (format === 'gif') {
-        await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]), gif]);
-      } else {
-        // Embed the original animated bytes in the HTML clipboard item.
-        const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onerror = () => reject(reader.error);
-          reader.onload = () => {
-            const fragment = document.createElement('div');
-            const animation = document.createElement('img');
-            animation.src = String(reader.result);
-            animation.alt = 'Animated Atlas globe';
-            fragment.append(animation);
-            resolve(new Blob([fragment.innerHTML], { type: 'text/html' }));
-          };
-          reader.readAsDataURL(image);
-        }));
-        await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'text/html': html })]), html]);
-      }
-      gifMessage = format === 'gif' ? 'GIF copied.' : 'Rich content copied.';
-    } catch {
-      gifMessage = 'Could not copy the GIF. You can still copy the Atlas link.';
-    } finally {
-      copyingGif = false;
-    }
-  }
-
   async function copyLink(path: string) {
     const url = new URL(path, window.location.origin).href;
     message = '';
@@ -184,17 +90,12 @@
             {/if}
             <div class="card-actions">
               <button class="action" type="button" onclick={() => copyLink(link)} aria-label={'Copy link: ' + design.title}>Copy link</button>
-              {#if design.id === 'globe-gif'}
-                <button class="action" type="button" disabled={copyingGif} onclick={() => copyGlobeGif(design.image, 'gif')}>Copy GIF</button>
-                <button class="action" type="button" disabled={copyingGif}
-                  onclick={() => copyGlobeGif(design.image, 'html')}>Copy as rich content</button>
-                {#if canShareGif}
-                  <button class="action" type="button" disabled={sharingGif} onclick={shareGlobeGif}>Share GIF</button>
-                {/if}
-              {/if}
             </div>
             {#if design.id === 'globe-gif'}
-              <p role="status">{gifMessage}</p>
+              <aside class="facebook-callout" aria-label="Facebook users">
+                <strong>Facebook users</strong>
+                <p><strong>On desktop, drag this GIF into your Facebook post.</strong> Use <strong>Copy link</strong> to add the Atlas URL separately.</p>
+              </aside>
             {/if}
           </div>
         </article>
@@ -221,6 +122,8 @@
   #globe-gif { scroll-margin-top: 6rem; }
   .card-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
   .card-actions .action { margin: 0; }
+  .facebook-callout { margin-top: .85rem; padding-inline-start: .85rem; border-inline-start: 3px solid var(--atlas-accent); }
+  .facebook-callout p { margin: .25rem 0 0; }
   .globe-view { display: flex; gap: .5rem; align-items: center; margin-block-end: .75rem; }
   select { font: inherit; }
   input { display: block; width: min(100%, 36rem); font: inherit; padding: .5rem; }
