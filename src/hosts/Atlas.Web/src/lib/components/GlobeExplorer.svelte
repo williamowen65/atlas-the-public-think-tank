@@ -37,7 +37,6 @@
   );
 
   let capturing = $state(false);
-  let capturingGif = $state(false);
   const rotation = createGlobeRotation(() => !capturing && !(consent && manual));
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
   const viewPins = $derived(status === 'ready' ? (summary?.pins ?? []) : []);
@@ -154,7 +153,6 @@
   function openSharedGlobe(url: URL) {
     const shared = url.pathname === '/' && url.searchParams.get('globe') === 'open';
     capturing = shared && url.searchParams.get('capture') === 'globe';
-    capturingGif = capturing && url.searchParams.get('motion') === 'gif';
     if (!shared) return;
 
     const view = url.searchParams.get('view');
@@ -392,6 +390,7 @@
     <h2>Explore the Atlas globe</h2>
     <p>See where people are joining Atlas from.</p>
     <span>Add your pin on Atlas</span>
+    <p hidden data-globe-site-url></p>
   </div>
   <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
@@ -416,8 +415,6 @@
       <VisitorGlobe
         angle={rotation.angle}
         pins={previewPins}
-        showGrid={!capturingGif}
-        flatOcean={capturingGif}
       />
     {/if}
     {#if consent && manual}<button
