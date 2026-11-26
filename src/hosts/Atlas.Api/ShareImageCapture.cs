@@ -134,10 +134,8 @@ internal sealed class ShareImageCapture(
         : configuration["Atlas:Seo:PublicOrigin"]);
     private readonly ShareImageCache? cache = ShareImageCache.Create(configuration, environment);
 
-    private bool GlobeWorkerEnabled => configuration.GetValue<bool>("Atlas:Seo:ExternalGlobeCapture");
-
     internal bool CanServe(ShareTarget? target) =>
-        GlobeWorkerEnabled && target is { Kind: SharePage.Globe } ? cache is not null : Enabled;
+        target is { Kind: SharePage.Globe } ? cache is not null : Enabled;
 
     internal bool Enabled => cache is not null && origin is not null &&
         (environment.IsDevelopment() ? origin.IsLoopback : !origin.IsLoopback && !string.IsNullOrWhiteSpace(key));
@@ -148,7 +146,7 @@ internal sealed class ShareImageCapture(
 
     internal async Task<string> PreviewPath(ShareTarget? target, CancellationToken cancellationToken)
     {
-        if (!GlobeWorkerEnabled || target is not { Kind: SharePage.Globe })
+        if (target is not { Kind: SharePage.Globe })
             return ImagePath(target);
 
         var version = await ReadGlobeVersion(cancellationToken);
@@ -202,7 +200,7 @@ internal sealed class ShareImageCapture(
 
     internal async Task<IResult> Image(HttpContext context, ShareTarget? id)
     {
-        if (GlobeWorkerEnabled && id is { Kind: SharePage.Globe } globe)
+        if (id is { Kind: SharePage.Globe } globe)
         {
             if (cache is null) return Results.NotFound();
             var requested = context.Request.Query["generation"].ToString();
@@ -227,16 +225,13 @@ internal sealed class ShareImageCapture(
 
         var name = id is { } target ? $"{target.Kind}-{target.Id:D}" : "discover";
         if (id is { Kind: SharePage.Node } node) name = node.Id.ToString("D");
-        if (id is { Kind: SharePage.Globe })
-            name = id.Value.Animated ? "globe-motion" : id.Value.GlobeAngle is { } angle ? $"globe-{angle}" : "globe";
-        var extension = id is { Animated: true } ? "gif" : "png";
-        var cacheKey = $"v{LayoutVersion(id)}/{name}.{extension}";
+        var cacheKey = $"v{LayoutVersion(id)}/{name}.png";
         if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } cached) return cached;
 
         var job = Schedule(name, cacheKey, id);
         if (job is not null)
         {
-            try { await job.WaitAsync(TimeSpan.FromSeconds(id is { Animated: true } ? 20 : 7), context.RequestAborted); }
+            try { await job.WaitAsync(TimeSpan.FromSeconds(7), context.RequestAborted); }
             catch (TimeoutException) { /* The existing capture continues for later requests. */ }
         }
 
@@ -246,9 +241,6 @@ internal sealed class ShareImageCapture(
         if (await ReadCached(cacheKey, revision.Value, context.RequestAborted) is { } generated) return generated;
 
         context.Response.Headers.CacheControl = "no-store";
-        if (id is { Animated: true } &&
-            await ReadCached($"v{LayoutVersion(ShareTarget.Globe)}/globe.png", revision.Value, context.RequestAborted) is { } still)
-            return still;
         var fallback = environment.WebRootFileProvider.GetFileInfo("atlas-share.png");
         return fallback.Exists ? Results.File(fallback.CreateReadStream(), "image/png") : Results.NotFound();
     }
@@ -281,6 +273,9 @@ internal sealed class ShareImageCapture(
 
     private async Task<bool> Capture(string name, string cacheKey, ShareTarget? id, bool worker = false)
     {
+        if (!worker && id is { Kind: SharePage.Globe })
+            throw new InvalidOperationException("Globe previews can only be captured by the worker.");
+
         await browserSlot.WaitAsync();
         var stage = "starting Chromium";
         try
@@ -295,7 +290,7 @@ internal sealed class ShareImageCapture(
             byte[]? image = null;
             var sessionCount = id is { Animated: true } ? 4 : 1;
             // Four worker sessions capture 1,052 source frames for the 1,050-frame GIF.
-            var framesPerSession = worker ? 263 : 180;
+            const int framesPerSession = 263;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
             for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
@@ -491,9 +486,7 @@ internal sealed class ShareImageCapture(
                     globeFrames.Frames.Count, elapsed.ElapsedMilliseconds);
                 stage = "compositing and encoding globe GIF batches";
                 elapsed.Restart();
-                image = worker
-                    ? await EncodeShareableGlobe(globeFrames, elapsed)
-                    : await EncodeGlobeFrames(globeFrames, elapsed);
+                image = await EncodeShareableGlobe(globeFrames, elapsed);
                 logger.LogInformation("Atlas globe GIF encoded in {ElapsedMs} ms ({ImageBytes} bytes).",
                     elapsed.ElapsedMilliseconds, image.Length);
             }
@@ -563,8 +556,6 @@ internal sealed class ShareImageCapture(
         return previous;
     }
 
-    private const int BaselineGlobeLoopSeconds = 120;
-
     private async Task<byte[]> EncodeShareableGlobe(GlobeFrames capture, Stopwatch elapsed)
     {
         const int loopSeconds = 70;
@@ -586,7 +577,7 @@ internal sealed class ShareImageCapture(
         return optimized;
     }
 
-    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds = BaselineGlobeLoopSeconds, int fps = 6)
+    private async Task<byte[]> EncodeGlobeFrames(GlobeFrames capture, Stopwatch elapsed, int loopSeconds, int fps)
     {
         // Match the globe's default 3° per second. GIF delay is measured in centiseconds.
         var loopDuration = loopSeconds * 100;
