@@ -10,6 +10,11 @@ same captured rotation. It tries 100, 80, and 70 seconds at 6 FPS, then 80, 70,
 and 65 seconds at 5 FPS. The remaining trials are 60 seconds at 6 or 5 FPS
 and 40 seconds at 6 FPS. Each candidate preserves the 1200 × 630 canvas. Logs show size
 in decimal MB, the Facebook limit, and which candidate met the 7 MB budget.
+If the standard 70-second, 6 FPS candidate misses the budget, the worker
+tests two settings independently on the same frames. It compares a 96-color
+palette with mild lossy compression (Gifsicle level 20) at 128 colors. It
+logs both sizes and prefers the 96-color version if both fit. If neither
+fits, it continues with the existing fallback durations and frame rates.
 A GIF that exceeds the budget at every tested speed fails the execution
 before it publishes a new generation.
 

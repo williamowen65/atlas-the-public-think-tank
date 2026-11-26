@@ -577,6 +577,31 @@ internal sealed class ShareImageCapture(
                 "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {OriginalMb:F2} MB encoded, {OptimizedMb:F2} MB optimized. Target under {BudgetMb:F2} MB, Facebook limit {FacebookMb:F2} MB.",
                 loopSeconds, fps, encoded.Length / 1_000_000d, optimized.Length / 1_000_000d,
                 byteBudget / 1_000_000d, facebookLimit / 1_000_000d);
+            if (optimized.Length >= byteBudget && (loopSeconds, fps) == (70, 6))
+            {
+                // Compare both treatments against the same pre-optimization frames.
+                const int mildLoss = 20;
+                const int reducedColors = 96;
+                var lossy = await GlobeGifOptimizer.Optimize(encoded, loss: mildLoss);
+                var reducedPalette = await GlobeGifOptimizer.Optimize(encoded, colors: reducedColors);
+                logger.LogInformation(
+                    "Globe GIF 70 s at 6 FPS comparison: baseline {BaselineMb:F2} MB, lossy {LossLevel} at 128 colors {LossyMb:F2} MB, {Colors} colors without lossy compression {PaletteMb:F2} MB.",
+                    optimized.Length / 1_000_000d, mildLoss, lossy.Length / 1_000_000d,
+                    reducedColors, reducedPalette.Length / 1_000_000d);
+
+                // Prefer the smaller palette before applying lossy compression.
+                if (reducedPalette.Length < byteBudget)
+                {
+                    optimized = reducedPalette;
+                    logger.LogInformation("Selected the 96-color GIF optimization.");
+                }
+                else if (lossy.Length < byteBudget)
+                {
+                    optimized = lossy;
+                    logger.LogInformation("Selected the mild lossy GIF optimization.");
+                }
+            }
+
             if (optimized.Length < byteBudget)
             {
                 logger.LogInformation("Selected globe GIF: {LoopSeconds} s at {Fps} FPS, {SizeMb:F2} MB.",
