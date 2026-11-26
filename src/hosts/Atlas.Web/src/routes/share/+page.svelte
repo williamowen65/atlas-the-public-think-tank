@@ -40,13 +40,18 @@
   let gifMessage = $state('');
   let copyingGif = $state(false);
 
-  async function copyGlobeGif(imagePath: string) {
+  async function copyGlobeGif(imagePath: string, format: 'gif' | 'html') {
     if (copyingGif) return;
     gifMessage = '';
     copyingGif = true;
     try {
       if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
         gifMessage = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
+        return;
+      }
+
+      if (format === 'gif' && !ClipboardItem.supports?.('image/gif')) {
+        gifMessage = 'This browser does not support direct GIF copying. Try Copy as rich content.';
         return;
       }
 
@@ -58,11 +63,10 @@
         }
         return image;
       });
-      const nativeGif = ClipboardItem.supports?.('image/gif');
-      if (nativeGif) {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]);
+      if (format === 'gif') {
+        await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]), gif]);
       } else {
-        // Rich clipboard HTML can carry the animated bytes when native GIF is unavailable.
+        // Embed the original animated bytes in the HTML clipboard item.
         const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
           const reader = new FileReader();
           reader.onerror = () => reject(reader.error);
@@ -78,7 +82,7 @@
         }));
         await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'text/html': html })]), html]);
       }
-      gifMessage = 'GIF copied. Paste into your Facebook post and check that the GIF plays.';
+      gifMessage = format === 'gif' ? 'GIF copied.' : 'Rich content copied.';
     } catch {
       gifMessage = 'Could not copy the GIF. You can still copy the Atlas link.';
     } finally {
@@ -140,9 +144,9 @@
             <div class="card-actions">
               <button class="action" type="button" onclick={() => copyLink(link)} aria-label={'Copy link: ' + design.title}>Copy link</button>
               {#if design.id === 'globe-gif'}
-                <button class="action" type="button" disabled={copyingGif} onclick={() => copyGlobeGif(design.image)}>
-                  {copyingGif ? 'Copying GIF…' : 'Copy GIF'}
-                </button>
+                <button class="action" type="button" disabled={copyingGif} onclick={() => copyGlobeGif(design.image, 'gif')}>Copy GIF</button>
+                <button class="action" type="button" disabled={copyingGif}
+                  onclick={() => copyGlobeGif(design.image, 'html')}>Copy as rich content</button>
               {/if}
             </div>
             {#if design.id === 'globe-gif'}
