@@ -1,0 +1,56 @@
+name: Bootstrap Atlas globe preview worker
+on:
+  workflow_dispatch:
+    inputs:
+      installation:
+        type: choice
+        options: [rehearsal, main]
+        default: rehearsal
+      rehearsal_name:
+        description: Rehearsal suffix (blank uses the tracked profile)
+        type: string
+      variant:
+        type: choice
+        options: [demo, live]
+        default: demo
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: atlas-globe-worker-bootstrap
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Resolve deployment target
+        id: target
+        env:
+          ATLAS_INSTALLATION: ${{ inputs.installation }}
+          ATLAS_REHEARSAL_NAME: ${{ inputs.rehearsal_name }}
+          ATLAS_DEPLOYMENT_SHAPE: ${{ inputs.variant }}
+        run: python3 infrastructure/scripts/check-deployment-target.py selection
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Register Container Apps and delegate the storage grant
+        env:
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          RESOURCE_GROUP: ${{ steps.target.outputs.resource_group }}
+          NAME_PREFIX: ${{ steps.target.outputs.name_prefix }}
+          VARIANT: ${{ inputs.variant }}
+          APPLY_PRINCIPAL_ID: ${{ vars.AZURE_INFRA_APPLY_PRINCIPAL_ID }}
+        run: |
+          python3 infrastructure/scripts/bootstrap-globe-preview-worker.py \
+            --subscription "$SUBSCRIPTION_ID" \
+            --resource-group "$RESOURCE_GROUP" \
+            --site "$NAME_PREFIX-$VARIANT" \
+            --apply-principal "$APPLY_PRINCIPAL_ID"
