@@ -45,7 +45,7 @@ async function mockApi(page: Page, offline = false, hasLocation = false, canShar
   );
 }
 
-test('a shared globe link opens the globe and can be copied without placing a pin', async ({ page }) => {
+test('a shared globe link opens the globe and leads to the animated share card without placing a pin', async ({ page }) => {
   await mockApi(page, false, false, false);
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'share', { value: undefined });
@@ -57,10 +57,19 @@ test('a shared globe link opens the globe and can be copied without placing a pi
   const globe = page.getByRole('dialog', { name: 'Visitor globe' });
   await expect(globe).toBeVisible();
   await expect(globe.getByRole('link', { name: 'Sign in to place a pin' })).toBeVisible();
-  await globe.getByRole('button', { name: 'Share globe', exact: true }).click();
-  await expect(globe.getByText('Globe link copied', { exact: true })).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('data-globe-link', new URL('/?globe=open', page.url()).href);
   await expect(globe.getByText('Put a pin on this globe?', { exact: true })).toHaveCount(0);
+  await globe.getByRole('link', { name: 'Share', exact: true }).click();
+  await expect(page).toHaveURL(/\/share#globe-gif$/);
+  await expect(globe).toBeHidden();
+  const card = page.locator('#globe-gif');
+  await expect(card).toBeInViewport();
+  await expect(card.getByText('Facebook users', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: /^Copy link:/ }).click();
+  await expect(page.getByText('Share link copied.', { exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-globe-link',
+    new URL('/?globe=open&motion=gif', page.url()).href,
+  );
 });
 
 test('desktop mini opens compact globe, defaults to Historical and toggles Live, and restores focus on Escape', async ({
