@@ -46,7 +46,7 @@
     copyingGif = true;
     try {
       if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-        shareFeedback = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
+        gifMessage = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
         return;
       }
 
@@ -78,9 +78,9 @@
         }));
         await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'text/html': html })]), html]);
       }
-      shareFeedback = 'GIF copied. Paste into your Facebook post and check that the GIF plays.';
+      gifMessage = 'GIF copied. Paste into your Facebook post and check that the GIF plays.';
     } catch {
-      shareFeedback = 'Could not copy the GIF. You can still copy the Atlas link.';
+      gifMessage = 'Could not copy the GIF. You can still copy the Atlas link.';
     } finally {
       copyingGif = false;
     }
