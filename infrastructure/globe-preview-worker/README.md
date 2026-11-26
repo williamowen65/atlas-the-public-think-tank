@@ -2,7 +2,8 @@
 
 PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker runs Chromium in its own container.
-Other SEO images continue using the existing Atlas API capture path.
+Globe preview requests serve published images, cached previews, or a static
+placeholder. The Atlas API captures other SEO images on demand.
 
 The GIF capture hides latitude and longitude lines and uses the darker
 ocean edge color across the globe. Static previews and the interactive
@@ -27,7 +28,7 @@ and two PowerShell terminals. Start both terminals at the repository root.
 ### 1. Build the frontend and start the API
 
 In the first terminal, build the frontend into the API's web root and start
-Atlas with worker-generated globe previews enabled.
+Atlas with the local preview storage directory.
 
 ```powershell
 Push-Location src/hosts/Atlas.Web
@@ -35,7 +36,6 @@ npm ci
 npm run build
 Pop-Location
 
-$env:Atlas__Seo__ExternalGlobeCapture = 'true'
 $env:Atlas__Seo__CaptureDirectory = Join-Path (Get-Location).Path 'globe-output'
 dotnet run --project src/hosts/Atlas.Api --launch-profile https
 ```
