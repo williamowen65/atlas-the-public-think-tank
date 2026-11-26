@@ -85,9 +85,8 @@
     }
   }
 
-  async function copyGlobeGifAndLink() {
+  async function copyGlobeGif() {
     if (copyingGif) return;
-    const url = new URL('/?globe=open', window.location.origin).href;
     shareFeedback = '';
     shareLink = '';
     copyingGif = true;
@@ -105,29 +104,26 @@
         }
         return image;
       });
-      const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(reader.error);
-        reader.onload = () => {
-          const fragment = document.createElement('div');
-          const animation = document.createElement('img');
-          animation.src = String(reader.result);
-          animation.alt = 'Animated Atlas globe';
-          const link = document.createElement('a');
-          link.href = url;
-          link.textContent = url;
-          fragment.append(animation, document.createElement('br'), link);
-          resolve(new Blob([fragment.innerHTML], { type: 'text/html' }));
-        };
-        reader.readAsDataURL(image);
-      }));
-      const item: Record<string, Blob | Promise<Blob>> = {
-        'text/html': html,
-        'text/plain': new Blob([url], { type: 'text/plain' })
-      };
-      if (ClipboardItem.supports?.('image/gif')) item['image/gif'] = gif;
-      await Promise.all([navigator.clipboard.write([new ClipboardItem(item)]), html]);
-      shareFeedback = 'Copied. Paste into your Facebook post and check that the GIF plays.';
+      if (ClipboardItem.supports?.('image/gif')) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]);
+      } else {
+        // Rich clipboard HTML can carry the animated bytes when native GIF is unavailable.
+        const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(reader.error);
+          reader.onload = () => {
+            const fragment = document.createElement('div');
+            const animation = document.createElement('img');
+            animation.src = String(reader.result);
+            animation.alt = 'Animated Atlas globe';
+            fragment.append(animation);
+            resolve(new Blob([fragment.innerHTML], { type: 'text/html' }));
+          };
+          reader.readAsDataURL(image);
+        }));
+        await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'text/html': html })]), html]);
+      }
+      shareFeedback = 'GIF copied. Paste into your Facebook post and check that the GIF plays.';
     } catch {
       shareFeedback = 'Could not copy the GIF. You can still copy the Atlas link.';
     } finally {
@@ -552,8 +548,8 @@
     {/if}
     {#if !capturing}
       <button type="button" onclick={copyGlobeLink}>Copy link</button>
-      <button type="button" disabled={copyingGif} onclick={copyGlobeGifAndLink}>
-        {copyingGif ? 'Copying GIF…' : 'Copy GIF + link'}
+      <button type="button" disabled={copyingGif} onclick={copyGlobeGif}>
+        {copyingGif ? 'Copying GIF…' : 'Copy GIF'}
       </button>
     {/if}
     {#if status === 'failed'}<button type="button" onclick={() => void refresh()}>Retry now</button
@@ -569,7 +565,7 @@
       }}>ⓘ</button
     >
   </div>
-  {#if !capturing}<p class="globe-share-hint">Sharing on Facebook? Try Copy GIF + link.</p>{/if}
+  {#if !capturing}<p class="globe-share-hint">Sharing on Facebook? Try Copy GIF.</p>{/if}
   <p class="feedback" role="status">{shareFeedback || message}</p>
   {#if shareLink}
     <input aria-label="Globe share link" readonly value={shareLink} onfocus={(event) => event.currentTarget.select()} />
