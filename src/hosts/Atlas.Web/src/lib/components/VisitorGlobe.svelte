@@ -90,8 +90,8 @@
     options={{
       land,
       pins: preparedPins,
-      oceanColor,
-      oceanEdgeColor: flatOcean ? oceanColor : oceanEdgeColor,
+      oceanColor: flatOcean ? oceanEdgeColor : oceanColor,
+      oceanEdgeColor,
       landColor,
       gridColor,
       outlineColor,

@@ -4,13 +4,15 @@ PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
-The GIF capture hides latitude and longitude lines. Static previews and the
-interactive globe keep the grid. The GIF uses a 70-second rotation, 1200 × 630
-canvas, and a 128-color palette. The local trial runs at 11 FPS and lossy 110.
-Look under `globe-output/globe-comparison/<run-id>/` for the GIF, even if it
-exceeds the 7 MB publication budget. If it exceeds or equals the budget, the
-previous generation remains current. Azure tries 8, 7, and 6 FPS at lossy 20
-and stops at the first candidate under budget.
+The GIF capture hides latitude and longitude lines and uses the darker
+ocean edge color across the globe. Static previews and the interactive
+globe keep the grid and ocean gradient. The GIF uses a 70-second rotation,
+1200 × 630 canvas, and a 128-color palette. The local worker tests 15, 14,
+13, 12, and 11 FPS at lossy 110 and saves all five GIFs under
+`globe-output/globe-comparison/<run-id>/`. It publishes the highest frame
+rate strictly under 7 MB. If none fits, the previous generation remains
+current. Azure tries 8, 7, and 6 FPS at lossy 20 and stops at the first
+candidate under budget.
 
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
@@ -64,8 +66,8 @@ $output = (New-Item -ItemType Directory -Force globe-output).FullName
 docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
 ```
 
-Docker starts the capture immediately. The worker logs the trial size in MB and saves the GIF for comparison.
-**Selected globe GIF** appears when the trial fits the budget. **Published globe preview generation** confirms the current generation was updated.
+Docker starts the capture immediately. The worker logs each candidate's size in MB and saves all five GIFs for comparison.
+**Selected globe GIF** reports the highest frame rate that fits the budget. **Published globe preview generation** confirms the current generation was updated.
 Development capture accepts the local development certificate. On Linux
 Docker Engine, add `--add-host=host.docker.internal:host-gateway` and bind
 Atlas to an interface reachable from the container.

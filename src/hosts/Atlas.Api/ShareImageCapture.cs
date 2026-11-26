@@ -294,8 +294,8 @@ internal sealed class ShareImageCapture(
             GlobeFrames? globeFrames = null;
             byte[]? image = null;
             var sessionCount = id is { Animated: true } ? 4 : 1;
-            // Four local sessions must cover all 770 frames of the 11 FPS trial.
-            var framesPerSession = worker && environment.IsDevelopment() ? 193 : 180;
+            // Four local sessions capture 1,052 source frames for the 1,050-frame trial.
+            var framesPerSession = worker && environment.IsDevelopment() ? 263 : 180;
             var browserStartupTimeout = id is { Animated: true } ? 25000 : 12000;
             string? globeSnapshot = null;
             for (var sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++)
@@ -571,7 +571,7 @@ internal sealed class ShareImageCapture(
         const int byteBudget = 7_000_000;
         var comparison = environment.IsDevelopment() ? Guid.NewGuid().ToString("N") : null;
         var settings = comparison is null ? (Colors: 128, Loss: 20) : (Colors: 128, Loss: 110);
-        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 11 };
+        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 15, 14, 13, 12, 11 };
         byte[]? selected = null;
         var selectedFps = 0;
 
@@ -591,11 +591,11 @@ internal sealed class ShareImageCapture(
                 logger.LogInformation("Saved local globe GIF comparison: {Path}.", path);
             }
 
-            if (optimized.Length < byteBudget)
+            if (selected is null && optimized.Length < byteBudget)
             {
                 selected = optimized;
                 selectedFps = fps;
-                break;
+                if (comparison is null) break;
             }
         }
 
