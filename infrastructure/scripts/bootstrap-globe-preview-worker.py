@@ -57,7 +57,7 @@ def main():
     condition = worker_condition(principal_id)
 
     assignments = azure("role", "assignment", "list", *subscription, "--scope", scope,
-                        "--role", RBAC_ADMIN, "--all")
+                        "--role", RBAC_ADMIN)
     for assignment in assignments:
         if (assignment["scope"].lower() != scope.lower()
                 or assignment["principalId"].lower() != str(args.apply_principal)):
