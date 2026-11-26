@@ -83,8 +83,7 @@ public sealed class PublicPageSeoTests
         await File.WriteAllTextAsync(Path.Combine(directory.FullName, "current"), published);
 
         using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
-            .UseSetting("Atlas:Seo:CaptureDirectory", Path.Combine(web.Path, "capture"))
-            .UseSetting("Atlas:Seo:ExternalGlobeCapture", "true"));
+            .UseSetting("Atlas:Seo:CaptureDirectory", Path.Combine(web.Path, "capture")));
         using var client = Client(factory, "https://localhost");
 
         var html = await client.GetStringAsync("/?globe=open&motion=gif");
