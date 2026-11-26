@@ -1,0 +1,29 @@
+name: Build Atlas globe preview worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Publish the worker image to GHCR
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/globe-preview-worker"
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          docker build --file infrastructure/globe-preview-worker/Dockerfile --tag "$image:$GITHUB_SHA" .
+          docker push "$image:$GITHUB_SHA"
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image:$GITHUB_SHA")"
+          printf 'Worker image: `%s`\n' "$digest" >> "$GITHUB_STEP_SUMMARY"

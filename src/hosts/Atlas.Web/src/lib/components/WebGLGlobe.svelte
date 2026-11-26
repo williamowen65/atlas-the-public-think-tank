@@ -28,6 +28,32 @@
       lost = true;
       engine = undefined;
     };
+    const captureFrames = (event: Event) => {
+      if (!(event instanceof CustomEvent) || !engine || !width ||
+        !canvas.closest('dialog[data-globe-share]') ||
+        new URLSearchParams(location.search).get('capture') !== 'globe') return;
+
+      const { angles, frames, size = canvas.width } = event.detail as {
+        angles: number[]; frames: string[]; size?: number;
+      };
+      const originalWidth = canvas.width;
+      const originalHeight = canvas.height;
+      if (originalWidth !== size || originalHeight !== size) {
+        canvas.width = size;
+        canvas.height = size;
+      }
+      for (const captureAngle of angles) {
+        engine.draw(captureAngle, size);
+        // Read the drawing buffer synchronously before Chromium can discard it.
+        frames.push(canvas.toDataURL('image/png').split(',')[1]);
+      }
+      if (canvas.width !== originalWidth || canvas.height !== originalHeight) {
+        canvas.width = originalWidth;
+        canvas.height = originalHeight;
+      }
+      engine.draw(angle, width);
+    };
+    canvas.addEventListener('atlas-globe-capture-frames', captureFrames);
     canvas.addEventListener('webglcontextlost', contextLost);
     canvas.addEventListener('webglcontextrestored', initialize);
     const observer = new ResizeObserver(resize);
@@ -38,6 +64,7 @@
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', resize);
+      canvas.removeEventListener('atlas-globe-capture-frames', captureFrames);
       canvas.removeEventListener('webglcontextlost', contextLost);
       canvas.removeEventListener('webglcontextrestored', initialize);
       engine?.dispose();

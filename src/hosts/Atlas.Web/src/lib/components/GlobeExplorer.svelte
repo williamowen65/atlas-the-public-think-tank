@@ -36,7 +36,9 @@
       : null,
   );
 
-  const rotation = createGlobeRotation(() => !(consent && manual));
+  let capturing = $state(false);
+  let capturingGif = $state(false);
+  const rotation = createGlobeRotation(() => !capturing && !(consent && manual));
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
   const viewPins = $derived(status === 'ready' ? (summary?.pins ?? []) : []);
   const previewPins = $derived([
@@ -45,6 +47,8 @@
   ]);
   let sharing = $state(false);
   let message = $state('');
+  let shareLink = $state('');
+  let shareFeedback = $state('');
   let alive = false;
   let request: AbortController | undefined;
   let generation = 0;
@@ -66,6 +70,24 @@
     expanded = true;
     void refresh();
   }
+  async function shareGlobe() {
+    const url = new URL('/?globe=open', window.location.origin).href;
+    shareFeedback = '';
+    shareLink = '';
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Put your pin on the Atlas globe', url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      shareFeedback = 'Globe link copied';
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      shareLink = url;
+      shareFeedback = 'Select and copy the globe link';
+    }
+  }
+
   function closed() {
     if (dialog.open) return;
     shareGeneration++;
@@ -75,6 +97,8 @@
     chosenLatitude = undefined;
     chosenLongitude = undefined;
     infoOpen = false;
+    shareLink = '';
+    shareFeedback = '';
   }
   function closeGlobe(restoreFocus = true) {
     if (!dialog.open) return;
@@ -145,9 +169,24 @@
   }
   afterNavigate(({ from, to }) => {
     if (!from || !alive) return;
-    if (to?.url.pathname === '/login') closeGlobe(false);
+    if (to?.url?.pathname === '/login') closeGlobe(false);
+    if (to?.url && from.url?.href !== to.url.href) openSharedGlobe(to.url);
     void refresh();
   });
+  function openSharedGlobe(url: URL) {
+    const shared = url.pathname === '/' && url.searchParams.get('globe') === 'open';
+    capturing = shared && url.searchParams.get('capture') === 'globe';
+    capturingGif = capturing && url.searchParams.get('motion') === 'gif';
+    if (!shared) return;
+
+    const view = url.searchParams.get('view');
+    if (view !== null && ['0', '90', '180', '270'].includes(view)) {
+      rotation.angle = Number(view);
+    } else if (capturing) {
+      rotation.angle = -25;
+    }
+    if (!dialog.open) open();
+  }
   function placeDialog() {
     const height = window.innerHeight;
     const header = document.querySelector('.atlas-header')?.getBoundingClientRect();
@@ -171,6 +210,7 @@
     window.addEventListener('scroll', placeDialog, { passive: true });
     document.addEventListener('click', outsideClick, true);
     document.addEventListener('keydown', escape, true);
+    openSharedGlobe(new URL(window.location.href));
     void refresh();
     const restart = () => {
       generation++;
@@ -358,6 +398,8 @@
 <dialog
   bind:this={dialog}
   class="explorer"
+  data-globe-share
+  data-globe-pins-ready={status === 'ready'}
   class:editing={consent && manual}
   aria-label="Visitor globe"
   aria-modal="false"
@@ -367,6 +409,12 @@
   style:--globe-size={`${consent && manual ? Math.min(globeSize, 240) : globeSize}px`}
   style:max-height={consent && manual ? `calc(100dvh - ${globeTop + globeBottom}px)` : 'none'}
 >
+  <div hidden data-globe-invite>
+    <strong>Atlas · The Public Think Tank</strong>
+    <h2>Explore the Atlas globe</h2>
+    <p>See where people are joining Atlas from.</p>
+    <span>Add your pin on Atlas</span>
+  </div>
   <div class="toolbar">
     <div class="view-controls" role="group" aria-label="Globe view">
       <button
@@ -386,7 +434,14 @@
     >
   </div>
   <div class="world">
-    {#if expanded}<VisitorGlobe angle={rotation.angle} pins={previewPins} />{/if}
+    {#if expanded}
+      <VisitorGlobe
+        angle={rotation.angle}
+        pins={previewPins}
+        showGrid={!capturingGif}
+        flatOcean={capturingGif}
+      />
+    {/if}
     {#if consent && manual}<button
         class="pick-surface"
         type="button"
@@ -415,7 +470,7 @@
   </div>
   <div class="globe-actions">
     {#if !canShare}
-      <a class="sign-in" href="/login">Sign in to place a pin</a>
+      <a class="sign-in" href="/login?returnTo=%2F%3Fglobe%3Dopen">Sign in to place a pin</a>
     {:else if hasLocation}
       <span class="shared-state">Location shared</span>
       <button
@@ -448,6 +503,7 @@
         }}>Share my location on this globe</button
       >
     {/if}
+    <button type="button" onclick={shareGlobe}>Share globe</button>
     {#if status === 'failed'}<button type="button" onclick={() => void refresh()}>Retry now</button
       >{/if}
     <button
@@ -461,7 +517,10 @@
       }}>ⓘ</button
     >
   </div>
-  <p class="feedback" role="status">{message}</p>
+  <p class="feedback" role="status">{message || shareFeedback}</p>
+  {#if shareLink}
+    <input aria-label="Globe share link" readonly value={shareLink} onfocus={(event) => event.currentTarget.select()} />
+  {/if}
   {#if consent}
     <section class="disclosure consent" class:manual aria-label="Share location on this globe">
       <strong>Put a pin on this globe?</strong>

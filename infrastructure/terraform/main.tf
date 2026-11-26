@@ -74,15 +74,17 @@ module "sites" {
   for_each = local.variants
   source   = "./modules/webapp"
 
-  name                = format("%s-%s", var.name_prefix, each.key)
-  variant             = each.key
-  location            = azurerm_resource_group.atlas.location
-  resource_group_name = azurerm_resource_group.atlas.name
-  service_plan_id     = azurerm_service_plan.atlas.id
-  app_subnet_id       = module.network.app_subnet_id
-  app_service_sku     = var.app_service_sku
-  insights_connection = module.observability.insights_connection
-  identity_id         = azurerm_user_assigned_identity.runtime[each.key].id
+  name                  = format("%s-%s", var.name_prefix, each.key)
+  variant               = each.key
+  location              = azurerm_resource_group.atlas.location
+  resource_group_name   = azurerm_resource_group.atlas.name
+  service_plan_id       = azurerm_service_plan.atlas.id
+  app_subnet_id         = module.network.app_subnet_id
+  app_service_sku       = var.app_service_sku
+  insights_connection   = module.observability.insights_connection
+  identity_id           = azurerm_user_assigned_identity.runtime[each.key].id
+  identity_client_id    = azurerm_user_assigned_identity.runtime[each.key].client_id
+  identity_principal_id = azurerm_user_assigned_identity.runtime[each.key].principal_id
   connection_string = format(
     "Server=tcp:%s,1433;Database=%s;Authentication=Active Directory Managed Identity;User Id=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30",
     module.sql.server_fqdn,
@@ -96,6 +98,12 @@ module "sites" {
   account_mail_address       = var.account_mail_address
   account_mail_password      = var.account_mail_password
   account_mail_public_origin = lookup(var.account_mail_public_origins, each.key, null)
+  seo_public_origin          = lookup(var.seo_public_origins, each.key, null)
+  seo_redirect_host          = each.key == "live" ? var.seo_live_redirect_host : ""
+  browserless_api_key        = var.browserless_api_key
+  seo_indexing_enabled       = each.key == "live" && var.seo_indexing_enabled
+  globe_preview_worker_image = each.key == "demo" && var.globe_preview_worker_image != "" ? var.globe_preview_worker_image : null
+  log_analytics_workspace_id = module.observability.log_analytics_workspace_id
   tags                       = merge(local.tags, { variant = each.key })
 }
 

@@ -26,6 +26,7 @@
     angle = -25,
     oceanColor = '#e3eff3',
     oceanEdgeColor = '#bdd6df',
+    flatOcean = false,
     landColor = '#668f87',
     gridColor = '#385e6b',
     pinColor = '#485453',
@@ -44,6 +45,7 @@
     angle?: number;
     oceanColor?: string;
     oceanEdgeColor?: string;
+    flatOcean?: boolean;
     landColor?: string;
     gridColor?: string;
     pinColor?: string;
@@ -82,13 +84,13 @@
   });
 </script>
 
-<div class="globe-art" class:mini>
+<div class="globe-art" class:mini data-map-ready={!!land}>
   <WebGLGlobe
     {angle}
     options={{
       land,
       pins: preparedPins,
-      oceanColor,
+      oceanColor: flatOcean ? oceanEdgeColor : oceanColor,
       oceanEdgeColor,
       landColor,
       gridColor,

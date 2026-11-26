@@ -45,6 +45,24 @@ async function mockApi(page: Page, offline = false, hasLocation = false, canShar
   );
 }
 
+test('a shared globe link opens the globe and can be copied without placing a pin', async ({ page }) => {
+  await mockApi(page, false, false, false);
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { value: undefined });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: async (url: string) => { document.documentElement.dataset.globeLink = url; } },
+    });
+  });
+  await page.goto('/?globe=open');
+  const globe = page.getByRole('dialog', { name: 'Visitor globe' });
+  await expect(globe).toBeVisible();
+  await expect(globe.getByRole('link', { name: 'Sign in to place a pin' })).toBeVisible();
+  await globe.getByRole('button', { name: 'Share globe', exact: true }).click();
+  await expect(globe.getByText('Globe link copied', { exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-globe-link', new URL('/?globe=open', page.url()).href);
+  await expect(globe.getByText('Put a pin on this globe?', { exact: true })).toHaveCount(0);
+});
+
 test('desktop mini opens compact globe, defaults to Historical and toggles Live, and restores focus on Escape', async ({
   page,
 }) => {
@@ -373,7 +391,7 @@ test('anonymous viewers only request snapshots and the sign-in link closes the g
   ).toBe(true);
   expect(requests.length).toBeGreaterThan(0);
   await page.getByRole('link', { name: 'Sign in to place a pin' }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2F%3Fglobe%3Dopen$/);
   await expect(page.getByRole('dialog', { name: 'Visitor globe' })).toBeHidden();
 });
 

@@ -7,10 +7,6 @@
 -->
 <svelte:head>
   <title>About Atlas | A Public Think Tank</title>
-  <meta
-    name="description"
-    content="Discover Atlas, an experiment in organizing questions, evidence, experiences, and ideas into a public think tank."
-  />
 </svelte:head>
 
 <main class="about-page">

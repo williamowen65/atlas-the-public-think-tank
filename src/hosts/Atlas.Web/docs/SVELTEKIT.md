@@ -81,7 +81,7 @@ SSR and client-side routing can coexist. SSR normally prepares the first request
 
 ## Why Atlas currently sets ssr = false
 
-The root `src/routes/+layout.ts` exports `ssr = false`, inherited by descendant pages unless overridden. Combined with `adapter-static`, this produces a client-rendered SPA in `dist/` and an `index.html` fallback. We selected it to keep the starting frontend deployable as static files alongside Atlas.Api, not because client rendering always starts faster.
+The root `src/routes/+layout.ts` exports `ssr = false`, inherited by descendant pages unless overridden. Combined with `adapter-static`, this produces a client-rendered SPA in `../Atlas.Api/wwwroot/` and an `index.html` fallback. We selected it to keep the starting frontend deployable as static files alongside Atlas.Api, not because client rendering always starts faster.
 
 The browser initially receives the app shell and then renders content. This has first-load, JavaScript-dependency, SEO and social-preview tradeoffs. Atlas's per-node sharing metadata needs an explicit production decision before launch.
 

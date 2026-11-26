@@ -16,7 +16,6 @@
 
 <svelte:head>
   <title>Discover · Atlas</title>
-  <meta name="description" content="Explore connected questions, evidence, and ideas in Atlas." />
 </svelte:head>
 <div class="feed-intro">
   <h1>Discover</h1>

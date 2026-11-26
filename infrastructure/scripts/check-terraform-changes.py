@@ -17,14 +17,19 @@ def managed_resources(module: dict):
 
 def check_existing_variants(state: dict, selected: list[str]) -> None:
     existing = set()
+    preview_storage_accounts = []
     addresses_by_variant: dict[str, set[str]] = {}
     for resource in managed_resources(state.get('values', {}).get('root_module', {})):
         address = resource.get('address', '')
+        if address.endswith('.azurerm_storage_account.share_images'):
+            preview_storage_accounts.append(address)
         # These addresses are the variant-keyed resources from this Terraform root.
         matches = re.findall(r'(?:module\.(?:sites|admin_sites)|azurerm_user_assigned_identity\.(?:runtime|operations)|azapi_resource\.variant)\["(live|demo)"\]', address)
         existing.update(matches)
         for variant in matches:
             addresses_by_variant.setdefault(variant, set()).add(address)
+    print('Preview storage accounts in Terraform state: ' +
+          (', '.join(sorted(preview_storage_accounts)) or '(none)'))
     removed = existing - set(selected)
     if removed:
         excluded = sorted(address for variant in removed for address in addresses_by_variant[variant])

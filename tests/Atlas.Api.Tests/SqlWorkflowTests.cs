@@ -10,6 +10,7 @@ using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -61,7 +62,50 @@ public sealed class SqlWorkflowTests
             await VerifyReportSnapshotsAndRollback(database, client, node);
 
             await GrantGlobalModeratorRole(factory);
-            await HideVerifyAndRestoreNode(factory, client, node);
+            using var web = PublicPageSeoTests.CreateWebRoot();
+            using var seoHost = factory.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
+                .UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
+                .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
+                .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
+                .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
+            using var seo = PublicPageSeoTests.Client(seoHost, "https://atlas.thepublicthinktank.com");
+            await VerifyNodeSeo(seo, node, true, "Second report title");
+            var capturePage = await seo.GetAsync($"/nodes?id={node:D}&share=feed");
+            Assert.AreEqual("noindex", capturePage.Headers.GetValues("X-Robots-Tag").Single());
+            StringAssert.Contains(await capturePage.Content.ReadAsStringAsync(),
+                $"rel=\"canonical\" href=\"https://atlas.thepublicthinktank.com/nodes?id={node:D}\"");
+            var community = await database.CommunityRows.AsNoTracking().SingleAsync();
+            var participant = await database.ParticipantRows.AsNoTracking()
+                .SingleAsync(person => person.Id == community.OwnerParticipantId);
+            var communityPage = await seo.GetAsync($"/communities/{community.Id:D}");
+            var profilePage = await seo.GetAsync($"/profiles?id={participant.Id:D}");
+            foreach (var (page, image) in new[]
+            {
+                (communityPage, $"/share-images/communities/{community.Id:D}.png"),
+                (profilePage, $"/share-images/profiles/{participant.Id:D}.png")
+            })
+            {
+                Assert.AreEqual(HttpStatusCode.OK, page.StatusCode);
+                Assert.IsTrue(page.Headers.Contains("X-Robots-Tag"));
+                StringAssert.Contains(await page.Content.ReadAsStringAsync(), image);
+            }
+            Assert.AreEqual(HttpStatusCode.NotFound,
+                (await seo.GetAsync($"/share-images/profiles/{Guid.NewGuid():D}.png")).StatusCode);
+            var imagePath = ShareImageCapture.ImagePath(new ShareTarget(SharePage.Node, node));
+            var version = QueryHelpers.ParseQuery(new Uri(seo.BaseAddress!, imagePath).Query)["v"];
+            byte[] cached = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9WQAAAAASUVORK5CYII=");
+            var imageCache = Directory.CreateDirectory(Path.Combine(web.Path, $"v{version}"));
+            await File.WriteAllBytesAsync(Path.Combine(imageCache.FullName, $"{node:D}.png"), cached);
+            CollectionAssert.AreEqual(cached, await seo.GetByteArrayAsync(imagePath));
+            await HideVerifyAndRestoreNode(factory, client, seo, node);
+            await VerifyNodeSeo(seo, node, true, "Revised after moderation");
+
+            var archived = await database.NodeRows.SingleAsync(row => row.Id == node);
+            archived.Status = "Archived";
+            await database.SaveChangesAsync();
+            await VerifyNodeSeo(seo, node, false, "Revised after moderation");
+            Assert.AreEqual(HttpStatusCode.NotFound, (await seo.GetAsync($"/nodes?id={Guid.NewGuid()}")).StatusCode);
             await SignOutAndRejectSession(client);
         }
         finally
@@ -490,7 +534,7 @@ public sealed class SqlWorkflowTests
     /// Given the new moderator role, hide the node, expect anonymous placeholders/404s, then follow
     /// edit-review-restore.
     /// </summary>
-    private static async Task HideVerifyAndRestoreNode(ApiFactory factory, HttpClient client, Guid node)
+    private static async Task HideVerifyAndRestoreNode(ApiFactory factory, HttpClient client, HttpClient seo, Guid node)
     {
         // Current stored roles are consulted even though the cookie predates this grant.
         await Success(await client.GetAsync("/api/moderation/queue"));
@@ -517,6 +561,8 @@ public sealed class SqlWorkflowTests
                 (await anonymous.GetAsync($"/api/nodes/{node}/comments")).StatusCode
             );
         }
+        await VerifyNodeSeo(seo, node, false, "Second report title");
+        Assert.AreEqual(HttpStatusCode.NotFound, (await seo.GetAsync($"/share-images/nodes/{node:D}.png")).StatusCode);
         // Restoration follows the existing author-edit -> review-request workflow.
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new
         {
@@ -531,6 +577,24 @@ public sealed class SqlWorkflowTests
         {
             text = "Restore after test"
         }));
+    }
+
+    private static async Task VerifyNodeSeo(HttpClient client, Guid node, bool eligible, string title)
+    {
+        var canonical = $"https://atlas.thepublicthinktank.com/nodes?id={node}";
+        var page = await client.GetAsync($"/nodes?id={node}&type=comments");
+        Assert.AreEqual(HttpStatusCode.OK, page.StatusCode);
+        Assert.AreEqual(!eligible, page.Headers.Contains("X-Robots-Tag"));
+        var html = await page.Content.ReadAsStringAsync();
+        Assert.AreEqual(eligible, html.Contains($"<title>{title}</title>", StringComparison.Ordinal));
+        StringAssert.Contains(html, "property=\"og:title\" content=\"Atlas | The Public Think Tank\"");
+        var image = $"https://atlas.thepublicthinktank.com/share-images/nodes/{node:D}.png?v=9";
+        Assert.AreEqual(eligible, html.Contains($"property=\"og:image\" content=\"{image}\"", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains($"name=\"twitter:image\" content=\"{image}\"", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains("This contribution describes the issue", StringComparison.Ordinal));
+        Assert.AreEqual(eligible, html.Contains($"href=\"{canonical}\"", StringComparison.Ordinal));
+        var sitemap = await client.GetStringAsync("/sitemap.xml");
+        Assert.AreEqual(eligible, sitemap.Contains($"<loc>{canonical}</loc>", StringComparison.Ordinal));
     }
 
     /// <summary>

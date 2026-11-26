@@ -400,6 +400,7 @@ http-client.env.json.user
 
 # Atlas.Web generated artifacts
 /src/hosts/Atlas.Web/dist/
+/src/hosts/Atlas.Api/wwwroot/
 /src/hosts/Atlas.Web/storybook-static/
 /src/hosts/Atlas.Web/playwright-report/
 /src/hosts/Atlas.Web/test-results/
@@ -411,3 +412,8 @@ http-client.env.json.user
 
 # Generated only in the guarded rehearsal cleanup checkout.
 **/rehearsal_cleanup_override.tf.json
+
+# Local Playwright share captures
+/src/hosts/Atlas.Web/.share-captures/
+
+/globe-output/

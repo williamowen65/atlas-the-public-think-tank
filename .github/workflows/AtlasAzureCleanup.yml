@@ -87,6 +87,10 @@ jobs:
       TF_VAR_account_mail_address: ${{ vars.ATLAS_MAIL_ADDRESS }}
       TF_VAR_account_mail_password: ${{ secrets.ATLAS_MAIL_PASSWORD }}
       TF_VAR_account_mail_public_origins: ${{ vars.ATLAS_MAIL_PUBLIC_ORIGINS || '{}' }}
+      TF_VAR_seo_public_origins: ${{ vars.ATLAS_SEO_PUBLIC_ORIGINS || '{}' }}
+      TF_VAR_seo_live_redirect_host: ${{ vars.ATLAS_SEO_LIVE_REDIRECT_HOST }}
+      TF_VAR_seo_indexing_enabled: ${{ vars.ATLAS_SEO_INDEXING_ENABLED || 'false' }}
+      TF_VAR_browserless_api_key: ${{ secrets.BROWSERLESS_IO_API_KEY }}
       TF_VAR_app_service_sku: "B1"
       # Destroy mode removes existing state resources; it never creates missing variants.
       TF_VAR_deployment_variants: '["live","demo"]'
