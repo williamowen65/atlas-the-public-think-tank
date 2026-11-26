@@ -47,9 +47,6 @@
   ]);
   let sharing = $state(false);
   let message = $state('');
-  let shareLink = $state('');
-  let shareFeedback = $state('');
-  let copyingGif = $state(false);
   let alive = false;
   let request: AbortController | undefined;
   let generation = 0;
@@ -71,66 +68,6 @@
     expanded = true;
     void refresh();
   }
-  async function copyGlobeLink() {
-    const url = new URL('/?globe=open', window.location.origin).href;
-    shareFeedback = '';
-    shareLink = '';
-    try {
-      await navigator.clipboard.writeText(url);
-      shareFeedback = 'Globe link copied';
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-      shareLink = url;
-      shareFeedback = 'Select and copy the globe link';
-    }
-  }
-
-  async function copyGlobeGif() {
-    if (copyingGif) return;
-    shareFeedback = '';
-    shareLink = '';
-    copyingGif = true;
-    try {
-      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-        shareFeedback = 'This browser cannot copy the GIF. You can still copy the Atlas link.';
-        return;
-      }
-
-      // Start the clipboard write during the click, before the network request completes.
-      const gif = fetch('/share-images/globe.gif').then(async (response) => {
-        const image = await response.blob();
-        if (!response.ok || image.type !== 'image/gif' || !image.size) {
-          throw new Error('The animated globe image is unavailable.');
-        }
-        return image;
-      });
-      if (ClipboardItem.supports?.('image/gif')) {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]);
-      } else {
-        // Rich clipboard HTML can carry the animated bytes when native GIF is unavailable.
-        const html = gif.then((image) => new Promise<Blob>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onerror = () => reject(reader.error);
-          reader.onload = () => {
-            const fragment = document.createElement('div');
-            const animation = document.createElement('img');
-            animation.src = String(reader.result);
-            animation.alt = 'Animated Atlas globe';
-            fragment.append(animation);
-            resolve(new Blob([fragment.innerHTML], { type: 'text/html' }));
-          };
-          reader.readAsDataURL(image);
-        }));
-        await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'text/html': html })]), html]);
-      }
-      shareFeedback = 'GIF copied. Paste into your Facebook post and check that the GIF plays.';
-    } catch {
-      shareFeedback = 'Could not copy the GIF. You can still copy the Atlas link.';
-    } finally {
-      copyingGif = false;
-    }
-  }
-
   function closed() {
     if (dialog.open) return;
     shareGeneration++;
@@ -140,8 +77,6 @@
     chosenLatitude = undefined;
     chosenLongitude = undefined;
     infoOpen = false;
-    shareLink = '';
-    shareFeedback = '';
   }
   function closeGlobe(restoreFocus = true) {
     if (!dialog.open) return;
@@ -547,10 +482,7 @@
       >
     {/if}
     {#if !capturing}
-      <button type="button" onclick={copyGlobeLink}>Copy link</button>
-      <button type="button" disabled={copyingGif} onclick={copyGlobeGif}>
-        {copyingGif ? 'Copying GIF…' : 'Copy GIF'}
-      </button>
+      <a class="globe-share-link" href="/share#globe-gif" onclick={() => closeGlobe(false)}>Share</a>
     {/if}
     {#if status === 'failed'}<button type="button" onclick={() => void refresh()}>Retry now</button
       >{/if}
@@ -565,11 +497,7 @@
       }}>ⓘ</button
     >
   </div>
-  {#if !capturing}<p class="globe-share-hint">Sharing on Facebook? Try Copy GIF.</p>{/if}
-  <p class="feedback" role="status">{shareFeedback || message}</p>
-  {#if shareLink}
-    <input aria-label="Globe share link" readonly value={shareLink} onfocus={(event) => event.currentTarget.select()} />
-  {/if}
+  <p class="feedback" role="status">{message}</p>
   {#if consent}
     <section class="disclosure consent" class:manual aria-label="Share location on this globe">
       <strong>Put a pin on this globe?</strong>
@@ -916,11 +844,13 @@
     gap: 0.4rem;
     margin-top: 0.6rem;
   }
-  .globe-share-hint {
-    margin: 0.35rem 0 0;
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--atlas-muted);
+  .globe-share-link {
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    padding: .4rem .65rem;
+    color: inherit;
+    font-size: .8rem;
+    text-decoration: none;
   }
   .sign-in {
     font-size: 0.8rem;
