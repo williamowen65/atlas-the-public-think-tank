@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
 
   const designs = [
@@ -39,6 +40,52 @@
   let manualLink = $state('');
   let gifMessage = $state('');
   let copyingGif = $state(false);
+  let sharingGif = $state(false);
+  let canShareGif = $state(false);
+  let gifFile: File | undefined;
+
+  async function loadGif(imagePath: string, signal?: AbortSignal) {
+    const response = await fetch(imagePath, { signal });
+    const image = await response.blob();
+    if (!response.ok || image.type !== 'image/gif' || !image.size) {
+      throw new Error('The animated globe image is unavailable.');
+    }
+    return image;
+  }
+
+  onMount(() => {
+    const design = designs.find((item) => item.id === 'globe-gif');
+    if (selected || !design || !navigator.share || !navigator.canShare?.({
+      files: [new File([], 'atlas-globe.gif', { type: 'image/gif' })]
+    })) return;
+
+    // Prepare the file before the click so share() retains user activation.
+    const controller = new AbortController();
+    void loadGif(design.image, controller.signal).then((image) => {
+      if (controller.signal.aborted) return;
+      const file = new File([image], 'atlas-globe.gif', { type: 'image/gif' });
+      if (navigator.canShare({ files: [file] })) {
+        gifFile = file;
+        canShareGif = true;
+      }
+    }).catch(() => {});
+    return () => controller.abort();
+  });
+
+  async function shareGlobeGif() {
+    if (!gifFile || sharingGif) return;
+    gifMessage = '';
+    sharingGif = true;
+    try {
+      await navigator.share({ files: [gifFile] });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        gifMessage = 'Could not open the share sheet for the GIF.';
+      }
+    } finally {
+      sharingGif = false;
+    }
+  }
 
   async function copyGlobeGif(imagePath: string, format: 'gif' | 'html') {
     if (copyingGif) return;
@@ -56,13 +103,7 @@
       }
 
       // Start the clipboard write during the click, before the network request completes.
-      const gif = fetch(imagePath).then(async (response) => {
-        const image = await response.blob();
-        if (!response.ok || image.type !== 'image/gif' || !image.size) {
-          throw new Error('The animated globe image is unavailable.');
-        }
-        return image;
-      });
+      const gif = loadGif(imagePath);
       if (format === 'gif') {
         await Promise.all([navigator.clipboard.write([new ClipboardItem({ 'image/gif': gif })]), gif]);
       } else {
@@ -147,6 +188,9 @@
                 <button class="action" type="button" disabled={copyingGif} onclick={() => copyGlobeGif(design.image, 'gif')}>Copy GIF</button>
                 <button class="action" type="button" disabled={copyingGif}
                   onclick={() => copyGlobeGif(design.image, 'html')}>Copy as rich content</button>
+                {#if canShareGif}
+                  <button class="action" type="button" disabled={sharingGif} onclick={shareGlobeGif}>Share GIF</button>
+                {/if}
               {/if}
             </div>
             {#if design.id === 'globe-gif'}
