@@ -35,10 +35,12 @@ def main():
     parser.add_argument("--resource-group", required=True)
     parser.add_argument("--site", required=True)
     parser.add_argument("--apply-principal", required=True, type=UUID)
+    parser.add_argument("--skip-provider-registration", action="store_true")
     args = parser.parse_args()
 
     subscription = ("--subscription", str(args.subscription))
-    azure("provider", "register", *subscription, "--namespace", "Microsoft.App", "--wait")
+    if not args.skip_provider_registration:
+        azure("provider", "register", *subscription, "--namespace", "Microsoft.App", "--wait")
     variant = args.site.rsplit("-", 1)[-1]
     if variant not in ("live", "demo"):
         parser.error("--site must end in -live or -demo")
@@ -55,7 +57,7 @@ def main():
     condition = worker_condition(principal_id)
 
     assignments = azure("role", "assignment", "list", *subscription, "--scope", scope,
-                        "--role", RBAC_ADMIN, "--all")
+                        "--role", RBAC_ADMIN)
     for assignment in assignments:
         if (assignment["scope"].lower() != scope.lower()
                 or assignment["principalId"].lower() != str(args.apply_principal)):
