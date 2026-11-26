@@ -4,7 +4,7 @@ namespace Atlas.Api;
 
 internal static class GlobeGifOptimizer
 {
-    internal static async Task<byte[]> Optimize(byte[] gif, int colors = 128, int loss = 0)
+    internal static async Task<byte[]> Optimize(byte[] gif, int colors = 128, int loss = 0, bool disableMemoryConservation = false)
     {
         var directory = Directory.CreateTempSubdirectory("atlas-globe-gif-");
         try
@@ -14,6 +14,7 @@ internal static class GlobeGifOptimizer
             await File.WriteAllBytesAsync(input, gif);
 
             var options = new ProcessStartInfo("gifsicle") { UseShellExecute = false };
+            if (disableMemoryConservation) options.ArgumentList.Add("--no-conserve-memory");
             if (loss > 0) options.ArgumentList.Add($"--lossy={loss}");
             foreach (var argument in new[] { "-O3", "--colors", colors.ToString(System.Globalization.CultureInfo.InvariantCulture), "--no-dither", input, "-o", output })
                 options.ArgumentList.Add(argument);
