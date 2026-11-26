@@ -570,52 +570,40 @@ internal sealed class ShareImageCapture(
         const int loopSeconds = 70;
         const int byteBudget = 7_000_000;
         var comparison = environment.IsDevelopment() ? Guid.NewGuid().ToString("N") : null;
-        var baseline = new[] { (Colors: 128, Loss: 20) };
-        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 11, 10, 9 };
+        var settings = comparison is null ? (Colors: 128, Loss: 20) : (Colors: 128, Loss: 110);
+        var frameRates = comparison is null ? new[] { 8, 7, 6 } : new[] { 11 };
         byte[]? selected = null;
         var selectedFps = 0;
-        var selectedSettings = baseline[0];
 
         foreach (var fps in frameRates)
         {
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
-            var settings = (comparison is not null, fps) switch
-            {
-                (true, 11) => new[] { (Colors: 128, Loss: 95), (Colors: 128, Loss: 100), (Colors: 128, Loss: 110) },
-                (true, 10) => new[] { (Colors: 128, Loss: 75), (Colors: 128, Loss: 80), (Colors: 128, Loss: 85) },
-                (true, 9) => new[] { (Colors: 128, Loss: 70) },
-                _ => baseline
-            };
-            foreach (var (colors, loss) in settings)
-            {
-                var optimized = await GlobeGifOptimizer.Optimize(encoded, colors: colors, loss: loss);
-                logger.LogInformation(
-                    "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB, Facebook limit 8 MB.",
-                    loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
+            var (colors, loss) = settings;
+            var optimized = await GlobeGifOptimizer.Optimize(encoded, colors: colors, loss: loss);
+            logger.LogInformation(
+                "Globe GIF candidate: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB, Facebook limit 8 MB.",
+                loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
 
-                if (comparison is not null)
-                {
-                    var path = $"globe-comparison/{comparison}/globe-70s-{fps}fps-{colors}colors-lossy{loss}.gif";
-                    await cache!.Write(path, optimized, DateTimeOffset.UtcNow);
-                    logger.LogInformation("Saved local globe GIF comparison: {Path}.", path);
-                }
-
-                if (selected is null && optimized.Length < byteBudget)
-                {
-                    selected = optimized;
-                    selectedFps = fps;
-                    selectedSettings = (colors, loss);
-                }
+            if (comparison is not null)
+            {
+                var path = $"globe-comparison/{comparison}/globe-{loopSeconds}s-{fps}fps-{colors}colors-lossy{loss}.gif";
+                await cache!.Write(path, optimized, DateTimeOffset.UtcNow);
+                logger.LogInformation("Saved local globe GIF comparison: {Path}.", path);
             }
 
-            if (comparison is null && selected is not null) break;
+            if (optimized.Length < byteBudget)
+            {
+                selected = optimized;
+                selectedFps = fps;
+                break;
+            }
         }
 
         if (selected is null)
             throw new InvalidOperationException("No 70-second globe GIF met the 7 MB publication budget.");
 
         logger.LogInformation("Selected globe GIF: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB.",
-            loopSeconds, selectedFps, selectedSettings.Colors, selectedSettings.Loss, selected.Length / 1_000_000d);
+            loopSeconds, selectedFps, settings.Colors, settings.Loss, selected.Length / 1_000_000d);
         return selected;
     }
 

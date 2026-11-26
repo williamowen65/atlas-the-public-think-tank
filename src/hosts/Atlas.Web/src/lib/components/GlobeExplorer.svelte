@@ -37,6 +37,7 @@
   );
 
   let capturing = $state(false);
+  let capturingGif = $state(false);
   const rotation = createGlobeRotation(() => !capturing && !(consent && manual));
   const summary = $derived(mode === 'live' ? snapshot?.live : snapshot?.historical);
   const viewPins = $derived(status === 'ready' ? (summary?.pins ?? []) : []);
@@ -175,6 +176,7 @@
   function openSharedGlobe(url: URL) {
     const shared = url.pathname === '/' && url.searchParams.get('globe') === 'open';
     capturing = shared && url.searchParams.get('capture') === 'globe';
+    capturingGif = capturing && url.searchParams.get('motion') === 'gif';
     if (!shared) return;
 
     const view = url.searchParams.get('view');
@@ -432,7 +434,7 @@
     >
   </div>
   <div class="world">
-    {#if expanded}<VisitorGlobe angle={rotation.angle} pins={previewPins} />{/if}
+    {#if expanded}<VisitorGlobe angle={rotation.angle} pins={previewPins} showGrid={!capturingGif} />{/if}
     {#if consent && manual}<button
         class="pick-surface"
         type="button"
