@@ -94,7 +94,7 @@
             {#if design.id === 'globe-gif'}
               <aside class="facebook-callout" aria-label="Facebook users">
                 <strong>Facebook users</strong>
-                <p><strong>On desktop, drag this GIF into your Facebook post.</strong> Use <strong>Copy link</strong> to add the Atlas URL separately.</p>
+                <p><strong>Save this GIF to your device, then upload it to your Facebook post.</strong> Use <strong>Copy link</strong> to add the Atlas URL separately.</p>
               </aside>
             {/if}
           </div>
