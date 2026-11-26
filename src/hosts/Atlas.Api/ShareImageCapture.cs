@@ -113,6 +113,11 @@ internal sealed class ShareImageCapture(
         [data-globe-invite] strong { color: var(--atlas-accent); font-size: 21px; font-weight: 800; }
         [data-globe-invite] h2 { font-size: 54px; font-weight: 800; line-height: 1.04; margin: 18px 0; }
         [data-globe-invite] p { font-size: 25px; font-weight: 700; line-height: 1.4; }
+        [data-globe-invite] [data-globe-site-url] {
+            margin: 16px 0 0;
+            font-size: 20px;
+            overflow-wrap: anywhere;
+        }
         [data-globe-invite] span {
             display: inline-block;
             margin-top: 12px;
@@ -456,6 +461,14 @@ internal sealed class ShareImageCapture(
                         }
                         """, new { top, height = captureHeight });
                 }
+                if (id is { Animated: true })
+                {
+                    var publicOrigin = PublicPageSeo.ReadOrigin(configuration["Atlas:Seo:PublicOrigin"]) ?? origin!;
+                    await card.Locator("[data-globe-site-url]").EvaluateAsync(
+                        "(element, url) => { element.textContent = url; element.hidden = false; }",
+                        publicOrigin.GetLeftPart(UriPartial.Authority));
+                }
+
                 stage = "writing the screenshot";
                 var screenshot = new PageScreenshotOptions
                 {
@@ -560,19 +573,14 @@ internal sealed class ShareImageCapture(
     {
         const int loopSeconds = 70;
         const int fps = 15;
-        const int colors = 128;
-        const int loss = 110;
-        const int byteBudget = 7_000_000;
+        const int colors = 256;
 
         var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps);
         var optimized = await GlobeGifOptimizer.Optimize(
-            encoded, colors: colors, loss: loss, disableMemoryConservation: true);
+            encoded, colors: colors, disableMemoryConservation: true);
         logger.LogInformation(
-            "Globe GIF: {LoopSeconds} s at {Fps} FPS, {Colors} colors, lossy {Loss}, {SizeMb:F2} MB. Target under 7 MB.",
-            loopSeconds, fps, colors, loss, optimized.Length / 1_000_000d);
-
-        if (optimized.Length >= byteBudget)
-            throw new InvalidOperationException($"The globe GIF is {optimized.Length} bytes and must be under {byteBudget} bytes.");
+            "Globe GIF: {LoopSeconds} s at {Fps} FPS, up to {Colors} colors, {SizeMb:F2} MB.",
+            loopSeconds, fps, colors, optimized.Length / 1_000_000d);
 
         return optimized;
     }

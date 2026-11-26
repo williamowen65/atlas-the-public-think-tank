@@ -5,13 +5,15 @@ The worker runs Chromium in its own container.
 Globe preview requests serve published images, cached previews, or a static
 placeholder. The Atlas API captures other SEO images on demand.
 
-The GIF capture hides latitude and longitude lines and uses the darker
-ocean edge color across the globe. Static previews and the interactive
-globe keep the grid and ocean gradient. Local Docker and Azure both encode
-one 1200 × 630 GIF with a 70-second rotation at 15 FPS, a 128-color palette,
-and Gifsicle's `--lossy=110` and `--no-conserve-memory` flags.
-The worker publishes only GIFs strictly under 7 MB. The previous
-generation remains current if encoding fails or the GIF reaches the budget.
+The GIF uses the globe’s latitude and longitude grid and ocean gradient.
+Local Docker and Azure encode one 1200 × 630 GIF with a 70-second rotation at
+15 FPS and up to 256 colors. Gifsicle uses `--no-conserve-memory` and no
+lossy compression flag. The GIF is published as an upload asset with no
+7 MB link-preview budget.
+
+The GIF prints the origin from `Atlas__Seo__PublicOrigin`. It falls back to
+the capture origin when a public origin is unset. For a custom domain, update
+the job's public origin configuration and run the worker again.
 
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
@@ -54,13 +56,13 @@ docker build -f infrastructure/globe-preview-worker/Dockerfile -t atlas-globe-pr
 ```
 
 Run the following commands in order. Keep the entire `docker run` command on
-one line, including all three `-e` options. If PowerShell shows the `>>`
+one line, including the `-e` options. If PowerShell shows the `>>`
 continuation prompt after a partial paste, press **Ctrl+C** and paste the
 complete command again.
 
 ```powershell
 $output = (New-Item -ItemType Directory -Force globe-output).FullName
-docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
+docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__PublicOrigin=https://localhost:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
 ```
 
 Docker starts the capture immediately. The worker logs the GIF size in MB. **Published globe preview generation** confirms the current generation was updated.

@@ -24,6 +24,7 @@
       alt: 'The Atlas globe with community pins and an invitation to add yours',
     },
     {
+      id: 'globe-gif',
       title: 'Put your pin on the map · GIF',
       description: 'Share the globe making a full turn.',
       path: '/?globe=open&motion=gif',
@@ -36,7 +37,6 @@
   let globeView = $state('');
   let message = $state('');
   let manualLink = $state('');
-
   async function copyLink(path: string) {
     const url = new URL(path, window.location.origin).href;
     message = '';
@@ -67,7 +67,7 @@
       {#each designs as design (design.path)}
         {@const view = design.path === '/?globe=open' ? globeView : ''}
         {@const link = view ? design.path + '&view=' + view : design.path}
-        <article>
+        <article id={design.id}>
           {#key view}
           <img src={view ? design.image + '?view=' + view : design.image} alt={design.alt} width="1200" height="630"
             onerror={(event) => {
@@ -88,7 +88,15 @@
                 </select>
               </label>
             {/if}
-            <button class="action" type="button" onclick={() => copyLink(link)} aria-label={'Copy link: ' + design.title}>Copy link</button>
+            <div class="card-actions">
+              <button class="action" type="button" onclick={() => copyLink(link)} aria-label={'Copy link: ' + design.title}>Copy link</button>
+            </div>
+            {#if design.id === 'globe-gif'}
+              <aside class="facebook-callout" aria-label="Facebook users">
+                <strong>Facebook users</strong>
+                <p><strong>Save this GIF to your device, then upload it to your Facebook post.</strong> Use <strong>Copy link</strong> to add the Atlas URL separately.</p>
+              </aside>
+            {/if}
           </div>
         </article>
       {/each}
@@ -111,6 +119,11 @@
   h2 { font-size: 1.15rem; margin: 0; }
   .details p { margin: .5rem 0 1rem; }
   .action { display: inline-block; font: inherit; margin: auto .75rem 0 0; padding: .55rem .85rem; border: 1px solid var(--atlas-accent); border-radius: var(--atlas-radius); color: var(--atlas-on-accent); background: var(--atlas-accent); text-decoration: none; cursor: pointer; }
+  #globe-gif { scroll-margin-top: 6rem; }
+  .card-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
+  .card-actions .action { margin: 0; }
+  .facebook-callout { margin-top: .85rem; padding-inline-start: .85rem; border-inline-start: 3px solid var(--atlas-accent); }
+  .facebook-callout p { margin: .25rem 0 0; }
   .globe-view { display: flex; gap: .5rem; align-items: center; margin-block-end: .75rem; }
   select { font: inherit; }
   input { display: block; width: min(100%, 36rem); font: inherit; padding: .5rem; }
