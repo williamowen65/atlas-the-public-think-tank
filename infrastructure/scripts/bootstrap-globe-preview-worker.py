@@ -1,5 +1,6 @@
 """Register Container Apps and delegate the Atlas worker's storage grant."""
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -32,25 +33,32 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--subscription", required=True, type=UUID)
     parser.add_argument("--resource-group", required=True)
-    parser.add_argument("--storage-account", required=True)
-    parser.add_argument("--worker-identity", required=True)
+    parser.add_argument("--site", required=True)
     parser.add_argument("--apply-principal", required=True, type=UUID)
     args = parser.parse_args()
 
     subscription = ("--subscription", str(args.subscription))
+    azure("provider", "register", *subscription, "--namespace", "Microsoft.App", "--wait")
+    variant = args.site.rsplit("-", 1)[-1]
+    if variant not in ("live", "demo"):
+        parser.error("--site must end in -live or -demo")
+    prefix = args.site.removesuffix(f"-{variant}")
+    web_identity = azure("identity", "show", *subscription, "--resource-group",
+                         args.resource_group, "--name", f"{prefix}-mi-{variant}-web")
+    # Match the share_images Terraform module naming formula.
+    storage_account = "atlas" + hashlib.sha256(web_identity["id"].lower().encode()).hexdigest()[:19]
     principal_id = UUID(azure("identity", "show", *subscription, "--resource-group",
-                             args.resource_group, "--name", args.worker_identity)["principalId"])
+                             args.resource_group, "--name", f"{args.site}-globe-worker")["principalId"])
     account = azure("storage", "account", "show", *subscription, "--resource-group",
-                    args.resource_group, "--name", args.storage_account)
+                    args.resource_group, "--name", storage_account)
     scope = account["id"] + "/blobServices/default/containers/share-images"
     condition = worker_condition(principal_id)
 
-    azure("provider", "register", *subscription, "--namespace", "Microsoft.App", "--wait")
     assignments = azure("role", "assignment", "list", *subscription, "--scope", scope,
-                        "--assignee-object-id", str(args.apply_principal), "--role", RBAC_ADMIN,
-                        "--all")
+                        "--role", RBAC_ADMIN, "--all")
     for assignment in assignments:
-        if assignment["scope"].lower() != scope.lower():
+        if (assignment["scope"].lower() != scope.lower()
+                or assignment["principalId"].lower() != str(args.apply_principal)):
             continue
         existing = re.sub(r"\s+", "", assignment.get("condition") or "")
         if existing == re.sub(r"\s+", "", condition) and assignment.get("conditionVersion") == "2.0":
