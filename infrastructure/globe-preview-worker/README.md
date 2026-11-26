@@ -4,19 +4,13 @@ PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
-The worker first optimizes a full v14 rotation with a shared 128-color
-palette and changed-pixel encoding. If that exceeds 7 MB, it samples the
-same captured rotation. It tries 100, 80, and 70 seconds at 6 FPS, then 80, 70,
-and 65 seconds at 5 FPS. The remaining trials are 60 seconds at 6 or 5 FPS
-and 40 seconds at 6 FPS. Each candidate preserves the 1200 × 630 canvas. Logs show size
-in decimal MB, the Facebook limit, and which candidate met the 7 MB budget.
-If the standard 70-second, 6 FPS candidate misses the budget, the worker
-tests two settings independently on the same frames. It compares a 96-color
-palette with mild lossy compression (Gifsicle level 20) at 128 colors. It
-logs both sizes and prefers the 96-color version if both fit. If neither
-fits, it continues with the existing fallback durations and frame rates.
-A GIF that exceeds the budget at every tested speed fails the execution
-before it publishes a new generation.
+The worker holds the rotation at 70 seconds and tests 8, 7, and 6 FPS in
+that order, using the same capture, 1200 × 630 canvas, 128-color palette,
+and Gifsicle lossy level 20. The highest frame rate under 7 MB is published.
+If none fits, the previous generation remains current. In development,
+all three GIFs are saved under `globe-output/globe-comparison/<run-id>/`
+when using the local setup below. The log prints their relative paths and
+sizes. Azure stops encoding once a candidate fits.
 
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
@@ -70,8 +64,8 @@ $output = (New-Item -ItemType Directory -Force globe-output).FullName
 docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
 ```
 
-Docker starts the capture immediately. The worker logs each candidate in MB
-and stops trying shorter rotations once it logs **Selected globe GIF**. Wait
+Docker starts the capture immediately. The worker logs all three candidates in MB and saves them for comparison.
+**Selected globe GIF** reports the highest frame rate that fit. Wait
 for **Published globe preview generation** before inspecting the output.
 Development capture accepts the local development certificate. On Linux
 Docker Engine, add `--add-host=host.docker.internal:host-gateway` and bind
