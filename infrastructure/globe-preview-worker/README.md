@@ -4,13 +4,15 @@ PTT-187 runs the globe GIF and static globe views in a one-shot container.
 The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
-The worker holds the rotation at 70 seconds and tests 8, 7, and 6 FPS in
-that order, using the same capture, 1200 × 630 canvas, 128-color palette,
-and Gifsicle lossy level 20. The highest frame rate under 7 MB is published.
-If none fits, the previous generation remains current. In development,
-all three GIFs are saved under `globe-output/globe-comparison/<run-id>/`
-when using the local setup below. The log prints their relative paths and
-sizes. Azure stops encoding once a candidate fits.
+The worker uses one capture and keeps the 70-second rotation and 1200 × 630
+canvas. Local runs test 8 and 7 FPS with 128 colors at lossy levels 20, 25,
+and 30, then 96 colors at level 20. They also save 6 FPS with 128 colors
+at level 20 as a reference. Look under `globe-output/globe-comparison/<run-id>/`
+for the GIFs. Filenames and logs identify the settings and the logs show
+file sizes. The first candidate under 7 MB becomes current, in highest-FPS
+order and then in the compression trial order above. If none fits, the
+previous generation remains current. Azure uses 128 colors at lossy level
+20 and stops at the first fitting frame rate.
 
 The worker publishes the complete set under a new generation ID before changing
 the current-generation pointer. The public globe metadata references that
@@ -64,7 +66,7 @@ $output = (New-Item -ItemType Directory -Force globe-output).FullName
 docker run --rm --mount "type=bind,source=$output,target=/output" -e "ASPNETCORE_ENVIRONMENT=Development" -e "Atlas__Seo__CaptureOrigin=https://host.docker.internal:7240" -e "Atlas__Seo__CaptureDirectory=/output" atlas-globe-preview
 ```
 
-Docker starts the capture immediately. The worker logs all three candidates in MB and saves them for comparison.
+Docker starts the capture immediately. The worker logs all candidates in MB and saves them for comparison.
 **Selected globe GIF** reports the highest frame rate that fit. Wait
 for **Published globe preview generation** before inspecting the output.
 Development capture accepts the local development certificate. On Linux
