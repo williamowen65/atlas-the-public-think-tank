@@ -5,9 +5,10 @@ The worker uses the v14 GIF settings and runs Chromium in its own container.
 Other SEO images continue using the existing Atlas API capture path.
 
 The worker uses one capture and keeps the 70-second rotation, 1200 × 630
-canvas, and 128-color palette. Local runs hold lossy level 70 and test
-11, 10, and 9 FPS on the same capture. All three GIFs are saved even when
-an earlier candidate fits. Look under `globe-output/globe-comparison/<run-id>/`
+canvas, and 128-color palette. Local runs test lossy 95, 100, and 110 at
+11 FPS, lossy 75, 80, and 85 at 10 FPS, and lossy 70 at 9 FPS as a reference.
+Every candidate uses the same capture, and all seven GIFs are saved even
+when an earlier candidate fits. Look under `globe-output/globe-comparison/<run-id>/`
 for the GIFs. The logs identify each setting and file size. The first
 candidate under 7 MB becomes current. If none fits, the previous generation
 remains current. Azure still tries 8, 7, and 6 FPS at lossy level 20 and stops

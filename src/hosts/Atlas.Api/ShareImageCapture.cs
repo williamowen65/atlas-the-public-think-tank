@@ -579,9 +579,13 @@ internal sealed class ShareImageCapture(
         foreach (var fps in frameRates)
         {
             var encoded = await EncodeGlobeFrames(capture, elapsed, loopSeconds, fps, preserveFrames: true);
-            var settings = comparison is null
-                ? baseline
-                : new[] { (Colors: 128, Loss: 70) };
+            var settings = (comparison is not null, fps) switch
+            {
+                (true, 11) => new[] { (Colors: 128, Loss: 95), (Colors: 128, Loss: 100), (Colors: 128, Loss: 110) },
+                (true, 10) => new[] { (Colors: 128, Loss: 75), (Colors: 128, Loss: 80), (Colors: 128, Loss: 85) },
+                (true, 9) => new[] { (Colors: 128, Loss: 70) },
+                _ => baseline
+            };
             foreach (var (colors, loss) in settings)
             {
                 var optimized = await GlobeGifOptimizer.Optimize(encoded, colors: colors, loss: loss);
