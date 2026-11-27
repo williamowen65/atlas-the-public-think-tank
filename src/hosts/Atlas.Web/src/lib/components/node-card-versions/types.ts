@@ -67,6 +67,9 @@ export interface NodeCardData {
     count: number;
   }[];
 
+  /** Total individual reaction votes, independent of net score or number of reaction types. */
+  reactionCount?: number;
+
   /** Optional formatted reaction summary used as a text fallback. */
   reactionSummary?: string;
 
