@@ -255,6 +255,8 @@
       {/if}
       <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
         onclick={() => reactionsOpen = !reactionsOpen}>Reactions</button>
+      <button class="comments-button" type="button"
+        onclick={() => openRelated(node.id, 'comments')}>Comments</button>
     </div>
   {:else}
     <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
@@ -326,14 +328,14 @@
     min-width: 0; margin-inline-end: auto;
   }
   .graph-actions .details-toggle { flex: 0 0 auto; margin-inline-end: 0; }
-  .reaction-toggle, .inline-filter select {
+  .reaction-toggle, .comments-button, .inline-filter select {
     font: inherit; max-width: 100%; min-height: 2.25rem;
     color: var(--atlas-accent); background: var(--atlas-surface);
     border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius);
     padding: .25rem .6rem; cursor: pointer;
   }
   .reaction-toggle[aria-expanded="true"] { border-color: var(--atlas-accent); }
-  .reaction-toggle:focus-visible, .details-toggle:focus-visible {
+  .reaction-toggle:focus-visible, .comments-button:focus-visible, .details-toggle:focus-visible {
     outline: 2px solid var(--atlas-accent); outline-offset: 2px;
   }
   .graph-reactions {
