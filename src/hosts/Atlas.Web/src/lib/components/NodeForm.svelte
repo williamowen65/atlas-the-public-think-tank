@@ -43,6 +43,7 @@
     parentId,
     parentTitle,
     initialTypeId = '',
+    externalTypeId,
     breadcrumb = [],
     hideBreadcrumb = false,
     focusOnMount = false,
@@ -66,6 +67,8 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** When supplied, the surrounding creation toolbar owns type selection. */
+    externalTypeId?: string;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
     /** The surrounding connected feed already shows the parent. */
@@ -105,7 +108,8 @@
   /**
    * Selected catalog type ID, or new for custom-type creation.
    */
-  let typeId = $state(startingDraft?.newType ? 'new' : (startingDraft?.typeId ?? ''));
+  let localTypeId = $state(startingDraft?.newType ? 'new' : (startingDraft?.typeId ?? ''));
+  const typeId = $derived(externalTypeId ?? localTypeId);
   /**
    * Selected catalog IDs requested as contributions to this node.
    */
@@ -147,7 +151,7 @@
   let autoPluralize = $state(startingDraft?.newType?.autoPluralize ?? true);
   const instance = $props.id();
   $effect(() => {
-    if (!typeId && types.length) typeId = initialTypeId || types[0].id;
+    if (externalTypeId === undefined && !localTypeId && types.length) localTypeId = initialTypeId || types[0].id;
   });
   const newTypeOption = 'Define a new node type…';
   const selectedTypeName = $derived(types.find((type) => type.id === typeId)?.name);
@@ -221,19 +225,19 @@
 
 {#snippet titleFields()}
     <div class="title-row">
-      <div class="type-field">
+      {#if externalTypeId === undefined}<div class="type-field">
         <span aria-hidden="true">{selectedTypeLabel}</span>
         <select
           aria-label="Node type"
           use:focusAndScrollOnMount
           id={`${instance}-type`}
-          bind:value={typeId}
+          bind:value={localTypeId}
           required
           >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
             value="new">{newTypeOption}</option
           ></select
         >
-      </div>
+      </div>{/if}
       <div class="title-field">
         <input
           aria-label="Title"
