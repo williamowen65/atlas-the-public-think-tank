@@ -38,6 +38,7 @@
 {#if ready}
 <h1>Create a node</h1>
 <LiveNodeForm
+  requireTypeSelection
   draftId={page.url.searchParams.get('draft') ?? undefined}
   onCreated={(id) => void goto(`/nodes?id=${encodeURIComponent(id)}`)}
 />
