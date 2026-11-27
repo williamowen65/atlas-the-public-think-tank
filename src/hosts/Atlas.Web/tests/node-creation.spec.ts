@@ -70,9 +70,16 @@ for (const environment of ['storybook', 'spa']) {
       await expect(page).toHaveURL('http://127.0.0.1:4173/new');
       const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
       await expect(chooser).toHaveValue('');
+      const workshop = page.getByRole('region', { name: 'Give each idea its own node' });
+      await expect(workshop.getByRole('heading', { name: 'One node with several ideas' })).toBeVisible();
+      await expect(workshop.getByRole('heading', { name: 'Separate nodes in one discussion' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Browse Discovery' })).toHaveAttribute('href', '/');
+      await page.getByText('See node type examples', { exact: true }).click();
+      await expect(page.getByText('Add benches along the waterfront path.', { exact: true })).toBeVisible();
       await expect(page.getByRole('form', { name: 'Create root node' })).toHaveCount(0);
       await chooser.selectOption(idea);
       await expect(chooser).toHaveCount(0);
+      await expect(workshop).toHaveCount(0);
     }
     await fill(page);
     const form = page.getByRole('form', { name: 'Create root node' });
