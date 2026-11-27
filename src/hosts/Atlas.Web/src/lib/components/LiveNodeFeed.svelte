@@ -49,9 +49,15 @@
     onCreateFirst,
     onOpenNode,
     onOpenProfile,
+    connected = false,
+    inline = false,
   }: {
     /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
+    /** Parent-scoped graph rail; not used for general Discover. */
+    connected?: boolean;
+    /** Embedded relation: no route scroll restore, nested expansion or automatic pagination. */
+    inline?: boolean;
     /**
      * Public API base for discovery pages and descendant breadcrumb reads. Live voting/reaction
      * wrappers use their own session-aware defaults.
@@ -327,9 +333,9 @@
   onMount(() => {
     const historyState = routePage.state as Record<string, unknown>;
     type SavedPosition = { anchor?: SavedFeedAnchor; route?: string };
-    let saved = historyState[savedHistoryKey] as SavedPosition | undefined;
+    let saved = inline ? undefined : historyState[savedHistoryKey] as SavedPosition | undefined;
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    if (!saved && routePage.url.pathname === '/' && navigation?.type === 'back_forward') {
+    if (!inline && !saved && routePage.url.pathname === '/' && navigation?.type === 'back_forward') {
       try {
         saved = JSON.parse(sessionStorage.getItem(savedHistoryKey) ?? 'null') as SavedPosition | undefined;
       } catch { /* Fall back to the first page if storage is unavailable. */ }
@@ -393,6 +399,9 @@
   {error}
   errorRole={databaseResuming ? 'status' : 'alert'}
   {presentation}
+  {connected}
+  {inline}
+  inlineRelationships={!inline}
   {emptyTypeName}
   {onCreateFirst}
   onLoadMore={() => void load('next')}
