@@ -284,10 +284,19 @@
     schedule();
     return { destroy() { cancelAnimationFrame(frame); mutation.disconnect(); resize.disconnect(); } };
   }
-  // The toolbar owns the draft type and the related feed filter.
+  // The initial chooser and the editor's type selector share the child feed filter.
   // Draft notifications only track editable content for existing save/discard handling.
   function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
+  }
+  function openChildForm(id?: string) {
+    if (createType !== null) return;
+    if (id && types.some(type => type.id === id)) {
+      createType = id;
+      active = id;
+    } else {
+      createType = '';
+    }
   }
   function selectCreateType(id: string) {
     if (createType === null || childSubmitting || switching) return;
@@ -617,10 +626,7 @@
       childFormBusy={switching || childSubmitting}
       onCreateTypeChange={selectCreateType}
       onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
-      onAddChild={() => {
-        if (createType !== null) return;
-        createType = '';
-      }}
+      onAddChild={openChildForm}
     >
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
            Archive state reaches LiveVotingDial, which also disables itself while loading/saving. -->
@@ -650,6 +656,7 @@
               parentTitle={node.title}
               initialTypeId={createType}
               externalTypeId={active === 'draft-new-type' ? 'new' : active}
+              onTypeChange={selectCreateType}
               onSubmittingChange={(busy) => childSubmitting = busy}
               onCreated={openNode}
               onDraftChange={selectDraftType}
@@ -658,7 +665,12 @@
               hideBreadcrumb
               focusOnMount
               {apiBase}
-            />{/key}
+            >
+              {#snippet closeControl()}
+                <button class="inline-close-child" type="button" disabled={switching || childSubmitting}
+                  onclick={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}>Close subnode form</button>
+              {/snippet}
+            </LiveNodeForm>{/key}
         </div>{/if}
       <!--
         Changing tabs recreates the selected discussion subtree so its local paging/form state
@@ -681,7 +693,7 @@
                 .replace(/\s*\(\d+\)\s*$/, '')
                 .replace(/ies$/i, 'y')
                 .replace(/s$/i, '')}
-            onCreateFirst={createType === null ? () => { createType = ''; } : undefined}
+            onCreateFirst={createType === null ? () => openChildForm(active === 'subnodes' ? undefined : active) : undefined}
           />{/if}{/key}
     </NodePage>
   {/key}
@@ -714,6 +726,14 @@
   .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
   .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
+  .inline-close-child {
+    font: inherit; font-size: .85rem; min-height: 2rem; padding: .35rem .55rem;
+    border: 1px solid var(--atlas-accent); border-radius: var(--atlas-radius);
+    color: var(--atlas-accent); background: var(--atlas-surface); white-space: nowrap;
+    cursor: pointer;
+  }
+  .inline-close-child:hover:not(:disabled) { background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface)); }
+  .inline-close-child:disabled { opacity: .6; cursor: default; }
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;
