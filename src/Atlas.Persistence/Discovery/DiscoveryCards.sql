@@ -45,6 +45,7 @@ SELECT n.Id AS NodeId,
                    THEN CONCAT(N' +', reactionCount.Value - 3)
                    ELSE N'' END)
        END AS Reactions,
+       CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN 0 ELSE COALESCE(reactionCount.TotalVotes, 0) END AS ReactionCount,
        COALESCE(communities.Text, N'None') AS Communities,
        COALESCE(preview.Json, N'[]') AS PreviewJson,
        n.IsHidden
@@ -117,10 +118,11 @@ OUTER APPLY (
 ) reactions
 -- Count the same eligible reactions so the card can append the +N remainder.
 OUTER APPLY (
-    SELECT COUNT(*) AS Value FROM NodeReactionRows nr
+    SELECT COUNT(*) AS Value, SUM(votes.TotalVotes) AS TotalVotes FROM NodeReactionRows nr
     JOIN ReactionDefinitionRows d ON d.Id = nr.ReactionDefinitionId
+    CROSS APPLY (SELECT COUNT(*) AS TotalVotes FROM VoteRows v WHERE v.TargetType = N'NodeReaction' AND v.TargetId = nr.Id) votes
     WHERE nr.NodeId = n.Id AND nr.LifecycleState = N'Active' AND d.IsSuppressed = 0
-      AND EXISTS (SELECT 1 FROM VoteRows v WHERE v.TargetType = N'NodeReaction' AND v.TargetId = nr.Id)
+      AND votes.TotalVotes > 0
 ) reactionCount
 
 -- Collect associated community names in name order.
