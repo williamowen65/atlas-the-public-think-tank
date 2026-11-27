@@ -64,6 +64,7 @@
     authoringFooter,
     blocks,
     draft = false,
+    creatingDraft = false,
     reactionControls,
     onOpenProfile,
     voting,
@@ -91,6 +92,8 @@
     /** Draft content or freshly saved content, when already available. */
     blocks?: ContentBlock[];
     draft?: boolean;
+    /** New node authoring only, not existing-node edit previews. */
+    creatingDraft?: boolean;
   } = $props();
   const instance = $props.id();
   const childCount = $derived((node.childTypes ?? []).reduce((sum, child) => sum + child.count, 0));
@@ -165,14 +168,13 @@
               }
             }}>{node.authorName}</a
           >{:else}{node.authorName}{/if}</span
-      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
+      ><span class="byline-separator" aria-hidden="true">·</span>{#if creatingDraft}<span>Currently creating a draft</span>{:else}<time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
         >{mobileLayout ? relativeDate(node.createdAt) : new Date(node.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
           timeZone: 'UTC',
-        })}</time
-      >{#if node.communities.length}
+        })}</time>{/if}{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span>
         <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span>
         {#if draft}{node.communities.join(', ')}{:else}<CommunityLinks
