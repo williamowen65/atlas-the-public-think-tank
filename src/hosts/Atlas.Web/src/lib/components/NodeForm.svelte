@@ -224,6 +224,9 @@
 </form>
 
 {#snippet titleFields()}
+    {#if externalTypeId !== undefined}
+      <p class="selected-node-type">{preview.typeName}</p>
+    {/if}
     <div class="title-row">
       {#if externalTypeId === undefined}<div class="type-field">
         <span aria-hidden="true">{selectedTypeLabel}</span>
@@ -365,6 +368,14 @@
     display: block;
     font-size: 0.85rem;
     margin-bottom: 0.25rem;
+  }
+  .selected-node-type {
+    margin: 0 0 var(--atlas-node-title-gap);
+    color: var(--atlas-accent);
+    font-weight: 700;
+    font-size: clamp(1.2rem, 4vw, 2.1rem);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
   }
   .title-row {
     display: flex;
