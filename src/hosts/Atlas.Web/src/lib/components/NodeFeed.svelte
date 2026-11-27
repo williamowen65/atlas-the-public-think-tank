@@ -79,6 +79,9 @@
     emptyTypeName,
     onCreateFirst,
     apiBase,
+    connected = false,
+    inline = false,
+    inlineRelationships = false,
   }: {
     /** Svelte snippet receiving a FeedItem, used to supply voting controls for each card. */
     renderVoting?: Snippet<[FeedItem, compact?: boolean]>;
@@ -86,6 +89,11 @@
     renderReactions?: Snippet<[FeedItem]>;
     /** Loaded FeedItem records to display; the parent owns fetching and accumulation. */
     items: FeedItem[];
+    /** Only direct child feeds draw sibling branches. */
+    connected?: boolean;
+    /** Embedded feeds use manual paging and do not participate in route scroll anchors. */
+    inline?: boolean;
+    inlineRelationships?: boolean;
     /** Whether a page request is in progress; shows loading feedback and restricts paging. */
     loading?: boolean;
     /** Slow-request feedback, announced outside the busy list and above placeholders. */
@@ -153,7 +161,7 @@
   $effect(() => {
     items.length;
     if (
-      typeof IntersectionObserver === 'undefined' ||
+      inline || typeof IntersectionObserver === 'undefined' ||
       !tail ||
       loading ||
       error ||
@@ -175,7 +183,7 @@
   $effect(() => {
     items.length;
     if (
-      typeof IntersectionObserver === 'undefined' ||
+      inline || typeof IntersectionObserver === 'undefined' ||
       !head ||
       loading ||
       error ||
@@ -212,7 +220,7 @@
         >Load previous nodes</button
       >
     </div>{/if}
-  <ul aria-label="Nodes">
+  <ul aria-label="Nodes" class:connected>
     {#each items as item (item.node.id)}
       <!--
         Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
@@ -222,8 +230,8 @@
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
       <li
         class:moderated-card={item.node.isHidden === true}
-        data-node-id={item.node.id}
-        data-feed-page={item.page}
+        data-node-id={inline ? undefined : item.node.id}
+        data-feed-page={inline ? undefined : item.page}
       >
         {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}
         <NodeCard
@@ -232,6 +240,8 @@
           node={item.node}
           {presentation}
           {apiBase}
+          {inlineRelationships}
+          relationshipContext={connected}
           average={item.average}
           totalVotes={item.totalVotes}
           {onNavigate}
@@ -300,6 +310,28 @@
   }
   li {
     min-width: 0;
+  }
+  /* Only a parent-scoped list has this rail; normal Discover items remain independent. */
+  ul.connected {
+    --branch-gutter: clamp(.85rem, 3vw, 1.6rem);
+    --branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+    padding-inline-start: var(--branch-gutter);
+  }
+  ul.connected > li { position: relative; }
+  ul.connected > li::before, ul.connected > li::after {
+    content: ''; position: absolute; pointer-events: none;
+    inset-inline-start: calc(-1 * var(--branch-gutter) + 2px);
+  }
+  ul.connected > li::before {
+    inset-block-start: 0; inset-block-end: -1.25rem;
+    border-inline-start: 2px solid var(--branch-color);
+  }
+  ul.connected > li:first-child::before { inset-block-start: -.6rem; }
+  ul.connected > li:last-child::before { inset-block-end: auto; block-size: 1.4rem; }
+  ul.connected > li:only-child::before { block-size: 2rem; }
+  ul.connected > li::after {
+    inset-block-start: 1.4rem; inline-size: calc(var(--branch-gutter) - 2px);
+    border-block-start: 2px solid var(--branch-color);
   }
   .feed-tail {
     text-align: center;
