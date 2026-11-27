@@ -223,12 +223,12 @@
     onSubmit(draft());
   }}
 >
-  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions} {closeControl}
+  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions} {closeControl} creatingDraft
     disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
 </form>
 
 {#snippet titleFields()}
-    <div class="title-row" class:stacked-type={externalTypeId !== undefined}>
+    <div class="title-row stacked-type">
       <div class="type-field">
         <span aria-hidden="true">{selectedTypeLabel}</span>
         <select
@@ -501,6 +501,10 @@
   :focus-visible {
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
+  }
+  @media (max-width: 640px) {
+    footer { flex-direction: column; align-items: stretch; }
+    .contributions { flex: none; width: 100%; }
   }
   @media (max-width: 380px) {
     footer,
