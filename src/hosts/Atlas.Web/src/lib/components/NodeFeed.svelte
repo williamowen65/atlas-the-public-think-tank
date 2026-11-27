@@ -210,17 +210,20 @@
 -->
 
 <!-- Keep delay feedback outside aria-busy so assistive technology can announce it now. -->
-<div class="node-feed" role={loadingNotice ? 'status' : undefined} aria-live="polite">
+<div class="node-feed" class:mini-notice={presentation === 'mini' && connected && inline && !!loadingNotice} role={loadingNotice ? 'status' : undefined} aria-live="polite">
   {#if loadingNotice}<p>{loadingNotice}</p>{/if}
 </div>
 <section class="node-feed" aria-label="Node feed" aria-busy={loading || initialLoading}>
-  {#if initialLoading}<LoadingPlaceholder />{/if}
+  {#if initialLoading && presentation !== 'mini'}<LoadingPlaceholder />{/if}
   {#if hasPrevious}<div class="feed-head" bind:this={head}>
       <button type="button" disabled={loading || !!error || !onLoadPrevious} onclick={onLoadPrevious}
         >Load previous nodes</button
       >
     </div>{/if}
-  <ul aria-label="Nodes" class:connected class:mini-feed={presentation === 'mini'}>
+  <ul aria-label="Nodes" class:connected class:mini-feed={presentation === 'mini'} class:attached-mini-feed={presentation === 'mini' && inline && connected}>
+    {#if initialLoading && presentation === 'mini'}
+      <li><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></li>
+    {/if}
     {#each items as item (item.node.id)}
       <!--
         Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
@@ -282,9 +285,9 @@
             ? error
               ? 'No nodes loaded.'
               : 'No nodes found.'
-            : `${items.length} nodes shown${hasMore ? '.' : ' · You’re all caught up.'}`}
+            : `${items.length} ${items.length === 1 ? 'node' : 'nodes'} shown${hasMore ? '.' : ' · You’re all caught up.'}`}
       </p>{/if}
-    {#if hasMore || error}<button
+    {#if (hasMore || error) && !(initialLoading && presentation === 'mini')}<button
         type="button"
         disabled={loading || !onLoadMore}
         onclick={error ? onRetry ?? onLoadMore : onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button
@@ -313,8 +316,8 @@
   }
   /* Only a parent-scoped list has this rail; normal Discover items remain independent. */
   ul.connected {
-    --branch-gutter: clamp(.85rem, 3vw, 1.6rem);
-    --branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+    --branch-gutter: var(--atlas-connected-branch-gutter, clamp(.85rem, 3vw, 1.6rem));
+    --branch-color: var(--atlas-connected-branch-color, color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border)));
     padding-inline-start: var(--branch-gutter);
   }
   ul.connected > li { position: relative; }
@@ -346,6 +349,24 @@
     block-size: calc(var(--mini-branch-anchor) + .6rem);
   }
   ul.connected.mini-feed > li::after { inset-block-start: var(--mini-branch-anchor); }
+  /* In the compact card the section header supplies the first part of the rail.
+     The list starts exactly where the header/slow-loading notice ends. */
+  ul.connected.attached-mini-feed > li:first-child::before { inset-block-start: 0; }
+  ul.connected.attached-mini-feed > li:only-child::before { block-size: var(--mini-branch-anchor); }
+  .mini-notice {
+    position: relative;
+    padding-inline-start: var(--atlas-connected-branch-gutter, 1.6rem);
+    padding-block-end: .5rem;
+  }
+  .mini-notice p { margin: 0; }
+  .mini-notice::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 2px;
+    border-inline-start: 2px solid var(--atlas-connected-branch-color, var(--atlas-border));
+    pointer-events: none;
+  }
   .mini-tail { font-size: .8rem; }
   .feed-tail.mini-tail { padding: .65rem .25rem .15rem; }
   .mini-tail p { margin: .2rem 0; }
