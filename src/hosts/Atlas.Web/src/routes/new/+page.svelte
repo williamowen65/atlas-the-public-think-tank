@@ -34,9 +34,9 @@
   and successful creation navigates to the node.
 -->
 
-<svelte:head><title>Create a node · Atlas</title></svelte:head>
+<svelte:head><title>Create a root node · Atlas</title></svelte:head>
 {#if ready}
-<h1>Create a node</h1>
+<h1>Create a root node</h1>
 <p class="writing-guide">New to Atlas? <a href="/how-to-write-a-node">How to Write a Node</a></p>
 <LiveNodeForm
   requireTypeSelection

@@ -3,52 +3,62 @@
 <div class="guide">
   <header>
     <h1>How to Write a Node</h1>
-    <p>A node gives one question, idea, or piece of evidence a place in a discussion. Start with what you want others to respond to or build on.</p>
-    <a href="/new">Create a node</a>
+    <p>On Atlas, a node is a contribution to a discussion. It can be anything you want to share, from a question or an idea to an observation or a photo. Pick a type that fits, or define your own.</p>
   </header>
+
+  <figure class="tree-diagram" aria-label="A root node branches into two child nodes">
+    <div class="tree-root">
+      <strong>Root node</strong>
+      <span>Starts a discussion</span>
+    </div>
+    <div class="tree-children">
+      <div>Child node</div>
+      <div>Child node</div>
+    </div>
+    <figcaption>Child nodes, also called subnodes, build on the node they’re attached to.</figcaption>
+  </figure>
+
+  <div class="creation-options">
+    <section aria-labelledby="root-heading">
+      <h2 id="root-heading">Start a discussion</h2>
+      <p>Choose <a href="/new">Create a root node</a>, pick a type, then write and publish your contribution.</p>
+    </section>
+    <section aria-labelledby="child-heading">
+      <h2 id="child-heading">Add a subnode</h2>
+      <ol>
+        <li><a href="/">Browse Discovery</a> or use Search to find an existing discussion.</li>
+        <li>Open the specific node you want to build on and choose <strong>Add a child node</strong>.</li>
+        <li>Pick a type, then write and publish your contribution.</li>
+      </ol>
+    </section>
+  </div>
 
   <section class="lesson" aria-labelledby="split-node-heading">
     <h2 id="split-node-heading">Give each idea its own node</h2>
-    <p>Could someone vote differently on two ideas in your draft? Give each idea a node of its own.</p>
+    <p>As you write, ask yourself whether someone might vote yes on one idea and no on another. If so, give each idea its own node.</p>
     <div class="comparison">
-      <div>
-        <h3>One node with several ideas</h3>
+      <div class="bundled">
+        <h3><span aria-hidden="true">✕</span> Avoid bundling ideas</h3>
         <div class="example-node">
-          <strong>Make the waterfront easier to visit</strong>
-          <p>We should add benches along the path, run a weekend shuttle, and put the first benches near the ferry terminal.</p>
+          <strong>Make the playground better</strong>
+          <p>Let’s add swings and plant a shade tree.</p>
         </div>
-        <p>One vote covers the whole bundle. Someone could want benches and have reservations about the shuttle.</p>
+        <p class="reason"><strong>One vote for both.</strong> What if you want swings but have a different idea for shade?</p>
       </div>
-      <div>
-        <h3>Separate nodes in one discussion</h3>
+      <div class="separate">
+        <h3><span aria-hidden="true">✓</span> Give each idea a branch</h3>
         <ul class="branch" role="list">
           <li>
-            <div class="example-node"><span>Question</span><strong>How could we make the waterfront easier to visit?</strong></div>
+            <div class="example-node"><span>Root node</span><strong>How could we make the playground better?</strong></div>
             <ul role="list">
-              <li>
-                <div class="example-node"><span>Idea</span><strong>Add benches along the path</strong></div>
-                <ul role="list">
-                  <li><div class="example-node"><span>Location</span><strong>Start near the ferry terminal</strong></div></li>
-                </ul>
-              </li>
-              <li><div class="example-node"><span>Solution</span><strong>Run a weekend shuttle</strong></div></li>
+              <li><div class="example-node"><span>Child node</span><strong>Add swings</strong></div></li>
+              <li><div class="example-node"><span>Child node</span><strong>Plant a shade tree</strong></div></li>
             </ul>
           </li>
         </ul>
-        <p>People can find and vote on each proposal, and add a location suggestion directly under the bench idea.</p>
+        <p class="reason"><strong>Each idea gets its own vote.</strong> You can also add “Put the swings next to the slide” directly under “Add swings.”</p>
       </div>
     </div>
-  </section>
-
-  <section aria-labelledby="placement-heading">
-    <h2 id="placement-heading">Find a place for your contribution</h2>
-    <p>If your contribution answers a question, offers evidence, or develops an idea, attach it to the node it directly builds on. In the waterfront example, the ferry terminal suggestion belongs under the bench idea.</p>
-    <ol>
-      <li><a href="/">Browse Discovery</a> or use Search to find an existing discussion.</li>
-      <li>Open the node your contribution builds on and choose <strong>Add a child node</strong>.</li>
-      <li>Pick a node type, write your contribution, and publish it.</li>
-    </ol>
-    <p>Starting a new discussion? <a href="/new">Create a node</a> and give it a title that tells readers what they can respond to.</p>
   </section>
 </div>
 
@@ -61,7 +71,61 @@
     padding-block: 1rem 2rem;
   }
   header, section, .comparison > div { display: grid; align-content: start; gap: .75rem; min-width: 0; }
-  h1, h2, h3, p, ol { margin: 0; }
+  h1, h2, h3, p, ol, figure { margin: 0; }
+  .tree-diagram {
+    max-width: 25rem;
+    width: 100%;
+    margin-inline: auto;
+    text-align: center;
+  }
+  .tree-root, .tree-children > div {
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    padding: .5rem;
+  }
+  .tree-root {
+    display: grid;
+    width: fit-content;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  .tree-root span, figcaption { color: var(--atlas-muted); font-size: .9rem; }
+  .tree-children {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .65rem;
+    padding-top: 1.75rem;
+  }
+  .tree-children::before, .tree-children::after, .tree-children > div::before {
+    content: '';
+    position: absolute;
+    border-color: var(--atlas-muted);
+    border-style: solid;
+  }
+  .tree-children::before { top: 0; left: 50%; height: .85rem; border-width: 0 0 0 1px; }
+  .tree-children::after {
+    top: .85rem;
+    inset-inline: calc((100% - .65rem) / 4);
+    height: .9rem;
+    border-width: 1px 1px 0;
+  }
+  .tree-children > div { position: relative; }
+  .tree-children > div::before {
+    top: -.43rem;
+    left: calc(50% - .2rem);
+    width: .4rem;
+    height: .4rem;
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+  }
+  figcaption { margin-top: .65rem; }
+  .creation-options { display: grid; gap: 1rem; }
+  .creation-options section {
+    border-top: 1px solid var(--atlas-border);
+    padding-top: .85rem;
+  }
   p, li { line-height: 1.5; }
   ol { padding-inline-start: 1.4rem; }
   ol li + li { margin-top: .35rem; }
@@ -72,6 +136,19 @@
     padding: clamp(.9rem, 3vw, 1.5rem);
   }
   .comparison { display: grid; gap: 1rem; margin-top: .3rem; }
+  .comparison > div {
+    padding: .8rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+  }
+  .comparison h3, .reason {
+    padding: .5rem .65rem;
+    border-radius: var(--atlas-radius);
+    color: var(--example-ink);
+    background: var(--example-tint);
+  }
+  .bundled { --example-ink: #791c23; --example-tint: #fce4e5; }
+  .separate { --example-ink: #175433; --example-tint: #e0f4e7; }
   .example-node {
     display: grid;
     gap: .25rem;
@@ -93,6 +170,6 @@
     border-top: 2px solid var(--atlas-border);
   }
   @media (min-width: 45rem) {
-    .comparison { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+    .creation-options, .comparison { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
   }
 </style>

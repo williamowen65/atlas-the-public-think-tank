@@ -4,13 +4,13 @@
   let { types, onChoose }: { types: NodeType[]; onChoose: (id: string) => void } = $props();
 
   const examples: ReadonlyMap<string, string> = new Map([
-    ['issue', 'The waterfront is hard to reach without a car.'],
-    ['question', 'How could we make the waterfront easier to visit?'],
-    ['idea', 'Add benches along the waterfront path.'],
-    ['solution', 'Run a weekend shuttle from downtown.'],
-    ['evidence', 'Weekend bus service ends before the last ferry arrives.'],
-    ['relationship', 'The shuttle and ferry proposals both depend on weekend service.'],
-    ['location', 'Ferry terminal entrance'],
+    ['issue', 'The playground gets too hot in the afternoon.'],
+    ['question', 'How could we make the playground better?'],
+    ['idea', 'Add swings at the playground.'],
+    ['solution', 'Plant a tree to shade the play area.'],
+    ['evidence', 'The playground has no shade at 3 p.m.'],
+    ['relationship', 'Both the shade tree and shade sail would cover the sandbox.'],
+    ['location', 'Next to the slide'],
   ]);
 </script>
 
