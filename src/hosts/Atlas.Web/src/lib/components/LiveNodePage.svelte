@@ -195,6 +195,7 @@
    * selection.
    */
   let createType = $state<string | null>(null);
+  let childSubmitting = $state(false);
   /**
    * Whether the node’s breadcrumb can load older ancestors.
    */
@@ -220,6 +221,7 @@
   // Before switching tabs, save a titled draft or ask before discarding untitled changes.
   async function closeChildForm(): Promise<boolean> {
     if (createType === null) return true;
+    if (childSubmitting) return false;
     if (editingDraft && draftChanged(editingDraft)) {
       if (editingDraft.title.trim()) {
         if (!saveChildDraft || !(await saveChildDraft())) {
@@ -282,12 +284,15 @@
     schedule();
     return { destroy() { cancelAnimationFrame(frame); mutation.disconnect(); resize.disconnect(); } };
   }
-  // Track the editable child draft so its selected type can appear as a temporary discussion tab.
+  // The toolbar owns the draft type and the related feed filter.
+  // Draft notifications only track editable content for existing save/discard handling.
   function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
-    if (createType === null || !draft) return;
-    const selected = draft.newType ? 'draft-new-type' : draft.typeId;
-    if (selected) active = selected;
+  }
+  function selectCreateType(id: string) {
+    if (createType === null || childSubmitting || switching) return;
+    if (id !== 'new' && !types.some(type => type.id === id)) return;
+    active = id === 'new' ? 'draft-new-type' : id;
   }
   /**
    * Backend-calculated average importance rating; null means no average is available.
@@ -328,6 +333,7 @@
     moderatorConfirm = false;
     moderatorMessage = '';
     createType = null;
+    childSubmitting = false;
     editingDraft = null;
     saveChildDraft = null;
     active = 'subnodes';
@@ -606,12 +612,13 @@
       onNavigate={openNode}
       onTabChange={(id) => void changeTab(id)}
       childFormOpen={createType !== null}
-      childFormBusy={switching}
+      childFormBusy={switching || childSubmitting}
+      onCreateTypeChange={selectCreateType}
       onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
       onAddChild={(id) => {
         if (createType !== null) return;
-        createType = id ?? types[0]?.id ?? '';
-        active = createType;
+        createType = id ?? types[0]?.id ?? 'new';
+        active = createType === 'new' ? 'draft-new-type' : createType;
       }}
     >
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
@@ -641,6 +648,8 @@
               parentId={node.id}
               parentTitle={node.title}
               initialTypeId={createType}
+              externalTypeId={active === 'draft-new-type' ? 'new' : active}
+              onSubmittingChange={(busy) => childSubmitting = busy}
               onCreated={openNode}
               onDraftChange={selectDraftType}
               onRegisterClose={(close) => (saveChildDraft = close)}
@@ -673,7 +682,8 @@
                 .replace(/s$/i, '')}
             onCreateFirst={() => {
               if (createType === null) {
-                createType = active;
+                createType = active === 'subnodes' ? types[0]?.id ?? 'new' : active;
+                active = createType === 'new' ? 'draft-new-type' : createType;
               }
             }}
           />{/if}{/key}
