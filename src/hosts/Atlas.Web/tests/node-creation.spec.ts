@@ -246,3 +246,26 @@ test('feed presentation skips an empty opening section and saves a deliberate ti
   const created = writes.find(write => write.path.endsWith('/nodes'))!;
   expect(JSON.parse(String(created.body.composition))).toMatchObject({ feedPresentation: 'title-only' });
 });
+
+
+test('all-types child creation waits for an explicit choice and preserves a draft when its type changes', async ({ page }) => {
+  await setup(page, true);
+  await page.goto(`http://127.0.0.1:4173/nodes?id=${parent}`);
+  await page.locator('.subnode-toolbar').getByRole('button', { name: 'Add a child node', exact: true }).click();
+  const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
+  await expect(chooser).toHaveValue('');
+  await expect(page.getByRole('form', { name: 'Create child node' })).toHaveCount(0);
+  await chooser.selectOption(idea);
+  await expect(chooser).toHaveCount(0);
+  const form = page.getByRole('form', { name: 'Create child node' });
+  await expect(form.getByRole('combobox', { name: 'Node type', exact: true })).toHaveValue(idea);
+  await form.getByLabel('Title', { exact: true }).fill('Keep my draft');
+  await form.getByRole('combobox', { name: 'Node type', exact: true }).selectOption('new');
+  await expect(form.getByLabel('Type name', { exact: true })).toBeVisible();
+  await expect(form.getByLabel('Title', { exact: true })).toHaveValue('Keep my draft');
+  await form.getByRole('combobox', { name: 'Node type', exact: true }).selectOption(idea);
+  await expect(form.getByLabel('Title', { exact: true })).toHaveValue('Keep my draft');
+  await page.getByRole('button', { name: 'Close subnode form', exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(page.locator('.subnode-toolbar select')).toHaveValue(idea);
+});

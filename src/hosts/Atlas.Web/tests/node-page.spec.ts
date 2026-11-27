@@ -25,6 +25,7 @@ async function mock(page: Page) {
     if (url.pathname.endsWith('/description')) return route.fulfill({ json: [{ id: 'block', kind: 'markdown', content: { markdown: '## Full explanation\n\nThe complete content belongs here.\n\n<script>alert(1)</script>' } }] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [{ id: 'comment', authorId: 'participant', body: 'A public comment', createdAt: '2026-10-21T12:00:00Z', status: 'Active' }], next: null } });
     if (/\/nodes\/[^/]+$/.test(url.pathname)) return route.fulfill({ json: { id: root, requestedTypeIds: [evidence], status: 'Active' } });
+    if (url.searchParams.has('ParentNodeId') && url.searchParams.get('NodeTypeId') === evidence) return route.fulfill({ json: { items: [], totalCount: 0, page: Number(url.searchParams.get('Page')), pageSize: 3, hasNextPage: false } });
     return route.fulfill({ json: { items: [entry(url.searchParams.has('ParentNodeId') ? child : url.searchParams.get('NodeId') ?? root)], totalCount: 1, page: Number(url.searchParams.get('Page')), pageSize: 3, hasNextPage: false } });
   });
   return urls;
@@ -156,7 +157,7 @@ test('node page shows a sole parent in expandable ancestry and voting leaves con
   await mock(page);
   await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
   await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
-  await page.route('**/atlas-public-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
+  await page.route('**/atlas-public-api/nodes?**', route => new URL(route.request().url()).searchParams.has('ParentNodeId') ? route.fallback() : route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
   const card = page.locator('.node-page');
   await expect(card.getByRole('heading', { name: 'A live question' })).toBeVisible();
@@ -204,7 +205,22 @@ for (const destination of ['storybook', 'spa']) {
       await page.goto(destination === 'storybook'
         ? 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story'
         : 'http://127.0.0.1:4173');
-      await page.locator('article.node-card').first().getByRole('button', { name: 'Read More', exact: false }).click();
+      const parentCard = page.locator('article.node-card').first();
+      const toggle = parentCard.getByRole('button', { name: 'Show subnodes' });
+      await toggle.click();
+      const inline = parentCard.getByRole('region', { name: 'Subnodes' });
+      await expect(inline).toBeVisible();
+      await inline.getByRole('combobox').selectOption(contribution.typeId);
+      if (contribution.typeId === idea) {
+        await expect(inline.locator('.mini-node')).toHaveCount(1);
+        await expect(inline.getByRole('link', { name: 'A child idea' })).toBeVisible();
+      } else {
+        await expect(inline.getByRole('status')).toContainText('No nodes found.');
+        await expect(inline.locator('.mini-node')).toHaveCount(0);
+      }
+      await parentCard.getByRole('button', { name: 'Hide subnodes' }).click();
+      await expect(inline).toBeHidden();
+      await parentCard.getByRole('button', { name: 'Read More', exact: false }).click();
       await expect(page).toHaveURL(destination === 'storybook' ? /compositions-node-page/ : /nodes\?id=/);
       const tabs = page.locator('.subnode-toolbar');
       const filter = tabs.locator('select');
@@ -213,7 +229,7 @@ for (const destination of ['storybook', 'spa']) {
       await expect.poll(() => urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === contribution.typeId)).toBe(true);
       if (contribution.typeId === evidence) {
         // Empty feeds keep natural height rather than reserving a viewport of blank space.
-        await expect(page.locator('.external-subnodes .node-feed')).toHaveCSS('min-height', '0px');
+        await expect(page.locator('.external-subnodes section.node-feed')).toHaveCSS('min-height', '0px');
         await expect(page.getByRole('heading', { name: 'Be the first to contribute', exact: true })).toBeVisible();
         await expect(page.locator('.empty-invitation').getByRole('button', { name: 'Add Evidence', exact: true })).toBeEnabled();
       }
@@ -229,7 +245,7 @@ test('node-page filters use count-aware labels for only requested and populated 
   const goal = 'a1000000-0000-4000-8000-000000000004';
   await page.route('**/atlas-public-api/catalog/node-types', route => route.fulfill({ json: [...types, { id: question, name: 'Question', pluralName: 'Questions', autoPluralize: true }, { id: goal, name: 'Goal', pluralName: 'Goals', autoPluralize: true }] }));
   await page.route(`**/atlas-public-api/nodes/${root}`, route => route.fulfill({ json: { id: root, requestedTypeIds: [question, evidence], status: 'Active' } }));
-  await page.route('**/atlas-public-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, childTypes: [{ typeId: evidence, label: '0 Evidence', count: 0 }, { typeId: idea, label: '2 Ideas', count: 2 }, { typeId: question, label: '0 Questions', count: 0 }] } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
+  await page.route('**/atlas-public-api/nodes?**', route => new URL(route.request().url()).searchParams.has('ParentNodeId') ? route.fallback() : route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, childTypes: [{ typeId: evidence, label: '0 Evidence', count: 0 }, { typeId: idea, label: '2 Ideas', count: 2 }, { typeId: question, label: '0 Questions', count: 0 }] } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
   const filter = page.locator('.subnode-toolbar select');
   await expect(filter.getByRole('option')).toHaveText(['All types', '0 Evidence', '2 Ideas', '0 Questions']);

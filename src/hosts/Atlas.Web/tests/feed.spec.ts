@@ -215,7 +215,7 @@ test('node contribution filter pages fifteen children in scoped groups of three'
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story&args=nodeId:' + parent);
   const filter = page.locator('.subnode-toolbar select');
   await filter.selectOption(solution);
-  const panel = page.locator('.external-subnodes .node-feed');
+  const panel = page.locator('.external-subnodes section.node-feed');
   await expect(panel.locator('article')).toHaveCount(3);
   for (let current = 2; current <= 5; current++) {
     await panel.getByRole('button', { name: 'Load more nodes', exact: true }).click();
