@@ -63,8 +63,8 @@ public sealed class SqlWorkflowTests
 
             await GrantGlobalModeratorRole(factory);
             using var web = PublicPageSeoTests.CreateWebRoot();
-            using var seoHost = factory.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
-                .UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
+            using var seoRoot = new ApiFactory(connection, webRoot: web.Path);
+            using var seoHost = seoRoot.WithWebHostBuilder(builder => builder.UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
                 .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
                 .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.thepublicthinktank.com")
                 .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
@@ -133,8 +133,7 @@ public sealed class SqlWorkflowTests
             InitialCatalog = "AtlasRecovery_" + Guid.NewGuid().ToString("N")
         }.ConnectionString;
         var mail = Path.Combine(Path.GetTempPath(), "atlas-mail-" + Guid.NewGuid().ToString("N"));
-        using var root = new ApiFactory(connection, disableAuthLimiter: true);
-        using var factory = root.WithWebHostBuilder(b => b.UseSetting("Atlas:DevelopmentMailDirectory", mail));
+        using var factory = new ApiFactory(connection, disableAuthLimiter: true, mailDirectory: mail);
         var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.
@@ -629,9 +628,13 @@ public sealed class SqlWorkflowTests
         );
         // Read the private server-side mail payload, not a token returned to an HTTP caller.
         // Clone detaches the JSON value from its document so it can be returned to the next phase.
-        var confirm = JsonDocument.Parse(await File.ReadAllTextAsync(Directory.GetFiles(mail).Single())).RootElement.Clone();
+        Assert.IsTrue(Directory.Exists(mail), "Registration did not create the isolated development mail directory.");
+        var files = Directory.GetFiles(mail);
+        Assert.AreEqual(1, files.Length, "Registration must write exactly one private confirmation payload.");
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(files[0]));
+        var confirm = document.RootElement.Clone();
         // Remove consumed test evidence so later file-count checks observe only the next delivery.
-        File.Delete(Directory.GetFiles(mail).Single());
+        File.Delete(files[0]);
         return confirm;
     }
 

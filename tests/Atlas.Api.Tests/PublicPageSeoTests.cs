@@ -13,9 +13,8 @@ public sealed class PublicPageSeoTests
     public async Task Demo_shell_has_public_metadata_but_no_indexing_or_sitemap()
     {
         using var web = CreateWebRoot();
-        using var root = new ApiFactory();
-        using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
-            .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "demo")
+        using var root = new ApiFactory(webRoot: web.Path);
+        using var factory = root.WithWebHostBuilder(builder => builder.UseSetting("ATLAS_DEPLOYMENT_VARIANT", "demo")
             .UseSetting("Atlas:Seo:PublicOrigin", "https://demo.thepublicthinktank.com")
             .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
         using var client = Client(factory, "https://demo.thepublicthinktank.com");
@@ -71,7 +70,7 @@ public sealed class PublicPageSeoTests
     public async Task External_globe_previews_reference_the_published_generation()
     {
         using var web = CreateWebRoot();
-        using var root = new ApiFactory();
+        using var root = new ApiFactory(webRoot: web.Path);
         const string published = "0123456789abcdef0123456789abcdef";
         const string unfinished = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         var directory = Directory.CreateDirectory(Path.Combine(web.Path, "capture", "globe-published"));
@@ -82,8 +81,7 @@ public sealed class PublicPageSeoTests
         }
         await File.WriteAllTextAsync(Path.Combine(directory.FullName, "current"), published);
 
-        using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
-            .UseSetting("Atlas:Seo:CaptureDirectory", Path.Combine(web.Path, "capture")));
+        using var factory = root.WithWebHostBuilder(builder => builder.UseSetting("Atlas:Seo:CaptureDirectory", Path.Combine(web.Path, "capture")));
         using var client = Client(factory, "https://localhost");
 
         var html = await client.GetStringAsync("/?globe=open&motion=gif");
@@ -102,10 +100,10 @@ public sealed class PublicPageSeoTests
     public async Task Deployed_share_images_require_blob_storage(bool configureBlobStorage, string expectedImage)
     {
         using var web = CreateWebRoot();
-        using var root = new ApiFactory();
+        using var root = new ApiFactory(webRoot: web.Path);
         using var factory = root.WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Production").UseWebRoot(web.Path)
+            builder.UseEnvironment("Production")
                 .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "demo")
                 .UseSetting("Atlas:Seo:PublicOrigin", "https://demo.example.org")
                 .UseSetting("Atlas:Seo:CaptureDirectory", web.Path)
@@ -128,8 +126,7 @@ public sealed class PublicPageSeoTests
     public async Task Anonymous_private_links_redirect_to_feed_without_forwarding_queries()
     {
         using var web = CreateWebRoot();
-        using var root = new ApiFactory();
-        using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path));
+        using var factory = new ApiFactory(webRoot: web.Path);
         using var client = Client(factory, "https://localhost");
         foreach (var path in new[] { "/my-drafts", "/my-settings", "/profiles/me", "/moderation" })
         {
@@ -151,9 +148,8 @@ public sealed class PublicPageSeoTests
     public async Task Only_canonical_live_host_can_enable_indexing()
     {
         using var web = CreateWebRoot();
-        using var root = new ApiFactory();
-        using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(web.Path)
-            .UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
+        using var root = new ApiFactory(webRoot: web.Path);
+        using var factory = root.WithWebHostBuilder(builder => builder.UseSetting("ATLAS_DEPLOYMENT_VARIANT", "live")
             .UseSetting("Atlas:Seo:PublicOrigin", "https://atlas.example.org")
             .UseSetting("Atlas:Seo:RedirectHost", "www.example.org")
             .UseSetting("Atlas:Seo:IndexingEnabled", "true"));
