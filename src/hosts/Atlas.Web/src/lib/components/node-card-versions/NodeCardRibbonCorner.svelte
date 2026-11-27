@@ -105,6 +105,10 @@
   description’s corner, with reactions and discussion links below.
 -->
 
+{#if !headerFields && !draft && !node.isHidden}
+  <Breadcrumb expandable connectedCards items={node.breadcrumb} originId={node.id}
+    {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
+{/if}
 <article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
   {#if editOpensDetail}
     <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
@@ -119,7 +123,7 @@
       {/if}
       <div id={`${instance}-title`}>{@render headerFields()}</div>
     {:else}
-      <Breadcrumb
+      {#if draft || node.isHidden}<Breadcrumb
         expandable
         items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
         originId={draft ? undefined : node.id}
@@ -127,7 +131,7 @@
         {onNavigate}
         hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors}
-      />
+      />{/if}
       {@render typeRow()}
       <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
