@@ -94,6 +94,7 @@
   } = $props();
   const instance = $props.id();
   const childCount = $derived((node.childTypes ?? []).reduce((sum, child) => sum + child.count, 0));
+  const reactionCount = $derived(node.reactionCount ?? (node.reactionSummary && !node.reactions.length && node.reactionSummary !== '—' ? undefined : node.reactions.reduce((sum, reaction) => sum + reaction.count, 0)));
   const graphControls = $derived(inlineRelationships && !draft && !node.isHidden && !authoringBody);
   function openRelated(id: string, type?: string) {
     if (type === 'comments' && onComments) onComments(id);
@@ -254,9 +255,9 @@
         </button>
       {/if}
       <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-        onclick={() => reactionsOpen = !reactionsOpen}>Reactions</button>
+        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
       <button class="comments-button" type="button"
-        onclick={() => openRelated(node.id, 'comments')}>Comments</button>
+        onclick={() => openRelated(node.id, 'comments')}>Comments ({node.commentCount})</button>
     </div>
   {:else}
     <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
