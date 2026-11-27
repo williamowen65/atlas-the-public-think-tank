@@ -422,7 +422,6 @@
 
   .node-card:has(> :is(:global(.edit-node.corner), .hidden-edit-link)) {
     --ancestry-end-padding: 5rem;
-    --connected-ancestry-top-padding: 2.75rem;
   }
 
 
