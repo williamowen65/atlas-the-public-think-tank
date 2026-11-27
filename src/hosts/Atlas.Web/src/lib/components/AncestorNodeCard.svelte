@@ -1,38 +1,30 @@
-<!-- Loaded only when an ancestry disclosure opens. Do not recursively render the same path. -->
+<!-- Lazy ancestry projection: use known title immediately, then add type and vote summary. -->
 <script lang="ts">
   import { readDiscovery, discoveryCard } from '../api/discovery';
   import type { NodeCardData } from './node-card-versions/types';
-  import LiveVotingDial from './LiveVotingDial.svelte';
-  import LiveReactions from './LiveReactions.svelte';
+  import NodeCardMini from './node-card-versions/NodeCardMini.svelte';
   let { id, title, apiBase = '/atlas-public-api', onNavigate }: {
     id: string; title: string; apiBase?: string; onNavigate?: (id: string) => void;
   } = $props();
-  let card = $state<NodeCardData | null>(null);
+  let card = $state<Pick<NodeCardData, 'id' | 'title' | 'typeName' | 'status'> | null>(null);
   let average = $state<number | null>(null);
-  let totalVotes = $state(0);
+  let totalVotes = $state<number | undefined>(undefined);
   let loading = $state(true);
   let failed = $state(false);
   let retry = $state(0);
-  const compactCard = import('./node-card-versions/NodeCardRibbonCorner.svelte');
-  function open(nodeId: string) {
-    if (onNavigate) onNavigate(nodeId);
-    else window.location.assign('/nodes?id=' + encodeURIComponent(nodeId));
-  }
-  function discussion(nodeId: string, type: string) {
-    window.location.assign('/nodes?id=' + encodeURIComponent(nodeId) + '&type=' + encodeURIComponent(type) + '#contributions');
-  }
+
   $effect(() => {
     const nodeId = id, base = apiBase;
     retry;
     const controller = new AbortController();
-    loading = true; failed = false; card = null;
+    loading = true; failed = false; card = null; average = null; totalVotes = undefined;
     void readDiscovery(base, 1, '', AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]), nodeId)
       .then(page => {
         if (controller.signal.aborted) return;
         const entry = page.items.find(item => item.nodeId === nodeId);
         const display = entry && discoveryCard(entry);
         if (!entry || !display || display.isHidden) throw new Error('Unavailable ancestor');
-        card = { ...display, breadcrumb: [] };
+        card = { id: display.id, title: display.title, typeName: display.typeName, status: display.status };
         average = entry.averageVote;
         totalVotes = entry.voteCount;
       })
@@ -42,26 +34,14 @@
   });
 </script>
 
-{#if card}
-  {#await compactCard then { default: CompactCard }}
-    <CompactCard node={card} mobileLayout {apiBase} {average} {totalVotes}
-      onReadMore={open} onNavigate={open} onComments={(id) => discussion(id, 'comments')} onChildType={discussion}>
-      {#snippet voting()}<LiveVotingDial nodeId={id} initialAverage={average} initialTotalVotes={totalVotes} forceCompact archived={card?.status === 'Archived'} />{/snippet}
-      {#snippet reactionControls()}<LiveReactions nodeId={id} archived={card?.status === 'Archived'} />{/snippet}
-    </CompactCard>
-  {:catch}
-    <div class="fallback"><a href={'/nodes?id=' + encodeURIComponent(id)}>{title}</a></div>
-  {/await}
-{:else}
-  <div class="fallback">
-    <a href={'/nodes?id=' + encodeURIComponent(id)} onclick={(event) => { if (onNavigate && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); open(id); } }}>{title}</a>
-    {#if loading}<span role="status">Loading parent node…</span>{:else if failed}<button type="button" onclick={() => retry++}>Retry preview</button>{/if}
-  </div>
-{/if}
+<div class="ancestor-preview" aria-busy={loading}>
+  <NodeCardMini node={card ?? { id, title }} {average} {totalVotes} {onNavigate} />
+  {#if failed}
+    <button class="retry" type="button" onclick={() => retry++}>Retry node details</button>
+  {/if}
+</div>
 
 <style>
-  .fallback { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); padding: 1rem; background: var(--atlas-surface); color: var(--atlas-text); display: grid; gap: .4rem; }
-  .fallback a { color: var(--atlas-accent); }
-  .fallback span { color: var(--atlas-muted); }
-  .fallback button { justify-self: start; }
+  .ancestor-preview { min-width: 0; }
+  .retry { display: block; margin: .2rem auto 0; font: inherit; font-size: .75rem; color: var(--atlas-accent); background: transparent; border: 0; cursor: pointer; }
 </style>
