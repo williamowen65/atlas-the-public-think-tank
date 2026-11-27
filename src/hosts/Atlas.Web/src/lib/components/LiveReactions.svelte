@@ -28,6 +28,7 @@
     nodeId,
     archived = false,
     apiBase = '/atlas-session-api',
+    onTotalChange,
   }: {
     /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
@@ -38,6 +39,8 @@
      * prop name.
      */
     apiBase?: string;
+    /** Report the authoritative aggregate after a successful load or vote. */
+    onTotalChange?: (count: number) => void;
   } = $props();
   /**
    * API reaction choices with scores, counts and the current participant’s vote.
@@ -85,6 +88,7 @@
     if (!Array.isArray(result)) throw new Error('Invalid reaction response');
     if (!controller.signal.aborted && generation === requestGeneration) {
       choices = result;
+      onTotalChange?.(result.reduce((total, choice) => total + choice.totalVotes, 0));
       error = '';
     }
   }
