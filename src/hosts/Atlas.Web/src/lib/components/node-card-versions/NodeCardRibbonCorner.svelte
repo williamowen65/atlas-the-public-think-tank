@@ -42,7 +42,6 @@
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
-  import CommentsPanel from '../CommentsPanel.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -50,9 +49,9 @@
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
   let detailsOpen = $state(false);
-  let discussion = $state<'comments' | 'subnodes' | null>(null);
+  let subnodesOpen = $state(false);
+  let reactionsOpen = $state(false);
   let childFilter = $state('');
-  let addedComments = $state(0);
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
@@ -94,6 +93,7 @@
   } = $props();
   const instance = $props.id();
   const childCount = $derived((node.childTypes ?? []).reduce((sum, child) => sum + child.count, 0));
+  const graphControls = $derived(inlineRelationships && !draft && !node.isHidden && !authoringBody);
   function openRelated(id: string, type?: string) {
     if (type === 'comments' && onComments) onComments(id);
     else if (type && onChildType) onChildType(id, type);
@@ -193,70 +193,76 @@
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
       {/if}
     </div>
-    <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
-      {@render reactions()}
-      <div class="navigation-details">
-        {#if inlineRelationships && !draft && !node.isHidden}
-          <button type="button" class="text-action discussion-action" aria-expanded={discussion === 'comments' && detailsOpen}
-            onclick={() => discussion = discussion === 'comments' ? null : 'comments'}>
-            {node.commentCount + addedComments} {node.commentCount + addedComments === 1 ? 'Comment' : 'Comments'}
-          </button>
-          <button type="button" class="text-action discussion-action" aria-expanded={discussion === 'subnodes' && detailsOpen}
-            onclick={() => discussion = discussion === 'subnodes' ? null : 'subnodes'}>
-            {childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}
-          </button>
-        {:else}
-        {@render comments()}
-        {#each node.childTypes ?? [] as contribution}<span
-            class="navigation-separator"
-            aria-hidden="true">·</span
-          ><button
-            class="text-action connection-summary"
-            type="button"
-            disabled={!onChildType}
-            onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
-          >{/each}
-        {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
-          ><span class="text-action connection-summary">{label}</span>{/each}
-        {/if}
+    {#if graphControls}
+      <div class="graph-reactions" id={`${instance}-reactions`} hidden={!reactionsOpen}>
+        {#if reactionsOpen}{@render reactions()}{/if}
       </div>
-    </div>
+      <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
+        {#if subnodesOpen}
+          <div class="subnode-header">
+            <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
+            <label class="inline-filter">Node type
+              <select bind:value={childFilter}>
+                <option value="">All types</option>
+                {#each node.childTypes ?? [] as type (type.typeId)}
+                  <option value={type.typeId}>{type.label}</option>
+                {/each}
+              </select>
+            </label>
+          </div>
+          {#key childFilter}
+            {#await import('../LiveNodeFeed.svelte')}
+              <p role="status" class="subnode-loading">Loading subnodes…</p>
+            {:then { default: ChildFeed }}
+              <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
+                {onOpenProfile} onOpenNode={openRelated} connected inline presentation="mini" />
+            {:catch}
+              <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>
+            {/await}
+          {/key}
+        {/if}
+      </section>
+    {:else}
+      <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
+        {@render reactions()}
+        <div class="navigation-details">
+          {@render comments()}
+          {#each node.childTypes ?? [] as contribution}<span class="navigation-separator" aria-hidden="true">·</span>
+            <button class="text-action connection-summary" type="button" disabled={!onChildType}
+              onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button>
+          {/each}
+          {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span>
+            <span class="text-action connection-summary">{label}</span>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {/if}
 </article>
-{#if inlineRelationships && !draft && !node.isHidden && !authoringBody && detailsOpen && discussion}
-  <div class="inline-discussion">
-    {#if discussion === 'comments'}
-      <CommentsPanel nodeId={node.id} {apiBase} onAdded={() => addedComments++} />
-    {:else}
-      <label class="inline-filter">Node type
-        <select bind:value={childFilter}>
-          <option value="">All types</option>
-          {#each node.childTypes ?? [] as type (type.typeId)}
-            <option value={type.typeId}>{type.label}</option>
-          {/each}
-        </select>
-      </label>
-      {#key childFilter}
-        {#await import('../LiveNodeFeed.svelte')}
-          <p role="status">Loading subnodes…</p>
-        {:then { default: ChildFeed }}
-          <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
-            {onOpenProfile} onOpenNode={openRelated} connected inline />
-        {:catch}
-          <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>
-        {/await}
-      {/key}
-    {/if}
-  </div>
-{/if}
 
 {#snippet detailsToggle()}
-  <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
-    aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
-    onclick={() => detailsOpen = !detailsOpen}>
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-  </button>
+  {#if graphControls}
+    <div class="graph-actions">
+      {#if childCount > 0}
+        <button class="details-toggle" type="button" aria-expanded={subnodesOpen} aria-controls={`${instance}-subnodes`}
+          aria-label={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
+          title={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
+          onclick={() => subnodesOpen = !subnodesOpen}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      {/if}
+      <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
+        onclick={() => reactionsOpen = !reactionsOpen}>Reactions</button>
+    </div>
+  {:else}
+    <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
+      aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
+      onclick={() => detailsOpen = !detailsOpen}>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+  {/if}
 {/snippet}
 
 {#snippet legacyDescription(text: string)}
@@ -314,22 +320,44 @@
 {/snippet}
 
 <style lang="scss">
-  .inline-discussion {
-    margin-block-start: .65rem;
+  .graph-actions {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
     min-width: 0;
   }
-  .inline-filter {
-    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
-    padding: .5rem 0 .75rem; color: var(--atlas-muted); font-size: .9rem;
-  }
-  .inline-filter select, .discussion-action {
+  .graph-actions .details-toggle { flex: 0 0 auto; margin-inline-end: 0; }
+  .reaction-toggle, .inline-filter select {
     font: inherit; max-width: 100%; min-height: 2.25rem;
-    color: var(--atlas-text); background: var(--atlas-surface);
-    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); padding: .3rem .65rem;
+    color: var(--atlas-accent); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius);
+    padding: .25rem .6rem; cursor: pointer;
   }
-  .navigation-details .discussion-action[aria-expanded="true"] {
-    border-color: var(--atlas-accent); color: var(--atlas-accent);
+  .reaction-toggle[aria-expanded="true"] { border-color: var(--atlas-accent); }
+  .reaction-toggle:focus-visible, .details-toggle:focus-visible {
+    outline: 2px solid var(--atlas-accent); outline-offset: 2px;
   }
+  .graph-reactions {
+    padding: .6rem var(--card-padding) .8rem;
+    min-width: 0;
+  }
+  .graph-reactions[hidden], .subnode-section[hidden] { display: none; }
+  .subnode-section {
+    min-width: 0;
+    border-top: 1px solid var(--atlas-border);
+    background: var(--atlas-tinted-surface);
+    border-radius: 0 0 var(--atlas-radius) var(--atlas-radius);
+    padding: .75rem var(--card-padding) .45rem;
+  }
+  .subnode-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: .35rem .75rem; margin-block-end: .65rem;
+    color: var(--atlas-text); font-size: .9rem;
+  }
+  .inline-filter {
+    display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+    min-width: 0; color: var(--atlas-muted); font-size: .8rem;
+  }
+  .inline-filter select { color: var(--atlas-text); min-height: 2rem; }
+  .subnode-loading { text-align: center; color: var(--atlas-muted); }
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
 
@@ -384,7 +412,7 @@
       font-size: 0.9rem;
       color: var(--atlas-muted);
     }
-    &:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
+    &:has(.card-details:not(.details-open)) .body, &:has(> .subnode-section) .body { padding-block-end: .85rem; }
     .reactions {
       display: flex;
       flex-wrap: wrap;
