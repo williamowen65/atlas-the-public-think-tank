@@ -22,6 +22,7 @@
       links: [
         { text: 'Discover', href: '/' },
         { text: 'Create a contribution', href: '/new' },
+        { text: 'How to Write a Node', href: '/how-to-write-a-node' },
         { text: 'How Atlas works', href: '/about#how-it-works' },
         { text: 'Guides', href: '/guides' },
       ],

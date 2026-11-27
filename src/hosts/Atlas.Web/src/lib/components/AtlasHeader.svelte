@@ -293,6 +293,7 @@
           {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
         {/if}
         <hr />
+        <a href="/how-to-write-a-node" onclick={closeOnNavigation}>How to Write a Node</a>
         <a href="/share" onclick={closeOnNavigation}>Share Atlas</a>
         <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
           href="/feedback"

@@ -34,7 +34,7 @@
   import type { Community } from '../api/communities';
   import NodeForm, { type NodeDraft } from './NodeForm.svelte';
   import SessionControl from './SessionControl.svelte';
-  import CreateNodeWorkshop from './CreateNodeWorkshop.svelte';
+  import CreateNodeTypePicker from './CreateNodeTypePicker.svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { readTypes, readJson, type ContentBlock, type NodeType } from '../api/nodePage';
   import { blockRequest, derivedExcerpt, publicationMarkdown, validateNodePublication, type AuthorBlock } from '../api/contentAuthoring';
@@ -423,7 +423,6 @@
 
 <section
   class="live-node-form"
-  class:show-workshop={requireTypeSelection && !standaloneType && hasDraft && !loading && !error}
   aria-label={parentId ? 'Child node creation' : 'Root node creation'}
 >
   {#if closeControl && (createdId || loading || error || !hasDraft)}
@@ -443,7 +442,7 @@
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p>
       <button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
       {#if requireTypeSelection && !standaloneType}
-        <CreateNodeWorkshop {types} onChoose={chooseStandaloneType} />
+        <CreateNodeTypePicker {types} onChoose={chooseStandaloneType} />
       {:else}
       <!--
         One disabled fieldset locks all nested draft controls while saving or without a usable
@@ -493,7 +492,6 @@
     margin-inline: auto;
     min-width: 0;
   }
-  .show-workshop { max-width: 72rem; }
   .fallback-close { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
   .draft-fields {
     margin: 1rem 0 0;

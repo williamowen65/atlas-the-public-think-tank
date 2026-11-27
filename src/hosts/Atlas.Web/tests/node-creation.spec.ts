@@ -70,16 +70,13 @@ for (const environment of ['storybook', 'spa']) {
       await expect(page).toHaveURL('http://127.0.0.1:4173/new');
       const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
       await expect(chooser).toHaveValue('');
-      const workshop = page.getByRole('region', { name: 'Give each idea its own node' });
-      await expect(workshop.getByRole('heading', { name: 'One node with several ideas' })).toBeVisible();
-      await expect(workshop.getByRole('heading', { name: 'Separate nodes in one discussion' })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Browse Discovery' })).toHaveAttribute('href', '/');
+      const guideLink = page.getByRole('main').getByRole('link', { name: 'How to Write a Node' });
+      await expect(guideLink).toHaveAttribute('href', '/how-to-write-a-node');
       await page.getByText('See node type examples', { exact: true }).click();
       await expect(page.getByText('Add benches along the waterfront path.', { exact: true })).toBeVisible();
       await expect(page.getByRole('form', { name: 'Create root node' })).toHaveCount(0);
       await chooser.selectOption(idea);
       await expect(chooser).toHaveCount(0);
-      await expect(workshop).toHaveCount(0);
     }
     await fill(page);
     const form = page.getByRole('form', { name: 'Create root node' });
@@ -107,6 +104,21 @@ for (const environment of ['storybook', 'spa']) {
       .toEqual(environment === 'spa' ? communityIds.map(id => `/atlas-session-api/communities/${id}/nodes/${created}`) : []);
   });
 }
+
+test('the node writing guide is public and explains splitting and placement', async ({ page }) => {
+  await setup(page);
+  await page.goto('/how-to-write-a-node');
+  await expect(page.getByRole('heading', { name: 'How to Write a Node' })).toBeVisible();
+  const lesson = page.getByRole('region', { name: 'Give each idea its own node' });
+  await expect(lesson.getByRole('heading', { name: 'One node with several ideas' })).toBeVisible();
+  await expect(lesson.getByRole('heading', { name: 'Separate nodes in one discussion' })).toBeVisible();
+  const placement = page.getByRole('region', { name: 'Find a place for your contribution' });
+  await expect(placement).toContainText('Add a child node');
+  await expect(placement.getByRole('link', { name: 'Browse Discovery' })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('contentinfo').getByRole('link', { name: 'How to Write a Node' }))
+    .toHaveAttribute('href', '/how-to-write-a-node');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Create a node' }).first()).toHaveAttribute('href', '/new');
+});
 
 test('child creation keeps parent and selected type through sign-in', async ({ page }) => {
   const { writes } = await setup(page);
