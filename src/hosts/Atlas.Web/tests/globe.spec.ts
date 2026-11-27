@@ -63,6 +63,11 @@ test('a shared globe link opens the globe and leads to the animated share card w
   await expect(globe).toBeHidden();
   const card = page.locator('#globe-gif');
   await expect(card).toBeInViewport();
+  // Saving the scroll position after the anchor jump must keep the fragment.
+  await page.evaluate(() => window.dispatchEvent(new Event('scroll')));
+  await expect.poll(() => page.evaluate(() => history.state?.['sveltekit:states']?.__atlasScrollPosition?.route))
+    .toBe('/share');
+  await expect(page).toHaveURL(/\/share#globe-gif$/);
   await expect(card.getByText('Facebook users', { exact: true })).toBeVisible();
   await card.getByRole('button', { name: /^Copy link:/ }).click();
   await expect(page.getByText('Share link copied.', { exact: true })).toBeVisible();

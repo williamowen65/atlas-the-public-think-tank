@@ -322,10 +322,14 @@ test('deleting the final content block replaces it with one blank editable text 
 
 
 test('top and bottom plus controls insert before or after the selected block without direction toggles', async ({ page }) => {
+  await page.route('https://images.unsplash.com/**', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="50"><rect width="80" height="50" fill="green"/></svg>',
+  }));
   await page.goto(storyUrl);
   const root = page.locator('.atlas-story-rich-document');
   const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
-  await image.click();
+  await image.getByRole('img').click();
   const menu = page.getByRole('group', { name: 'Insert a content block' });
   await page.getByRole('button', { name: 'Insert block before' }).click();
   await expect(menu).toBeVisible();
@@ -337,7 +341,7 @@ test('top and bottom plus controls insert before or after the selected block wit
   await expect(root.locator(':scope > *').nth(2)).toHaveAttribute('data-atlas-key', 'public-square');
   await expect(root).toBeFocused();
 
-  await image.click();
+  await image.getByRole('img').click();
   await expect(image).toHaveClass(/atlas-story-active-block/);
   await page.getByRole('button', { name: 'Insert block after' }).click();
   await expect(menu).toContainText('Insert after this block');
