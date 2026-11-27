@@ -5,7 +5,7 @@
   import { readComposition } from '../sections/composition';
   import FeedNodeCarousel from './FeedNodeCarousel.svelte';
 
-  let { nodeId, fallback, renderFallback, apiBase = '/atlas-public-api', blocks, onReadMore, leadingAction }: {
+  let { nodeId, fallback, renderFallback, apiBase = '/atlas-public-api', blocks, onReadMore, leadingAction, readMoreAction }: {
     nodeId: string;
     fallback: string;
     renderFallback: Snippet<[string]>;
@@ -13,6 +13,7 @@
     blocks?: ContentBlock[];
     onReadMore?: () => void;
     leadingAction?: Snippet;
+    readMoreAction?: Snippet;
   } = $props();
 
   let host = $state<HTMLDivElement>();
@@ -63,11 +64,11 @@
 <div data-feed-preview-ready={blocks !== undefined || settled} class="feed-block-preview" class:has-sections={!!composition} class:has-slides={!composition && pages.length > 0} bind:this={host}>
   {#if composition}
     {#key nodeId}
-      <SectionNodeView draft={{ ...composition, title: '' }} feed {onReadMore} {leadingAction} />
+      <SectionNodeView draft={{ ...composition, title: '' }} feed {onReadMore} {leadingAction} {readMoreAction} />
     {/key}
   {:else if pages.length}
     {#key nodeId}
-      <FeedNodeCarousel blocks={pages} onOpenFull={onReadMore} {leadingAction} />
+      <FeedNodeCarousel blocks={pages} onOpenFull={onReadMore} {leadingAction} {readMoreAction} />
     {/key}
   {:else if blocks !== undefined || settled}
     {@render renderFallback(fallback)}

@@ -37,13 +37,13 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import ActionButton from '../ActionButton.svelte';
   import CopyNodeLink from "../CopyNodeLink.svelte";
   import { relativeDate } from '../../format/relativeDate';
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
   import LoadingPlaceholder from '../LoadingPlaceholder.svelte';
-  import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
 
@@ -193,7 +193,7 @@
       {#if node.isHidden}
         {@render legacyDescription(node.description)}
       {:else}
-        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} leadingAction={detailsToggle} {apiBase} {blocks}
+        <FeedBlockPreview nodeId={node.id} fallback={node.description} renderFallback={legacyDescription} leadingAction={detailsToggle} readMoreAction={graphControls ? readMore : undefined} {apiBase} {blocks}
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
       {/if}
     </div>
@@ -259,7 +259,15 @@
       <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
         onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
       <button class="comments-button" type="button"
-        onclick={() => openRelated(node.id, 'comments')}>Comments ({node.commentCount})</button>
+        aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
+        onclick={() => openRelated(node.id, 'comments')}>
+        <svg class="compact-icon" viewBox="0 0 24 24" width="20" height="20" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l1.8-3.6A8.5 8.5 0 1 1 21 11.5Z" />
+        </svg>
+        <span class="action-text">Comments ({node.commentCount})</span>
+        <span class="compact-count" aria-hidden="true">{node.commentCount}</span>
+      </button>
     </div>
   {:else}
     <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
@@ -275,10 +283,23 @@
   <div class="description" id={`${instance}-description`}>
     {#if text.trim()}<span class="fallback-text">{text}</span>{/if}
     {@render detailsToggle()}
-    <span class="read-more">
-      <ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} />
-    </span>
+    {#if graphControls}
+      {@render readMore()}
+    {:else}
+      <span class="read-more"><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span>
+    {/if}
   </div>
+{/snippet}
+
+{#snippet readMore()}
+  <button class="compact-read-more" type="button" aria-label="Read more" title="Read more"
+    disabled={!onReadMore} onclick={() => onReadMore?.(node.id)}>
+    <svg class="compact-icon" viewBox="0 0 24 24" width="20" height="20" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14" />
+    </svg>
+    <span class="action-text">Read More</span>
+  </button>
 {/snippet}
 
 {#snippet reactions()}
@@ -327,7 +348,7 @@
 
 <style lang="scss">
   .graph-actions {
-    display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
+    display: flex; align-items: center; gap: .4rem;
     min-width: 0; margin-inline-end: auto;
   }
   .graph-actions .details-toggle { flex: 0 0 auto; margin-inline-end: 0; }
@@ -338,7 +359,7 @@
     padding: .25rem .6rem; cursor: pointer;
   }
   .reaction-toggle[aria-expanded="true"] { border-color: var(--atlas-accent); }
-  .reaction-toggle:focus-visible, .comments-button:focus-visible, .details-toggle:focus-visible {
+  .reaction-toggle:focus-visible, .comments-button:focus-visible, .compact-read-more:focus-visible, .details-toggle:focus-visible {
     outline: 2px solid var(--atlas-accent); outline-offset: 2px;
   }
   .graph-reactions {
@@ -551,9 +572,22 @@
     white-space: pre-line;
   }
 
-  .read-more {
-    --atlas-action-padding: 0.25rem 0.65rem;
+  .read-more { --atlas-action-padding: 0.25rem 0.65rem; }
+  .compact-read-more {
+    margin-inline-start: auto;
+    font: inherit;
+    white-space: nowrap;
+    padding: .25rem .65rem;
+    min-height: 2.25rem;
+    border: 1px solid var(--atlas-accent);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    cursor: pointer;
   }
+  .compact-read-more:disabled { background: var(--atlas-bg); border-color: var(--atlas-border); }
+  .compact-icon, .compact-count { display: none; }
+
 
   .text-action {
     border: 0;
@@ -594,6 +628,18 @@
     }
   }
   @media (max-width: 560px) {
+    .graph-actions { gap: .3rem; }
+    .reaction-toggle { white-space: nowrap; }
+    .comments-button, .compact-read-more {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .25rem;
+      min-width: 2.25rem;
+      padding-inline: .35rem;
+    }
+    .compact-icon, .compact-count { display: block; }
+    .action-text { display: none; }
     .mobile-layout {
       --card-padding: 0.75rem;
       h2 { font-size: 1.2rem; }

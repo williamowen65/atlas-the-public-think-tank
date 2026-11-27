@@ -5,7 +5,7 @@
   import type { ContentBlock } from '../api/nodePage';
 
   let {
-    blocks, index, frame, onIndexChange, onOpenFull, renderBlock, leadingAction,
+    blocks, index, frame, onIndexChange, onOpenFull, renderBlock, leadingAction, readMoreAction,
   }: {
     blocks: ContentBlock[];
     index?: number;
@@ -13,6 +13,7 @@
     onIndexChange?: (next: number) => void;
     onOpenFull?: () => void;
     leadingAction?: Snippet;
+    readMoreAction?: Snippet;
     renderBlock?: Snippet<[ContentBlock]>;
   } = $props();
 
@@ -89,20 +90,22 @@
     <div class="fade" aria-hidden="true"></div>
   </div>
 
-  <div class="carousel-bottom">
+  <div class="carousel-bottom" class:single-row={!!readMoreAction}>
     {@render leadingAction?.()}
     {#if hasMore}
-      <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
-      <div class="dots" class:scroll={!frame} role="group" aria-label="Content block pages">
-        {#each blocks as block, i (block.id)}
-          <button type="button" aria-label={'Show node block ' + (i + 1)}
-            aria-current={safeIndex === i ? 'true' : undefined}
-            class:active={safeIndex === i}
-            onclick={() => select(i)}></button>
-        {/each}
+      <div class="pagination">
+        <span class="progress" aria-live="polite">{blocks.length ? safeIndex + 1 : 0} of {blocks.length}</span>
+        <div class="dots" class:scroll={!frame} role="group" aria-label="Content block pages">
+          {#each blocks as block, i (block.id)}
+            <button type="button" aria-label={'Show node block ' + (i + 1)}
+              aria-current={safeIndex === i ? 'true' : undefined}
+              class:active={safeIndex === i}
+              onclick={() => select(i)}></button>
+          {/each}
+        </div>
       </div>
     {/if}
-    <div class="carousel-read-more read-more"><ActionButton label="Read more" disabled={!onOpenFull} onActivate={onOpenFull} /></div>
+    {#if readMoreAction}{@render readMoreAction()}{:else}<div class="carousel-read-more read-more"><ActionButton label="Read more" disabled={!onOpenFull} onActivate={onOpenFull} /></div>{/if}
   </div>
 </section>
 
@@ -193,6 +196,16 @@
   .previous { left: 0; } .next { right: 0; }
   .carousel-bottom { flex: none; display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: .35rem .6rem; padding: .5rem 0 .05rem; }
+  .pagination { display: contents; }
+  .carousel-bottom.single-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem; }
+  .single-row .pagination {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: center;
+    align-items: center;
+    gap: .6rem;
+    order: -1;
+  }
   .progress { font-size: .73rem; color: var(--atlas-muted); font-variant-numeric: tabular-nums; }
   .dots { display: flex; gap: .33rem; flex-wrap: wrap; align-items: center; }
   .dots button { width: .65rem; height: .65rem; border: 1px solid var(--atlas-muted);
