@@ -203,7 +203,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             var memoryCardCount = cards.Count;
             var externalCards = new List<DiscoveryCard>();
-            string DetailKey(Guid id) => cache!.ExternalKey($"card-metadata-v1:{id:N}");
+            string DetailKey(Guid id) => cache!.ExternalKey($"card-metadata-v2:{id:N}");
             if (external is not null && missing.Count > 0)
             {
                 var remote = external.Read<DiscoveryCard>(missing.Select(DetailKey).ToArray(), revision.DetailVersion);
@@ -350,6 +350,7 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].CommentCount,
                 row.IsHidden)
             {
+                ReactionCount = row.ReactionCount,
                 AuthorId = row.IsHidden && !showHidden ? null : metadata[row.NodeId].AuthorId,
                 ChildTypes = row.IsHidden && !showHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 PreviewBlocks = row.PreviewJson.Length <= 48 * 1024
@@ -409,6 +410,7 @@ public sealed class SqlDiscoveryReadQuery(
         public string PreviewJson { get; set; } = "[]";
         public string SubNodes { get; set; } = "";
         public string Reactions { get; set; } = "";
+        public int ReactionCount { get; set; }
         public string Communities { get; set; } = "";
         public bool IsHidden { get; set; }
     }
