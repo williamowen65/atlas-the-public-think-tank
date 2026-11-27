@@ -12,12 +12,13 @@
   import type { NodeCardData } from './node-card-versions/types';
   import TiptapCanvas from './TiptapCanvas.svelte';
 
-  let { node, blocks, onChange, fields, actions, disabled = false, average, totalVotes }: {
+  let { node, blocks, onChange, fields, actions, closeControl, disabled = false, average, totalVotes }: {
     node: NodeCardData;
     blocks: AuthorBlock[];
     onChange: (blocks: AuthorBlock[]) => void;
     fields: Snippet;
     actions?: Snippet;
+    closeControl?: Snippet;
     disabled?: boolean;
     average?: number | null;
     totalVotes?: number;
@@ -57,7 +58,7 @@
 </script>
 
 <div class="authoring-card" class:sectioned={!!sectionDraft && view === 'edit'}>
-  <div class="view-controls" role="group" aria-label="Node draft view">
+  <div class="view-controls" class:inline-controls={!!closeControl} role="group" aria-label="Node draft view">
     <button type="button" aria-pressed={view === 'edit'} onclick={() => view = 'edit'}>Edit</button>
     <button type="button" aria-pressed={view === 'feed'} onclick={() => view = 'feed'}>Preview in feed</button>
     {#if sectionDraft}
@@ -78,6 +79,7 @@
     {#if view === 'full'}
       <span class="full-label">Full node preview</span>
     {/if}
+    {#if closeControl}<div class="close-control">{@render closeControl()}</div>{/if}
   </div>
 
   {#if sectionDraft}
@@ -136,6 +138,11 @@
   .sectioned .editor :global(.node-card) { max-width: none; }
   .editor { min-width: 0; border: 0; margin: 0; padding: 0; }
   .view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+  .inline-controls { font-size: .85rem; gap: .35rem; }
+  .inline-controls > button { padding: .35rem .5rem; white-space: nowrap; }
+  .inline-controls .feed-setting { min-width: 0; }
+  .inline-controls .feed-setting select { max-width: 100%; }
+  .close-control { margin-inline-start: auto; }
   .feed-setting, .feed-setting label { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
   .feed-setting select {
     max-width: 100%; padding: .35rem; border: 1px solid var(--atlas-border);
