@@ -9,6 +9,9 @@ public sealed record DiscoveryCard(Guid NodeId, string Title, string TypeName, s
 
     public Guid? AuthorId { get; init; }
 
+    /// <summary>Number of current votes on active, unsuppressed node reactions.</summary>
+    public int ReactionCount { get; init; }
+
     public IReadOnlyList<DiscoveryChildType> ChildTypes { get; init; } = Array.Empty<DiscoveryChildType>();
 
 
