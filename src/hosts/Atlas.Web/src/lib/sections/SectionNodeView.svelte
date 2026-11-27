@@ -10,11 +10,12 @@
   import { publicUrl } from '../api/nodePage';
   import { blockAt, columns, sectionRows, rowWrap, type Draft, type Photo } from './sectionLayouts';
 
-  let { draft, feed = false, onReadMore, leadingAction }: {
+  let { draft, feed = false, onReadMore, leadingAction, readMoreAction }: {
     draft: Draft;
     feed?: boolean;
     onReadMore?: () => void;
     leadingAction?: Snippet;
+    readMoreAction?: Snippet;
   } = $props();
 
   let viewportHeight = $state(0);
@@ -95,9 +96,9 @@
 </div>
 {#if truncated}<div class="cutoff" aria-label="More content follows">…</div>{/if}
 {#if feed}
-  <div class="feed-actions" class:with-content={sections.length > 0}>
+  <div class="feed-actions" class:single-row={!!readMoreAction} class:with-content={sections.length > 0}>
     {@render leadingAction?.()}
-    {#if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
+    {#if readMoreAction}{@render readMoreAction()}{:else if onReadMore}<button type="button" class="primary" onclick={onReadMore}>Read More</button>{/if}
   </div>
 {/if}
 </div>
@@ -136,6 +137,7 @@
   figcaption { text-align: center; font-size: var(--atlas-node-meta-size); line-height: var(--atlas-node-meta-line-height); margin-top: .25rem; }
   .cutoff { margin-block: -.4rem .35rem; position: relative; }
   .feed-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: auto; }
+  .feed-actions.single-row { flex-wrap: nowrap; gap: .35rem; }
   .feed-actions.with-content { padding-block-start: .5rem; }
   .feed-actions button {
     font: inherit; line-height: 1.25; min-block-size: 2.25rem; padding: .25rem .65rem; border: 1px solid var(--atlas-border);

@@ -31,6 +31,39 @@ async function mock(page: Page) {
   return urls;
 }
 
+for (const preview of ['excerpt', 'carousel', 'sections'] as const) {
+  test(`compact feed actions stay on one row at phone width with a ${preview} preview`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await mock(page);
+    await page.route(`**/atlas-public-api/nodes/${root}/description`, route => route.fulfill({
+      json: preview === 'excerpt' ? [] : preview === 'carousel'
+        ? ['Opening', 'Continuation'].map((markdown, i) => ({ id: `block-${i}`, kind: 'markdown', content: { markdown } }))
+        : [{ id: 'composition', kind: 'sectioned', content: { composition: writeComposition(example('editorial')) } }],
+    }));
+    await page.route('https://images.unsplash.com/**', route => route.abort());
+    await page.goto('/');
+    const card = page.locator('article.node-card').first();
+    const toggle = card.getByRole('button', { name: 'Show subnodes' });
+    const reactions = card.getByRole('button', { name: /^Reactions/ });
+    const comments = card.getByRole('button', { name: 'Comments (1)', exact: true });
+    const readMore = card.getByRole('button', { name: 'Read more', exact: true });
+    await expect(comments.locator('svg')).toBeVisible();
+    await expect(readMore.locator('svg')).toBeVisible();
+    await expect(reactions).toContainText('Reactions');
+    const row = await Promise.all([toggle, reactions, comments, readMore].map(action => action.boundingBox()));
+    const bounds = (await card.boundingBox())!;
+    for (const box of row) {
+      expect(box).not.toBeNull();
+      expect(box!.y + box!.height / 2).toBeCloseTo(row[0]!.y + row[0]!.height / 2, 0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    }
+    await toggle.click();
+    await expect(card.getByRole('region', { name: 'Subnodes' })).toBeVisible();
+    await readMore.click();
+    await expect(page).toHaveURL(/\/nodes\?id=/);
+  });
+}
+
 test('Read more opens the matching node story; filters load child feeds and a parented form', async ({ page }) => {
   const urls = await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
