@@ -72,6 +72,7 @@
     onTabChange,
     onAddChild,
     childFormOpen = false,
+    createTypeSelection = '',
     onCreateTypeChange,
     onCloseChild,
     childFormBusy = false,
@@ -131,6 +132,8 @@
      */
     onAddChild: (id?: string) => void;
     childFormOpen?: boolean;
+    /** Empty until the user explicitly selects a type, independent of the current feed filter. */
+    createTypeSelection?: string;
     onCreateTypeChange?: (id: string) => void;
     onCloseChild?: () => void;
     childFormBusy?: boolean;
@@ -369,9 +372,10 @@
     <div class="subnode-toolbar" use:alignChildControls>
       {#if childFormOpen}
         <label class="child-filter create-type">
-          <strong>Create</strong>
-          <select aria-label="Node type to create" value={active === 'draft-new-type' ? 'new' : active}
+          <strong>Choose a node type:</strong>
+          <select aria-label="Choose a node type" value={createTypeSelection} required
             disabled={childFormBusy} onchange={(event) => onCreateTypeChange?.(event.currentTarget.value)}>
+            <option value="" disabled>Select a node type…</option>
             {#each types as type (type.id)}<option value={type.id}>{type.name}</option>{/each}
             <option value="new">Define a new node type…</option>
           </select>
