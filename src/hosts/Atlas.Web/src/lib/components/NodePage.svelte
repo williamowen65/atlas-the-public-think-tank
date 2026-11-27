@@ -7,7 +7,7 @@
   - `voting` (`Snippet`; optional): Renderable snippet for the voting region, replacing the
     read-only vote summary. LiveNodePage supplies LiveVotingDial here to add
     API/session behavior.
-  - `reportControl` (`Snippet`; optional): Report action shown at the end of the content.
+  - `reportControl` (`Snippet`; optional): Report action aligned to the right of the footer controls.
   - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
     omitted, NodePage displays the static reaction summary from node.reactions.
   - `scrollToDiscussionTabs` (`boolean`; optional; default `false`): Requests initial focus and
@@ -219,7 +219,7 @@
       // ResizeObserver may replace the first scheduled frame. Keep focus in the
       // alignment callback so that rescheduling cannot silently cancel it.
       if (!focused) {
-        const target = focusComments ? tabs.querySelector<HTMLElement>('button:last-child') : tabs.querySelector<HTMLElement>('select, button');
+        const target = focusComments ? tabs.querySelector<HTMLElement>('[data-comments-toggle]') : tabs.querySelector<HTMLElement>('select, button');
         target?.focus({ preventScroll: true });
         focused = true;
       }
@@ -340,16 +340,18 @@
         <ContentBlocks {blocks} />
       {/if}
     </div>
-    {#if !inspectionOnly}{@render reportControl?.()}{/if}
   </div>
   {#if !inspectionOnly}
     <div class="node-actions" use:alignCommentControls>
-      <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
-      {#if commentsPanel}
-        <button type="button" aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
-          onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
-      {/if}
+      <div class="discussion-actions">
+        <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
+          onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+        {#if commentsPanel}
+          <button type="button" data-comments-toggle aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
+            onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
+        {/if}
+      </div>
+      {@render reportControl?.()}
     </div>
     <div class="reaction-controls" id={`${instance}-reactions`} hidden={!reactionsOpen}>
       {#if reactionsOpen}
@@ -492,13 +494,40 @@
     white-space: pre-line;
   }
   .node-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .4rem .75rem;
+    padding: .65rem var(--card-padding) .85rem;
+  }
+  .discussion-actions {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: .4rem;
-    padding: .65rem var(--card-padding) .85rem;
+    min-width: 0;
   }
-  .node-actions button {
+  /* Keep the trigger in the footer row, with its optional form on a separate row. */
+  .node-actions :global(.report-control) { display: contents; }
+  .node-actions :global(.report-control > .report-trigger),
+  .node-actions :global(.report-control > [role='status']) {
+    grid-column: 2;
+    justify-self: end;
+    text-align: end;
+    margin: 0;
+  }
+  .node-actions :global(.report-control > form),
+  .node-actions :global(.report-control > [role='alert']) {
+    grid-column: 1 / -1;
+    justify-self: end;
+    box-sizing: border-box;
+  }
+  @media (max-width: 380px) {
+    .node-actions { grid-template-columns: minmax(0, 1fr); }
+    .node-actions :global(.report-control > .report-trigger),
+    .node-actions :global(.report-control > [role='status']) { grid-column: 1; }
+  }
+  .discussion-actions button {
     font: inherit;
     min-height: 2.25rem;
     padding: .25rem .6rem;
@@ -507,8 +536,8 @@
     color: var(--atlas-accent);
     background: var(--atlas-surface);
   }
-  .node-actions button[aria-expanded='true'] { border-color: var(--atlas-accent); }
-  .node-actions button:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
+  .discussion-actions button[aria-expanded='true'] { border-color: var(--atlas-accent); }
+  .discussion-actions button:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
   .reaction-controls, .comments-controls { padding: 0 var(--card-padding) .85rem; min-width: 0; }
   .reaction-controls[hidden], .comments-controls[hidden] { display: none; }
   .comments-controls { border-block-start: 1px solid var(--atlas-border); padding-block-start: .85rem; }
