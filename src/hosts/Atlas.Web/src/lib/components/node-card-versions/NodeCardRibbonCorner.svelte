@@ -42,6 +42,7 @@
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
+  import LoadingPlaceholder from '../LoadingPlaceholder.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -212,7 +213,7 @@
           </div>
           {#key childFilter}
             {#await import('../LiveNodeFeed.svelte')}
-              <p role="status" class="subnode-loading">Loading subnodes…</p>
+              <div class="subnode-import-placeholder"><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></div>
             {:then { default: ChildFeed }}
               <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
                 {onOpenProfile} onOpenNode={openRelated} connected inline presentation="mini" />
@@ -345,19 +346,52 @@
     border-top: 1px solid var(--atlas-border);
     background: var(--atlas-tinted-surface);
     border-radius: 0 0 var(--atlas-radius) var(--atlas-radius);
-    padding: .75rem var(--card-padding) .45rem;
+    --atlas-connected-branch-gutter: clamp(.85rem, 3vw, 1.6rem);
+    --atlas-connected-branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+    --subnode-top-padding: .75rem;
+    --subnode-header-gap: .65rem;
+    padding: var(--subnode-top-padding) var(--card-padding) .45rem;
   }
   .subnode-header {
+    position: relative;
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: .35rem .75rem; margin-block-end: .65rem;
+    flex-wrap: wrap; gap: .35rem .75rem; margin-block-end: var(--subnode-header-gap);
+    padding-inline-start: var(--atlas-connected-branch-gutter);
     color: var(--atlas-text); font-size: .9rem;
+  }
+  /* Keep the count/filter in the content column, with a continuous straight rail
+     in the left gutter from the parent divider to the first mini child. */
+  .subnode-section:has(:global(ul.attached-mini-feed > li)) .subnode-header::before,
+  .subnode-section:has(.subnode-import-placeholder) .subnode-header::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block-start: calc(-1 * var(--subnode-top-padding));
+    inset-block-end: calc(-1 * var(--subnode-header-gap));
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+    pointer-events: none;
+  }
+  .subnode-import-placeholder {
+    position: relative;
+    padding-inline-start: var(--atlas-connected-branch-gutter);
+  }
+  .subnode-import-placeholder::before, .subnode-import-placeholder::after {
+    content: ''; position: absolute; inset-inline-start: 2px; pointer-events: none;
+  }
+  .subnode-import-placeholder::before {
+    inset-block-start: 0; block-size: 1.1rem;
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+  }
+  .subnode-import-placeholder::after {
+    inset-block-start: 1.1rem;
+    inline-size: calc(var(--atlas-connected-branch-gutter) - 2px);
+    border-block-start: 2px solid var(--atlas-connected-branch-color);
   }
   .inline-filter {
     display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
     min-width: 0; color: var(--atlas-muted); font-size: .8rem;
   }
   .inline-filter select { color: var(--atlas-text); min-height: 2rem; }
-  .subnode-loading { text-align: center; color: var(--atlas-muted); }
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
 
