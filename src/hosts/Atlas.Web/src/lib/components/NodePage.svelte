@@ -270,6 +270,10 @@
   dial floats beside content; the selected panel sits below the tab toolbar.
 -->
 
+{#if !inspectionOnly}
+  <Breadcrumb expandable connectedCards items={node.breadcrumb} originId={node.id}
+    {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
+{/if}
 <article class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
@@ -283,7 +287,7 @@
       }}
     />{/if}
   <header>
-    <Breadcrumb
+    {#if inspectionOnly}<Breadcrumb
       expandable
       items={node.breadcrumb}
       originId={node.id}
@@ -291,7 +295,7 @@
       {onNavigate}
       hasMore={hasMoreAncestors}
       loadOlder={loadOlderAncestors}
-    />
+    />{/if}
     {@render typeRow()}
     <h1>{node.title}</h1>
     <p class="byline">
