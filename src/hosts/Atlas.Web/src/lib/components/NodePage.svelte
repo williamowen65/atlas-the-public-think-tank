@@ -369,6 +369,7 @@
 </article>
 {#if !inspectionOnly}
   <section class="external-subnodes" aria-label="Subnodes">
+    {#if !childFormOpen || !createTypeSelection}
     <div class="subnode-toolbar" use:alignChildControls>
       {#if childFormOpen}
         <label class="child-filter create-type">
@@ -402,6 +403,7 @@
         {/if}
       </div>
     </div>
+    {/if}
     <div class="external-child-content">
       {@render children()}
     </div>
@@ -537,7 +539,7 @@
     pointer-events: none;
   }
   .external-subnodes :global(.child-form) {
-    position: relative; margin: 0; padding: 0 0 .75rem var(--atlas-connected-branch-gutter);
+    position: relative; margin: 0; padding: .75rem 0 .75rem var(--atlas-connected-branch-gutter);
   }
   .external-subnodes:not(:has(:global(ul.connected > li))) :global(.child-form[data-branch-ready])::before {
     content: '';
