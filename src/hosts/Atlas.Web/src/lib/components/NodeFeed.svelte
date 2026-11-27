@@ -153,10 +153,6 @@
    * Trimmed contribution type label used by the empty-feed invitation.
    */
   const singularType = $derived((emptyTypeName ?? '').trim());
-  /**
-   * English indefinite article selected from the invitation type’s initial letter.
-   */
-  const article = $derived(/^[aeiou]/i.test(singularType) ? 'an' : 'a');
   // Observe the tail only when another page can be requested; the manual button remains the fallback.
   $effect(() => {
     items.length;
@@ -269,13 +265,13 @@
     {#if error}<p role={errorRole}>{error}</p>{/if}
     {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}
       <div class="empty-invitation">
-        <h3>Be the first to create {article} {singularType.toLowerCase()}</h3>
+        <h3>Be the first to contribute</h3>
         <p>
           There aren't any {singularType.toLowerCase()} contributions here yet. Start the conversation
           by adding one.
         </p>
         <button type="button" onclick={onCreateFirst}
-          >Create {article} {singularType.toLowerCase()}</button
+          >Add {singularType}</button
         >
       </div>
     {:else if !initialLoading}<p role="status">
