@@ -71,6 +71,9 @@
     draftTab,
     onTabChange,
     onAddChild,
+    childFormOpen = false,
+    onCloseChild,
+    childFormBusy = false,
     onNavigate,
     hasMoreAncestors = false,
     loadOlderAncestors,
@@ -126,6 +129,9 @@
      * omitted.
      */
     onAddChild: (id?: string) => void;
+    childFormOpen?: boolean;
+    onCloseChild?: () => void;
+    childFormBusy?: boolean;
     /**
      * Callback receiving an ancestor node ID from Breadcrumb. The parent decides how to navigate
      * in the application.
@@ -371,8 +377,12 @@
         </select>
       </label>
       <div class="add">
-        <button type="button" onclick={() => onAddChild(active === 'comments' || active === 'subnodes' ? undefined : active)}
-          disabled={node.status === 'Archived'}>Add {active === 'comments' || active === 'subnodes' ? 'a child node' : (types.find(type => type.id === active)?.name ?? 'a child node')}</button>
+        {#if childFormOpen}
+          <button class="close-child" type="button" onclick={onCloseChild} disabled={childFormBusy}>Close subnode form</button>
+        {:else}
+          <button type="button" onclick={() => onAddChild(active === 'comments' || active === 'subnodes' ? undefined : active)}
+            disabled={node.status === 'Archived' || childFormBusy}>Add {active === 'comments' || active === 'subnodes' ? 'a child node' : (types.find(type => type.id === active)?.name ?? 'a child node')}</button>
+        {/if}
       </div>
     </div>
     <div class="external-child-content">
@@ -497,6 +507,7 @@
     color: var(--atlas-text);
     font-size: .9rem;
   }
+  .external-subnodes:has(:global(.child-form[data-branch-ready])) .subnode-toolbar::before,
   .external-subnodes:has(:global(ul.connected > li)) .subnode-toolbar::before,
   .external-subnodes:has(:global(ul.connected > li)) :global(.child-form)::before,
   .external-subnodes:has(:global(ul.connected > li)) :global(.node-feed:has(> p))::before,
@@ -508,7 +519,28 @@
     border-inline-start: 2px solid var(--atlas-connected-branch-color);
     pointer-events: none;
   }
-  .external-subnodes :global(.child-form) { position: relative; margin: 0; padding: 0 0 .75rem var(--atlas-connected-branch-gutter); }
+  .external-subnodes :global(.child-form) {
+    position: relative; margin: 0; padding: 0 0 .75rem var(--atlas-connected-branch-gutter);
+  }
+  .external-subnodes:not(:has(:global(ul.connected > li))) :global(.child-form[data-branch-ready])::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block-start: 0;
+    block-size: var(--draft-branch-y);
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+    pointer-events: none;
+  }
+  .external-subnodes :global(.child-form[data-branch-ready])::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block-start: var(--draft-branch-y);
+    inline-size: calc(var(--draft-branch-x) - 2px);
+    border-block-start: 2px solid var(--atlas-connected-branch-color);
+    pointer-events: none;
+  }
+  .external-subnodes :global(.child-form .draft-fields) { margin-block-start: 0; }
   .external-subnodes :global(.node-feed:has(> p)), .external-subnodes :global(.feed-head) { position: relative; padding-inline-start: var(--atlas-connected-branch-gutter); }
   .external-subnodes :global(.node-feed > p) { margin: 0; padding-block-end: .5rem; }
   .external-subnodes :global(ul.connected > li:first-child::before) { inset-block-start: 0; }
@@ -552,6 +584,13 @@
       color: var(--atlas-muted);
       cursor: default;
     }
+  }
+  .add button.close-child:not(:disabled) {
+    background: var(--atlas-surface);
+    color: var(--atlas-accent);
+  }
+  .add button.close-child:not(:disabled):hover {
+    background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface));
   }
   .child-filter {
     display: flex;
