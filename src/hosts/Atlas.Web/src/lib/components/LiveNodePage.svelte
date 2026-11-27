@@ -622,7 +622,8 @@
           />{:else if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some((type) => type.typeId === active))}<p
           >
             The child node draft is open above.
-          </p>{:else}<div class="connected-child-feed"><LiveNodeFeed
+          </p>{:else}<LiveNodeFeed
+            connected
             {onOpenProfile}
             parentId={node.id}
             typeId={active === 'subnodes' ? undefined : active}
@@ -640,7 +641,7 @@
                 createType = active;
               }
             }}
-          /></div>{/if}{/key}
+          />{/if}{/key}
     </NodePage>
   {/key}
 {/if}
@@ -672,29 +673,6 @@
   .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
   .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
-  /* The rail denotes siblings sharing the focused parent, never links between cards. */
-  .connected-child-feed :global(.node-feed > ul) {
-    --branch-gutter: clamp(0.85rem, 3vw, 1.6rem);
-    --branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
-    padding-inline-start: var(--branch-gutter);
-  }
-  .connected-child-feed :global(.node-feed > ul > li) { position: relative; }
-  .connected-child-feed :global(.node-feed > ul > li::before),
-  .connected-child-feed :global(.node-feed > ul > li::after) {
-    content: ''; position: absolute; pointer-events: none;
-    inset-inline-start: calc(-1 * var(--branch-gutter) + 2px);
-  }
-  .connected-child-feed :global(.node-feed > ul > li::before) {
-    inset-block-start: 0; inset-block-end: -1.25rem;
-    border-inline-start: 2px solid var(--branch-color);
-  }
-  .connected-child-feed :global(.node-feed > ul > li:first-child::before) { inset-block-start: -0.6rem; }
-  .connected-child-feed :global(.node-feed > ul > li:last-child::before) { inset-block-end: auto; block-size: 1.4rem; }
-  .connected-child-feed :global(.node-feed > ul > li:only-child::before) { block-size: 2rem; }
-  .connected-child-feed :global(.node-feed > ul > li::after) {
-    inset-block-start: 1.4rem; inline-size: calc(var(--branch-gutter) - 2px);
-    border-block-start: 2px solid var(--branch-color);
-  }
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;
