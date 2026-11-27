@@ -381,7 +381,17 @@
     max-width: 100%;
   }
   .type-field { width: min(100%, 16rem); }
-  .title-row .title-field input { font-size: 1.3rem; font-weight: 600; line-height: 1.35; }
+  .title-row .title-field input,
+  .type-field :global(.select2-selection) {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-field :global(.select2-selection) {
+    height: auto;
+    padding-block: 0.6rem;
+  }
+  .type-field :global(.select2-selection__rendered) { line-height: inherit; }
   .title-field {
     flex: 3 1 16rem;
     min-width: 0;
