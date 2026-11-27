@@ -44,6 +44,7 @@
     parentTitle,
     initialTypeId = '',
     breadcrumb = [],
+    hideBreadcrumb = false,
     focusOnMount = false,
     onPreview,
     onSubmit,
@@ -67,6 +68,8 @@
     initialTypeId?: string;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /** The surrounding connected feed already shows the parent. */
+    hideBreadcrumb?: boolean;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -159,7 +162,7 @@
     authorName: 'You',
     createdAt,
     description: '',
-    breadcrumb: path,
+    breadcrumb: hideBreadcrumb ? [] : path,
     communities: communityIds.map((id) => communities.find((community) => community.id === id)?.name ?? 'Unavailable community'),
     related: [],
     requestedTypes: [],
