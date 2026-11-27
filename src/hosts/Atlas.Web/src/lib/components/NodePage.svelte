@@ -168,6 +168,7 @@
    * Two primary views; the controlled active ID also carries the child-type filter
    * or a temporary draft ID so existing navigation and draft handling remain intact.
    */
+  const reactionCount = $derived(node.reactionCount ?? (node.reactionSummary && !node.reactions.length && node.reactionSummary !== '—' ? undefined : node.reactions.reduce((sum, reaction) => sum + reaction.count, 0)));
   const childCount = $derived((node.childTypes ?? []).reduce((sum, type) => sum + type.count, 0));
   const childFilters = $derived([
     ...(node.childTypes ?? []).map((type) => ({ id: type.typeId, name: type.label })),
@@ -333,7 +334,7 @@
   {#if !inspectionOnly}
     <div class="node-actions" use:alignCommentControls>
       <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-        onclick={() => reactionsOpen = !reactionsOpen}>Reactions</button>
+        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
       {#if commentsPanel}
         <button type="button" aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
           onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
