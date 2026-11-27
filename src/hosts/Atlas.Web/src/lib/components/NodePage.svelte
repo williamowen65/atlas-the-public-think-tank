@@ -72,6 +72,7 @@
     onTabChange,
     onAddChild,
     childFormOpen = false,
+    onCreateTypeChange,
     onCloseChild,
     childFormBusy = false,
     onNavigate,
@@ -130,6 +131,7 @@
      */
     onAddChild: (id?: string) => void;
     childFormOpen?: boolean;
+    onCreateTypeChange?: (id: string) => void;
     onCloseChild?: () => void;
     childFormBusy?: boolean;
     /**
@@ -365,6 +367,16 @@
 {#if !inspectionOnly}
   <section class="external-subnodes" aria-label="Subnodes">
     <div class="subnode-toolbar" use:alignChildControls>
+      {#if childFormOpen}
+        <label class="child-filter create-type">
+          <strong>Create</strong>
+          <select aria-label="Node type to create" value={active === 'draft-new-type' ? 'new' : active}
+            disabled={childFormBusy} onchange={(event) => onCreateTypeChange?.(event.currentTarget.value)}>
+            {#each types as type (type.id)}<option value={type.id}>{type.name}</option>{/each}
+            <option value="new">Define a new node type…</option>
+          </select>
+        </label>
+      {:else}
       <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
       <label class="child-filter">
         <span>Node type</span>
@@ -376,6 +388,7 @@
           {/if}
         </select>
       </label>
+      {/if}
       <div class="add">
         {#if childFormOpen}
           <button class="close-child" type="button" onclick={onCloseChild} disabled={childFormBusy}>Close subnode form</button>
@@ -601,6 +614,8 @@
     color: var(--atlas-muted);
     font-size: 0.9rem;
   }
+  .create-type strong { color: var(--atlas-text); font-size: 1.1rem; }
+  .create-type select { font-weight: 600; }
   .child-filter select {
     font: inherit;
     color: var(--atlas-text);
