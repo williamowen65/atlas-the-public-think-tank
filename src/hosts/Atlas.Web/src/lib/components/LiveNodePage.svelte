@@ -247,6 +247,41 @@
       switching = false;
     }
   }
+  // Connect the rail to the actual editor/preview card, not the controls above it.
+  // Measure after layout so wrapping controls, sign-in, and preview switches remain aligned.
+  function connectDraftBranch(element: HTMLDivElement) {
+    let frame = 0;
+    let observed: HTMLElement | undefined;
+    const resize = new ResizeObserver(schedule);
+    function measure() {
+      const card = Array.from(element.querySelectorAll<HTMLElement>('.authoring-card .node-card'))
+        .find(candidate => candidate.getClientRects().length > 0 && candidate.getBoundingClientRect().height > 0);
+      if (observed !== card) {
+        if (observed) resize.unobserve(observed);
+        observed = card;
+        if (card) resize.observe(card);
+      }
+      if (!card) {
+        element.removeAttribute('data-branch-ready');
+        return;
+      }
+      const bounds = element.getBoundingClientRect();
+      const target = card.getBoundingClientRect();
+      const rtl = getComputedStyle(element).direction === 'rtl';
+      element.style.setProperty('--draft-branch-y', `${target.top - bounds.top + 22.4}px`);
+      element.style.setProperty('--draft-branch-x', `${rtl ? bounds.right - target.right : target.left - bounds.left}px`);
+      element.setAttribute('data-branch-ready', '');
+    }
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    }
+    const mutation = new MutationObserver(schedule);
+    mutation.observe(element, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+    resize.observe(element);
+    schedule();
+    return { destroy() { cancelAnimationFrame(frame); mutation.disconnect(); resize.disconnect(); } };
+  }
   // Track the editable child draft so its selected type can appear as a temporary discussion tab.
   function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
@@ -570,6 +605,9 @@
       {totalVotes}
       onNavigate={openNode}
       onTabChange={(id) => void changeTab(id)}
+      childFormOpen={createType !== null}
+      childFormBusy={switching}
+      onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
       onAddChild={(id) => {
         if (createType !== null) return;
         createType = id ?? types[0]?.id ?? '';
@@ -598,9 +636,8 @@
           onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{/if}
       {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
-      {#if createType !== null}<div class="child-form">
-          <button onclick={() => void closeChildForm()}>Close child form</button
-          >{#key createType}<LiveNodeForm
+      {#if createType !== null}<div class="child-form" use:connectDraftBranch>
+          {#key createType}<LiveNodeForm
               parentId={node.id}
               parentTitle={node.title}
               initialTypeId={createType}
@@ -608,6 +645,7 @@
               onDraftChange={selectDraftType}
               onRegisterClose={(close) => (saveChildDraft = close)}
               breadcrumb={node.breadcrumb}
+              hideBreadcrumb
               focusOnMount
               {apiBase}
             />{/key}
@@ -673,8 +711,5 @@
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;
-  }
-  .child-form > button {
-    margin-bottom: 1rem;
   }
 </style>
