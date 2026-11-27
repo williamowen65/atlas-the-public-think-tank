@@ -191,8 +191,8 @@
    */
   let retry = $state(0);
   /**
-   * Type ID of the open child form; null means closed, while empty text permits initial
-   * selection.
+   * null = closed; empty string = awaiting explicit type selection; otherwise the
+   * first selected type, retained as a stable editor key while the active type changes.
    */
   let createType = $state<string | null>(null);
   let childSubmitting = $state(false);
@@ -292,6 +292,7 @@
   function selectCreateType(id: string) {
     if (createType === null || childSubmitting || switching) return;
     if (id !== 'new' && !types.some(type => type.id === id)) return;
+    if (createType === '') createType = id;
     active = id === 'new' ? 'draft-new-type' : id;
   }
   /**
@@ -612,13 +613,13 @@
       onNavigate={openNode}
       onTabChange={(id) => void changeTab(id)}
       childFormOpen={createType !== null}
+      createTypeSelection={createType ? (active === 'draft-new-type' ? 'new' : active) : ''}
       childFormBusy={switching || childSubmitting}
       onCreateTypeChange={selectCreateType}
       onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
-      onAddChild={(id) => {
+      onAddChild={() => {
         if (createType !== null) return;
-        createType = id ?? types[0]?.id ?? 'new';
-        active = createType === 'new' ? 'draft-new-type' : createType;
+        createType = '';
       }}
     >
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
@@ -643,7 +644,7 @@
           onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{/if}
       {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
-      {#if createType !== null}<div class="child-form" use:connectDraftBranch>
+      {#if createType}<div class="child-form" use:connectDraftBranch>
           {#key createType}<LiveNodeForm
               parentId={node.id}
               parentTitle={node.title}
@@ -680,12 +681,7 @@
                 .replace(/\s*\(\d+\)\s*$/, '')
                 .replace(/ies$/i, 'y')
                 .replace(/s$/i, '')}
-            onCreateFirst={() => {
-              if (createType === null) {
-                createType = active === 'subnodes' ? types[0]?.id ?? 'new' : active;
-                active = createType === 'new' ? 'draft-new-type' : createType;
-              }
-            }}
+            onCreateFirst={createType === null ? () => { createType = ''; } : undefined}
           />{/if}{/key}
     </NodePage>
   {/key}
