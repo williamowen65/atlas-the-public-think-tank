@@ -118,10 +118,6 @@
   description’s corner, with reactions and discussion links below.
 -->
 
-{#if !headerFields && !draft && !node.isHidden && !relationshipContext}
-  <Breadcrumb expandable connectedCards items={node.breadcrumb} originId={node.id}
-    {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
-{/if}
 <article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
   {#if editOpensDetail}
     <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
@@ -144,8 +140,15 @@
         {onNavigate}
         hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors}
-      />{/if}
-      {@render typeRow()}
+      />
+        {@render typeRow(undefined)}
+      {:else if !relationshipContext}
+        <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+          originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
+          loadOlder={loadOlderAncestors} />
+      {:else}
+        {@render typeRow(undefined)}
+      {/if}
       <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
@@ -288,8 +291,9 @@
   >
 {/snippet}
 
-{#snippet typeRow()}
+{#snippet typeRow(ancestryControl: Snippet | undefined)}
   <div class="node-type-row">
+    {@render ancestryControl?.()}
     <p class="mobile-type">{node.typeName}</p>
     {#if !authoringBody}
       {#if voting}
@@ -354,6 +358,7 @@
 
   .node-card:has(> :is(:global(.edit-node.corner), .hidden-edit-link)) {
     --ancestry-end-padding: 5rem;
+    --connected-ancestry-top-padding: 2.75rem;
   }
 
 
@@ -458,7 +463,7 @@
   }
 
   header:has(+ .authoring-body) { padding-block: var(--card-padding) .5rem; }
-  header:has(> :global(.ancestry)) { padding-block-start: 0; }
+  header:has(> :global(.ancestry:not([hidden]))) { padding-block-start: 0; }
   .authoring-body { padding-block: .5rem var(--card-padding); }
 
   .fallback-vote, .fallback-vote-dialog {
