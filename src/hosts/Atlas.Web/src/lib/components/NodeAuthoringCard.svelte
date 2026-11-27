@@ -12,13 +12,14 @@
   import type { NodeCardData } from './node-card-versions/types';
   import TiptapCanvas from './TiptapCanvas.svelte';
 
-  let { node, blocks, onChange, fields, actions, closeControl, disabled = false, average, totalVotes }: {
+  let { node, blocks, onChange, fields, actions, closeControl, creatingDraft = false, disabled = false, average, totalVotes }: {
     node: NodeCardData;
     blocks: AuthorBlock[];
     onChange: (blocks: AuthorBlock[]) => void;
     fields: Snippet;
     actions?: Snippet;
     closeControl?: Snippet;
+    creatingDraft?: boolean;
     disabled?: boolean;
     average?: number | null;
     totalVotes?: number;
@@ -89,7 +90,7 @@
   {/if}
 
   {#if view === 'feed'}
-    <NodeCardRibbonCorner {node} blocks={content} draft mobileLayout {average} {totalVotes}
+    <NodeCardRibbonCorner {node} {creatingDraft} blocks={content} draft mobileLayout {average} {totalVotes}
       onReadMore={() => view = 'full'}>
       {#snippet voting(compact?: boolean)}
         <LiveVotingDial nodeId={node.id} initialAverage={average} initialTotalVotes={totalVotes}
@@ -97,12 +98,12 @@
       {/snippet}
     </NodeCardRibbonCorner>
   {:else if view === 'full'}
-    <NodeCardRibbonCorner {node} draft mobileLayout authoringBody={fullContent} />
+    <NodeCardRibbonCorner {node} {creatingDraft} draft mobileLayout authoringBody={fullContent} />
   {/if}
 
   <!-- Preserve the document, selection, and undo history while previewing. -->
   <fieldset class="editor" hidden={view !== 'edit'} disabled={disabled || view !== 'edit'}>
-    <NodeCardRibbonCorner {node} draft mobileLayout headerFields={fields}
+    <NodeCardRibbonCorner {node} {creatingDraft} draft mobileLayout headerFields={fields}
       authoringBody={editorContent} authoringFooter={actions} />
   </fieldset>
 </div>
