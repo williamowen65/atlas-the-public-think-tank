@@ -374,11 +374,12 @@
             signal,
           ),
           readTypes(apiBase, signal),
-          readReactions(display.id, signal, apiBase).catch(() => []),
+          readReactions(display.id, signal, apiBase).catch(() => null),
         ]);
         if (detail.hidden) throw new Error('Unavailable');
         if (controller.signal.aborted) return;
-        node = { ...display, authorId: detail.authorId, reactions };
+        node = { ...display, authorId: detail.authorId, reactions: reactions ?? display.reactions,
+          reactionCount: reactions ? reactions.reduce((sum, reaction) => sum + reaction.count, 0) : display.reactionCount };
         hasMoreAncestors = !!entry!.card?.breadcrumbSegment?.continuationNodeId;
         blocks = content;
         average = entry!.averageVote;
@@ -586,6 +587,7 @@
           />{/if}{/snippet}
       {#snippet reactions()}{#if node}<LiveReactions
             nodeId={node.id}
+            onTotalChange={(count) => { if (node && node.reactionCount !== count) node = { ...node, reactionCount: count }; }}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
       {#snippet reportControl()}
