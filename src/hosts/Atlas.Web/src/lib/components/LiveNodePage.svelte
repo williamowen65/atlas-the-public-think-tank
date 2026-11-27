@@ -177,10 +177,7 @@
   /**
    * Selected discussion-tab ID: comments, a contribution type ID or a temporary draft tab.
    */
-  let active = $state('comments');
-  $effect(() => {
-    if (focusCommentId) active = 'comments';
-  });
+  let active = $state('subnodes');
   /**
    * Whether data is being loaded; drives loading feedback for this view.
    */
@@ -298,7 +295,7 @@
     createType = null;
     editingDraft = null;
     saveChildDraft = null;
-    active = 'comments';
+    active = 'subnodes';
     void (async () => {
       try {
         if (id) {
@@ -388,7 +385,7 @@
         totalVotes = entry!.voteCount;
         active = selectedType === 'subnodes' || display.childTypes?.some((type) => type.typeId === selectedType)
           ? selectedType
-          : 'comments';
+          : 'subnodes';
         types = [...catalog].sort(
           (a, b) =>
             Number(detail.requestedTypeIds.includes(b.id)) -
@@ -548,7 +545,8 @@
     <NodePage
       {apiBase}
       {onOpenProfile}
-      scrollToDiscussionTabs={!!initialTypeId && !focusCommentId && active === initialTypeId}
+      scrollToDiscussionTabs={!!initialTypeId && !focusCommentId && (initialTypeId === 'comments' || active === initialTypeId)}
+      commentsInitiallyOpen={initialTypeId === 'comments' || !!focusCommentId}
       {hasMoreAncestors}
       loadOlderAncestors={(id) =>
         id
@@ -593,6 +591,10 @@
       {#snippet reportControl()}
         {#if node}{#key node.id}<NodeReportControl nodeId={node.id} />{/key}{/if}
       {/snippet}
+      {#snippet commentsPanel()}
+        {#if node}<CommentsPanel nodeId={node.id} {focusCommentId} {apiBase}
+          onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{/if}
+      {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button
@@ -612,14 +614,7 @@
         Changing tabs recreates the selected discussion subtree so its local paging/form state
         does not leak across tabs.
       -->
-      {#key active}{#if active === 'comments'}<CommentsPanel
-            nodeId={node.id}
-            {focusCommentId}
-            {apiBase}
-            onAdded={() => {
-              if (node) node = { ...node, commentCount: node.commentCount + 1 };
-            }}
-          />{:else if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some((type) => type.typeId === active))}<p
+      {#key active}{#if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some((type) => type.typeId === active))}<p
           >
             The child node draft is open above.
           </p>{:else}<LiveNodeFeed
