@@ -157,19 +157,17 @@
    */
   const instance = $props.id();
   /**
-   * Rebuild discussion choices when counts or draft state change: comments first,
-   * backend contribution categories next, and a temporary draft tab if not already
-   * represented. The parent owns active and supplies the selected panel’s content.
+   * Two primary views; the controlled active ID also carries the child-type filter
+   * or a temporary draft ID so existing navigation and draft handling remain intact.
    */
+  const childCount = $derived((node.childTypes ?? []).reduce((sum, type) => sum + type.count, 0));
+  const activeTab = $derived(active === 'comments' ? 'comments' : 'subnodes');
   const tabs = $derived([
-    {
-      id: 'comments',
-      name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}`,
-    },
-    ...(node.childTypes ?? []).map((type) => ({
-      id: type.typeId,
-      name: type.label,
-    })),
+    { id: 'comments', name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}` },
+    { id: 'subnodes', name: `${childCount} ${childCount === 1 ? 'Subnode' : 'Subnodes'}` },
+  ]);
+  const childFilters = $derived([
+    ...(node.childTypes ?? []).map((type) => ({ id: type.typeId, name: type.label })),
     ...(draftTab && !(node.childTypes ?? []).some((type) => type.typeId === draftTab.id)
       ? [draftTab]
       : []),
@@ -351,9 +349,9 @@
   {#if !inspectionOnly}<div class="discussion-toolbar">
     <div class="add">
       <button
-        onclick={() => onAddChild(active === 'comments' ? undefined : active)}
+        onclick={() => onAddChild(activeTab === 'comments' || active === 'subnodes' ? undefined : active)}
         disabled={node.status === 'Archived'}
-        >Add {active === 'comments'
+        >Add {active === 'comments' || active === 'subnodes'
           ? 'a child node'
           : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
       >
@@ -362,29 +360,38 @@
       class="tabs"
       use:alignDiscussionTabs
       role="tablist"
-      aria-label="Node discussions and child types"
+      aria-label="Node comments and subnodes"
     >
       {#snippet discussionTab(tab: (typeof tabs)[number], index: number)}
         <button
           class:comments-tab={index === 0}
           role="tab"
           id={`${instance}-${tab.id}`}
-          aria-selected={active === tab.id}
+          aria-selected={activeTab === tab.id}
           aria-controls={`${instance}-panel`}
-          tabindex={active === tab.id ? 0 : -1}
+          tabindex={activeTab === tab.id ? 0 : -1}
           onclick={() => onTabChange(tab.id)}
           onkeydown={(event) => key(event, index)}>{tab.name}</button
         >
       {/snippet}
-      {@render discussionTab(tabs[0], 0)}
-      {#if tabs.length > 1}
-        <div class="child-tabs" role="presentation">
-          {#each tabs.slice(1) as tab, index}
-            {@render discussionTab(tab, index + 1)}
-          {/each}
-        </div>
-      {/if}
+      {#each tabs as tab, index}
+        {@render discussionTab(tab, index)}
+      {/each}
     </div>
+    {#if activeTab === 'subnodes'}
+      <label class="child-filter">
+        <span>Node type</span>
+        <select value={active} onchange={(event) => onTabChange(event.currentTarget.value)}>
+          <option value="subnodes">All types</option>
+          {#each childFilters as filter (filter.id)}
+            <option value={filter.id}>{filter.name}</option>
+          {/each}
+          {#if active !== 'subnodes' && !childFilters.some((filter) => filter.id === active)}
+            <option value={active}>{types.find((type) => type.id === active)?.name ?? 'New node type'}</option>
+          {/if}
+        </select>
+      </label>
+    {/if}
   </div>
   <!--
     One shared panel renders the parent-supplied comments, child feed or draft content; ARIA
@@ -393,7 +400,7 @@
   <div
     role="tabpanel"
     id={`${instance}-panel`}
-    aria-labelledby={`${instance}-${active}`}
+    aria-labelledby={`${instance}-${activeTab}`}
     tabindex="0"
   >
     {@render children()}
@@ -530,25 +537,31 @@
   .tabs {
     scroll-margin-top: 20px;
   }
-  .child-tabs { display: contents; }
-  @media (max-width: 560px) {
-    .child-tabs {
-      clear: both;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      padding-block-start: 0.4rem;
-    }
-    .tabs .comments-tab {
-      max-inline-size: calc(48% - 0.5rem);
-    }
+  .tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    min-inline-size: 0;
   }
-  @media (width > 560px) {
-    .tabs { margin-block-end: -0.4rem; }
-    .tabs button {
-      display: inline-block;
-      margin: 0 0.4rem 0.4rem 0;
-    }
+  .child-filter {
+    clear: both;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-block-start: 0.75rem;
+    color: var(--atlas-muted);
+    font-size: 0.9rem;
+  }
+  .child-filter select {
+    font: inherit;
+    color: var(--atlas-text);
+    background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    min-block-size: 2.25rem;
+    max-inline-size: 100%;
+    padding: 0.3rem 0.6rem;
   }
   .tabs button {
     vertical-align: top;
