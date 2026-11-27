@@ -447,7 +447,6 @@
 
   .node-page:has(> :global(.edit-node.corner)) {
     --ancestry-end-padding: 5rem;
-    --connected-ancestry-top-padding: 2.75rem;
   }
 
   h1 {
