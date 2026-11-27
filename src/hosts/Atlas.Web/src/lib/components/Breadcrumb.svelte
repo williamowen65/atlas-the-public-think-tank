@@ -23,10 +23,12 @@
 
 <script lang="ts">
   import { untrack } from 'svelte';
+  import AncestorNodeCard from './AncestorNodeCard.svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
     expandable = false,
+    connectedCards = false,
     onNavigate,
     hasMore = false,
     loadOlder,
@@ -39,6 +41,8 @@
     items: BreadcrumbItem[];
     /** Show the immediate parent with an optional ancestry toggle. */
     expandable?: boolean;
+    /** Standalone, collapsed-by-default ancestry of compact cards. */
+    connectedCards?: boolean;
     /**
      * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
      * navigation.
@@ -197,7 +201,7 @@
     error = '';
   });
   $effect(() => {
-    if (!originId || !allItems.length) return;
+    if (!originId || !allItems.length || (connectedCards && !expanded)) return;
     const controller = new AbortController();
     const ids =
       expandable && !expanded
@@ -246,7 +250,7 @@
   }
 
   $effect(() => {
-    if (expandable && expanded && allItems.length && more && !loading && !liveBusy && !error)
+    if (expandable && !connectedCards && expanded && allItems.length && more && !loading && !liveBusy && !error)
       untrack(() => void requestOlder());
   });
 
@@ -331,7 +335,25 @@
   }}
 />
 
-{#if expandable}
+{#if expandable && connectedCards}
+  {#if allItems.length}
+    <nav class="ancestry connected-ancestry" aria-label="Node ancestry">
+      <div class="ancestry-disclosure">
+        <button type="button" aria-expanded={expanded} aria-controls={panelId}
+          onclick={() => { expanded = !expanded; if (!expanded) openRouteMenu = false; }}>
+          {expanded ? 'Hide ancestry' : 'Show ancestry'}
+        </button>
+      </div>
+      <div id={panelId} hidden={!expanded}>
+        {#if expanded}
+          {#if more && loadOlder}<div class="older-ancestry">{@render olderButton()}</div>{/if}
+          {@render loadError()}
+          <ol>{@render ancestorItems()}</ol>
+        {/if}
+      </div>
+    </nav>
+  {/if}
+{:else if expandable}
   {#if allItems.length}
     <nav class="ancestry" id={panelId} aria-label="Node ancestry">
       {#if expanded && loading}<p role="status">Loading older ancestors…</p>{/if}
@@ -413,7 +435,7 @@
   {#each allItems as item, index (item.id ?? index)}
     {#if !expandable || expanded || index === allItems.length - 1}
       <li style:z-index={expandable ? undefined : allItems.length - index}>
-        {#if expandable && expanded && index > 0}
+        {#if expandable && !connectedCards && expanded && index > 0}
           <svg
             class="ancestry-arrow"
             viewBox="0 0 24 24"
@@ -427,6 +449,9 @@
             <path d="M12 1v22" />
           </svg>
         {/if}
+        {#if connectedCards && item.id}
+          <AncestorNodeCard id={item.id} title={item.title} {apiBase} {onNavigate} />
+        {:else}
         <div
           class="ancestor-title"
           class:parent-title={expandable && index === allItems.length - 1}
@@ -451,6 +476,7 @@
             <span>{item.title}</span>
           {/if}
         </div>
+        {/if}
         {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
           <div class="route-choice">
             <button
@@ -661,6 +687,41 @@
       margin-block: 0.2rem;
       box-shadow: none;
     }
+  }
+
+  .ancestry.connected-ancestry {
+    --connection-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    .ancestry-disclosure, .older-ancestry {
+      display: flex;
+      justify-content: center;
+      margin-block-end: 0.55rem;
+    }
+    .ancestry-disclosure button, .older-ancestry button {
+      color: var(--atlas-accent);
+      border: 1px solid var(--atlas-border);
+      border-radius: var(--atlas-radius);
+      background: var(--atlas-surface);
+      padding: 0.4rem 0.85rem;
+    }
+    ol { display: block; }
+    ol::after { display: none; }
+    li, li:first-child { padding: 0; }
+    li::after {
+      display: block;
+      position: static;
+      width: 2px;
+      height: 1rem;
+      margin-inline: auto;
+      background: var(--connection-color);
+      clip-path: none;
+    }
+    .route-choice { text-align: end; }
   }
 
   .ancestry .ancestry-toggle {
