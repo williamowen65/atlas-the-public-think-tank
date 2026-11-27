@@ -45,6 +45,7 @@
     parentTitle,
     initialTypeId,
     breadcrumb = [],
+    hideBreadcrumb = false,
     focusOnMount = false,
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',
@@ -62,6 +63,8 @@
     initialTypeId?: string;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /** Suppress duplicate visual ancestry without dropping saved draft context. */
+    hideBreadcrumb?: boolean;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -425,6 +428,7 @@
           parentTitle={savedParentTitle ?? parentTitle}
           {initialTypeId}
           breadcrumb={savedBreadcrumb ?? breadcrumb}
+          {hideBreadcrumb}
           initialDraft={savedDraft}
           {focusOnMount}
           {submitting}
