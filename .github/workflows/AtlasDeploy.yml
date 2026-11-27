@@ -89,6 +89,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Build SvelteKit static site
         working-directory: src/hosts/Atlas.Web
+        env:
+          VITE_ATLAS_FEEDBACK_NODE_ID: ${{ vars.ATLAS_FEEDBACK_NODE_ID }}
         run: |
           npm ci
           npm run build
