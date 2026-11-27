@@ -28,7 +28,7 @@
 
 <script lang="ts">
   import type { NodeDraft } from './nodeDraft.types';
-  import { untrack } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { fromMarkdown, writeComposition } from '../sections/composition';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
@@ -44,6 +44,8 @@
     parentTitle,
     initialTypeId = '',
     externalTypeId,
+    onTypeChange,
+    closeControl,
     breadcrumb = [],
     hideBreadcrumb = false,
     focusOnMount = false,
@@ -67,8 +69,10 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
-    /** When supplied, the surrounding creation toolbar owns type selection. */
+    /** Controlled type for inline editing, kept in sync with the child feed. */
     externalTypeId?: string;
+    onTypeChange?: (id: string) => void;
+    closeControl?: Snippet;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
     /** The surrounding connected feed already shows the parent. */
@@ -219,28 +223,29 @@
     onSubmit(draft());
   }}
 >
-  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions}
+  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions} {closeControl}
     disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
 </form>
 
 {#snippet titleFields()}
-    {#if externalTypeId !== undefined}
-      <p class="selected-node-type">{preview.typeName}</p>
-    {/if}
-    <div class="title-row">
-      {#if externalTypeId === undefined}<div class="type-field">
+    <div class="title-row" class:stacked-type={externalTypeId !== undefined}>
+      <div class="type-field">
         <span aria-hidden="true">{selectedTypeLabel}</span>
         <select
           aria-label="Node type"
           use:focusAndScrollOnMount
           id={`${instance}-type`}
-          bind:value={localTypeId}
+          value={typeId}
+          onchange={(event) => {
+            if (externalTypeId !== undefined) onTypeChange?.(event.currentTarget.value);
+            else localTypeId = event.currentTarget.value;
+          }}
           required
           >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
             value="new">{newTypeOption}</option
           ></select
         >
-      </div>{/if}
+      </div>
       <div class="title-field">
         <input
           aria-label="Title"
@@ -369,20 +374,15 @@
     font-size: 0.85rem;
     margin-bottom: 0.25rem;
   }
-  .selected-node-type {
-    margin: 0 0 var(--atlas-node-title-gap);
-    color: var(--atlas-accent);
-    font-weight: 700;
-    font-size: clamp(1.2rem, 4vw, 2.1rem);
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-  }
   .title-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
   }
+  .title-row.stacked-type { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .stacked-type .type-field { align-self: flex-start; }
+  .stacked-type .title-field { flex: 0 1 auto; width: 100%; }
   .type-field {
     position: relative;
     flex: 0 0 auto;
