@@ -420,6 +420,11 @@
       archived={item.node.status === 'Archived' || item.node.isHidden === true}
     />{/snippet}{#snippet renderReactions(item)}<LiveReactions
       nodeId={item.node.id}
+      onTotalChange={(count) => {
+        const id = item.node.id;
+        items = items.map(current => current.node.id === id && current.node.reactionCount !== count
+          ? { ...current, node: { ...current.node, reactionCount: count } } : current);
+      }}
       archived={item.node.status === 'Archived' || item.node.isHidden === true}
     />{/snippet}</NodeFeed
 >
