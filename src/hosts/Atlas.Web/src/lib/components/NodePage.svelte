@@ -174,6 +174,7 @@
    */
   const instance = $props.id();
   let reactionsOpen = $state(false);
+  let reactionsVisited = $state(false);
   let commentsOpen = $state(false);
   $effect(() => { commentsOpen = commentsInitiallyOpen; });
   /**
@@ -346,7 +347,7 @@
     <div class="node-actions" use:alignCommentControls>
       <div class="discussion-actions">
         <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-          onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+          onclick={() => { reactionsOpen = !reactionsOpen; reactionsVisited = true; }}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
         {#if commentsPanel}
           <button type="button" data-comments-toggle aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
             onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
@@ -355,7 +356,7 @@
       {@render reportControl?.()}
     </div>
     <div class="reaction-controls" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-      {#if reactionsOpen}
+      {#if reactionsVisited}
         {#if reactions}{@render reactions()}{:else}
           <div class="reactions" role="group" aria-label="Community reactions">
             {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}

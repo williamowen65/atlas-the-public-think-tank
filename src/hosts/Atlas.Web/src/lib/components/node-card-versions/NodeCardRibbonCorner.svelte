@@ -52,6 +52,7 @@
   let detailsOpen = $state(false);
   let subnodesOpen = $state(false);
   let reactionsOpen = $state(false);
+  let reactionsVisited = $state(false);
   let childFilter = $state('');
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
@@ -199,7 +200,7 @@
     </div>
     {#if graphControls}
       <div class="graph-reactions" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-        {#if reactionsOpen}{@render reactions()}{/if}
+        {#if reactionsVisited}{@render reactions()}{/if}
       </div>
       <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
         {#if subnodesOpen}
@@ -257,7 +258,7 @@
         </button>
       {/if}
       <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+        onclick={() => { reactionsOpen = !reactionsOpen; reactionsVisited = true; }}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
       <button class="comments-button" type="button"
         aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
         onclick={() => openRelated(node.id, 'comments')}>

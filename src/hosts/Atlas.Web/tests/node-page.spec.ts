@@ -186,6 +186,49 @@ test('SPA Read more opens a node page and comments and child filters support nav
 });
 
 
+test('reopening node panels reuses the ancestry and reaction reads', async ({ page }) => {
+  const urls = await mock(page);
+  let reactionReads = 0;
+  await page.route('**/atlas-session-api/nodes/*/reactions', route => {
+    reactionReads++;
+    return route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] });
+  });
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('NodeId') !== root) return route.fallback();
+    const item = entry();
+    return route.fulfill({ json: { items: [{ ...item, card: { ...item.card, breadcrumbSegment: {
+      items: [{ nodeId: child, label: 'A child idea' }], continuationNodeId: null, hasAlternativeRoutes: false,
+    } } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(`/nodes?id=${root}`);
+  const card = page.locator('.node-page');
+  const ancestry = card.getByRole('navigation', { name: 'Node ancestry' });
+  const reactions = card.getByRole('button', { name: /^Reactions/ });
+  const ancestorReads = () => urls.filter(url => url.searchParams.get('NodeId') === child).length;
+
+  await expect(reactions).toBeVisible();
+  expect(reactionReads).toBe(0);
+  expect(ancestorReads()).toBe(0);
+
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(ancestry.locator('.mini-node')).toContainText('A child idea');
+  await card.getByRole('button', { name: 'Hide ancestry' }).click();
+  await expect(ancestry).toBeHidden();
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(ancestry.locator('.mini-node')).toContainText('A child idea');
+  expect(ancestorReads()).toBe(1);
+
+  await reactions.click();
+  const panel = card.locator('.reaction-controls');
+  await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
+  await reactions.click();
+  await expect(panel).toBeHidden();
+  await reactions.click();
+  await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
+  expect(reactionReads).toBe(1);
+});
+
 test('node page shows a sole parent in expandable ancestry and voting leaves content in place', async ({ page }) => {
   await mock(page);
   await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
