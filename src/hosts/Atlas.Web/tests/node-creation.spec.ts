@@ -110,11 +110,13 @@ test('the node writing guide is public and explains splitting and placement', as
   await setup(page);
   await page.goto('/how-to-write-a-node');
   await expect(page.getByRole('heading', { name: 'How to Write a Node' })).toBeVisible();
-  await expect(page.getByRole('figure', { name: 'A root node branches into two child nodes' })).toBeVisible();
+  await expect(page.getByRole('figure', { name: 'A root node has two child nodes, and one child has a child of its own' })).toBeVisible();
   const lesson = page.getByRole('region', { name: 'Give each idea its own node' });
   await expect(lesson.getByRole('heading', { name: 'Avoid bundling ideas' })).toBeVisible();
   await expect(lesson.getByRole('heading', { name: 'Give each idea a branch' })).toBeVisible();
-  const placement = page.getByRole('region', { name: 'Add a subnode' });
+  const placement = page.getByRole('region', { name: 'The Basics' });
+  await expect(placement.getByRole('heading', { name: 'Start a discussion' })).toBeVisible();
+  await expect(placement.getByRole('heading', { name: 'Add a subnode' })).toBeVisible();
   await expect(placement).toContainText('Add a child node');
   await expect(placement.getByRole('link', { name: 'Browse Discovery' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('contentinfo').getByRole('link', { name: 'How to Write a Node' }))

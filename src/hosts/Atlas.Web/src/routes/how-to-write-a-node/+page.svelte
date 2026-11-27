@@ -6,7 +6,7 @@
     <p>On Atlas, a node is a contribution to a discussion. It can be anything you want to share, from a question or an idea to an observation or a photo. Pick a type that fits, or define your own.</p>
   </header>
 
-  <figure class="tree-diagram" aria-label="A root node branches into two child nodes">
+  <figure class="tree-diagram" aria-label="A root node has two child nodes, and one child has a child of its own">
     <div class="tree-root">
       <strong>Root node</strong>
       <span>Starts a discussion</span>
@@ -15,23 +15,29 @@
       <div>Child node</div>
       <div>Child node</div>
     </div>
-    <figcaption>Child nodes, also called subnodes, build on the node they’re attached to.</figcaption>
+    <div class="tree-third-level">
+      <div>Child node</div>
+    </div>
+    <figcaption>Child nodes, also called subnodes, can have children of their own.</figcaption>
   </figure>
 
-  <div class="creation-options">
-    <section aria-labelledby="root-heading">
-      <h2 id="root-heading">Start a discussion</h2>
-      <p>Choose <a href="/new">Create a root node</a>, pick a type, then write and publish your contribution.</p>
-    </section>
-    <section aria-labelledby="child-heading">
-      <h2 id="child-heading">Add a subnode</h2>
-      <ol>
-        <li><a href="/">Browse Discovery</a> or use Search to find an existing discussion.</li>
-        <li>Open the specific node you want to build on and choose <strong>Add a child node</strong>.</li>
-        <li>Pick a type, then write and publish your contribution.</li>
-      </ol>
-    </section>
-  </div>
+  <section class="basics" aria-labelledby="basics-heading">
+    <h2 id="basics-heading">The Basics</h2>
+    <div class="creation-options">
+      <div>
+        <h3>Start a discussion</h3>
+        <p>Choose <a href="/new">Create a root node</a>, pick a type, then write and publish your contribution.</p>
+      </div>
+      <div>
+        <h3>Add a subnode</h3>
+        <ol>
+          <li><a href="/">Browse Discovery</a> or use Search to find an existing discussion.</li>
+          <li>Open the specific node you want to build on and choose <strong>Add a child node</strong>.</li>
+          <li>Pick a type, then write and publish your contribution.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
 
   <section class="lesson" aria-labelledby="split-node-heading">
     <h2 id="split-node-heading">Give each idea its own node</h2>
@@ -70,7 +76,7 @@
     gap: 1.5rem;
     padding-block: 1rem 2rem;
   }
-  header, section, .comparison > div { display: grid; align-content: start; gap: .75rem; min-width: 0; }
+  header, section, .creation-options > div, .comparison > div { display: grid; align-content: start; gap: .75rem; min-width: 0; }
   h1, h2, h3, p, ol, figure { margin: 0; }
   .tree-diagram {
     max-width: 25rem;
@@ -78,7 +84,7 @@
     margin-inline: auto;
     text-align: center;
   }
-  .tree-root, .tree-children > div {
+  .tree-root, .tree-children > div, .tree-third-level > div {
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     background: var(--atlas-surface);
@@ -120,11 +126,36 @@
     border-width: 0 1px 1px 0;
     transform: rotate(45deg);
   }
+  .tree-third-level {
+    width: calc((100% - .65rem) / 2);
+    position: relative;
+    padding-top: 1.45rem;
+  }
+  .tree-third-level::before, .tree-third-level::after {
+    content: '';
+    position: absolute;
+    border-color: var(--atlas-muted);
+    border-style: solid;
+  }
+  .tree-third-level::before {
+    top: 0;
+    left: 50%;
+    height: 1.45rem;
+    border-width: 0 0 0 1px;
+  }
+  .tree-third-level::after {
+    top: 1rem;
+    left: calc(50% - .2rem);
+    width: .4rem;
+    height: .4rem;
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+  }
   figcaption { margin-top: .65rem; }
   .creation-options { display: grid; gap: 1rem; }
-  .creation-options section {
+  .basics {
     border-top: 1px solid var(--atlas-border);
-    padding-top: .85rem;
+    padding-top: 1rem;
   }
   p, li { line-height: 1.5; }
   ol { padding-inline-start: 1.4rem; }
