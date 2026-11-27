@@ -24,7 +24,6 @@
         { text: 'Create a contribution', href: '/new' },
         { text: 'How to Write a Node', href: '/how-to-write-a-node' },
         { text: 'How Atlas works', href: '/about#how-it-works' },
-        { text: 'Guides', href: '/guides' },
       ],
     },
     {
@@ -40,7 +39,6 @@
       title: 'Get involved',
       links: [
         { text: 'Give feedback', href: '/feedback' },
-        { text: 'Become a tester', href: '/testers' },
         { text: 'Support Atlas', href: '/support' },
         { text: 'Donate', href: '/support#donate' },
       ],
@@ -48,7 +46,7 @@
     {
       title: 'Help & legal',
       links: [
-        { text: 'Help & support', href: '/support' },
+        { text: 'Help & support', href: '/support#help' },
         { text: 'Privacy policy', href: '/privacy' },
         { text: 'Terms of use', href: '/terms' },
       ],
