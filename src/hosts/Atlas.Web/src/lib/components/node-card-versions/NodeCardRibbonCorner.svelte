@@ -322,7 +322,7 @@
 <style lang="scss">
   .graph-actions {
     display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
-    min-width: 0;
+    min-width: 0; margin-inline-end: auto;
   }
   .graph-actions .details-toggle { flex: 0 0 auto; margin-inline-end: 0; }
   .reaction-toggle, .inline-filter select {
