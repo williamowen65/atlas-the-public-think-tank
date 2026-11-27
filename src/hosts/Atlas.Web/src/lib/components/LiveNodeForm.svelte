@@ -29,7 +29,7 @@
     succeeded; it does not itself close the form.
 -->
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { putDraft, deleteDraft, listDrafts } from '../api/privateDrafts';
   import type { Community } from '../api/communities';
   import NodeForm, { type NodeDraft } from './NodeForm.svelte';
@@ -45,6 +45,8 @@
     parentTitle,
     initialTypeId,
     externalTypeId,
+    onTypeChange,
+    closeControl,
     onSubmittingChange,
     breadcrumb = [],
     hideBreadcrumb = false,
@@ -63,8 +65,10 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
-    /** Optional controlled type from the inline creation toolbar. */
+    /** Optional controlled type for inline creation. */
     externalTypeId?: string;
+    onTypeChange?: (id: string) => void;
+    closeControl?: Snippet;
     onSubmittingChange?: (busy: boolean) => void;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
@@ -409,6 +413,9 @@
   class="live-node-form"
   aria-label={parentId ? 'Child node creation' : 'Root node creation'}
 >
+  {#if closeControl && (createdId || loading || error || !hasDraft)}
+    <div class="fallback-close">{@render closeControl()}</div>
+  {/if}
   {#if createdId}<p role="status">Node created.</p>
     <button onclick={openCreated}>Open created node</button>
   {:else}
@@ -434,6 +441,8 @@
           parentTitle={savedParentTitle ?? parentTitle}
           {initialTypeId}
           {externalTypeId}
+          {onTypeChange}
+          {closeControl}
           breadcrumb={savedBreadcrumb ?? breadcrumb}
           {hideBreadcrumb}
           initialDraft={savedDraft}
@@ -467,6 +476,7 @@
     margin-inline: auto;
     min-width: 0;
   }
+  .fallback-close { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
   .draft-fields {
     margin: 1rem 0 0;
     padding: 0;
