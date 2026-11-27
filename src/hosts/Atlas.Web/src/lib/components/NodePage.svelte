@@ -59,6 +59,8 @@
     onOpenProfile,
     voting,
     reactions,
+    commentsPanel,
+    commentsInitiallyOpen = false,
     reportControl,
     scrollToDiscussionTabs = false,
     inspectionOnly = false,
@@ -87,6 +89,9 @@
      * static reaction summary from node.reactions.
      */
     reactions?: Snippet;
+    /** Independent inline discussion; child feed remains mounted outside the card. */
+    commentsPanel?: Snippet;
+    commentsInitiallyOpen?: boolean;
     reportControl?: Snippet;
     /**
      * Requests initial focus and scrolling of the selected discussion tab to 20px below the
@@ -156,16 +161,14 @@
    * not control component reuse; it prevents collisions between NodePage instances.
    */
   const instance = $props.id();
+  let reactionsOpen = $state(false);
+  let commentsOpen = $state(false);
+  $effect(() => { commentsOpen = commentsInitiallyOpen; });
   /**
    * Two primary views; the controlled active ID also carries the child-type filter
    * or a temporary draft ID so existing navigation and draft handling remain intact.
    */
   const childCount = $derived((node.childTypes ?? []).reduce((sum, type) => sum + type.count, 0));
-  const activeTab = $derived(active === 'comments' ? 'comments' : 'subnodes');
-  const tabs = $derived([
-    { id: 'comments', name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}` },
-    { id: 'subnodes', name: `${childCount} ${childCount === 1 ? 'Subnode' : 'Subnodes'}` },
-  ]);
   const childFilters = $derived([
     ...(node.childTypes ?? []).map((type) => ({ id: type.typeId, name: type.label })),
     ...(draftTab && !(node.childTypes ?? []).some((type) => type.typeId === draftTab.id)
@@ -181,9 +184,15 @@
    * @param tabs Mounted tab-strip element; this shadows the outer tab-data array.
    * @returns Action cleanup that releases observers, events and scheduled work.
    */
-  function alignDiscussionTabs(tabs: HTMLDivElement) {
+  function alignCommentControls(element: HTMLDivElement) {
+    if (commentsInitiallyOpen) return alignDiscussionTabs(element, true);
+  }
+  function alignChildControls(element: HTMLDivElement) {
+    if (!commentsInitiallyOpen) return alignDiscussionTabs(element);
+  }
+  function alignDiscussionTabs(tabs: HTMLDivElement, focusComments = false) {
     if (!scrollToDiscussionTabs) return;
-    const card = tabs.closest<HTMLElement>('.node-page')!;
+    const card = tabs.closest<HTMLElement>('.node-page-layout') ?? tabs;
     // Browser animation/resize APIs are globals: no import is needed.
     // frame stores the latest requestAnimationFrame handle, not elapsed time or a clock.
     // Zero is its initial placeholder before this action schedules any work.
@@ -198,7 +207,8 @@
       // ResizeObserver may replace the first scheduled frame. Keep focus in the
       // alignment callback so that rescheduling cannot silently cancel it.
       if (!focused) {
-        tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
+        const target = focusComments ? tabs.querySelector<HTMLElement>('button:last-child') : tabs.querySelector<HTMLElement>('select, button');
+        target?.focus({ preventScroll: true });
         focused = true;
       }
       // The browser clamps scrolling at the natural page bottom. Short/empty feeds
@@ -244,25 +254,6 @@
     // when navigating away. The same stop function also handles input and timeout.
     return { destroy: stop };
   }
-  /**
-   * Provide keyboard access to the tab list: Left/Right wrap between tabs, while
-   * Home/End select the first/last tab. Only the selected tab enters the normal
-   * Tab-key order. Ask the parent to change active, then focus the matching button.
-   * @param event Keyboard event from a tab button; unrelated keys keep normal behavior.
-   * @param index Position of that button in the derived tabs array.
-   */
-  function key(event: KeyboardEvent, index: number) {
-    let next = index;
-    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = tabs.length - 1;
-    else return;
-    // These keys now navigate tabs, so prevent their usual page-scrolling behavior.
-    event.preventDefault();
-    onTabChange(tabs[next].id);
-    document.getElementById(`${instance}-${tabs[next].id}`)?.focus();
-  }
 </script>
 
 <!--
@@ -270,6 +261,7 @@
   dial floats beside content; the selected panel sits below the tab toolbar.
 -->
 
+<div class="node-page-layout">
 <article class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
@@ -338,80 +330,56 @@
     </div>
     {#if !inspectionOnly}{@render reportControl?.()}{/if}
   </div>
-  {#if !inspectionOnly && (reactions || node.reactions.length)}
-    <div class="reaction-controls">
-      {#if reactions}
-        {@render reactions()}
-      {:else}
-        <div class="reactions" role="group" aria-label="Community reactions">
-          {#each node.reactions as reaction}
-            <span>{reaction.label} <strong>{reaction.count}</strong></span>
-          {/each}
-        </div>
+  {#if !inspectionOnly}
+    <div class="node-actions" use:alignCommentControls>
+      <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
+        onclick={() => reactionsOpen = !reactionsOpen}>Reactions</button>
+      {#if commentsPanel}
+        <button type="button" aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
+          onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
       {/if}
     </div>
+    <div class="reaction-controls" id={`${instance}-reactions`} hidden={!reactionsOpen}>
+      {#if reactionsOpen}
+        {#if reactions}{@render reactions()}{:else}
+          <div class="reactions" role="group" aria-label="Community reactions">
+            {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
+          </div>
+        {/if}
+      {/if}
+    </div>
+    {#if commentsPanel}
+      <div class="comments-controls" id={`${instance}-comments`} hidden={!commentsOpen}>
+        {#if commentsOpen}{@render commentsPanel()}{/if}
+      </div>
+    {/if}
   {/if}
-  {#if !inspectionOnly}<div class="discussion-toolbar">
-    <div class="add">
-      <button
-        onclick={() => onAddChild(activeTab === 'comments' || active === 'subnodes' ? undefined : active)}
-        disabled={node.status === 'Archived'}
-        >Add {active === 'comments' || active === 'subnodes'
-          ? 'a child node'
-          : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
-      >
-    </div>
-    <div
-      class="tabs"
-      use:alignDiscussionTabs
-      role="tablist"
-      aria-label="Node comments and subnodes"
-    >
-      {#snippet discussionTab(tab: (typeof tabs)[number], index: number)}
-        <button
-          class:comments-tab={index === 0}
-          role="tab"
-          id={`${instance}-${tab.id}`}
-          aria-selected={activeTab === tab.id}
-          aria-controls={`${instance}-panel`}
-          tabindex={activeTab === tab.id ? 0 : -1}
-          onclick={() => onTabChange(tab.id)}
-          onkeydown={(event) => key(event, index)}>{tab.name}</button
-        >
-      {/snippet}
-      {#each tabs as tab, index}
-        {@render discussionTab(tab, index)}
-      {/each}
-    </div>
-    {#if activeTab === 'subnodes'}
+</article>
+{#if !inspectionOnly}
+  <section class="external-subnodes" aria-label="Subnodes">
+    <div class="subnode-toolbar" use:alignChildControls>
+      <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
       <label class="child-filter">
         <span>Node type</span>
-        <select value={active} onchange={(event) => onTabChange(event.currentTarget.value)}>
+        <select value={active === 'comments' ? 'subnodes' : active} onchange={(event) => onTabChange(event.currentTarget.value)}>
           <option value="subnodes">All types</option>
-          {#each childFilters as filter (filter.id)}
-            <option value={filter.id}>{filter.name}</option>
-          {/each}
-          {#if active !== 'subnodes' && !childFilters.some((filter) => filter.id === active)}
+          {#each childFilters as filter (filter.id)}<option value={filter.id}>{filter.name}</option>{/each}
+          {#if active !== 'comments' && active !== 'subnodes' && !childFilters.some((filter) => filter.id === active)}
             <option value={active}>{types.find((type) => type.id === active)?.name ?? 'New node type'}</option>
           {/if}
         </select>
       </label>
-    {/if}
-  </div>
-  <!--
-    One shared panel renders the parent-supplied comments, child feed or draft content; ARIA
-    links it to the selected tab.
-  -->
-  <div
-    role="tabpanel"
-    id={`${instance}-panel`}
-    aria-labelledby={`${instance}-${activeTab}`}
-    tabindex="0"
-  >
-    {@render children()}
-  </div>
+      <div class="add">
+        <button type="button" onclick={() => onAddChild(active === 'comments' || active === 'subnodes' ? undefined : active)}
+          disabled={node.status === 'Archived'}>Add {active === 'comments' || active === 'subnodes' ? 'a child node' : (types.find(type => type.id === active)?.name ?? 'a child node')}</button>
+      </div>
+    </div>
+    <div class="external-child-content">
+      {@render children()}
+    </div>
+  </section>
 {/if}
-</article>
+</div>
 
 {#snippet typeRow(ancestryControl: Snippet | undefined)}
   <div class="node-type-row">
@@ -431,12 +399,17 @@
   .introduction { display: contents; }
 
 
-  .node-page {
-    position: relative;
+  .node-page-layout {
     --card-padding: var(--atlas-card-padding, 1.25rem);
-    --discussion-section-padding: 1.25rem;
+    --atlas-connected-branch-gutter: clamp(.85rem, 3vw, 1.6rem);
+    --atlas-connected-branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
     max-width: 48rem;
     margin-inline: auto;
+    min-width: 0;
+  }
+  .node-page {
+    position: relative;
+    margin: 0;
     padding: 0;
   }
   header {
@@ -488,10 +461,58 @@
   .plain-description {
     white-space: pre-line;
   }
-  .reaction-controls {
-    border-block-start: 1px solid var(--atlas-border);
-    padding: var(--discussion-section-padding) var(--card-padding);
+  .node-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+    padding: .65rem var(--card-padding) .85rem;
   }
+  .node-actions button {
+    font: inherit;
+    min-height: 2.25rem;
+    padding: .25rem .6rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+  }
+  .node-actions button[aria-expanded='true'] { border-color: var(--atlas-accent); }
+  .node-actions button:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
+  .reaction-controls, .comments-controls { padding: 0 var(--card-padding) .85rem; min-width: 0; }
+  .reaction-controls[hidden], .comments-controls[hidden] { display: none; }
+  .comments-controls { border-block-start: 1px solid var(--atlas-border); padding-block-start: .85rem; }
+  .external-subnodes {
+    padding-inline: var(--card-padding);
+    min-width: 0;
+  }
+  .subnode-toolbar {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .75rem;
+    padding: .75rem 0 .75rem var(--atlas-connected-branch-gutter);
+    color: var(--atlas-text);
+    font-size: .9rem;
+  }
+  .external-subnodes:has(:global(ul.connected > li)) .subnode-toolbar::before,
+  .external-subnodes:has(:global(ul.connected > li)) :global(.child-form)::before,
+  .external-subnodes:has(:global(ul.connected > li)) :global(.node-feed:has(> p))::before,
+  .external-subnodes:has(:global(ul.connected > li)) :global(.feed-head)::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block: 0;
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+    pointer-events: none;
+  }
+  .external-subnodes :global(.child-form) { position: relative; margin: 0; padding: 0 0 .75rem var(--atlas-connected-branch-gutter); }
+  .external-subnodes :global(.node-feed:has(> p)), .external-subnodes :global(.feed-head) { position: relative; padding-inline-start: var(--atlas-connected-branch-gutter); }
+  .external-subnodes :global(.node-feed > p) { margin: 0; padding-block-end: .5rem; }
+  .external-subnodes :global(ul.connected > li:first-child::before) { inset-block-start: 0; }
+  .external-subnodes :global(ul.connected > li:only-child::before) { block-size: 1.4rem; }
+  .external-child-content { min-width: 0; }
   .reactions {
     display: flex;
     flex-wrap: wrap;
@@ -504,16 +525,7 @@
     border-radius: 999px;
     padding: 0.2rem 0.6rem;
   }
-  .discussion-toolbar {
-    display: flow-root;
-    border-block: 1px solid var(--atlas-border);
-    padding: var(--discussion-section-padding) var(--card-padding);
-  }
-  .add {
-    float: inline-end;
-    max-inline-size: 52%;
-    margin-inline-start: 0.5rem;
-  }
+  .add { margin-inline-start: auto; max-inline-size: 100%; }
   .add button {
     border: 1px solid var(--atlas-accent);
     border-radius: var(--atlas-radius);
@@ -540,22 +552,12 @@
       cursor: default;
     }
   }
-  .tabs {
-    scroll-margin-top: 20px;
-  }
-  .tabs {
-    display: flex;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-    min-inline-size: 0;
-  }
   .child-filter {
-    clear: both;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
-    padding-block-start: 0.75rem;
+    min-width: 0;
     color: var(--atlas-muted);
     font-size: 0.9rem;
   }
@@ -569,35 +571,6 @@
     max-inline-size: 100%;
     padding: 0.3rem 0.6rem;
   }
-  .tabs button {
-    vertical-align: top;
-    border: 1px solid var(--atlas-border);
-    border-radius: var(--atlas-radius);
-    min-block-size: 2.25rem;
-    padding: 0.25rem 0.65rem;
-    background: var(--atlas-surface);
-    color: var(--atlas-muted);
-    line-height: 1.25;
-    font-weight: 600;
-
-    &:hover {
-      border-color: var(--atlas-accent);
-      background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface));
-      color: var(--atlas-text);
-    }
-
-    &:focus-visible {
-      outline: 3px solid var(--atlas-focus);
-      outline-offset: 3px;
-    }
-
-    &[aria-selected='true'] {
-      border-color: var(--atlas-accent);
-      background: color-mix(in srgb, var(--atlas-accent) 14%, var(--atlas-surface));
-      color: var(--atlas-text);
-      box-shadow: inset 0 -3px 0 var(--atlas-accent);
-    }
-  }
   button {
     font: inherit;
     padding: 0.5rem 0.75rem;
@@ -605,17 +578,13 @@
     max-width: 100%;
     overflow-wrap: anywhere;
   }
-  [role='tabpanel'] {
-    padding: 1rem var(--card-padding) var(--card-padding);
-    min-width: 0;
-  }
   @media (max-width: 380px) {
-    .node-page {
+    .node-page-layout {
       --card-padding: var(--atlas-card-padding-narrow, 0.75rem);
     }
   }
   @media (max-width: 560px) {
-    .node-page { --card-padding: 0.75rem; }
+    .node-page-layout { --card-padding: 0.75rem; }
     .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
   }
