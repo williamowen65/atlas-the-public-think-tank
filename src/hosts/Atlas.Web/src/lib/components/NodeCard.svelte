@@ -45,6 +45,7 @@
 <script lang="ts">
   import NodeEditControl from './NodeEditControl.svelte';
   import type { ContentBlock } from '../api/nodePage';
+  import NodeCardMini from './node-card-versions/NodeCardMini.svelte';
   import NodeCardContextBelow from './node-card-versions/NodeCardContextBelow.svelte';
   import NodeCardRibbon from './node-card-versions/NodeCardRibbon.svelte';
   import NodeCardRibbonCorner from './node-card-versions/NodeCardRibbonCorner.svelte';
@@ -71,7 +72,9 @@
   and forwards the common card props.
 -->
 
-{#if presentation === 'context-below'}
+{#if presentation === 'mini'}
+  <NodeCardMini {node} average={props.average} totalVotes={props.totalVotes} onNavigate={props.onReadMore ?? props.onNavigate} />
+{:else if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
 {:else if presentation === 'mobile-experiment' || presentation === 'ribbon-corner'}
   <NodeCardRibbonCorner {...props} {node} blocks={current?.blocks ?? node.previewBlocks} mobileLayout={presentation === 'mobile-experiment'}>

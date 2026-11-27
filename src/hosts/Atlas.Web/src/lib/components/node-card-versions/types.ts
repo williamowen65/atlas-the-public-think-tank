@@ -67,6 +67,9 @@ export interface NodeCardData {
     count: number;
   }[];
 
+  /** Total individual reaction votes, independent of net score or number of reaction types. */
+  reactionCount?: number;
+
   /** Optional formatted reaction summary used as a text fallback. */
   reactionSummary?: string;
 
@@ -82,12 +85,16 @@ export interface NodeCardData {
 
 /** Supported node-card layouts; selects presentation without changing node data. */
 export type NodeCardPresentation =
-  'mobile-experiment' | 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
+  'mobile-experiment' | 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner' | 'mini';
 
 /** Shared input contract forwarded to each node-card presentation. */
 export interface NodeCardProps {
   /** Presentation data for one node; follow the NodeCardData type definition for its fields. */
   node: NodeCardData;
+  /** Live compact cards may open discussion locally; relationship previews stay bounded. */
+  inlineRelationships?: boolean;
+  /** The surrounding feed already establishes this card's parent relationship. */
+  relationshipContext?: boolean;
   /**
    * Renderable snippet that replaces the card’s built-in VotingDial. Supply LiveVotingDial here
    * for API-backed voting; otherwise the built-in dial reports selections through onVote.

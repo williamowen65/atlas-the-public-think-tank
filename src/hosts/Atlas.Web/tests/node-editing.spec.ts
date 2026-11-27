@@ -17,7 +17,9 @@ async function setup(page: Page, participant: string | null = author) {
   }[];
   const writes: { path: string; method: string; body: Record<string, unknown> }[] = [];
   await page.route('**/atlas-public-api/**', (route) => {
-    const path = new URL(route.request().url()).pathname;
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+    if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
     if (path.endsWith('/catalog/node-types'))
       return route.fulfill({ json: [{ id: type, name: 'Idea' }] });
     if (path.endsWith('/reactions')) return route.fulfill({ json: [] });

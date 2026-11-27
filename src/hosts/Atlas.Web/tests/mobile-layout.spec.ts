@@ -66,12 +66,14 @@ test('mobile feed summary opens the existing dial without casting a vote', async
 });
 
 for (const width of [390, 1280]) {
-  test(`feed card details are collapsed by default and can be toggled at ${width}px`, async ({ page }) => {
+  test(`feed card reactions are collapsed by default and can be toggled at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4173/');
     const card = page.locator('article.node-card').first();
-    const toggle = card.getByRole('button', { name: /reactions, comments, and subnodes/ });
-    const details = card.locator('.card-details');
+    const toggle = card.getByRole('button', { name: /Reactions/ });
+    const details = card.locator('.graph-reactions');
+    await expect(card.getByRole('button', { name: 'Comments (2)', exact: true })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Show subnodes' })).toHaveCount(0);
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(details).toBeHidden();
     await toggle.click();

@@ -6,9 +6,10 @@ const meta = {
   component: LiveNodePreview,
   args: { presentation: 'ribbon-corner' },
   argTypes: {
-    presentation: { type: 'string', control: 'select', options: ['ribbon', 'context-below', 'ribbon-responsive', 'ribbon-split', 'ribbon-corner'], description: 'Compare standalone card versions using the same live Atlas data.' },
+    presentation: { type: 'string', control: 'select', options: ['ribbon', 'context-below', 'ribbon-responsive', 'ribbon-split', 'ribbon-corner', 'mini'], description: 'Compare standalone card versions using the same live Atlas data.' },
   },
 } satisfies Meta<typeof LiveNodePreview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
+export const Mini: Story = { args: { presentation: 'mini' } };

@@ -42,6 +42,7 @@
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
+  import LoadingPlaceholder from '../LoadingPlaceholder.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -49,15 +50,21 @@
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
   let detailsOpen = $state(false);
+  let subnodesOpen = $state(false);
+  let reactionsOpen = $state(false);
+  let childFilter = $state('');
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
+    inlineRelationships = false,
+    relationshipContext = false,
     cornerControl,
     headerFields,
     authoringBody,
     authoringFooter,
     blocks,
     draft = false,
+    creatingDraft = false,
     reactionControls,
     onOpenProfile,
     voting,
@@ -85,8 +92,19 @@
     /** Draft content or freshly saved content, when already available. */
     blocks?: ContentBlock[];
     draft?: boolean;
+    /** New node authoring only, not existing-node edit previews. */
+    creatingDraft?: boolean;
   } = $props();
   const instance = $props.id();
+  const childCount = $derived((node.childTypes ?? []).reduce((sum, child) => sum + child.count, 0));
+  const reactionCount = $derived(node.reactionCount ?? (node.reactionSummary && !node.reactions.length && node.reactionSummary !== '—' ? undefined : node.reactions.reduce((sum, reaction) => sum + reaction.count, 0)));
+  const graphControls = $derived(inlineRelationships && !draft && !node.isHidden && !authoringBody);
+  function openRelated(id: string, type?: string) {
+    if (type === 'comments' && onComments) onComments(id);
+    else if (type && onChildType) onChildType(id, type);
+    else if (onReadMore) onReadMore(id);
+    else window.location.assign('/nodes?id=' + encodeURIComponent(id) + (type ? '&type=' + encodeURIComponent(type) + '#contributions' : ''));
+  }
   // Prefer structured contribution types; use the text summary only for older projections.
   /**
    * Display-only connection summaries from legacy text and related-node titles, separate
@@ -119,7 +137,7 @@
       {/if}
       <div id={`${instance}-title`}>{@render headerFields()}</div>
     {:else}
-      <Breadcrumb
+      {#if draft || node.isHidden}<Breadcrumb
         expandable
         items={draft ? node.breadcrumb.map(({ id, title }) => ({ id, title })) : node.breadcrumb}
         originId={draft ? undefined : node.id}
@@ -128,7 +146,14 @@
         hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors}
       />
-      {@render typeRow()}
+        {@render typeRow(undefined)}
+      {:else if !relationshipContext}
+        <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+          originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
+          loadOlder={loadOlderAncestors} />
+      {:else}
+        {@render typeRow(undefined)}
+      {/if}
       <h2 id={`${instance}-title`}>{node.title}</h2>
     {/if}
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
@@ -143,14 +168,13 @@
               }
             }}>{node.authorName}</a
           >{:else}{node.authorName}{/if}</span
-      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
+      ><span class="byline-separator" aria-hidden="true">·</span>{#if creatingDraft}<span>Currently creating a draft</span>{:else}<time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
         >{mobileLayout ? relativeDate(node.createdAt) : new Date(node.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
           timeZone: 'UTC',
-        })}</time
-      >{#if node.communities.length}
+        })}</time>{/if}{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span>
         <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span>
         {#if draft}{node.communities.join(', ')}{:else}<CommunityLinks
@@ -173,33 +197,78 @@
           onReadMore={onReadMore ? () => onReadMore?.(node.id) : undefined} />
       {/if}
     </div>
-    <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
-      {@render reactions()}
-      <div class="navigation-details">
-        {@render comments()}
-        {#each node.childTypes ?? [] as contribution}<span
-            class="navigation-separator"
-            aria-hidden="true">·</span
-          ><button
-            class="text-action connection-summary"
-            type="button"
-            disabled={!onChildType}
-            onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button
-          >{/each}
-        {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
-          ><span class="text-action connection-summary">{label}</span>{/each}
+    {#if graphControls}
+      <div class="graph-reactions" id={`${instance}-reactions`} hidden={!reactionsOpen}>
+        {#if reactionsOpen}{@render reactions()}{/if}
       </div>
-    </div>
+      <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
+        {#if subnodesOpen}
+          <div class="subnode-header">
+            <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
+            <label class="inline-filter">Node type
+              <select bind:value={childFilter}>
+                <option value="">All types</option>
+                {#each node.childTypes ?? [] as type (type.typeId)}
+                  <option value={type.typeId}>{type.label}</option>
+                {/each}
+              </select>
+            </label>
+          </div>
+          {#key childFilter}
+            {#await import('../LiveNodeFeed.svelte')}
+              <div class="subnode-import-placeholder"><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></div>
+            {:then { default: ChildFeed }}
+              <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
+                {onOpenProfile} onOpenNode={openRelated} connected inline presentation="mini" />
+            {:catch}
+              <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>
+            {/await}
+          {/key}
+        {/if}
+      </section>
+    {:else}
+      <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
+        {@render reactions()}
+        <div class="navigation-details">
+          {@render comments()}
+          {#each node.childTypes ?? [] as contribution}<span class="navigation-separator" aria-hidden="true">·</span>
+            <button class="text-action connection-summary" type="button" disabled={!onChildType}
+              onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button>
+          {/each}
+          {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span>
+            <span class="text-action connection-summary">{label}</span>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {/if}
 </article>
 
 {#snippet detailsToggle()}
-  <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
-    aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
-    onclick={() => detailsOpen = !detailsOpen}>
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-  </button>
+  {#if graphControls}
+    <div class="graph-actions">
+      {#if childCount > 0}
+        <button class="details-toggle" type="button" aria-expanded={subnodesOpen} aria-controls={`${instance}-subnodes`}
+          aria-label={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
+          title={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
+          onclick={() => subnodesOpen = !subnodesOpen}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      {/if}
+      <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
+        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+      <button class="comments-button" type="button"
+        onclick={() => openRelated(node.id, 'comments')}>Comments ({node.commentCount})</button>
+    </div>
+  {:else}
+    <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
+      aria-label={detailsOpen ? 'Hide reactions, comments, and subnodes' : 'Show reactions, comments, and subnodes'}
+      onclick={() => detailsOpen = !detailsOpen}>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+  {/if}
 {/snippet}
 
 {#snippet legacyDescription(text: string)}
@@ -234,8 +303,9 @@
   >
 {/snippet}
 
-{#snippet typeRow()}
+{#snippet typeRow(ancestryControl: Snippet | undefined)}
   <div class="node-type-row">
+    {@render ancestryControl?.()}
     <p class="mobile-type">{node.typeName}</p>
     {#if !authoringBody}
       {#if voting}
@@ -256,6 +326,77 @@
 {/snippet}
 
 <style lang="scss">
+  .graph-actions {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
+    min-width: 0; margin-inline-end: auto;
+  }
+  .graph-actions .details-toggle { flex: 0 0 auto; margin-inline-end: 0; }
+  .reaction-toggle, .comments-button, .inline-filter select {
+    font: inherit; max-width: 100%; min-height: 2.25rem;
+    color: var(--atlas-accent); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius);
+    padding: .25rem .6rem; cursor: pointer;
+  }
+  .reaction-toggle[aria-expanded="true"] { border-color: var(--atlas-accent); }
+  .reaction-toggle:focus-visible, .comments-button:focus-visible, .details-toggle:focus-visible {
+    outline: 2px solid var(--atlas-accent); outline-offset: 2px;
+  }
+  .graph-reactions {
+    padding: .6rem var(--card-padding) .8rem;
+    min-width: 0;
+  }
+  .graph-reactions[hidden], .subnode-section[hidden] { display: none; }
+  .subnode-section {
+    min-width: 0;
+    border-top: 1px solid var(--atlas-border);
+    background: var(--atlas-tinted-surface);
+    border-radius: 0 0 var(--atlas-radius) var(--atlas-radius);
+    --atlas-connected-branch-gutter: clamp(.85rem, 3vw, 1.6rem);
+    --atlas-connected-branch-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+    --subnode-top-padding: .75rem;
+    --subnode-header-gap: .65rem;
+    padding: var(--subnode-top-padding) var(--card-padding) .45rem;
+  }
+  .subnode-header {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: .35rem .75rem; margin-block-end: var(--subnode-header-gap);
+    padding-inline-start: var(--atlas-connected-branch-gutter);
+    color: var(--atlas-text); font-size: .9rem;
+  }
+  /* Keep the count/filter in the content column, with a continuous straight rail
+     in the left gutter from the parent divider to the first mini child. */
+  .subnode-section:has(:global(ul.attached-mini-feed > li)) .subnode-header::before,
+  .subnode-section:has(.subnode-import-placeholder) .subnode-header::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block-start: calc(-1 * var(--subnode-top-padding));
+    inset-block-end: calc(-1 * var(--subnode-header-gap));
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+    pointer-events: none;
+  }
+  .subnode-import-placeholder {
+    position: relative;
+    padding-inline-start: var(--atlas-connected-branch-gutter);
+  }
+  .subnode-import-placeholder::before, .subnode-import-placeholder::after {
+    content: ''; position: absolute; inset-inline-start: 2px; pointer-events: none;
+  }
+  .subnode-import-placeholder::before {
+    inset-block-start: 0; block-size: 1.1rem;
+    border-inline-start: 2px solid var(--atlas-connected-branch-color);
+  }
+  .subnode-import-placeholder::after {
+    inset-block-start: 1.1rem;
+    inline-size: calc(var(--atlas-connected-branch-gutter) - 2px);
+    border-block-start: 2px solid var(--atlas-connected-branch-color);
+  }
+  .inline-filter {
+    display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+    min-width: 0; color: var(--atlas-muted); font-size: .8rem;
+  }
+  .inline-filter select { color: var(--atlas-text); min-height: 2rem; }
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
 
@@ -309,7 +450,7 @@
       font-size: 0.9rem;
       color: var(--atlas-muted);
     }
-    &:has(.card-details:not(.details-open)) .body { padding-block-end: .85rem; }
+    &:has(.card-details:not(.details-open)) .body, &:has(> .subnode-section) .body { padding-block-end: .85rem; }
     .reactions {
       display: flex;
       flex-wrap: wrap;
@@ -388,7 +529,7 @@
   }
 
   header:has(+ .authoring-body) { padding-block: var(--card-padding) .5rem; }
-  header:has(> :global(.ancestry)) { padding-block-start: 0; }
+  header:has(> :global(.ancestry:not([hidden]))) { padding-block-start: 0; }
   .authoring-body { padding-block: .5rem var(--card-padding); }
 
   .fallback-vote, .fallback-vote-dialog {

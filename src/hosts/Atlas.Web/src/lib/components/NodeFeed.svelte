@@ -79,6 +79,9 @@
     emptyTypeName,
     onCreateFirst,
     apiBase,
+    connected = false,
+    inline = false,
+    inlineRelationships = false,
   }: {
     /** Svelte snippet receiving a FeedItem, used to supply voting controls for each card. */
     renderVoting?: Snippet<[FeedItem, compact?: boolean]>;
@@ -86,6 +89,11 @@
     renderReactions?: Snippet<[FeedItem]>;
     /** Loaded FeedItem records to display; the parent owns fetching and accumulation. */
     items: FeedItem[];
+    /** Only direct child feeds draw sibling branches. */
+    connected?: boolean;
+    /** Embedded feeds use manual paging and do not participate in route scroll anchors. */
+    inline?: boolean;
+    inlineRelationships?: boolean;
     /** Whether a page request is in progress; shows loading feedback and restricts paging. */
     loading?: boolean;
     /** Slow-request feedback, announced outside the busy list and above placeholders. */
@@ -145,15 +153,11 @@
    * Trimmed contribution type label used by the empty-feed invitation.
    */
   const singularType = $derived((emptyTypeName ?? '').trim());
-  /**
-   * English indefinite article selected from the invitation type’s initial letter.
-   */
-  const article = $derived(/^[aeiou]/i.test(singularType) ? 'an' : 'a');
   // Observe the tail only when another page can be requested; the manual button remains the fallback.
   $effect(() => {
     items.length;
     if (
-      typeof IntersectionObserver === 'undefined' ||
+      inline || typeof IntersectionObserver === 'undefined' ||
       !tail ||
       loading ||
       error ||
@@ -175,7 +179,7 @@
   $effect(() => {
     items.length;
     if (
-      typeof IntersectionObserver === 'undefined' ||
+      inline || typeof IntersectionObserver === 'undefined' ||
       !head ||
       loading ||
       error ||
@@ -202,17 +206,20 @@
 -->
 
 <!-- Keep delay feedback outside aria-busy so assistive technology can announce it now. -->
-<div class="node-feed" role={loadingNotice ? 'status' : undefined} aria-live="polite">
+<div class="node-feed" class:mini-notice={presentation === 'mini' && connected && inline && !!loadingNotice} role={loadingNotice ? 'status' : undefined} aria-live="polite">
   {#if loadingNotice}<p>{loadingNotice}</p>{/if}
 </div>
 <section class="node-feed" aria-label="Node feed" aria-busy={loading || initialLoading}>
-  {#if initialLoading}<LoadingPlaceholder />{/if}
+  {#if initialLoading && presentation !== 'mini'}<LoadingPlaceholder />{/if}
   {#if hasPrevious}<div class="feed-head" bind:this={head}>
       <button type="button" disabled={loading || !!error || !onLoadPrevious} onclick={onLoadPrevious}
         >Load previous nodes</button
       >
     </div>{/if}
-  <ul aria-label="Nodes">
+  <ul aria-label="Nodes" class:connected class:mini-feed={presentation === 'mini'} class:attached-mini-feed={presentation === 'mini' && inline && connected}>
+    {#if initialLoading && presentation === 'mini'}
+      <li><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></li>
+    {/if}
     {#each items as item (item.node.id)}
       <!--
         Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
@@ -222,8 +229,8 @@
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
       <li
         class:moderated-card={item.node.isHidden === true}
-        data-node-id={item.node.id}
-        data-feed-page={item.page}
+        data-node-id={inline ? undefined : item.node.id}
+        data-feed-page={inline ? undefined : item.page}
       >
         {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}
         <NodeCard
@@ -232,6 +239,8 @@
           node={item.node}
           {presentation}
           {apiBase}
+          {inlineRelationships}
+          relationshipContext={connected}
           average={item.average}
           totalVotes={item.totalVotes}
           {onNavigate}
@@ -252,17 +261,17 @@
     This wrapper is also the intersection-observer target for automatic loading; the button
     remains the manual/retry path.
   -->
-  <div class="feed-tail" bind:this={tail}>
+  <div class="feed-tail" class:mini-tail={presentation === 'mini'} bind:this={tail}>
     {#if error}<p role={errorRole}>{error}</p>{/if}
     {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}
       <div class="empty-invitation">
-        <h3>Be the first to create {article} {singularType.toLowerCase()}</h3>
+        <h3>Be the first to contribute</h3>
         <p>
           There aren't any {singularType.toLowerCase()} contributions here yet. Start the conversation
           by adding one.
         </p>
         <button type="button" onclick={onCreateFirst}
-          >Create {article} {singularType.toLowerCase()}</button
+          >Add {singularType}</button
         >
       </div>
     {:else if !initialLoading}<p role="status">
@@ -272,9 +281,9 @@
             ? error
               ? 'No nodes loaded.'
               : 'No nodes found.'
-            : `${items.length} nodes shown${hasMore ? '.' : ' · You’re all caught up.'}`}
+            : `${items.length} ${items.length === 1 ? 'node' : 'nodes'} shown${hasMore ? '.' : ' · You’re all caught up.'}`}
       </p>{/if}
-    {#if hasMore || error}<button
+    {#if (hasMore || error) && !(initialLoading && presentation === 'mini')}<button
         type="button"
         disabled={loading || !onLoadMore}
         onclick={error ? onRetry ?? onLoadMore : onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button
@@ -301,6 +310,62 @@
   li {
     min-width: 0;
   }
+  /* Only a parent-scoped list has this rail; normal Discover items remain independent. */
+  ul.connected {
+    --branch-gutter: var(--atlas-connected-branch-gutter, clamp(.85rem, 3vw, 1.6rem));
+    --branch-color: var(--atlas-connected-branch-color, color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border)));
+    padding-inline-start: var(--branch-gutter);
+  }
+  ul.connected > li { position: relative; }
+  ul.connected > li::before, ul.connected > li::after {
+    content: ''; position: absolute; pointer-events: none;
+    inset-inline-start: calc(-1 * var(--branch-gutter) + 2px);
+  }
+  ul.connected > li::before {
+    inset-block-start: 0; inset-block-end: -1.25rem;
+    border-inline-start: 2px solid var(--branch-color);
+  }
+  ul.connected > li:first-child::before { inset-block-start: -.6rem; }
+  ul.connected > li:last-child::before { inset-block-end: auto; block-size: 1.4rem; }
+  ul.connected > li:only-child::before { block-size: 2rem; }
+  ul.connected > li::after {
+    inset-block-start: 1.4rem; inline-size: calc(var(--branch-gutter) - 2px);
+    border-block-start: 2px solid var(--branch-color);
+  }
+  ul.connected.mini-feed {
+    --mini-branch-gap: .75rem;
+    --mini-branch-anchor: 1.1rem;
+    gap: var(--mini-branch-gap);
+  }
+  ul.connected.mini-feed > li::before { inset-block-end: calc(-1 * var(--mini-branch-gap)); }
+  ul.connected.mini-feed > li:last-child::before {
+    inset-block-end: auto; block-size: var(--mini-branch-anchor);
+  }
+  ul.connected.mini-feed > li:only-child::before {
+    block-size: calc(var(--mini-branch-anchor) + .6rem);
+  }
+  ul.connected.mini-feed > li::after { inset-block-start: var(--mini-branch-anchor); }
+  /* In the compact card the section header supplies the first part of the rail.
+     The list starts exactly where the header/slow-loading notice ends. */
+  ul.connected.attached-mini-feed > li:first-child::before { inset-block-start: 0; }
+  ul.connected.attached-mini-feed > li:only-child::before { block-size: var(--mini-branch-anchor); }
+  .mini-notice {
+    position: relative;
+    padding-inline-start: var(--atlas-connected-branch-gutter, 1.6rem);
+    padding-block-end: .5rem;
+  }
+  .mini-notice p { margin: 0; }
+  .mini-notice::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 2px;
+    border-inline-start: 2px solid var(--atlas-connected-branch-color, var(--atlas-border));
+    pointer-events: none;
+  }
+  .mini-tail { font-size: .8rem; }
+  .feed-tail.mini-tail { padding: .65rem .25rem .15rem; }
+  .mini-tail p { margin: .2rem 0; }
   .feed-tail {
     text-align: center;
     padding: 1.5rem 0.5rem;

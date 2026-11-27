@@ -177,10 +177,7 @@
   /**
    * Selected discussion-tab ID: comments, a contribution type ID or a temporary draft tab.
    */
-  let active = $state('comments');
-  $effect(() => {
-    if (focusCommentId) active = 'comments';
-  });
+  let active = $state('subnodes');
   /**
    * Whether data is being loaded; drives loading feedback for this view.
    */
@@ -194,10 +191,11 @@
    */
   let retry = $state(0);
   /**
-   * Type ID of the open child form; null means closed, while empty text permits initial
-   * selection.
+   * null = closed; empty string = awaiting explicit type selection; otherwise the
+   * first selected type, retained as a stable editor key while the active type changes.
    */
   let createType = $state<string | null>(null);
+  let childSubmitting = $state(false);
   /**
    * Whether the node’s breadcrumb can load older ancestors.
    */
@@ -223,6 +221,7 @@
   // Before switching tabs, save a titled draft or ask before discarding untitled changes.
   async function closeChildForm(): Promise<boolean> {
     if (createType === null) return true;
+    if (childSubmitting) return false;
     if (editingDraft && draftChanged(editingDraft)) {
       if (editingDraft.title.trim()) {
         if (!saveChildDraft || !(await saveChildDraft())) {
@@ -250,12 +249,60 @@
       switching = false;
     }
   }
-  // Track the editable child draft so its selected type can appear as a temporary discussion tab.
+  // Connect the rail to the actual editor/preview card, not the controls above it.
+  // Measure after layout so wrapping controls, sign-in, and preview switches remain aligned.
+  function connectDraftBranch(element: HTMLDivElement) {
+    let frame = 0;
+    let observed: HTMLElement | undefined;
+    const resize = new ResizeObserver(schedule);
+    function measure() {
+      const card = Array.from(element.querySelectorAll<HTMLElement>('.authoring-card .node-card'))
+        .find(candidate => candidate.getClientRects().length > 0 && candidate.getBoundingClientRect().height > 0);
+      if (observed !== card) {
+        if (observed) resize.unobserve(observed);
+        observed = card;
+        if (card) resize.observe(card);
+      }
+      if (!card) {
+        element.removeAttribute('data-branch-ready');
+        return;
+      }
+      const bounds = element.getBoundingClientRect();
+      const target = card.getBoundingClientRect();
+      const rtl = getComputedStyle(element).direction === 'rtl';
+      element.style.setProperty('--draft-branch-y', `${target.top - bounds.top + 22.4}px`);
+      element.style.setProperty('--draft-branch-x', `${rtl ? bounds.right - target.right : target.left - bounds.left}px`);
+      element.setAttribute('data-branch-ready', '');
+    }
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    }
+    const mutation = new MutationObserver(schedule);
+    mutation.observe(element, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+    resize.observe(element);
+    schedule();
+    return { destroy() { cancelAnimationFrame(frame); mutation.disconnect(); resize.disconnect(); } };
+  }
+  // The initial chooser and the editor's type selector share the child feed filter.
+  // Draft notifications only track editable content for existing save/discard handling.
   function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
-    if (createType === null || !draft) return;
-    const selected = draft.newType ? 'draft-new-type' : draft.typeId;
-    if (selected) active = selected;
+  }
+  function openChildForm(id?: string) {
+    if (createType !== null) return;
+    if (id && types.some(type => type.id === id)) {
+      createType = id;
+      active = id;
+    } else {
+      createType = '';
+    }
+  }
+  function selectCreateType(id: string) {
+    if (createType === null || childSubmitting || switching) return;
+    if (id !== 'new' && !types.some(type => type.id === id)) return;
+    if (createType === '') createType = id;
+    active = id === 'new' ? 'draft-new-type' : id;
   }
   /**
    * Backend-calculated average importance rating; null means no average is available.
@@ -296,9 +343,10 @@
     moderatorConfirm = false;
     moderatorMessage = '';
     createType = null;
+    childSubmitting = false;
     editingDraft = null;
     saveChildDraft = null;
-    active = 'comments';
+    active = 'subnodes';
     void (async () => {
       try {
         if (id) {
@@ -377,18 +425,19 @@
             signal,
           ),
           readTypes(apiBase, signal),
-          readReactions(display.id, signal, apiBase).catch(() => []),
+          readReactions(display.id, signal, apiBase).catch(() => null),
         ]);
         if (detail.hidden) throw new Error('Unavailable');
         if (controller.signal.aborted) return;
-        node = { ...display, authorId: detail.authorId, reactions };
+        node = { ...display, authorId: detail.authorId, reactions: reactions ?? display.reactions,
+          reactionCount: reactions ? reactions.reduce((sum, reaction) => sum + reaction.count, 0) : display.reactionCount };
         hasMoreAncestors = !!entry!.card?.breadcrumbSegment?.continuationNodeId;
         blocks = content;
         average = entry!.averageVote;
         totalVotes = entry!.voteCount;
-        active = display.childTypes?.some((type) => type.typeId === selectedType)
+        active = selectedType === 'subnodes' || display.childTypes?.some((type) => type.typeId === selectedType)
           ? selectedType
-          : 'comments';
+          : 'subnodes';
         types = [...catalog].sort(
           (a, b) =>
             Number(detail.requestedTypeIds.includes(b.id)) -
@@ -548,7 +597,8 @@
     <NodePage
       {apiBase}
       {onOpenProfile}
-      scrollToDiscussionTabs={!!initialTypeId && !focusCommentId && active === initialTypeId}
+      scrollToDiscussionTabs={!!initialTypeId && !focusCommentId && (initialTypeId === 'comments' || active === initialTypeId)}
+      commentsInitiallyOpen={initialTypeId === 'comments' || !!focusCommentId}
       {hasMoreAncestors}
       loadOlderAncestors={(id) =>
         id
@@ -571,11 +621,12 @@
       {totalVotes}
       onNavigate={openNode}
       onTabChange={(id) => void changeTab(id)}
-      onAddChild={(id) => {
-        if (createType !== null) return;
-        createType = id ?? types[0]?.id ?? '';
-        active = createType;
-      }}
+      childFormOpen={createType !== null}
+      createTypeSelection={createType ? (active === 'draft-new-type' ? 'new' : active) : ''}
+      childFormBusy={switching || childSubmitting}
+      onCreateTypeChange={selectCreateType}
+      onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
+      onAddChild={openChildForm}
     >
       <!-- This named snippet becomes NodePage's voting prop and replaces its disabled fallback.
            Archive state reaches LiveVotingDial, which also disables itself while loading/saving. -->
@@ -588,58 +639,61 @@
           />{/if}{/snippet}
       {#snippet reactions()}{#if node}<LiveReactions
             nodeId={node.id}
+            onTotalChange={(count) => { if (node && node.reactionCount !== count) node = { ...node, reactionCount: count }; }}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
       {#snippet reportControl()}
         {#if node}{#key node.id}<NodeReportControl nodeId={node.id} />{/key}{/if}
       {/snippet}
+      {#snippet commentsPanel()}
+        {#if node}<CommentsPanel nodeId={node.id} {focusCommentId} {apiBase}
+          onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{/if}
+      {/snippet}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
-      {#if createType !== null}<div class="child-form">
-          <button onclick={() => void closeChildForm()}>Close child form</button
-          >{#key createType}<LiveNodeForm
+      {#if createType}<div class="child-form" use:connectDraftBranch>
+          {#key createType}<LiveNodeForm
               parentId={node.id}
               parentTitle={node.title}
               initialTypeId={createType}
+              externalTypeId={active === 'draft-new-type' ? 'new' : active}
+              onTypeChange={selectCreateType}
+              onSubmittingChange={(busy) => childSubmitting = busy}
               onCreated={openNode}
               onDraftChange={selectDraftType}
               onRegisterClose={(close) => (saveChildDraft = close)}
               breadcrumb={node.breadcrumb}
+              hideBreadcrumb
               focusOnMount
               {apiBase}
-            />{/key}
+            >
+              {#snippet closeControl()}
+                <button class="inline-close-child" type="button" disabled={switching || childSubmitting}
+                  onclick={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}>Close subnode form</button>
+              {/snippet}
+            </LiveNodeForm>{/key}
         </div>{/if}
       <!--
         Changing tabs recreates the selected discussion subtree so its local paging/form state
         does not leak across tabs.
       -->
-      {#key active}{#if active === 'comments'}<CommentsPanel
-            nodeId={node.id}
-            {focusCommentId}
-            {apiBase}
-            onAdded={() => {
-              if (node) node = { ...node, commentCount: node.commentCount + 1 };
-            }}
-          />{:else if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some((type) => type.typeId === active))}<p
+      {#key active}{#if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some((type) => type.typeId === active))}<p
           >
             The child node draft is open above.
           </p>{:else}<LiveNodeFeed
+            connected
             {onOpenProfile}
             parentId={node.id}
-            typeId={active}
+            typeId={active === 'subnodes' ? undefined : active}
             {apiBase}
             onOpenNode={openNode}
-            emptyTypeName={types.find((type) => type.id === active)?.name ??
+            emptyTypeName={active === 'subnodes' ? undefined : types.find((type) => type.id === active)?.name ??
               node.childTypes
                 ?.find((type) => type.typeId === active)
                 ?.label.replace(/^\s*\d+\s+/, '')
                 .replace(/\s*\(\d+\)\s*$/, '')
                 .replace(/ies$/i, 'y')
                 .replace(/s$/i, '')}
-            onCreateFirst={() => {
-              if (createType === null) {
-                createType = active;
-              }
-            }}
+            onCreateFirst={createType === null ? () => openChildForm(active === 'subnodes' ? undefined : active) : undefined}
           />{/if}{/key}
     </NodePage>
   {/key}
@@ -672,11 +726,16 @@
   .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
   .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
+  .inline-close-child {
+    font: inherit; font-size: .85rem; min-height: 2rem; padding: .35rem .55rem;
+    border: 1px solid var(--atlas-accent); border-radius: var(--atlas-radius);
+    color: var(--atlas-accent); background: var(--atlas-surface); white-space: nowrap;
+    cursor: pointer;
+  }
+  .inline-close-child:hover:not(:disabled) { background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface)); }
+  .inline-close-child:disabled { opacity: .6; cursor: default; }
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;
-  }
-  .child-form > button {
-    margin-bottom: 1rem;
   }
 </style>

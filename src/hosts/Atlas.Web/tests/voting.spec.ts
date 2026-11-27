@@ -7,6 +7,7 @@ async function setup(page: Page, anonymous = false, savedVote: number | null = n
   const mutations: { method: string; value?: number }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
+    if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
     if (url.pathname.endsWith('/node-types') || url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${node}`)) return route.fulfill({ json: { id: node, requestedTypeIds: [] } });

@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright';
+import { analyzeAccessibility } from './helpers/accessibility';
 import { expect, test } from '@playwright/test';
 
 // The iframe URL opens just the rendered story, without the Storybook sidebar.
@@ -46,7 +46,7 @@ test('shared component works in the web composition', async ({ page }) => {
 test('enabled story passes automated accessibility checks', async ({ page }) => {
   await page.goto(story());
   await expect(page.getByRole('button', { name: 'Try action' })).toBeVisible();
-  const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
+  const results = await analyzeAccessibility(page, '#storybook-root');
   expect(results.violations).toEqual([]);
 });
 

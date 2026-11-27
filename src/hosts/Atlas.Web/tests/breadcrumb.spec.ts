@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright';
+import { analyzeAccessibility } from './helpers/accessibility';
 import { expect, test } from '@playwright/test';
 
 const ribbon = 'http://127.0.0.1:6006/iframe.html?id=components-breadcrumb--playground&viewMode=story';
@@ -30,6 +30,6 @@ test('ribbon shows newest ancestor first, scrolls to older items and fits mobile
   await viewport.evaluate(el => { el.scrollLeft = el.scrollWidth; });
   await page.setViewportSize({ width: 420, height: 800 });
   await expect.poll(() => viewport.evaluate(el => el.scrollWidth - el.clientWidth - el.scrollLeft)).toBeLessThanOrEqual(1);
-  const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
+  const results = await analyzeAccessibility(page, '#storybook-root');
   expect(results.violations).toEqual([]);
 });

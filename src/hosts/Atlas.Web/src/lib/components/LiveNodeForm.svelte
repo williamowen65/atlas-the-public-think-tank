@@ -29,7 +29,7 @@
     succeeded; it does not itself close the form.
 -->
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { putDraft, deleteDraft, listDrafts } from '../api/privateDrafts';
   import type { Community } from '../api/communities';
   import NodeForm, { type NodeDraft } from './NodeForm.svelte';
@@ -44,7 +44,13 @@
     parentId,
     parentTitle,
     initialTypeId,
+    requireTypeSelection = false,
+    externalTypeId,
+    onTypeChange,
+    closeControl,
+    onSubmittingChange,
     breadcrumb = [],
+    hideBreadcrumb = false,
     focusOnMount = false,
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',
@@ -60,8 +66,17 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** Standalone creation waits for an explicit type or a valid restored draft type. */
+    requireTypeSelection?: boolean;
+    /** Optional controlled type for inline creation. */
+    externalTypeId?: string;
+    onTypeChange?: (id: string) => void;
+    closeControl?: Snippet;
+    onSubmittingChange?: (busy: boolean) => void;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /** Suppress duplicate visual ancestry without dropping saved draft context. */
+    hideBreadcrumb?: boolean;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -114,6 +129,7 @@
    * Whether custom-type/node creation is underway; locks draft controls.
    */
   let submitting = $state(false);
+  $effect(() => { onSubmittingChange?.(submitting); });
   /**
    * Creation failure displayed while retaining the draft for retry.
    */
@@ -147,6 +163,13 @@
    * Restored browser-local values passed to NodeForm as its initial draft.
    */
   let savedDraft = $state<NodeDraft | undefined>(undefined);
+  let chosenType = $state('');
+  const restoredType = $derived(savedDraft?.newType ? 'new' :
+    types.some(type => type.id === savedDraft?.typeId) ? savedDraft?.typeId ?? '' : '');
+  const standaloneType = $derived(chosenType || restoredType);
+  function chooseStandaloneType(id: string) {
+    if (id === 'new' || types.some(type => type.id === id)) chosenType = id;
+  }
   /**
    * Feedback after saving a private draft on this device.
    */
@@ -175,6 +198,7 @@
   }
   // Restore private data only from the current participant’s browser draft collection.
   function sessionChanged(id: string | null) {
+    if (participantId !== id) chosenType = '';
     participantId = id;
     hasDraft = !!id;
     savedDraft = undefined;
@@ -400,6 +424,9 @@
   class="live-node-form"
   aria-label={parentId ? 'Child node creation' : 'Root node creation'}
 >
+  {#if closeControl && (createdId || loading || error || !hasDraft)}
+    <div class="fallback-close">{@render closeControl()}</div>
+  {/if}
   {#if createdId}<p role="status">Node created.</p>
     <button onclick={openCreated}>Open created node</button>
   {:else}
@@ -413,6 +440,17 @@
     />
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p>
       <button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
+      {#if requireTypeSelection && !standaloneType}
+        <div class="initial-type-choice">
+          <label for="standalone-node-type">Choose a node type:</label>
+          <select id="standalone-node-type" aria-label="Choose a node type" value="" required
+            onchange={(event) => chooseStandaloneType(event.currentTarget.value)}>
+            <option value="" disabled>Select a node type…</option>
+            {#each types as type (type.id)}<option value={type.id}>{type.name}</option>{/each}
+            <option value="new">Define a new node type…</option>
+          </select>
+        </div>
+      {:else}
       <!--
         One disabled fieldset locks all nested draft controls while saving or without a usable
         participant.
@@ -424,7 +462,11 @@
           parentId={savedDraft?.parentId ?? parentId}
           parentTitle={savedParentTitle ?? parentTitle}
           {initialTypeId}
+          externalTypeId={requireTypeSelection ? standaloneType : externalTypeId}
+          onTypeChange={requireTypeSelection ? chooseStandaloneType : onTypeChange}
+          {closeControl}
           breadcrumb={savedBreadcrumb ?? breadcrumb}
+          {hideBreadcrumb}
           initialDraft={savedDraft}
           {focusOnMount}
           {submitting}
@@ -441,6 +483,7 @@
         <button type="button" onclick={() => void loadCommunities()}>Retry communities</button>
       {/if}
       {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
+      {/if}
     {/if}
     {#if saveError}<p role="alert">{saveError} Your draft has been kept.</p>{/if}
     {#if createdType}<p class="note">
@@ -456,6 +499,10 @@
     margin-inline: auto;
     min-width: 0;
   }
+  .initial-type-choice { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding-block: 1rem; }
+  .initial-type-choice label { font-weight: 600; font-size: 1.1rem; }
+  .initial-type-choice select { font: inherit; min-width: 0; max-width: 100%; padding: .5rem .7rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: var(--atlas-text); }
+  .fallback-close { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
   .draft-fields {
     margin: 1rem 0 0;
     padding: 0;

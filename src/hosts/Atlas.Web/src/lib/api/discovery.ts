@@ -119,6 +119,7 @@ interface DiscoveryCard {
 
   /** Formatted reaction summary; fetch structured totals separately. */
   reactions: string;
+  reactionCount?: number;
 
   /** Comma-separated community names for display; contains no community IDs. */
   communities: string;
@@ -283,6 +284,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     related: [],
     requestedTypes: [],
     reactions: [],
+    reactionCount: card.reactionCount,
     childTypes: card.childTypes ?? [],
     reactionSummary: card.reactions,
     subNodeSummary: card.subNodes,

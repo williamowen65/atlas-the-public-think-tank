@@ -28,7 +28,7 @@
 
 <script lang="ts">
   import type { NodeDraft } from './nodeDraft.types';
-  import { untrack } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { fromMarkdown, writeComposition } from '../sections/composition';
   import NodeAuthoringCard from './NodeAuthoringCard.svelte';
@@ -43,7 +43,11 @@
     parentId,
     parentTitle,
     initialTypeId = '',
+    externalTypeId,
+    onTypeChange,
+    closeControl,
     breadcrumb = [],
+    hideBreadcrumb = false,
     focusOnMount = false,
     onPreview,
     onSubmit,
@@ -65,8 +69,14 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** Controlled type for inline editing, kept in sync with the child feed. */
+    externalTypeId?: string;
+    onTypeChange?: (id: string) => void;
+    closeControl?: Snippet;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /** The surrounding connected feed already shows the parent. */
+    hideBreadcrumb?: boolean;
     /**
      * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
      */
@@ -102,7 +112,8 @@
   /**
    * Selected catalog type ID, or new for custom-type creation.
    */
-  let typeId = $state(startingDraft?.newType ? 'new' : (startingDraft?.typeId ?? ''));
+  let localTypeId = $state(startingDraft?.newType ? 'new' : (startingDraft?.typeId ?? ''));
+  const typeId = $derived(externalTypeId ?? localTypeId);
   /**
    * Selected catalog IDs requested as contributions to this node.
    */
@@ -144,7 +155,7 @@
   let autoPluralize = $state(startingDraft?.newType?.autoPluralize ?? true);
   const instance = $props.id();
   $effect(() => {
-    if (!typeId && types.length) typeId = initialTypeId || types[0].id;
+    if (externalTypeId === undefined && !localTypeId && types.length) localTypeId = initialTypeId || types[0].id;
   });
   const newTypeOption = 'Define a new node type…';
   const selectedTypeName = $derived(types.find((type) => type.id === typeId)?.name);
@@ -159,7 +170,7 @@
     authorName: 'You',
     createdAt,
     description: '',
-    breadcrumb: path,
+    breadcrumb: hideBreadcrumb ? [] : path,
     communities: communityIds.map((id) => communities.find((community) => community.id === id)?.name ?? 'Unavailable community'),
     related: [],
     requestedTypes: [],
@@ -212,19 +223,23 @@
     onSubmit(draft());
   }}
 >
-  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions}
+  <NodeAuthoringCard node={preview} {blocks} fields={titleFields} actions={creationActions} {closeControl} creatingDraft
     disabled={submitting} onChange={(updated) => { blocks = updated; blockError = ''; }} />
 </form>
 
 {#snippet titleFields()}
-    <div class="title-row">
+    <div class="title-row stacked-type">
       <div class="type-field">
         <span aria-hidden="true">{selectedTypeLabel}</span>
         <select
           aria-label="Node type"
           use:focusAndScrollOnMount
           id={`${instance}-type`}
-          bind:value={typeId}
+          value={typeId}
+          onchange={(event) => {
+            if (externalTypeId !== undefined) onTypeChange?.(event.currentTarget.value);
+            else localTypeId = event.currentTarget.value;
+          }}
           required
           >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
             value="new">{newTypeOption}</option
@@ -365,6 +380,9 @@
     gap: 0.75rem;
     align-items: center;
   }
+  .title-row.stacked-type { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .stacked-type .type-field { align-self: flex-start; }
+  .stacked-type .title-field { flex: 0 1 auto; width: 100%; }
   .type-field {
     position: relative;
     flex: 0 0 auto;
@@ -483,6 +501,10 @@
   :focus-visible {
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
+  }
+  @media (max-width: 640px) {
+    footer { flex-direction: column; align-items: stretch; }
+    .contributions { flex: none; width: 100%; }
   }
   @media (max-width: 380px) {
     footer,
