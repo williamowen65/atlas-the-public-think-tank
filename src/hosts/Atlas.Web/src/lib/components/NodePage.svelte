@@ -270,10 +270,6 @@
   dial floats beside content; the selected panel sits below the tab toolbar.
 -->
 
-{#if !inspectionOnly}
-  <Breadcrumb expandable connectedCards items={node.breadcrumb} originId={node.id}
-    {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
-{/if}
 <article class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
@@ -295,8 +291,13 @@
       {onNavigate}
       hasMore={hasMoreAncestors}
       loadOlder={loadOlderAncestors}
-    />{/if}
-    {@render typeRow()}
+    />
+      {@render typeRow(undefined)}
+    {:else}
+      <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+        originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
+        loadOlder={loadOlderAncestors} />
+    {/if}
     <h1>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">{'By '}</span>{#if node.authorId}<a
@@ -412,8 +413,9 @@
 {/if}
 </article>
 
-{#snippet typeRow()}
+{#snippet typeRow(ancestryControl: Snippet | undefined)}
   <div class="node-type-row">
+    {@render ancestryControl?.()}
     <p class="node-type">{node.typeName}</p>
     {#if !inspectionOnly}
       {#if voting}{@render voting()}
@@ -441,10 +443,11 @@
     padding: var(--atlas-node-header-inset) var(--card-padding) 0;
   }
 
-  header:has(> :global(.ancestry)) { padding-top: 0; }
+  header:has(> :global(.ancestry:not([hidden]))) { padding-top: 0; }
 
   .node-page:has(> :global(.edit-node.corner)) {
     --ancestry-end-padding: 5rem;
+    --connected-ancestry-top-padding: 2.75rem;
   }
 
   h1 {
