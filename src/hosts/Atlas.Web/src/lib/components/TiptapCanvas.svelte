@@ -961,18 +961,17 @@
             const target = event.target;
             if (!view.editable || !(target instanceof Element)) return false;
             const action = target.closest('[data-atlas-edit-image]');
-            if (!action) return false;
-            const inline = action.closest('[data-atlas-inline-image]');
+            const inline = action?.closest('[data-atlas-inline-image]');
             if (inline?.parentNode) {
               const index = Array.from(inline.parentNode.childNodes).indexOf(inline);
               openInlineImageForm(view.posAtDOM(inline.parentNode, index));
               return true;
             }
-            const key = action.closest('figure[data-atlas-key]')?.getAttribute('data-atlas-key');
+            const key = target.closest('figure[data-atlas-image][data-atlas-key]')?.getAttribute('data-atlas-key');
             const block = key && findBlock(key);
             if (!block) return false;
             view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, block.from)));
-            openImageForm('existing');
+            if (action) openImageForm('existing');
             return true;
           },
         },

@@ -34,6 +34,7 @@
   import type { Community } from '../api/communities';
   import NodeForm, { type NodeDraft } from './NodeForm.svelte';
   import SessionControl from './SessionControl.svelte';
+  import CreateNodeTypePicker from './CreateNodeTypePicker.svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { readTypes, readJson, type ContentBlock, type NodeType } from '../api/nodePage';
   import { blockRequest, derivedExcerpt, publicationMarkdown, validateNodePublication, type AuthorBlock } from '../api/contentAuthoring';
@@ -441,15 +442,7 @@
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p>
       <button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
       {#if requireTypeSelection && !standaloneType}
-        <div class="initial-type-choice">
-          <label for="standalone-node-type">Choose a node type:</label>
-          <select id="standalone-node-type" aria-label="Choose a node type" value="" required
-            onchange={(event) => chooseStandaloneType(event.currentTarget.value)}>
-            <option value="" disabled>Select a node type…</option>
-            {#each types as type (type.id)}<option value={type.id}>{type.name}</option>{/each}
-            <option value="new">Define a new node type…</option>
-          </select>
-        </div>
+        <CreateNodeTypePicker {types} onChoose={chooseStandaloneType} />
       {:else}
       <!--
         One disabled fieldset locks all nested draft controls while saving or without a usable
@@ -470,6 +463,7 @@
           initialDraft={savedDraft}
           {focusOnMount}
           {submitting}
+          typeSelectionDisabled={!participantId}
           onPreview={(draft) => {
             currentDraft = draft;
             onDraftChange?.(draft);
@@ -499,9 +493,6 @@
     margin-inline: auto;
     min-width: 0;
   }
-  .initial-type-choice { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding-block: 1rem; }
-  .initial-type-choice label { font-weight: 600; font-size: 1.1rem; }
-  .initial-type-choice select { font: inherit; min-width: 0; max-width: 100%; padding: .5rem .7rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); color: var(--atlas-text); }
   .fallback-close { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
   .draft-fields {
     margin: 1rem 0 0;

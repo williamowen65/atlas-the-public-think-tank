@@ -88,7 +88,7 @@
         sessionStorage.setItem(scrollStateKey, JSON.stringify(position));
       } catch { /* The browser can restrict storage. */ }
     }
-    replaceState('', { ...state, [scrollStateKey]: position });
+    replaceState(page.url, { ...state, [scrollStateKey]: position });
   }
 
   function finishScrollRestore() {

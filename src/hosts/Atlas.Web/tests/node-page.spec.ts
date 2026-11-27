@@ -47,8 +47,8 @@ test('Read more opens the matching node story; filters load child feeds and a pa
   expect(urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === idea)).toBe(true);
   await page.getByRole('button', { name: 'Add Idea', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Create child node' })).toBeVisible();
-  await expect(page.getByLabel('Node type', { exact: true })).toHaveValue(idea);
-  await expect(page.getByLabel('Node type', { exact: true })).toBeFocused();
+  await expect(page.locator('select[data-node-type-select][aria-label="Node type"]')).toHaveValue(idea);
+  await expect(page.getByRole('combobox', { name: 'Node type', exact: true })).toBeFocused();
   const form = page.getByRole('form', { name: 'Create child node' });
   await expect(page.locator('.external-subnodes').getByRole('form')).toHaveCount(1);
   await expect(form.getByRole('navigation')).toHaveCount(0);
@@ -63,7 +63,7 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story');
   await page.getByLabel('Title', { exact: true }).fill('A root idea');
-  await page.getByLabel('Node type', { exact: true }).selectOption('new');
+  await page.locator('select[data-node-type-select][aria-label="Node type"]').selectOption('new', { force: true });
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
   const content = page.getByRole('textbox', { name: /Node content/ }).first();
   await content.fill('Supporting content');

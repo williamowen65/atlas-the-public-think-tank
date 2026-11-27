@@ -34,9 +34,10 @@
   and successful creation navigates to the node.
 -->
 
-<svelte:head><title>Create a node · Atlas</title></svelte:head>
+<svelte:head><title>Create a root node · Atlas</title></svelte:head>
 {#if ready}
-<h1>Create a node</h1>
+<h1>Create a root node</h1>
+<p class="writing-guide">New to Atlas? <a href="/how-to-write-a-node">How to Write a Node</a></p>
 <LiveNodeForm
   requireTypeSelection
   draftId={page.url.searchParams.get('draft') ?? undefined}
@@ -44,3 +45,10 @@
 />
 {/if}
 {#if error}<p role="alert">{error}</p><button onclick={() => void checkSession()}>Retry</button>{:else if !ready}<p role="status">Checking sign-in…</p>{/if}
+
+<style>
+  .writing-guide {
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+</style>

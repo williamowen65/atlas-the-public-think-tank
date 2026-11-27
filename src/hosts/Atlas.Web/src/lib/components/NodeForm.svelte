@@ -27,6 +27,7 @@
 </script>
 
 <script lang="ts">
+  import { nodeTypeSelect } from '../actions/nodeTypeSelect';
   import type { NodeDraft } from './nodeDraft.types';
   import { untrack, type Snippet } from 'svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
@@ -53,6 +54,7 @@
     onSubmit,
     onSaveDraft,
     submitting = false,
+    typeSelectionDisabled = false,
   }: {
     /** Available node types and their singular/plural display labels. */
     types: NodeType[];
@@ -93,6 +95,7 @@
     onSaveDraft?: () => void;
     /** Shows the creation-in-progress label and disables the submit button. */
     submitting?: boolean;
+    typeSelectionDisabled?: boolean;
   } = $props();
   // Seed editable fields once; later prop updates must not overwrite user edits.
   const startingDraft = untrack(() => initialDraft);
@@ -129,18 +132,6 @@
   const path = $derived(
     parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb,
   );
-  // Focus only after insertion so the select and its containing form can be measured.
-  function focusAndScrollOnMount(control: HTMLSelectElement) {
-    if (focusOnMount)
-      requestAnimationFrame(() => {
-        if (!control.isConnected) return;
-        control.focus({ preventScroll: true });
-        control.closest('form')?.scrollIntoView({
-          block: 'start',
-          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-        });
-      });
-  }
   /**
    * Working name for a new custom node type.
    */
@@ -159,7 +150,6 @@
   });
   const newTypeOption = 'Define a new node type…';
   const selectedTypeName = $derived(types.find((type) => type.id === typeId)?.name);
-  const selectedTypeLabel = $derived(typeId === 'new' ? newTypeOption : selectedTypeName ?? '');
   const createdAt = new Date().toISOString();
   const preview = $derived<NodeCardData>({
     id: instance,
@@ -230,10 +220,10 @@
 {#snippet titleFields()}
     <div class="title-row stacked-type">
       <div class="type-field">
-        <span aria-hidden="true">{selectedTypeLabel}</span>
         <select
           aria-label="Node type"
-          use:focusAndScrollOnMount
+          data-node-type-select
+          use:nodeTypeSelect={{ label: 'Node type', value: typeId, focus: focusOnMount }}
           id={`${instance}-type`}
           value={typeId}
           onchange={(event) => {
@@ -241,7 +231,8 @@
             else localTypeId = event.currentTarget.value;
           }}
           required
-          >{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option
+          disabled={submitting || typeSelectionDisabled}
+          >{#each types as type (type.id)}<option value={type.id} data-description={type.description}>{type.name}</option>{/each}<option
             value="new">{newTypeOption}</option
           ></select
         >
@@ -389,44 +380,18 @@
     min-width: 0;
     max-width: 100%;
   }
-  /* Size the closed native select from its current label. The options stay
-     in the native popup, which can size independently of the control. */
-  .title-row :is(.type-field span, .type-field select, .title-field input) {
+  .type-field { width: min(100%, 16rem); }
+  .title-row .title-field input,
+  .type-field :global(.select2-selection) {
     font-size: 1.3rem;
     font-weight: 600;
     line-height: 1.35;
   }
-  .type-field :is(span, select) {
-    /* Match the measured label's insets to the select's actual insets. */
-    padding: 0.6rem 2.6rem 0.6rem 0.6rem;
+  .type-field :global(.select2-selection) {
+    height: auto;
+    padding-block: 0.6rem;
   }
-  .type-field span {
-    display: block;
-    visibility: hidden;
-    white-space: nowrap;
-    overflow: hidden;
-    border: 1px solid transparent;
-  }
-  .type-field select {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-    appearance: none;
-    color: var(--atlas-accent);
-  }
-  .type-field::after {
-    content: '';
-    position: absolute;
-    inset-inline-end: 0.95rem;
-    top: 50%;
-    width: 0.48rem;
-    height: 0.48rem;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    color: var(--atlas-accent);
-    transform: translateY(-70%) rotate(45deg);
-    pointer-events: none;
-  }
+  .type-field :global(.select2-selection__rendered) { line-height: inherit; }
   .title-field {
     flex: 3 1 16rem;
     min-width: 0;
