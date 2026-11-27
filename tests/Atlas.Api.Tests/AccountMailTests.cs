@@ -29,10 +29,8 @@ public sealed class AccountMailTests
         await File.WriteAllTextAsync(Path.Combine(directory, "index.html"), "<html>email-route-test</html>");
         try
         {
-            using var root = new ApiFactory();
-            using var factory = root.WithWebHostBuilder(builder => builder.UseWebRoot(directory));
-            using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-                { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+            using var factory = new ApiFactory(webRoot: directory);
+            using var client = factory.Browser();
             foreach (var path in new[] { "/confirm-email", "/forgot-password", "/reset-password" })
             {
                 var response = await client.GetAsync(path);
@@ -106,13 +104,16 @@ public sealed class AccountMailTests
     public void Smtp_requires_a_configured_https_origin(string origin, bool expected)
     {
         using var root = new ApiFactory();
-        using var factory = root.WithWebHostBuilder(b => b
-            .UseSetting("Atlas:AccountMail:Transport", "Smtp")
-            .UseSetting("Atlas:AccountMail:Host", "smtp.example")
-            .UseSetting("Atlas:AccountMail:Username", "test")
-            .UseSetting("Atlas:AccountMail:Password", "not-a-real-secret")
-            .UseSetting("Atlas:AccountMail:From", "atlas@example.com")
-            .UseSetting("Atlas:AccountMail:PublicOrigin", origin));
+        using var factory = root.WithWebHostBuilder(b => b.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Atlas:AccountMail:Transport"] = "Smtp",
+                ["Atlas:AccountMail:Host"] = "smtp.example",
+                ["Atlas:AccountMail:Username"] = "test",
+                ["Atlas:AccountMail:Password"] = "not-a-real-secret",
+                ["Atlas:AccountMail:From"] = "atlas@example.com",
+                ["Atlas:AccountMail:PublicOrigin"] = origin
+            })));
         using var scope = factory.Services.CreateScope();
         Assert.AreEqual(expected, scope.ServiceProvider.GetRequiredService<AccountMail>().IsAvailable);
     }

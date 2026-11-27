@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -26,16 +28,36 @@ namespace Atlas.Api.Tests;
 /// Merely constructing the factory does not send a request; accessing Services or creating clients starts it.
 /// The primary-constructor parameter below is a C# constructor argument available to this class.
 /// </remarks>
-internal sealed class ApiFactory(string? connection = null, bool disableAuthLimiter = false) : WebApplicationFactory<Program>
+internal sealed class ApiFactory(string? connection = null, bool disableAuthLimiter = false,
+    string? webRoot = null, string? mailDirectory = null) : WebApplicationFactory<Program>
 {
+    private readonly string isolatedMailDirectory = mailDirectory ?? Path.Combine(Path.GetTempPath(), "atlas-api-test-mail-" + Guid.NewGuid().ToString("N"));
+
     // Keep the application's real service registrations, but select Development and disable local telemetry output.
     // The optional connection argument is supplied only by SQL workflow tests; these are not domain factories.
     // Non-SQL tests use an unreachable placeholder: accidental database access should fail.
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
         .UseSetting("Atlas:Telemetry:Enabled", "false")
         .UseSetting("ATLAS_SQL_CONNECTION_STRING", connection ?? "Server=localhost;Database=Atlas_Not_Used;Integrated Security=true;TrustServerCertificate=true")
+        // Host settings alone do not reliably override appsettings, user secrets or environment variables.
+        // Add explicit test values as the last application configuration provider.
+        .ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Atlas:AccountMail:Transport"] = "",
+            ["Atlas:AccountMail:Host"] = null,
+            ["Atlas:AccountMail:Username"] = null,
+            ["Atlas:AccountMail:Password"] = null,
+            ["Atlas:AccountMail:From"] = null,
+            ["Atlas:AccountMail:PublicOrigin"] = null,
+            ["Atlas:DevelopmentMailDirectory"] = isolatedMailDirectory,
+            ["ATLAS_DISCOVERY_REDIS_CONNECTION"] = ""
+        }))
         .ConfigureServices(services =>
         {
+            // Replace the actual file provider, not just the webroot setting. In Development,
+            // the static-web-assets manifest can otherwise compose the real wwwroot into it.
+            services.AddSingleton<IStartupFilter>(provider =>
+                new IsolatedWebRoot(provider.GetRequiredService<IWebHostEnvironment>(), webRoot));
             if (!disableAuthLimiter) return;
             // Recovery exercises more than 20 auth calls. Keep quota tests on the
             // real policy, but remove its options registration for this scenario.
@@ -52,6 +74,28 @@ internal sealed class ApiFactory(string? connection = null, bool disableAuthLimi
     // The HTTPS address is logical in TestServer: no localhost port is opened.
     // Factory clients retain cookies, but redirects stay visible so tests can assert 401/403.
     public HttpClient Browser() => CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+    private sealed class IsolatedWebRoot(IWebHostEnvironment environment, string? root) : IStartupFilter, IDisposable
+    {
+        private PhysicalFileProvider? physical;
+
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            if (root is null)
+            {
+                environment.WebRootFileProvider = new NullFileProvider();
+            }
+            else
+            {
+                environment.WebRootPath = Path.GetFullPath(root);
+                physical = new PhysicalFileProvider(environment.WebRootPath);
+                environment.WebRootFileProvider = physical;
+            }
+            next(app);
+        };
+
+        public void Dispose() => physical?.Dispose();
+    }
 }
 
 [TestClass]
@@ -99,7 +143,8 @@ public sealed class BoundaryTests
     {
         using var factory = new ApiFactory();
         using var production = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Production")
-            .UseSetting("Atlas:DevelopmentMailDirectory", "unused-test-mail"));
+            .ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Atlas:DevelopmentMailDirectory"] = "unused-test-mail" })));
         using var client = production.CreateClient(new WebApplicationFactoryClientOptions
             { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var csrf = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/auth/csrf");
@@ -144,6 +189,22 @@ public sealed class BoundaryTests
         Assert.AreEqual(HttpStatusCode.BadRequest, invalid.StatusCode);
         StringAssert.Contains(await invalid.Content.ReadAsStringAsync(), "A valid CSRF token is required.");
     }
+    [TestMethod]
+    public void Default_test_host_does_not_use_developer_web_assets_or_external_mail_and_cache()
+    {
+        using var factory = new ApiFactory();
+        var services = factory.Services;
+        var environment = services.GetRequiredService<IWebHostEnvironment>();
+        Assert.IsInstanceOfType<NullFileProvider>(environment.WebRootFileProvider);
+        Assert.IsFalse(environment.WebRootFileProvider.GetFileInfo("index.html").Exists);
+        var config = services.GetRequiredService<IConfiguration>();
+        Assert.AreEqual("", config["Atlas:AccountMail:Transport"]);
+        Assert.IsTrue(string.IsNullOrEmpty(config["Atlas:AccountMail:Password"]));
+        Assert.AreEqual("", config["ATLAS_DISCOVERY_REDIS_CONNECTION"]);
+        using var scope = services.CreateScope();
+        Assert.IsTrue(scope.ServiceProvider.GetRequiredService<AccountMail>().IsAvailable);
+    }
+
     [TestMethod]
     public async Task Csrf_cookie_is_secure_and_http_only_and_api_does_not_serve_frontend()
     {
