@@ -22,13 +22,14 @@
 </script>
 
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import AncestorNodeCard from './AncestorNodeCard.svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
     expandable = false,
     connectedCards = false,
+    connectedHeader,
     onNavigate,
     hasMore = false,
     loadOlder,
@@ -41,8 +42,10 @@
     items: BreadcrumbItem[];
     /** Show the immediate parent with an optional ancestry toggle. */
     expandable?: boolean;
-    /** Standalone, collapsed-by-default ancestry of compact cards. */
+    /** Collapsed-by-default ancestry of compact cards inside the focused header. */
     connectedCards?: boolean;
+    /** Render the focused type row with the ancestry control, if ancestors exist. */
+    connectedHeader?: Snippet<[Snippet | undefined]>;
     /**
      * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
      * navigation.
@@ -337,21 +340,18 @@
 
 {#if expandable && connectedCards}
   {#if allItems.length}
-    <nav class="ancestry connected-ancestry" aria-label="Node ancestry">
-      <div class="ancestry-disclosure">
-        <button type="button" aria-expanded={expanded} aria-controls={panelId}
-          onclick={() => { expanded = !expanded; if (!expanded) openRouteMenu = false; }}>
-          {expanded ? 'Hide ancestry' : 'Show ancestry'}
-        </button>
-      </div>
-      <div id={panelId} hidden={!expanded}>
-        {#if expanded}
-          {#if more && loadOlder}<div class="older-ancestry">{@render olderButton()}</div>{/if}
-          {@render loadError()}
-          <ol>{@render ancestorItems()}</ol>
-        {/if}
-      </div>
+    <nav class="ancestry connected-ancestry" id={panelId} aria-label="Node ancestry" hidden={!expanded}>
+      {#if expanded}
+        {#if more && loadOlder}<div class="older-ancestry">{@render olderButton()}</div>{/if}
+        {@render loadError()}
+        <ol>{@render ancestorItems()}</ol>
+      {/if}
     </nav>
+  {/if}
+  {#if connectedHeader}
+    {@render connectedHeader(allItems.length ? connectedToggle : undefined)}
+  {:else if allItems.length}
+    {@render connectedToggle()}
   {/if}
 {:else if expandable}
   {#if allItems.length}
@@ -402,6 +402,19 @@
     {@render loadError()}
   </nav>
 {/if}
+
+{#snippet connectedToggle()}
+  <button type="button" class="connected-ancestry-toggle"
+    aria-label={expanded ? 'Hide ancestry' : 'Show ancestry'}
+    title={expanded ? 'Hide ancestry' : 'Show ancestry'}
+    aria-expanded={expanded} aria-controls={panelId}
+    onclick={() => { expanded = !expanded; if (!expanded) openRouteMenu = false; }}>
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m3 10 5-5 5 5" />
+    </svg>
+  </button>
+{/snippet}
 
 {#snippet ancestryToggle()}
   <button
@@ -691,18 +704,20 @@
 
   .ancestry.connected-ancestry {
     --connection-color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
-    max-width: 48rem;
-    margin: 0 auto;
-    padding: 0;
+    max-width: none;
+    margin: 0 calc(-1 * var(--card-padding)) 0.75rem;
+    padding: var(--connected-ancestry-top-padding, 0.85rem) var(--card-padding) 0;
     border: 0;
-    background: transparent;
-    border-radius: 0;
-    .ancestry-disclosure, .older-ancestry {
+    border-bottom: 1px solid var(--atlas-border);
+    background: var(--atlas-tinted-surface);
+    border-radius: var(--atlas-radius) var(--atlas-radius) 0 0;
+    &[hidden] { display: none; }
+    .older-ancestry {
       display: flex;
       justify-content: center;
       margin-block-end: 0.55rem;
     }
-    .ancestry-disclosure button, .older-ancestry button {
+    .older-ancestry button {
       color: var(--atlas-accent);
       border: 1px solid var(--atlas-border);
       border-radius: var(--atlas-radius);
@@ -711,7 +726,7 @@
     }
     ol { display: block; }
     ol::after { display: none; }
-    li, li:first-child { padding: 0; }
+    li, li:first-child { padding: 0; border-radius: 0; }
     li::after {
       display: block;
       position: static;
@@ -722,6 +737,21 @@
       clip-path: none;
     }
     .route-choice { text-align: end; }
+  }
+
+  .connected-ancestry-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+    &[aria-expanded='true'] svg { transform: rotate(180deg); }
+    &:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
   }
 
   .ancestry .ancestry-toggle {
