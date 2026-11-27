@@ -424,7 +424,7 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M6 3v9a4 4 0 0 0 4 4h10m-4-4 4 4-4 4" />
+            <path d="M12 1v22" />
           </svg>
         {/if}
         <div
@@ -610,13 +610,22 @@
       block-size: 1.4rem;
       margin-block: 0.15rem;
       margin-inline: auto;
-      color: var(--atlas-accent);
+      color: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
     }
 
     ol {
       display: grid;
       width: auto;
       padding: 0;
+      &::after {
+        content: '';
+        display: block;
+        inline-size: 2px;
+        block-size: 0.65rem;
+        margin-inline: auto;
+        margin-block-start: 0.2rem;
+        background: color-mix(in srgb, var(--atlas-text) 50%, var(--atlas-border));
+      }
     }
 
     li {
