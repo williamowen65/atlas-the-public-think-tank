@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright';
+import { analyzeAccessibility } from './helpers/accessibility';
 import { expect, test } from '@playwright/test';
 
 const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story&args=presentation:ribbon-responsive';
@@ -115,6 +115,10 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
       if (calls === 2) return route.fulfill({ json: { items: [{ id: ids[4], title: 'Second oldest ancestor' }], hasMore: true } });
       return route.fulfill({ json: { items: [{ id: ids[0], title: 'Root ancestor' }], hasMore: false } });
     }
+    const requested = new URL(route.request().url()).searchParams.get('NodeId');
+    const titles = ['Root ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor', 'Second oldest ancestor'];
+    if (requested && requested !== ids[5] && ids.includes(requested))
+      return route.fulfill({ json: { items: [item(requested, titles[ids.indexOf(requested)])], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
     const entry = item(ids[5], 'Paged breadcrumb node');
     await route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, breadcrumbSegment: {
       items: [{ nodeId: ids[3], label: 'Nearest ancestor' }, { nodeId: ids[2], label: 'Middle ancestor' }, { nodeId: ids[1], label: 'Older ancestor' }],
@@ -127,26 +131,27 @@ test('expandable ancestry retries paging and shows the complete path', async ({ 
   ] }));
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(preview.replace('presentation:ribbon-responsive', 'presentation:ribbon-corner'));
-  const nav = page.getByRole('navigation', { name: 'Node ancestry' });
-  const toggle = nav.locator('button.ancestry-toggle');
-  await expect(toggle).toHaveAccessibleName('Show ancestry');
-  await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
-  await expect(toggle.locator('xpath=following-sibling::a[1]')).toHaveText('Nearest ancestor');
+  const nav = page.locator('.connected-ancestry');
+  const toggle = page.getByRole('button', { name: 'Show ancestry' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(nav).toBeHidden();
   await expect(page.locator('.node-type-row')).toContainText('Question');
-  await expect(toggle).toHaveCSS('padding-inline-start', '0px');
   await toggle.press('Enter');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(toggle).toHaveCSS('padding-inline-start', '0px');
+  await expect(page.getByRole('button', { name: 'Hide ancestry' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(nav.getByRole('link', { name: 'Nearest ancestor' })).toBeVisible();
+  await nav.getByRole('button', { name: 'Load older ancestors' }).click();
   await expect(nav.getByRole('alert')).toContainText('HTTP 503');
-  await nav.getByRole('button', { name: 'Retry' }).click();
-  await expect(nav).toContainText('Root ancestor');
+  await nav.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(nav.getByRole('link', { name: 'Second oldest ancestor' })).toBeVisible();
+  await nav.getByRole('button', { name: 'Load older ancestors' }).click();
+  await expect(nav.getByRole('link', { name: 'Root ancestor' })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'Nearest ancestor' })).toHaveCount(1);
   expect(calls).toBe(3);
-  expect((await nav.getByRole('link').allTextContents()).map(text => text.trim())).toEqual(['Root ancestor', 'Second oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
+  await expect(nav.getByRole('link')).toHaveText(['Root ancestor', 'Second oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  await expect(nav.locator('.ancestry-arrow')).toHaveCount(4);
-  await toggle.click();
-  await expect(nav.getByRole('link')).toHaveText(['Nearest ancestor']);
+  await expect(nav.locator('.mini-node')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Hide ancestry' }).click();
+  await expect(nav).toBeHidden();
   const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');
@@ -201,7 +206,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article > header .byline')).toContainText('Community: Local community');
   await expect(page.getByRole('button', { name: 'Read more' })).toBeEnabled();
   await expect(page.locator('article .body')).toContainText('Actual API description.');
-  const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
+  const results = await analyzeAccessibility(page, '#storybook-root');
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await nav.getByRole('button', { name: 'Ancestor outside search', exact: true }).click();

@@ -28,6 +28,7 @@ async function mock(page: Page) {
   );
   await page.route('**/atlas-public-api/**', (route) => {
     const url = new URL(route.request().url());
+    if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
     requests.push(url);
     if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [] });

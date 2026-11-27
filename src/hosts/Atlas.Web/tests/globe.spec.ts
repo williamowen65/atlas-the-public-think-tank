@@ -6,7 +6,7 @@ test.use({
   },
 });
 
-import AxeBuilder from '@axe-core/playwright';
+import { analyzeAccessibility } from './helpers/accessibility';
 
 const snapshot = {
   live: {
@@ -100,7 +100,7 @@ test('desktop mini opens compact globe, defaults to Historical and toggles Live,
   await live.click();
   await expect(live).toHaveAttribute('aria-pressed', 'true');
   await expect(dialog.locator('.metric strong')).toHaveText('2');
-  expect((await new AxeBuilder({ page }).include('dialog').analyze()).violations).toEqual([]);
+  expect((await analyzeAccessibility(page, 'dialog')).violations).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect(launcher).toBeFocused();

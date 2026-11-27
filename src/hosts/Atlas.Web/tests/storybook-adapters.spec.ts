@@ -155,6 +155,14 @@ test('application breadcrumb still switches API-loaded parents without story pro
       return route.fulfill({ json: { items: [], next: null } });
     if (/\/nodes\/[^/]+$/.test(url.pathname))
       return route.fulfill({ json: { id: node, requestedTypeIds: [], status: 'Active' } });
+    if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
+    if (url.pathname.endsWith('/nodes') && [original, alternative].includes(url.searchParams.get('NodeId') ?? '')) {
+      const id = url.searchParams.get('NodeId')!;
+      return route.fulfill({ json: { items: [{ nodeId: id, voteCount: 0, averageVote: null, card: {
+        title: id === original ? 'Original parent' : 'Alternative parent', typeName: 'Idea', authorName: 'Author',
+        createdAt: '2026-10-21T12:00:00Z', status: 'Active', description: '', commentCount: 0, communities: '', isHidden: false
+      } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    }
     if (url.pathname.endsWith('/nodes'))
       return route.fulfill({
         json: {
@@ -191,6 +199,7 @@ test('application breadcrumb still switches API-loaded parents without story pro
     return route.fulfill({ json: [] });
   });
   await page.goto(`http://127.0.0.1:4173/nodes?id=${node}`);
+  await page.locator('.node-page').getByRole('button', { name: 'Show ancestry' }).click();
   const breadcrumb = page.getByRole('navigation', { name: 'Node ancestry' });
   await breadcrumb.getByRole('button', { name: 'Choose another parent path' }).click();
   await breadcrumb.getByRole('button', { name: 'Alternative parent', exact: true }).click();

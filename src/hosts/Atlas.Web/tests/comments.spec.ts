@@ -11,6 +11,7 @@ async function setup(page: Page) {
   const reads: URL[] = []; const writes: { path: string; method: string; body: unknown }[] = [];
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
+    if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
     if (url.pathname.endsWith('/comments')) {
       reads.push(url);
       if (url.searchParams.has('parent')) return route.fulfill({ json: { items: [comment(url.searchParams.has('afterId') ? 'reply-two' : 'reply', url.searchParams.has('afterId') ? 'A second reply' : 'A nested reply', other)], next: url.searchParams.has('afterId') ? null : { afterAt: '2026-10-22T12:00:00Z', afterId: 'reply' } } });
@@ -52,6 +53,7 @@ async function login(page: Page) {
 test('comments load a bounded root page and lazy, independently paged reply threads', async ({ page }) => {
   const { reads } = await setup(page);
   await page.goto(story);
+  await page.getByRole('button', { name: 'Comments (3)', exact: true }).click();
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();
   await expect(page.getByText('Comment removed.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Post comment' })).toHaveCount(0);
@@ -76,11 +78,12 @@ test('comments load a bounded root page and lazy, independently paged reply thre
 });
 
 test('sign-in enables posting, replies and author-only editing/removal with CSRF headers', async ({ page }) => {
-  const { writes } = await setup(page); await page.goto(story); await login(page);
+  const { writes } = await setup(page); await page.goto(story);
+  await page.getByRole('button', { name: 'Comments (3)', exact: true }).click(); await login(page);
   await page.getByLabel('Add a comment', { exact: true }).fill('My new comment');
   await page.getByRole('button', { name: 'Post comment', exact: true }).click();
   await expect(page.getByText('My new comment', { exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: '4 Comments', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Comments (4)', exact: true })).toBeVisible();
   const opening = page.locator(`article[data-comment-id="${first}"]`);
   await opening.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByLabel('Edit comment', { exact: true }).fill('Edited opening thought');
@@ -90,14 +93,14 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
   await page.getByLabel('Your reply', { exact: true }).fill('A reply from me');
   await page.getByRole('button', { name: 'Post reply', exact: true }).click();
   await expect(page.getByText('A reply from me', { exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: '5 Comments', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Comments (5)', exact: true })).toBeVisible();
   await expect(page.getByRole('article', { name: 'Comment by Taylor' }).getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
   const edited = page.locator('article.comment').filter({ has: page.getByText('Edited opening thought', { exact: true }) });
   await edited.getByRole('button', { name: 'Remove', exact: true }).first().click();
   await page.getByRole('button', { name: 'Remove comment', exact: true }).click();
   await expect(page.getByText('Edited opening thought', { exact: true })).toHaveCount(0);
   await expect(page.getByText('A reply from me', { exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: '5 Comments', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Comments (5)', exact: true })).toBeVisible();
   expect(writes.some(write => write.method === 'PUT' && write.path.endsWith(`/comments/${first}`))).toBe(true);
   expect(writes.some(write => write.path.endsWith(`/comments/${first}/replies`))).toBe(true);
   expect(writes.some(write => write.method === 'DELETE')).toBe(true);
@@ -108,7 +111,8 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
 });
 
 test('failed posting keeps the draft and failed pages retain already loaded comments', async ({ page }) => {
-  await setup(page); await page.goto(story); await login(page);
+  await setup(page); await page.goto(story);
+  await page.getByRole('button', { name: 'Comments (3)', exact: true }).click(); await login(page);
   await page.route(`**/atlas-session-api/nodes/${node}/comments`, route => route.fulfill({ status: 403, json: {} }));
   await page.getByLabel('Add a comment', { exact: true }).fill('Keep this draft');
   await page.getByRole('button', { name: 'Post comment', exact: true }).click();
@@ -128,20 +132,19 @@ test('local session bridge rejects foreign origins and unrelated writes', async 
 });
 
 
-test('feed comment control opens and positions the Comments tab', async ({ page }) => {
+test('feed comment control opens and positions the Comments disclosure', async ({ page }) => {
   await setup(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
-  await page.getByRole('button', { name: 'Show reactions, comments, and subnodes' }).click();
-  await page.getByRole('button', { name: '3 Comments', exact: true }).click();
-  await expect(page.getByRole('tab', { name: '3 Comments', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Comments (3)', exact: true }).click();
+  await expect(page.locator('.node-page').getByRole('button', { name: 'Comments (3)', exact: true })).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();
-  const tabs = page.getByRole('tablist');
+  const tabs = page.locator('.node-page .node-actions');
   await expect.poll(() => tabs.evaluate(element => {
     const top = element.getBoundingClientRect().top;
     const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);
     return Math.abs(top - 20) <= 2 || (top > 20 && remaining <= 2);
   })).toBe(true);
-  await expect(page.getByRole('tabpanel')).toHaveCSS('min-height', '0px');
+  await expect(page.locator('.node-page .comments-controls')).toHaveCSS('min-height', '0px');
 });
 
 
@@ -160,6 +163,7 @@ test('comment votes change, undo, retain server totals and recover from failed w
     return route.fulfill({ status: 204 });
   });
   await page.goto(story);
+  await page.getByRole('button', { name: 'Comments (3)', exact: true }).click();
   const voting = page.locator(`article[data-comment-id="${first}"]`).getByRole('group', { name: 'Comment voting', exact: true });
   await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('20');
   await voting.getByRole('button', { name: 'Upvote comment' }).click();

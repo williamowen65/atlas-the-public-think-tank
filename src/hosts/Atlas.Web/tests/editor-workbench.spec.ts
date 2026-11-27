@@ -243,8 +243,11 @@ test('phone-width selected image and text use the same full-width highlight', as
   const root = page.locator('.atlas-story-rich-document');
   const first = root.locator(':scope > .atlas-story-text[data-atlas-key="intro"]');
   const image = root.locator(':scope > .atlas-story-figure[data-atlas-key="public-square"]');
-  await image.click();
-  await expect(image).toHaveClass(/atlas-story-active-block/);
+  // Select the image after the inserted text's focus/selection update has settled.
+  await expect(async () => {
+    await image.click();
+    await expect(image).toHaveClass(/atlas-story-active-block/, { timeout: 500 });
+  }).toPass({ timeout: 5000 });
   await expect(first).not.toHaveClass(/atlas-story-active-block/);
   const geometry = await page.evaluate(() => {
     const root = document.querySelector('.atlas-story-rich-document');

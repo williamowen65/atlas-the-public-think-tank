@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright';
+import { analyzeAccessibility } from './helpers/accessibility';
 import { expect, test } from '@playwright/test';
 
 const story = (id: string, globals = '') =>
@@ -72,7 +72,7 @@ for (const id of ['styles-and-layout-typography--playground', 'components-voting
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--atlas-space').trim())).toBe('.5rem');
-    const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
+    const results = await analyzeAccessibility(page, '#storybook-root');
     expect(results.violations).toEqual([]);
   });
 }

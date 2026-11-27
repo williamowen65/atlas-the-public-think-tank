@@ -185,7 +185,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 /** Parent/type filters must survive all five pages; each response adds exactly three cards. */
-test('node contribution tab pages fifteen children in scoped groups of three', async ({ page }) => {
+test('node contribution filter pages fifteen children in scoped groups of three', async ({ page }) => {
   // Manual loading makes page boundaries deterministic instead of viewport-dependent.
   await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }); });
   const parent = 'b1000000-0000-4000-8000-000000000201';
@@ -199,9 +199,10 @@ test('node contribution tab pages fifteen children in scoped groups of three', a
     if (url.pathname.endsWith('/nodes/' + parent)) return route.fulfill({ json: { id: parent, requestedTypeIds: [solution] } });
     if (url.searchParams.has('ParentNodeId')) {
       expect(url.searchParams.get('ParentNodeId')).toBe(parent);
-      expect(url.searchParams.get('NodeTypeId')).toBe(solution);
+      const filter = url.searchParams.get('NodeTypeId');
+      if (filter) expect(filter).toBe(solution);
       const current = Number(url.searchParams.get('Page'));
-      pages.push(current);
+      if (filter) pages.push(current);
       const items = Array.from({ length: 3 }, (_, i) => {
         const item = entry(400 + (current - 1) * 3 + i + 1);
         return { ...item, card: { ...item.card, typeName: 'Solution' } };
@@ -212,8 +213,9 @@ test('node contribution tab pages fifteen children in scoped groups of three', a
     return route.fulfill({ json: { items: [{ ...item, nodeId: parent, card: { ...item.card, title: 'Orca recovery', childTypes: [{ typeId: solution, count: 15, label: '15 Solutions' }] } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story&args=nodeId:' + parent);
-  await page.getByRole('tab', { name: '15 Solutions', exact: true }).click();
-  const panel = page.getByRole('tabpanel');
+  const filter = page.locator('.subnode-toolbar select');
+  await filter.selectOption(solution);
+  const panel = page.locator('.external-subnodes .node-feed');
   await expect(panel.locator('article')).toHaveCount(3);
   for (let current = 2; current <= 5; current++) {
     await panel.getByRole('button', { name: 'Load more nodes', exact: true }).click();
@@ -222,8 +224,11 @@ test('node contribution tab pages fifteen children in scoped groups of three', a
   await expect(panel.locator('.feed-tail').getByRole('status')).toContainText('caught up');
   await expect(panel.getByRole('button', { name: 'Load more nodes', exact: true })).toHaveCount(0);
   expect(pages).toEqual([1, 2, 3, 4, 5]);
-  await page.getByRole('tab', { name: '0 Comments', exact: true }).click();
-  await page.getByRole('tab', { name: '15 Solutions', exact: true }).click();
+  await page.locator('.node-page').getByRole('button', { name: /Comments \(/ }).click();
+  await expect(panel.locator('article')).toHaveCount(15);
+  await expect(page.locator('.comments-controls')).toBeVisible();
+  await filter.selectOption('subnodes');
+  await filter.selectOption(solution);
   await expect(panel.locator('article')).toHaveCount(3);
   expect(pages).toEqual([1, 2, 3, 4, 5, 1]);
 });
