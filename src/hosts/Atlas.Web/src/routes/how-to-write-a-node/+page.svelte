@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import { readTypes, type NodeType } from '$lib/api/nodePage';
+  import { customNodeTypeDescription, readTypes, type NodeType } from '$lib/api/nodePage';
 
   const controller = new AbortController();
   let types = $state<NodeType[]>();
@@ -33,7 +33,7 @@
       if (event.currentTarget.open) void loadTypes();
     }}>
       <summary>Explore Node Types</summary>
-      {#if types?.length}
+      {#if types}
         <dl>
           {#each types as type (type.id)}
             <div>
@@ -41,9 +41,11 @@
               {#if type.description}<dd>{type.description}</dd>{/if}
             </div>
           {/each}
+          <div class="custom-type">
+            <dt>Define a new node type</dt>
+            <dd>{customNodeTypeDescription}</dd>
+          </div>
         </dl>
-      {:else if types}
-        <p>No node types are available.</p>
       {:else if typesError}
         <p role="alert">Could not load node types.</p>
         <button type="button" onclick={loadTypes}>Retry</button>
@@ -134,6 +136,7 @@
   .type-catalog summary { cursor: pointer; font-weight: 600; }
   .type-catalog dl { margin: .65rem 0 0; max-height: 18rem; overflow: auto; }
   .type-catalog dl > div { padding: .45rem .25rem; border-top: 1px solid var(--atlas-border); }
+  .type-catalog .custom-type dt { color: var(--atlas-accent); }
   .type-catalog dt { font-weight: 600; }
   .type-catalog dd { margin: .15rem 0 0; color: var(--atlas-muted); }
   .tree-diagram {

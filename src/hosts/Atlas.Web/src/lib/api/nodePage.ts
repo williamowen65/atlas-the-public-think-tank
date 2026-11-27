@@ -1,3 +1,6 @@
+export const customNodeTypeDescription =
+  'Give any kind of contribution its own type. Choose a name and explain what the type is for.';
+
 /** Catalog entry used by search filters, creation choices and labels. */
 export interface NodeType {
   /** Stable identifier of this record. */

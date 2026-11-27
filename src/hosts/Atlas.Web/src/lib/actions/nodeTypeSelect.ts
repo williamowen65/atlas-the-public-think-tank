@@ -2,6 +2,7 @@ import $ from 'jquery';
 import installSelect2 from 'select2';
 import 'select2/dist/css/select2.css';
 import './nodeTypeSelect.css';
+import { customNodeTypeDescription } from '../api/nodePage';
 
 type Settings = {
   label: string;
@@ -19,9 +20,12 @@ export function nodeTypeSelect(element: HTMLSelectElement, settings: Settings) {
     dropdownCssClass: 'atlas-node-type-results',
     templateResult(option) {
       const optionElement = (option as { element?: HTMLOptionElement }).element;
-      const description = optionElement?.dataset.description;
+      const isCustomType = optionElement?.value === 'new';
+      const description = isCustomType ? customNodeTypeDescription : optionElement?.dataset.description;
       if (!description) return option.text;
-      return $('<div>').append(
+      const result = $('<div>').addClass('atlas-node-type-result');
+      if (isCustomType) result.addClass('atlas-custom-node-type');
+      return result.append(
         $('<strong>').text(option.text),
         $('<div>').addClass('atlas-node-type-description').text(description),
       );

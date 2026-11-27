@@ -78,6 +78,7 @@ for (const environment of ['storybook', 'spa']) {
       await chooser.click();
       const ideaOption = page.getByRole('option', { name: /Idea A proposed concept or possibility/ });
       await expect(ideaOption).toBeVisible();
+      await expect(page.getByRole('option', { name: /Define a new node type.*Give any kind of contribution/ })).toBeVisible();
       await ideaOption.click();
       await expect(chooser).toHaveCount(0);
     }
@@ -115,6 +116,9 @@ test('the node writing guide is public and explains splitting and placement', as
   await expect(page.getByRole('figure', { name: 'A root node has two child nodes, and one child has a child of its own' })).toBeVisible();
   await page.getByText('Explore Node Types', { exact: true }).click();
   await expect(page.getByText('A proposed concept or possibility.', { exact: true })).toBeVisible();
+  const lastType = page.locator('.type-catalog dl > div').last();
+  await expect(lastType).toContainText('Define a new node type');
+  await expect(lastType).toContainText('Give any kind of contribution its own type.');
   await expect(page.getByRole('main').getByRole('combobox')).toHaveCount(0);
   const lesson = page.getByRole('region', { name: 'Give each idea its own node' });
   await expect(lesson.getByRole('heading', { name: 'Avoid bundling ideas' })).toBeVisible();
