@@ -281,9 +281,13 @@ test('all-types child creation waits for an explicit choice and preserves a draf
   await page.goto(`http://127.0.0.1:4173/nodes?id=${parent}`);
   await page.locator('.subnode-toolbar').getByRole('button', { name: 'Add a child node', exact: true }).click();
   const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
-  await expect(page.locator('.subnode-toolbar select[data-node-type-select]')).toHaveValue('');
+  const nativeChooser = page.locator('.subnode-toolbar select[data-node-type-select]');
+  await expect(nativeChooser).toHaveValue('');
+  await expect(nativeChooser.locator('xpath=ancestor::label')).toHaveCount(0);
   await expect(page.getByRole('form', { name: 'Create child node' })).toHaveCount(0);
   await chooser.click();
+  await expect(chooser).toHaveAttribute('aria-expanded', 'true');
+  await expect(nativeChooser).not.toBeFocused();
   await page.getByRole('option', { name: /Idea A proposed concept or possibility/ }).click();
   await expect(chooser).toHaveCount(0);
   const form = page.getByRole('form', { name: 'Create child node' });
