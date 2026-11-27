@@ -220,7 +220,7 @@
         >Load previous nodes</button
       >
     </div>{/if}
-  <ul aria-label="Nodes" class:connected>
+  <ul aria-label="Nodes" class:connected class:mini-feed={presentation === 'mini'}>
     {#each items as item (item.node.id)}
       <!--
         Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
@@ -262,7 +262,7 @@
     This wrapper is also the intersection-observer target for automatic loading; the button
     remains the manual/retry path.
   -->
-  <div class="feed-tail" bind:this={tail}>
+  <div class="feed-tail" class:mini-tail={presentation === 'mini'} bind:this={tail}>
     {#if error}<p role={errorRole}>{error}</p>{/if}
     {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}
       <div class="empty-invitation">
@@ -333,6 +333,22 @@
     inset-block-start: 1.4rem; inline-size: calc(var(--branch-gutter) - 2px);
     border-block-start: 2px solid var(--branch-color);
   }
+  ul.connected.mini-feed {
+    --mini-branch-gap: .75rem;
+    --mini-branch-anchor: 1.1rem;
+    gap: var(--mini-branch-gap);
+  }
+  ul.connected.mini-feed > li::before { inset-block-end: calc(-1 * var(--mini-branch-gap)); }
+  ul.connected.mini-feed > li:last-child::before {
+    inset-block-end: auto; block-size: var(--mini-branch-anchor);
+  }
+  ul.connected.mini-feed > li:only-child::before {
+    block-size: calc(var(--mini-branch-anchor) + .6rem);
+  }
+  ul.connected.mini-feed > li::after { inset-block-start: var(--mini-branch-anchor); }
+  .mini-tail { font-size: .8rem; }
+  .feed-tail.mini-tail { padding: .65rem .25rem .15rem; }
+  .mini-tail p { margin: .2rem 0; }
   .feed-tail {
     text-align: center;
     padding: 1.5rem 0.5rem;
