@@ -44,6 +44,8 @@
     parentId,
     parentTitle,
     initialTypeId,
+    externalTypeId,
+    onSubmittingChange,
     breadcrumb = [],
     hideBreadcrumb = false,
     focusOnMount = false,
@@ -61,6 +63,9 @@
     parentTitle?: string;
     /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** Optional controlled type from the inline creation toolbar. */
+    externalTypeId?: string;
+    onSubmittingChange?: (busy: boolean) => void;
     /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
     /** Suppress duplicate visual ancestry without dropping saved draft context. */
@@ -117,6 +122,7 @@
    * Whether custom-type/node creation is underway; locks draft controls.
    */
   let submitting = $state(false);
+  $effect(() => { onSubmittingChange?.(submitting); });
   /**
    * Creation failure displayed while retaining the draft for retry.
    */
@@ -427,6 +433,7 @@
           parentId={savedDraft?.parentId ?? parentId}
           parentTitle={savedParentTitle ?? parentTitle}
           {initialTypeId}
+          {externalTypeId}
           breadcrumb={savedBreadcrumb ?? breadcrumb}
           {hideBreadcrumb}
           initialDraft={savedDraft}
