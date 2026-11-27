@@ -8,9 +8,9 @@ test('footer links reach the public help, feedback, and policy pages', async ({ 
   for (const [link, path, heading] of [
     ['How to Write a Node', '/how-to-write-a-node', 'How to Write a Node'],
     ['Give feedback', '/feedback', 'Give feedback'],
-    ['Support Atlas', '/support', 'Help & Support'],
-    ['Help & support', '/support#help', 'Help & Support'],
-    ['Donate', '/support#donate', 'Help & Support'],
+    ['Support Atlas', '/support', 'Support Atlas'],
+    ['Help & support', '/help', 'Help & Support'],
+    ['Donate', '/support#donate', 'Support Atlas'],
     ['Privacy policy', '/privacy', 'Privacy policy'],
     ['Terms of use', '/terms', 'Terms of use'],
   ]) {
@@ -29,8 +29,11 @@ test('feedback has a private bug channel and a public contribution path', async 
   await page.route('**/atlas-public-api/**', route => route.fulfill({ json: [] }));
   await page.goto('/feedback');
   const bugs = page.getByRole('region', { name: 'Something broke' });
-  await expect(bugs.getByRole('link', { name: 'Email a bug report' }))
+  await expect(bugs.getByRole('link', { name: 'atlas@thepublicthinktank.com' }))
     .toHaveAttribute('href', /^mailto:/);
+  await expect(bugs.getByRole('link', { name: 'Submit a bug report on GitHub' }))
+    .toHaveAttribute('href', /\/issues\/new\?template=bug_report\.yml$/);
+  await expect(bugs).toContainText('How can we reproduce it?');
   const ideas = page.getByRole('region', { name: 'Help shape Atlas' });
   await expect(ideas.getByRole('link', { name: 'start a discussion' })).toHaveAttribute('href', '/new');
 });

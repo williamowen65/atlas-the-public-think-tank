@@ -18,11 +18,6 @@
   <p>Adding a pin is optional. If you add one, the public globe shows an approximate location without your account name. You can choose a location manually or ask your browser to share one.</p>
 </section>
 
-<section aria-labelledby="operation">
-  <h2 id="operation">Operating the site</h2>
-  <p>Atlas uses cookies for sign-in and to protect account actions. Technical logs help diagnose errors and keep the site running. If you email us, we use the information you send to respond to your request.</p>
-</section>
-
 <section aria-labelledby="contact">
   <h2 id="contact">Privacy questions</h2>
   <p>For questions about your information, including requests about access or removal, <a href="mailto:atlas@thepublicthinktank.com?subject=Atlas%20privacy%20question">email Atlas</a>.</p>

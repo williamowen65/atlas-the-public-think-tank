@@ -15,7 +15,7 @@
 
 <section aria-labelledby="moderation">
   <h2 id="moderation">Moderation</h2>
-  <p>Atlas may hide content or restrict access when someone misuses the site. Use <strong>Report node</strong> to flag a contribution for review. For help with an account or a moderation question, visit <a href="/support#help">Help &amp; Support</a>.</p>
+  <p>Atlas may hide content or restrict access when someone misuses the site. Use <strong>Report node</strong> to flag a contribution for review. For help with an account or a moderation question, visit <a href="/help">Help &amp; Support</a>.</p>
 </section>
 
 <section aria-labelledby="availability">

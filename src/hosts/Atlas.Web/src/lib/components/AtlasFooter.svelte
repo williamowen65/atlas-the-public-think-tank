@@ -46,7 +46,7 @@
     {
       title: 'Help & legal',
       links: [
-        { text: 'Help & support', href: '/support#help' },
+        { text: 'Help & support', href: '/help' },
         { text: 'Privacy policy', href: '/privacy' },
         { text: 'Terms of use', href: '/terms' },
       ],

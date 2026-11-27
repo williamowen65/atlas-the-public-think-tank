@@ -12,8 +12,20 @@
 
 <section aria-labelledby="bug">
   <h2 id="bug">Something broke</h2>
-  <p>Tell us which page you were on, what you tried, and what happened. If it’s a sign-in or account problem, email us and leave out passwords and sign-in codes.</p>
-  <p><a href="mailto:atlas@thepublicthinktank.com?subject=Atlas%20bug%20report">Email a bug report</a></p>
+  <p><a href="https://github.com/williamowen65/atlas-the-public-think-tank/issues/new?template=bug_report.yml">Submit a bug report on GitHub</a>. GitHub requires an account, and reports there are public.</p>
+  <p>You can also email <a href="mailto:atlas@thepublicthinktank.com?subject=Atlas%20bug%20report">atlas@thepublicthinktank.com</a>. Use email for account or sign-in problems.</p>
+  <h3>What to include</h3>
+  <ul>
+    <li><strong>Short title</strong> that identifies the problem.</li>
+    <li><strong>What happened?</strong> Describe the problem and its impact.</li>
+    <li><strong>What should happen?</strong> Describe the expected result.</li>
+    <li><strong>How can we reproduce it?</strong> List the steps and any inputs needed.</li>
+    <li><strong>Affected areas</strong> such as Discovery, voting, or comments. Include the page URL if you have it.</li>
+    <li><strong>Environment</strong> including your device, operating system, browser, and whether you were using live or demo.</li>
+    <li><strong>Evidence</strong> such as screenshots or error messages, if available.</li>
+    <li><strong>Suggested verification</strong> if you have an idea for how to tell that the fix worked.</li>
+  </ul>
+  <p>Remove passwords, sign-in codes, and personal information from your report and attachments.</p>
 </section>
 
 <section aria-labelledby="ideas">
@@ -22,7 +34,6 @@
   {#if feedbackNode}
     <p><a href={feedbackNode}>Open the Atlas feedback discussion</a>. Use <strong>Add a child node</strong> to suggest one improvement at a time, or build on an existing suggestion.</p>
   {:else}
-    <p><a href="/">Browse Discovery</a> for a discussion about Atlas and add a child node where your idea fits. You can also <a href="/new">start a discussion</a> about your suggestion.</p>
+    <p>We plan to link to the Atlas discussion and community here when they’re ready. In the meantime, you can <a href="/new">start a discussion</a> about your suggestion.</p>
   {/if}
-  <p><a href="/how-to-write-a-node">How to Write a Node</a></p>
 </section>

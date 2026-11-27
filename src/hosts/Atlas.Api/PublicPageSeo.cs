@@ -330,7 +330,7 @@ internal sealed class PublicPageSeo(IConfiguration configuration)
 
     private static bool IsClientRoute(string path) =>
         RequiresSignIn(path) || path is "/" or "/about" or "/share" or "/communities" or "/components"
-        or "/how-to-write-a-node" or "/feedback" or "/support" or "/privacy" or "/terms"
+        or "/how-to-write-a-node" or "/feedback" or "/help" or "/support" or "/privacy" or "/terms"
         or "/login" or "/new" or "/nodes" or "/profiles" or "/register"
         or "/confirm-email" or "/forgot-password" or "/reset-password"
         || path.StartsWith("/communities/", StringComparison.Ordinal);
