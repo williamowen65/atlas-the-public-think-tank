@@ -88,6 +88,10 @@ export type NodeCardPresentation =
 export interface NodeCardProps {
   /** Presentation data for one node; follow the NodeCardData type definition for its fields. */
   node: NodeCardData;
+  /** Live compact cards may open discussion locally; relationship previews stay bounded. */
+  inlineRelationships?: boolean;
+  /** The surrounding feed already establishes this card's parent relationship. */
+  relationshipContext?: boolean;
   /**
    * Renderable snippet that replaces the card’s built-in VotingDial. Supply LiveVotingDial here
    * for API-backed voting; otherwise the built-in dial reports selections through onVote.
