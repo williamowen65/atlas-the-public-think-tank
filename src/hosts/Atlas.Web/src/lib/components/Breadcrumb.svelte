@@ -731,7 +731,7 @@
       display: block;
       position: static;
       width: 2px;
-      height: 1rem;
+      height: 0.75rem;
       margin-inline: auto;
       background: var(--connection-color);
       clip-path: none;
