@@ -45,8 +45,10 @@
     "@tiptap/pm": "^3.10.0",
     "@tiptap/starter-kit": "^3.10.0",
     "@types/d3-geo": "^3.1.1",
+    "@types/jquery": "^3.5.34",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^24.19.2",
+    "@types/select2": "^4.0.63",
     "concurrently": "^10.0.6",
     "msw": "^3.0.3",
     "prettier": "^3.9.10",
@@ -60,7 +62,9 @@
   },
   "dependencies": {
     "d3-geo": "^3.1.2",
-    "markdown-it": "^15.0.3"
+    "jquery": "^3.8.0",
+    "markdown-it": "^15.0.3",
+    "select2": "^4.1.0-rc.0"
   },
   "msw": {
     "workerDirectory": [

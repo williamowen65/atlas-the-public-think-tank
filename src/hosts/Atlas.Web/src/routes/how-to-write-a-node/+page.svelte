@@ -1,9 +1,56 @@
+<script lang="ts">
+  import { onDestroy } from 'svelte';
+  import { readTypes, type NodeType } from '$lib/api/nodePage';
+
+  const controller = new AbortController();
+  let types = $state<NodeType[]>();
+  let loadingTypes = $state(false);
+  let typesError = $state(false);
+
+  async function loadTypes() {
+    if (types || loadingTypes) return;
+    loadingTypes = true;
+    typesError = false;
+    try {
+      types = await readTypes('/atlas-public-api', controller.signal);
+    } catch {
+      if (!controller.signal.aborted) typesError = true;
+    } finally {
+      loadingTypes = false;
+    }
+  }
+
+  onDestroy(() => controller.abort());
+</script>
+
 <svelte:head><title>How to Write a Node · Atlas</title></svelte:head>
 
 <div class="guide">
   <header>
     <h1>How to Write a Node</h1>
     <p>On Atlas, a node is a contribution to a discussion. It can be anything you want to share, from a question or an idea to an observation or a photo. Pick a type that fits, or define your own.</p>
+    <details class="type-catalog" ontoggle={(event) => {
+      if (event.currentTarget.open) void loadTypes();
+    }}>
+      <summary>Explore Node Types</summary>
+      {#if types?.length}
+        <dl>
+          {#each types as type (type.id)}
+            <div>
+              <dt>{type.name}</dt>
+              {#if type.description}<dd>{type.description}</dd>{/if}
+            </div>
+          {/each}
+        </dl>
+      {:else if types}
+        <p>No node types are available.</p>
+      {:else if typesError}
+        <p role="alert">Could not load node types.</p>
+        <button type="button" onclick={loadTypes}>Retry</button>
+      {:else if loadingTypes}
+        <p role="status">Loading node types…</p>
+      {/if}
+    </details>
   </header>
 
   <figure class="tree-diagram" aria-label="A root node has two child nodes, and one child has a child of its own">
@@ -78,6 +125,17 @@
   }
   header, section, .creation-options > div, .comparison > div { display: grid; align-content: start; gap: .75rem; min-width: 0; }
   h1, h2, h3, p, ol, figure { margin: 0; }
+  .type-catalog {
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    padding: .65rem .8rem;
+    background: var(--atlas-surface);
+  }
+  .type-catalog summary { cursor: pointer; font-weight: 600; }
+  .type-catalog dl { margin: .65rem 0 0; max-height: 18rem; overflow: auto; }
+  .type-catalog dl > div { padding: .45rem .25rem; border-top: 1px solid var(--atlas-border); }
+  .type-catalog dt { font-weight: 600; }
+  .type-catalog dd { margin: .15rem 0 0; color: var(--atlas-muted); }
   .tree-diagram {
     max-width: 25rem;
     width: 100%;

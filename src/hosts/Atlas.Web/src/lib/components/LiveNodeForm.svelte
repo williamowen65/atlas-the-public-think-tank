@@ -463,6 +463,7 @@
           initialDraft={savedDraft}
           {focusOnMount}
           {submitting}
+          typeSelectionDisabled={!participantId}
           onPreview={(draft) => {
             currentDraft = draft;
             onDraftChange?.(draft);

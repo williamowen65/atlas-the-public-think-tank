@@ -45,6 +45,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import { nodeTypeSelect } from '../actions/nodeTypeSelect';
   import CopyNodeLink from "./CopyNodeLink.svelte";
   import { relativeDate } from '../format/relativeDate';
   import NodeEditControl from './NodeEditControl.svelte';
@@ -376,10 +377,11 @@
       {#if childFormOpen}
         <label class="child-filter create-type">
           <strong>Choose a node type:</strong>
-          <select aria-label="Choose a node type" value={createTypeSelection} required
+          <select aria-label="Choose a node type" data-node-type-select
+            use:nodeTypeSelect={{ label: 'Choose a node type', value: createTypeSelection }} value={createTypeSelection} required
             disabled={childFormBusy} onchange={(event) => onCreateTypeChange?.(event.currentTarget.value)}>
             <option value="" disabled>Select a node type…</option>
-            {#each types as type (type.id)}<option value={type.id}>{type.name}</option>{/each}
+            {#each types as type (type.id)}<option value={type.id} data-description={type.description}>{type.name}</option>{/each}
             <option value="new">Define a new node type…</option>
           </select>
         </label>

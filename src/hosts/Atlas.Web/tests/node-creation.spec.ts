@@ -14,7 +14,7 @@ async function setup(page: Page, initiallySignedIn = false) {
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.searchParams.has('ParentNodeId')) return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
-    if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [{ id: idea, name: 'Idea', pluralName: 'Ideas' }] });
+    if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [{ id: idea, name: 'Idea', pluralName: 'Ideas', description: 'A proposed concept or possibility.' }] });
     if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/communities'))
       return route.fulfill({ json: communityIds.map((id, i) => ({ id, name: `Community ${i + 1}`, status: 'Active' })) });
@@ -70,13 +70,15 @@ for (const environment of ['storybook', 'spa']) {
       await expect(page).toHaveURL('http://127.0.0.1:4173/new');
       await expect(page.getByRole('heading', { name: 'Create a root node' })).toBeVisible();
       const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
-      await expect(chooser).toHaveValue('');
+      await expect(page.locator('#standalone-node-type')).toHaveValue('');
       const guideLink = page.getByRole('main').getByRole('link', { name: 'How to Write a Node' });
       await expect(guideLink).toHaveAttribute('href', '/how-to-write-a-node');
-      await page.getByText('See node type examples', { exact: true }).click();
-      await expect(page.getByText('Add swings at the playground.', { exact: true })).toBeVisible();
+
       await expect(page.getByRole('form', { name: 'Create root node' })).toHaveCount(0);
-      await chooser.selectOption(idea);
+      await chooser.click();
+      const ideaOption = page.getByRole('option', { name: /Idea A proposed concept or possibility/ });
+      await expect(ideaOption).toBeVisible();
+      await ideaOption.click();
       await expect(chooser).toHaveCount(0);
     }
     await fill(page);
@@ -111,6 +113,9 @@ test('the node writing guide is public and explains splitting and placement', as
   await page.goto('/how-to-write-a-node');
   await expect(page.getByRole('heading', { name: 'How to Write a Node' })).toBeVisible();
   await expect(page.getByRole('figure', { name: 'A root node has two child nodes, and one child has a child of its own' })).toBeVisible();
+  await page.getByText('Explore Node Types', { exact: true }).click();
+  await expect(page.getByText('A proposed concept or possibility.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveCount(0);
   const lesson = page.getByRole('region', { name: 'Give each idea its own node' });
   await expect(lesson.getByRole('heading', { name: 'Avoid bundling ideas' })).toBeVisible();
   await expect(lesson.getByRole('heading', { name: 'Give each idea a branch' })).toBeVisible();
@@ -132,7 +137,7 @@ test('child creation keeps parent and selected type through sign-in', async ({ p
   await expect(page.getByRole('combobox', { name: 'Choose a node type', exact: true })).toHaveCount(0);
   await expect(page.getByRole('form', { name: 'Create child node' })).toHaveCount(0);
   await login(page);
-  await expect(page.getByLabel('Node type', { exact: true })).toHaveValue(idea);
+  await expect(page.locator('select[data-node-type-select][aria-label="Node type"]')).toHaveValue(idea);
   await expect(page.getByRole('form', { name: 'Create child node' }).getByRole('navigation')).toHaveCount(0);
   await expect(page.getByRole('form', { name: 'Create child node' }).locator('.byline')).toContainText('Currently creating a draft');
   await fill(page); await page.getByRole('button', { name: 'Create node', exact: true }).click();
@@ -143,7 +148,7 @@ test('child creation keeps parent and selected type through sign-in', async ({ p
 test('custom type creation is reused on a failed node retry and the draft remains intact', async ({ page }) => {
   const fixture = await setup(page, true); fixture.fail(true);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story');
-  await fill(page); await page.getByLabel('Node type', { exact: true }).selectOption('new');
+  await fill(page); await page.locator('select[data-node-type-select][aria-label="Node type"]').selectOption('new', { force: true });
   await page.getByLabel('Type name', { exact: true }).fill('Evidence');
   await page.getByRole('checkbox', { name: 'Automatically pluralize this type', exact: true }).uncheck();
   await page.getByRole('button', { name: 'Create node', exact: true }).click();
@@ -160,7 +165,7 @@ test('custom type creation is reused on a failed node retry and the draft remain
 test('create explains missing fields before sending a request', async ({ page }) => {
   const { writes } = await setup(page, true);
   await page.goto('http://127.0.0.1:4173/new');
-  await page.getByRole('combobox', { name: 'Choose a node type', exact: true }).selectOption(idea);
+  await page.locator('#standalone-node-type').selectOption(idea, { force: true });
   const create = page.getByRole('button', { name: 'Create node', exact: true });
   await create.click();
   await expect(page.getByRole('alert')).toHaveText('Enter a node title.');
@@ -174,7 +179,7 @@ test('create explains missing fields before sending a request', async ({ page })
 test('an incomplete node can be saved privately but needs 200 characters to publish', async ({ page }) => {
   const { writes } = await setup(page, true);
   await page.goto('http://127.0.0.1:4173/new');
-  await page.getByRole('combobox', { name: 'Choose a node type', exact: true }).selectOption(idea);
+  await page.locator('#standalone-node-type').selectOption(idea, { force: true });
   await page.getByLabel('Title', { exact: true }).fill('A short draft');
   const create = page.getByRole('button', { name: 'Create node', exact: true });
   await create.click();
@@ -191,7 +196,7 @@ test('a photo missing alt text is flagged before publishing', async ({ page }) =
   const { writes } = await setup(page, true);
   await page.route('https://example.test/photo.jpg', route => route.abort());
   await page.goto('http://127.0.0.1:4173/new');
-  await page.getByRole('combobox', { name: 'Choose a node type', exact: true }).selectOption(idea);
+  await page.locator('#standalone-node-type').selectOption(idea, { force: true });
   await fill(page);
   await page.getByRole('button', { name: 'Add section', exact: true }).click();
   await page.getByRole('button', { name: 'Add this layout' }).click();
@@ -216,7 +221,7 @@ test('editor controls fit the available viewport and close on an outside click',
   await setup(page, true);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('http://127.0.0.1:4173/new');
-  await page.getByRole('combobox', { name: 'Choose a node type', exact: true }).selectOption(idea);
+  await page.locator('#standalone-node-type').selectOption(idea, { force: true });
   const toggle = page.getByRole('button', { name: 'Editor settings' });
   const sidebar = page.getByRole('complementary', { name: 'Editor controls' });
   await toggle.click();
@@ -243,7 +248,7 @@ test('editor controls fit the available viewport and close on an outside click',
 test('feed presentation skips an empty opening section and saves a deliberate title-only choice', async ({ page }) => {
   const { writes } = await setup(page, true);
   await page.goto('http://127.0.0.1:4173/new');
-  await page.getByRole('combobox', { name: 'Choose a node type', exact: true }).selectOption(idea);
+  await page.locator('#standalone-node-type').selectOption(idea, { force: true });
   await page.getByLabel('Title', { exact: true }).fill('A feed presentation example');
   await page.getByRole('button', { name: 'Add section', exact: true }).click();
   await page.getByRole('button', { name: 'Add this layout' }).click();
@@ -276,17 +281,19 @@ test('all-types child creation waits for an explicit choice and preserves a draf
   await page.goto(`http://127.0.0.1:4173/nodes?id=${parent}`);
   await page.locator('.subnode-toolbar').getByRole('button', { name: 'Add a child node', exact: true }).click();
   const chooser = page.getByRole('combobox', { name: 'Choose a node type', exact: true });
-  await expect(chooser).toHaveValue('');
+  await expect(page.locator('.subnode-toolbar select[data-node-type-select]')).toHaveValue('');
   await expect(page.getByRole('form', { name: 'Create child node' })).toHaveCount(0);
-  await chooser.selectOption(idea);
+  await chooser.click();
+  await page.getByRole('option', { name: /Idea A proposed concept or possibility/ }).click();
   await expect(chooser).toHaveCount(0);
   const form = page.getByRole('form', { name: 'Create child node' });
-  await expect(form.getByRole('combobox', { name: 'Node type', exact: true })).toHaveValue(idea);
+  await expect(form.locator('select[data-node-type-select]')).toHaveValue(idea);
   await form.getByLabel('Title', { exact: true }).fill('Keep my draft');
-  await form.getByRole('combobox', { name: 'Node type', exact: true }).selectOption('new');
+  await form.getByRole('combobox', { name: 'Node type', exact: true }).click();
+  await page.getByRole('option', { name: /Define a new node type/ }).click();
   await expect(form.getByLabel('Type name', { exact: true })).toBeVisible();
   await expect(form.getByLabel('Title', { exact: true })).toHaveValue('Keep my draft');
-  await form.getByRole('combobox', { name: 'Node type', exact: true }).selectOption(idea);
+  await form.locator('select[data-node-type-select]').selectOption(idea, { force: true });
   await expect(form.getByLabel('Title', { exact: true })).toHaveValue('Keep my draft');
   await page.getByRole('button', { name: 'Close subnode form', exact: true }).click();
   await expect(form).toHaveCount(0);
