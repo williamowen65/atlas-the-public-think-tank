@@ -42,6 +42,7 @@
   import type { Snippet } from 'svelte';
   import type { ContentBlock } from '../../api/nodePage';
   import FeedBlockPreview from '../FeedBlockPreview.svelte';
+  import CommentsPanel from '../CommentsPanel.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -49,9 +50,14 @@
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
   let detailsOpen = $state(false);
+  let discussion = $state<'comments' | 'subnodes' | null>(null);
+  let childFilter = $state('');
+  let addedComments = $state(0);
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
     mobileLayout = false,
+    inlineRelationships = false,
+    relationshipContext = false,
     cornerControl,
     headerFields,
     authoringBody,
@@ -87,6 +93,13 @@
     draft?: boolean;
   } = $props();
   const instance = $props.id();
+  const childCount = $derived((node.childTypes ?? []).reduce((sum, child) => sum + child.count, 0));
+  function openRelated(id: string, type?: string) {
+    if (type === 'comments' && onComments) onComments(id);
+    else if (type && onChildType) onChildType(id, type);
+    else if (onReadMore) onReadMore(id);
+    else window.location.assign('/nodes?id=' + encodeURIComponent(id) + (type ? '&type=' + encodeURIComponent(type) + '#contributions' : ''));
+  }
   // Prefer structured contribution types; use the text summary only for older projections.
   /**
    * Display-only connection summaries from legacy text and related-node titles, separate
@@ -105,7 +118,7 @@
   description’s corner, with reactions and discussion links below.
 -->
 
-{#if !headerFields && !draft && !node.isHidden}
+{#if !headerFields && !draft && !node.isHidden && !relationshipContext}
   <Breadcrumb expandable connectedCards items={node.breadcrumb} originId={node.id}
     {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} />
 {/if}
@@ -180,6 +193,16 @@
     <div class="card-details" class:details-open={detailsOpen} id={`${instance}-details`}>
       {@render reactions()}
       <div class="navigation-details">
+        {#if inlineRelationships && !draft && !node.isHidden}
+          <button type="button" class="text-action discussion-action" aria-expanded={discussion === 'comments' && detailsOpen}
+            onclick={() => discussion = discussion === 'comments' ? null : 'comments'}>
+            {node.commentCount + addedComments} {node.commentCount + addedComments === 1 ? 'Comment' : 'Comments'}
+          </button>
+          <button type="button" class="text-action discussion-action" aria-expanded={discussion === 'subnodes' && detailsOpen}
+            onclick={() => discussion = discussion === 'subnodes' ? null : 'subnodes'}>
+            {childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}
+          </button>
+        {:else}
         {@render comments()}
         {#each node.childTypes ?? [] as contribution}<span
             class="navigation-separator"
@@ -192,10 +215,37 @@
           >{/each}
         {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span
           ><span class="text-action connection-summary">{label}</span>{/each}
+        {/if}
       </div>
     </div>
   {/if}
 </article>
+{#if inlineRelationships && !draft && !node.isHidden && !authoringBody && detailsOpen && discussion}
+  <div class="inline-discussion">
+    {#if discussion === 'comments'}
+      <CommentsPanel nodeId={node.id} {apiBase} onAdded={() => addedComments++} />
+    {:else}
+      <label class="inline-filter">Node type
+        <select bind:value={childFilter}>
+          <option value="">All types</option>
+          {#each node.childTypes ?? [] as type (type.typeId)}
+            <option value={type.typeId}>{type.label}</option>
+          {/each}
+        </select>
+      </label>
+      {#key childFilter}
+        {#await import('../LiveNodeFeed.svelte')}
+          <p role="status">Loading subnodes…</p>
+        {:then { default: ChildFeed }}
+          <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
+            {onOpenProfile} onOpenNode={openRelated} connected inline />
+        {:catch}
+          <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>
+        {/await}
+      {/key}
+    {/if}
+  </div>
+{/if}
 
 {#snippet detailsToggle()}
   <button class="details-toggle" type="button" aria-expanded={detailsOpen} aria-controls={`${instance}-details`}
@@ -260,6 +310,22 @@
 {/snippet}
 
 <style lang="scss">
+  .inline-discussion {
+    margin-block-start: .65rem;
+    min-width: 0;
+  }
+  .inline-filter {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    padding: .5rem 0 .75rem; color: var(--atlas-muted); font-size: .9rem;
+  }
+  .inline-filter select, .discussion-action {
+    font: inherit; max-width: 100%; min-height: 2.25rem;
+    color: var(--atlas-text); background: var(--atlas-surface);
+    border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); padding: .3rem .65rem;
+  }
+  .navigation-details .discussion-action[aria-expanded="true"] {
+    border-color: var(--atlas-accent); color: var(--atlas-accent);
+  }
   .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
   .hidden-edit-link:hover { color: var(--atlas-accent); }
 
