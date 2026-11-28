@@ -54,7 +54,19 @@ public enum DiscoveryMeasurementOutcome { Completed, Hit, Miss, Failed, Skipped 
 public enum DiscoveryCacheSource { ProcessMemory, Redis, Sql }
 
 public readonly record struct DiscoveryCacheSummary(
-    int Page, DiscoveryCacheSource Ranking, int MemoryCards, int RedisCards, int SqlCards, int MissingCards);
+    int Page, DiscoveryCacheSource Ranking, int MemoryCards, int RedisCards, int SqlCards, int MissingCards)
+{
+    public string? Scope { get; init; }
+    public double TotalMs { get; init; }
+    public double LockWaitMs { get; init; }
+    public double RedisPageMs { get; init; }
+    public double SqlStartMs { get; init; }
+    public double RevisionMs { get; init; }
+    public double SqlCountMs { get; init; }
+    public double SqlRankMs { get; init; }
+    public double CardsMs { get; init; }
+    public double CommitAndPublishMs { get; init; }
+}
 
 public interface ICacheTelemetryObserver
 {
