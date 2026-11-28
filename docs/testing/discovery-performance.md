@@ -26,4 +26,20 @@ Use the demo **frontend** origin with `npm run audit:performance -- https://<dem
 2. In `atlas-rehearsal-redis03-logs` → **Logs**, use the same UTC range. Start with `AppRequests` and filter to the Discovery request operation. Compare request count, duration, and failures. Inspect a slow operation in Application Insights transaction diagnostics or look up its `OperationId` in `AppDependencies` to see associated dependency calls that were captured.
 3. Compare Azure's server timings with the k6 HTTP report and the Playwright wait samples. Local JSONL percentiles come from individual observations. Azure Metrics may show aggregated observations, so compare the same supported aggregation where possible. Stage windows can include unrelated demo traffic. For cleaner comparison, run against an idle demo and let telemetry ingestion catch up before reviewing.
 
+For a first Logs query, replace the two timestamps with a stage's `start` and `end` values from the report. Widen the filter temporarily if you need to see how the demo labels the route.
+
+```kusto
+let stageStart = datetime(2026-11-28T17:00:00Z);
+let stageEnd = datetime(2026-11-28T17:02:00Z);
+AppRequests
+| where TimeGenerated >= stageStart and TimeGenerated < stageEnd
+| where Url matches regex @"/(api|atlas-public-api)/nodes([?]|$)"
+| extend Weight = tolong(coalesce(ItemCount, 1))
+| summarize Requests = sum(Weight),
+            Failed = sumif(Weight, Success == false),
+            P50Ms = percentilew(DurationMs, Weight, 50),
+            P95Ms = percentilew(DurationMs, Weight, 95)
+    by Name
+```
+
 The first pass is read-only. For a mixed-use follow-up, schedule a demo-only edit or publish manually during a loaded stage and note its time. Playwright results go in the audit report. Capturing the same visible wait from real visitors in Azure will require frontend telemetry.
