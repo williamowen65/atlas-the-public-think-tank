@@ -96,7 +96,8 @@ public static class ApiServices
             var redis = configuration["ATLAS_DISCOVERY_REDIS_CONNECTION"];
             return new DiscoveryCache(external: string.IsNullOrWhiteSpace(redis) ? null : new RedisDiscoveryCache(redis));
         });
-        services.AddScoped<IDiscoveryReadQuery>(s => new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>()));
+        services.AddScoped<IDiscoveryReadQuery>(s => new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>(),
+            batchSubnodes: bool.TryParse(configuration["ATLAS_DISCOVERY_BATCH_SUBNODES"], out var enabled) && enabled));
         services.AddScoped<IDiscoveryService>(s => new DiscoveryService(s.GetRequiredService<IDiscoveryReadQuery>()));
         services.AddScoped<RequestActor>();
         services.AddScoped<DevelopmentAccountMail>();

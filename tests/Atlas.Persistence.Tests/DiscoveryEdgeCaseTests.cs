@@ -87,6 +87,14 @@ public sealed class DiscoveryEdgeCaseTests
         Assert.AreEqual(root.NodeTypeId, actualChildren.TypeId);
         Assert.AreEqual("2 Ideas", actualChildren.Label);
         Assert.AreEqual(2, actualChildren.Count);
+        Assert.IsNull(parentCard.SubnodePreview);
+        var batched = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache, batchSubnodes: true);
+        var preview = batched.DiscoverPage(new(SearchText: "Parent")).Items.Single(item => item.NodeId == parent.NodeId).Card!.SubnodePreview!;
+        var childPage = query.DiscoverPage(new(ParentNodeId: parent.NodeId));
+        CollectionAssert.AreEqual(childPage.Items.Select(item => item.NodeId).ToArray(),
+            preview.Items.Select(item => item.NodeId).ToArray());
+        Assert.AreEqual(childPage.HasNextPage, preview.HasNextPage);
+
         var childCard = query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!;
         Assert.AreEqual("Idea · Parent → Idea · Root", childCard.Breadcrumb);
         CollectionAssert.AreEqual(new[] { "Parent", "Root" }, childCard.BreadcrumbSegment!.Items

@@ -35,7 +35,7 @@
   import { page as routePage } from '$app/state';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { DatabaseResumingError, readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
-  import type { DiscoveryFilters } from '../api/discovery';
+  import type { DiscoveryFilters, DiscoverySubnodePreview } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
   let {
     presentation = 'mobile-experiment',
@@ -51,6 +51,7 @@
     onOpenProfile,
     connected = false,
     inline = false,
+    initialSubnodes,
   }: {
     /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
@@ -58,6 +59,7 @@
     connected?: boolean;
     /** Embedded relation: no route scroll restore, nested expansion or automatic pagination. */
     inline?: boolean;
+    initialSubnodes?: DiscoverySubnodePreview;
     /**
      * Public API base for discovery pages and descendant breadcrumb reads. Live voting/reaction
      * wrappers use their own session-aware defaults.
@@ -349,7 +351,16 @@
     nextPage = restorePage;
     previousPage = restorePage - 1;
     hasPrevious = restorePage > 1;
-    void load('initial', restorePage, anchor);
+    if (inline && !typeId && initialSubnodes) {
+      items = initialSubnodes.items.flatMap(entry => {
+        const node = discoveryCard(entry);
+        return node ? [{ node, average: entry.averageVote, totalVotes: entry.voteCount, page: 1 }] : [];
+      });
+      nextPage = 2;
+      hasMore = initialSubnodes.hasNextPage;
+    } else {
+      void load('initial', restorePage, anchor);
+    }
     const refresh = () => {
       controller?.abort();
       controller = undefined;

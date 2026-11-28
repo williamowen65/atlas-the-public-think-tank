@@ -18,7 +18,8 @@ public sealed class SqlDiscoveryReadQuery(
     // The primary-constructor parameter is available throughout this class.
     // Console Program.cs creates one DiscoveryCache and passes it here. Tests and
     // other callers may omit it to run the same database query without cache reuse.
-    DiscoveryCache? cache = null)
+    DiscoveryCache? cache = null,
+    bool batchSubnodes = false)
     : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
     public DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => Read(query, null, true, true);
@@ -273,6 +274,11 @@ public sealed class SqlDiscoveryReadQuery(
                     ancestors = ReadAncestorPreviews(db, ancestorIds);
             }
 
+            var subnodes = batchSubnodes && paged && !includeHidden && query.NodeId is null && query.ParentNodeId is null
+                ? ReadSubnodePreviews(db, cards.Values.Where(card => !card.IsHidden && card.ChildTypes.Any(type => type.Count > 0))
+                    .Select(card => card.NodeId).ToArray())
+                : new Dictionary<Guid, DiscoverySubnodePreview>();
+
             var cardsMs = Stopwatch.GetElapsedTime(cardsStarted).TotalMilliseconds;
             var commitStarted = Stopwatch.GetTimestamp();
             transaction.Commit();
@@ -305,7 +311,16 @@ public sealed class SqlDiscoveryReadQuery(
             var result = page with
             {
                 Items = Array.AsReadOnly(page.Items
-                    .Select(item => item with { Card = WithAncestorPreviews(cards.GetValueOrDefault(item.NodeId), ancestors) })
+                    .Select(item =>
+                    {
+                        var card = WithAncestorPreviews(cards.GetValueOrDefault(item.NodeId), ancestors);
+                        return item with
+                        {
+                            Card = card is not null && subnodes.TryGetValue(item.NodeId, out var preview)
+                                ? card with { SubnodePreview = preview }
+                                : card
+                        };
+                    })
                     .ToArray())
             };
             var rankingSource = pageMiss ? DiscoveryCacheSource.Sql
@@ -327,6 +342,36 @@ public sealed class SqlDiscoveryReadQuery(
             });
             return result;
         }
+    }
+
+    private static Dictionary<Guid, DiscoverySubnodePreview> ReadSubnodePreviews(AtlasDataContext db, Guid[] parentIds)
+    {
+        if (parentIds.Length == 0) return [];
+        var size = IDiscoveryService.PageSize;
+        var candidates = DiscoveryEfQuery.Build(db, new DiscoveryQuery(), null, false);
+        var links = db.Set<NodeParentRow>().AsNoTracking();
+        var parents = db.NodeRows.AsNoTracking().Where(node => parentIds.Contains(node.Id))
+            .Select(parent => new
+            {
+                parent.Id,
+                Children = candidates.Where(child => links.Any(link => link.ParentNodeId == parent.Id && link.NodeId == child.NodeId))
+                    .OrderByDescending(child => child.RankingScore)
+                    .ThenByDescending(child => child.VoteCount)
+                    .ThenByDescending(child => child.UpdatedAt)
+                    .ThenBy(child => EF.Functions.Collate(child.Title, DiscoveryTextCollation.Name))
+                    .ThenBy(child => EF.Functions.Collate(child.NodeId.ToString(), "Latin1_General_100_BIN2"))
+                    .Take(size + 1)
+                    .ToList()
+            })
+            .TagWith("Discovery batched first subnodes")
+            .ToList();
+        var ids = parents.SelectMany(parent => parent.Children.Take(size)).Select(child => child.NodeId).Distinct().ToArray();
+        var cards = ReadCards(db, ids);
+        return parents.ToDictionary(parent => parent.Id, parent => new DiscoverySubnodePreview(
+            Array.AsReadOnly(parent.Children.Take(size).Select((child, index) => new RankedDiscoveryItem(
+                child.NodeId, index + 1, child.RankingScore, child.VoteCount, child.AverageVote,
+                cards.GetValueOrDefault(child.NodeId))).ToArray()),
+            parent.Children.Count > size));
     }
 
     private static DiscoveryCard? WithAncestorPreviews(DiscoveryCard? card, Dictionary<Guid, AncestorPreview> ancestors)

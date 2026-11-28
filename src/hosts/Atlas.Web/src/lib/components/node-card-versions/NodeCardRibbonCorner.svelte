@@ -225,6 +225,7 @@
               <div class="subnode-import-placeholder"><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></div>
             {:then { default: ChildFeed }}
               <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
+                initialSubnodes={childFilter ? undefined : node.subnodePreview ?? undefined}
                 {onOpenProfile} onOpenNode={openRelated} connected inline presentation="mini" />
             {:catch}
               <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>

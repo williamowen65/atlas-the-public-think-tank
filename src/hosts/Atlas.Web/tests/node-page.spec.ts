@@ -96,6 +96,48 @@ test('visible feed cards preload one subnode page and load later pages on reques
   expect(pages).toEqual([1, 2]);
 });
 
+test('bundled subnodes skip the first request and load later pages on click', async ({ page }) => {
+  await mock(page);
+  const pages: number[] = [];
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const params = new URL(route.request().url()).searchParams;
+    if (!params.has('ParentNodeId') && !params.has('NodeId')) {
+      const parent = entry();
+      return route.fulfill({ json: {
+        items: [{ ...parent, card: { ...parent.card, subnodePreview: {
+          items: [entry(child), entry('b1000000-0000-4000-8000-000000000003'), entry('b1000000-0000-4000-8000-000000000004')],
+          hasNextPage: true,
+        } } }],
+        page: 1, totalCount: 1, pageSize: 3, hasNextPage: false,
+      } });
+    }
+    if (params.get('ParentNodeId') !== root) return route.fallback();
+    const number = Number(params.get('Page'));
+    pages.push(number);
+    const items = number === 1
+      ? [entry(child), entry('b1000000-0000-4000-8000-000000000003'), entry('b1000000-0000-4000-8000-000000000004')]
+      : [entry('b1000000-0000-4000-8000-000000000005')];
+    return route.fulfill({ json: { items, totalCount: 4, page: number, pageSize: 3, hasNextPage: number === 1 } });
+  });
+  await page.goto('/');
+  const card = page.locator('article.node-card').first();
+  const subnodes = card.locator('.subnode-section');
+  await expect(subnodes).toBeHidden();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
+  expect(pages).toEqual([]);
+
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes).toBeVisible();
+  await card.getByRole('button', { name: 'Hide subnodes' }).click();
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
+  expect(pages).toEqual([]);
+
+  await subnodes.getByRole('button', { name: 'Load more nodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(4);
+  expect(pages).toEqual([2]);
+});
+
 test('Read more opens the matching node story; filters load child feeds and a parented form', async ({ page }) => {
   const urls = await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
