@@ -186,7 +186,7 @@ test('SPA Read more opens a node page and comments and child filters support nav
 });
 
 
-test('reopening node panels reuses the ancestry and reaction reads', async ({ page }) => {
+test('visible nodes preload ancestry and reactions and reuse them when panels reopen', async ({ page }) => {
   const urls = await mock(page);
   let reactionReads = 0;
   await page.route('**/atlas-session-api/nodes/*/reactions', route => {
@@ -208,8 +208,10 @@ test('reopening node panels reuses the ancestry and reaction reads', async ({ pa
   const ancestorReads = () => urls.filter(url => url.searchParams.get('NodeId') === child).length;
 
   await expect(reactions).toBeVisible();
-  expect(reactionReads).toBe(0);
-  expect(ancestorReads()).toBe(0);
+  await expect(ancestry).toBeHidden();
+  await expect(card.locator('.reaction-controls')).toBeHidden();
+  await expect.poll(ancestorReads).toBe(1);
+  await expect.poll(() => reactionReads).toBeGreaterThan(0);
 
   await card.getByRole('button', { name: 'Show ancestry' }).click();
   await expect(ancestry.locator('.mini-node')).toContainText('A child idea');
@@ -224,9 +226,10 @@ test('reopening node panels reuses the ancestry and reaction reads', async ({ pa
   await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
   await reactions.click();
   await expect(panel).toBeHidden();
+  const readsBeforeReopen = reactionReads;
   await reactions.click();
   await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
-  expect(reactionReads).toBe(1);
+  expect(reactionReads).toBe(readsBeforeReopen);
 });
 
 test('node page shows a sole parent in expandable ancestry and voting leaves content in place', async ({ page }) => {

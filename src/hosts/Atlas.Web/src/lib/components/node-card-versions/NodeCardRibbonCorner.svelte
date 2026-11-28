@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import { preloadWhenVisible } from "../../actions/preloadWhenVisible";
   import ActionButton from '../ActionButton.svelte';
   import CopyNodeLink from "../CopyNodeLink.svelte";
   import { relativeDate } from '../../format/relativeDate';
@@ -53,6 +54,7 @@
   let subnodesOpen = $state(false);
   let reactionsOpen = $state(false);
   let reactionsVisited = $state(false);
+  let visibleForPreload = $state(false);
   let childFilter = $state('');
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
@@ -124,7 +126,7 @@
   description’s corner, with reactions and discussion links below.
 -->
 
-<article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
+<article use:preloadWhenVisible={() => visibleForPreload = true} class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
   {#if editOpensDetail}
     <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
   {:else}
@@ -149,7 +151,7 @@
       />
         {@render typeRow(undefined)}
       {:else if !relationshipContext}
-        <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+        <Breadcrumb expandable connectedCards preloadConnected={visibleForPreload && graphControls} connectedHeader={typeRow} items={node.breadcrumb}
           originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
           loadOlder={loadOlderAncestors} />
       {:else}
@@ -200,7 +202,7 @@
     </div>
     {#if graphControls}
       <div class="graph-reactions" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-        {#if reactionsVisited}{@render reactions()}{/if}
+        {#if reactionsVisited || (visibleForPreload && graphControls)}{@render reactions()}{/if}
       </div>
       <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
         {#if subnodesOpen}

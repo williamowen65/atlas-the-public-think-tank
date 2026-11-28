@@ -45,6 +45,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import { preloadWhenVisible } from "../actions/preloadWhenVisible";
   import { nodeTypeSelect } from '../actions/nodeTypeSelect';
   import CopyNodeLink from "./CopyNodeLink.svelte";
   import { relativeDate } from '../format/relativeDate';
@@ -175,6 +176,7 @@
   const instance = $props.id();
   let reactionsOpen = $state(false);
   let reactionsVisited = $state(false);
+  let visibleForPreload = $state(false);
   let commentsOpen = $state(false);
   $effect(() => { commentsOpen = commentsInitiallyOpen; });
   /**
@@ -276,7 +278,7 @@
 -->
 
 <div class="node-page-layout">
-<article class="node-page atlas-panel">
+<article use:preloadWhenVisible={() => visibleForPreload = true} class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
       {node}
@@ -300,7 +302,7 @@
     />
       {@render typeRow(undefined)}
     {:else}
-      <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+      <Breadcrumb expandable connectedCards preloadConnected={visibleForPreload && !inspectionOnly} connectedHeader={typeRow} items={node.breadcrumb}
         originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors} />
     {/if}
@@ -356,7 +358,7 @@
       {@render reportControl?.()}
     </div>
     <div class="reaction-controls" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-      {#if reactionsVisited}
+      {#if reactionsVisited || (visibleForPreload && !inspectionOnly)}
         {#if reactions}{@render reactions()}{:else}
           <div class="reactions" role="group" aria-label="Community reactions">
             {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}

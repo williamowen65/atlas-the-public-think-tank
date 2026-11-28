@@ -29,6 +29,7 @@
     items,
     expandable = false,
     connectedCards = false,
+    preloadConnected = false,
     connectedHeader,
     onNavigate,
     hasMore = false,
@@ -44,6 +45,7 @@
     expandable?: boolean;
     /** Collapsed-by-default ancestry of compact cards inside the focused header. */
     connectedCards?: boolean;
+    preloadConnected?: boolean;
     /** Render the focused type row with the ancestry control, if ancestors exist. */
     connectedHeader?: Snippet<[Snippet | undefined]>;
     /**
@@ -66,6 +68,7 @@
   const panelId = $props.id();
   let expanded = $state(false);
   let connectedVisited = $state(false);
+  const connectedReady = $derived(connectedVisited || preloadConnected);
   let older = $state<BreadcrumbItem[]>([]);
   /**
    * Whether the alternative-parent menu is visible.
@@ -208,7 +211,7 @@
     error = '';
   });
   $effect(() => {
-    if (!originId || !allItems.length || (connectedCards && !connectedVisited)) return;
+    if (!originId || !allItems.length || (connectedCards && !connectedReady)) return;
     const controller = new AbortController();
     const ids =
       expandable && !connectedCards && !expanded
@@ -345,7 +348,7 @@
 {#if expandable && connectedCards}
   {#if allItems.length}
     <nav class="ancestry connected-ancestry" id={panelId} aria-label="Node ancestry" hidden={!expanded}>
-      {#if connectedVisited}
+      {#if connectedReady}
         {#if more && loadOlder}<div class="older-ancestry">{@render olderButton()}</div>{/if}
         {@render loadError()}
         <ol>{@render ancestorItems()}</ol>
