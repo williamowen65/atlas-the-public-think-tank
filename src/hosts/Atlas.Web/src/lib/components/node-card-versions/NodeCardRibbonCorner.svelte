@@ -52,6 +52,7 @@
   import type { NodeCardProps } from './types';
   let detailsOpen = $state(false);
   let subnodesOpen = $state(false);
+  let subnodesVisited = $state(false);
   let reactionsOpen = $state(false);
   let reactionsVisited = $state(false);
   let visibleForPreload = $state(false);
@@ -205,7 +206,7 @@
         {#if reactionsVisited || (visibleForPreload && graphControls)}{@render reactions()}{/if}
       </div>
       <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
-        {#if subnodesOpen}
+        {#if subnodesVisited || (visibleForPreload && childCount > 0)}
           <div class="subnode-header">
             <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
             <label class="inline-filter">Node type
@@ -254,7 +255,7 @@
         <button class="details-toggle" type="button" aria-expanded={subnodesOpen} aria-controls={`${instance}-subnodes`}
           aria-label={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
           title={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
-          onclick={() => subnodesOpen = !subnodesOpen}>
+          onclick={() => { subnodesOpen = !subnodesOpen; subnodesVisited = true; }}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>
