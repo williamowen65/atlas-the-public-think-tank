@@ -56,6 +56,10 @@ async function setup(page: Page, participant: string | null = author) {
     if (path.endsWith('/votes')) return route.fulfill({ json: {
       voteCount: 0, averageVote: null, currentParticipantVote: null,
     } });
+    if (method === 'GET' && path.endsWith(`/nodes/${node}`))
+      return route.fulfill({ json: {
+        id: node, authorId: author, title, requestedTypeIds: [], status: 'Active', hidden: false,
+      } });
     if (method === 'GET' && path.endsWith('/description'))
       return route.fulfill({ json: blocks });
     if (method === 'GET') return route.fulfill({ json: [] });
