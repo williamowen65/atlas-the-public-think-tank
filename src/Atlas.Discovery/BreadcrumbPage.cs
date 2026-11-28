@@ -18,4 +18,10 @@ public sealed record BreadcrumbPage(
 }
 
 /// <summary>One public ancestor label, not a domain aggregate or a full ancestor graph.</summary>
-public sealed record BreadcrumbItem(Guid NodeId, string Label);
+public sealed record BreadcrumbItem(Guid NodeId, string Label)
+{
+    public AncestorPreview? Preview { get; init; }
+}
+
+/// <summary>Public mini-card data for an ancestor in the first Discovery segment.</summary>
+public sealed record AncestorPreview(string Title, string TypeName, int VoteCount, double? AverageVote);

@@ -24,6 +24,7 @@
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
   import AncestorNodeCard from './AncestorNodeCard.svelte';
+  import NodeCardMini from './node-card-versions/NodeCardMini.svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
@@ -470,7 +471,12 @@
           </svg>
         {/if}
         {#if connectedCards && item.id}
-          <AncestorNodeCard id={item.id} title={item.title} {apiBase} {onNavigate} />
+          {#if item.preview}
+            <NodeCardMini node={{ id: item.id, title: item.preview.title, typeName: item.preview.typeName, status: 'Active' }} average={item.preview.averageVote}
+              totalVotes={item.preview.voteCount} {onNavigate} />
+          {:else}
+            <AncestorNodeCard id={item.id} title={item.title} {apiBase} {onNavigate} />
+          {/if}
         {:else}
         <div
           class="ancestor-title"

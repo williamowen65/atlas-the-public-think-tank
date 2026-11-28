@@ -1,5 +1,5 @@
 import type { ContentBlock } from './nodePage';
-import type { BreadcrumbPage } from '../components/breadcrumb.types';
+import type { BreadcrumbItem, BreadcrumbPage } from '../components/breadcrumb.types';
 import type { NodeCardData } from '../components/node-card-versions/types';
 
 /** Optional discovery constraints translated into API query parameters. */
@@ -90,6 +90,7 @@ interface DiscoveryCard {
       nodeId: string;
       /** Display label supplied by the API. */
       label: string;
+      preview?: BreadcrumbItem['preview'];
     }[];
 
     /** Node ID marking ancestor continuation, or null if none remains. */
@@ -277,7 +278,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     breadcrumb: card.breadcrumbSegment
       ? [...card.breadcrumbSegment.items]
           .reverse()
-          .map((item) => ({ id: item.nodeId, title: item.label }))
+          .map((item) => ({ id: item.nodeId, title: item.label, preview: item.preview }))
       : card.breadcrumb
         ? [{ title: card.breadcrumb }]
         : [],

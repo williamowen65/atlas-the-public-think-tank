@@ -261,6 +261,18 @@ public sealed class SqlDiscoveryReadQuery(
 
             // 9. Finish the consistent read before publishing any newly loaded entries.
             // Exceptions before this point leave these attempted results out of the cache.
+            // Attach the first ancestry segment in one query per Discovery page.
+            // Keep fresh vote totals out of the cached card metadata.
+            var ancestors = new Dictionary<Guid, AncestorPreview>();
+            if (paged && query.ParentNodeId is null)
+            {
+                var ancestorIds = cards.Values.Where(card => !card.IsHidden)
+                    .SelectMany(card => card.BreadcrumbSegment?.Items ?? [])
+                    .Select(item => item.NodeId).Distinct().ToArray();
+                if (ancestorIds.Length > 0)
+                    ancestors = ReadAncestorPreviews(db, ancestorIds);
+            }
+
             var cardsMs = Stopwatch.GetElapsedTime(cardsStarted).TotalMilliseconds;
             var commitStarted = Stopwatch.GetTimestamp();
             transaction.Commit();
@@ -293,7 +305,7 @@ public sealed class SqlDiscoveryReadQuery(
             var result = page with
             {
                 Items = Array.AsReadOnly(page.Items
-                    .Select(item => item with { Card = cards.GetValueOrDefault(item.NodeId) })
+                    .Select(item => item with { Card = WithAncestorPreviews(cards.GetValueOrDefault(item.NodeId), ancestors) })
                     .ToArray())
             };
             var rankingSource = pageMiss ? DiscoveryCacheSource.Sql
@@ -315,6 +327,42 @@ public sealed class SqlDiscoveryReadQuery(
             });
             return result;
         }
+    }
+
+    private static DiscoveryCard? WithAncestorPreviews(DiscoveryCard? card, Dictionary<Guid, AncestorPreview> ancestors)
+    {
+        if (card is null || card.IsHidden || card.BreadcrumbSegment is not { } segment || ancestors.Count == 0)
+            return card;
+
+        return card with
+        {
+            BreadcrumbSegment = segment with
+            {
+                Items = Array.AsReadOnly(segment.Items.Select(item =>
+                    item with { Preview = ancestors.GetValueOrDefault(item.NodeId) }).ToArray())
+            }
+        };
+    }
+
+    private static Dictionary<Guid, AncestorPreview> ReadAncestorPreviews(AtlasDataContext db, Guid[] ids)
+    {
+        return db.NodeRows.AsNoTracking()
+            .Where(node => ids.Contains(node.Id) && node.Status != "Archived" &&
+                !db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
+                    report.Status == 2 && report.VisibilityRestoredAt == null))
+            .Select(node => new
+            {
+                node.Id,
+                node.Title,
+                TypeName = db.NodeTypeRows.Where(type => type.Id == node.TypeId)
+                    .Select(type => type.Name).FirstOrDefault() ?? "Unknown",
+                VoteCount = db.VoteRows.Count(vote => vote.TargetType == "Node" && vote.TargetId == node.Id),
+                AverageVote = db.VoteRows.Where(vote => vote.TargetType == "Node" && vote.TargetId == node.Id)
+                    .Select(vote => (double?)vote.Value).Average()
+            })
+            .TagWith("Discovery ancestor mini cards")
+            .ToDictionary(row => row.Id, row => new AncestorPreview(
+                row.Title, row.TypeName, row.VoteCount, row.AverageVote));
     }
 
     /// <summary>Fresh, batched personalized values; intentionally excluded from shared caches.</summary>

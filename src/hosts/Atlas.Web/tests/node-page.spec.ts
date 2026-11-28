@@ -272,6 +272,30 @@ test('node content renders while the type catalog is pending', async ({ page }) 
   }
 });
 
+test('feed ancestry uses mini cards included in the Discovery response', async ({ page }) => {
+  const urls = await mock(page);
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.has('NodeId') || query.has('ParentNodeId')) return route.fallback();
+    const rootItem = entry();
+    return route.fulfill({ json: {
+      items: [{ ...rootItem, card: { ...rootItem.card, breadcrumbSegment: {
+        items: [{ nodeId: child, label: 'Idea · A bundled ancestor', preview: {
+          title: 'A bundled ancestor', typeName: 'Idea', status: 'Active', voteCount: 2, averageVote: 7,
+        } }],
+        continuationNodeId: null, hasAlternativeRoutes: false,
+      } } }],
+      page: 1, totalCount: 1, pageSize: 3, hasNextPage: false,
+    } });
+  });
+  await page.goto('/');
+  const card = page.getByRole('article', { name: 'A live question' });
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(card.getByRole('navigation', { name: 'Node ancestry' }).locator('.mini-node'))
+    .toContainText('A bundled ancestor');
+  expect(urls.some(url => url.searchParams.get('NodeId') === child)).toBe(false);
+});
+
 test('visible nodes preload ancestry and reactions and reuse them when panels reopen', async ({ page }) => {
   const urls = await mock(page);
   let reactionReads = 0;

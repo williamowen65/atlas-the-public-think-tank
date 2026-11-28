@@ -7,6 +7,14 @@ export interface BreadcrumbItem {
 
   /** Visible ancestor title. */
   title: string;
+
+  /** Public mini-card details included with the first segment when available. */
+  preview?: {
+    title: string;
+    typeName: string;
+    voteCount: number;
+    averageVote: number | null;
+  } | null;
 }
 /** One page of older ancestors, ordered for display, plus continuation availability. */
 export interface BreadcrumbPage {

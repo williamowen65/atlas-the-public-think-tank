@@ -87,13 +87,18 @@ public sealed class DiscoveryEdgeCaseTests
         Assert.AreEqual(root.NodeTypeId, actualChildren.TypeId);
         Assert.AreEqual("2 Ideas", actualChildren.Label);
         Assert.AreEqual(2, actualChildren.Count);
-        Assert.AreEqual("Idea · Parent → Idea · Root", query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!.Breadcrumb);
+        var childCard = query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!;
+        Assert.AreEqual("Idea · Parent → Idea · Root", childCard.Breadcrumb);
+        CollectionAssert.AreEqual(new[] { "Parent", "Root" }, childCard.BreadcrumbSegment!.Items
+            .Select(item => item.Preview!.Title).ToArray());
         using (var db = fixture.Open())
         {
             db.ModerationCaseRows.Add(new ModerationCaseRow { Id = Guid.NewGuid(), NodeId = root.NodeId, ReporterId = root.AuthorParticipantId, Reason = "Spam", ReportedTitle = root.Title, Status = 2, PublicReason = 1, CreatedAt = now });
             db.SaveChanges();
         }
-        var breadcrumb = query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!.Breadcrumb;
+        var moderatedCard = query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!;
+        Assert.IsNull(moderatedCard.BreadcrumbSegment!.Items.Single(item => item.NodeId == root.NodeId).Preview);
+        var breadcrumb = moderatedCard.Breadcrumb;
         StringAssert.Contains(breadcrumb, "Hidden by moderator: Spam");
         Assert.IsFalse(breadcrumb.Contains("Root", StringComparison.Ordinal));
     }
