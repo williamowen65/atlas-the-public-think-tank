@@ -31,7 +31,6 @@
   import {
     readDiscovery,
     discoveryCard,
-    readReactions,
     readOlderAncestors,
   } from '../api/discovery';
   import {
@@ -174,6 +173,34 @@
    * Available non-archived node types used by labels, filters or creation choices.
    */
   let types = $state<NodeType[]>([]);
+  let requestedTypeIds = $state<string[] | null>(null);
+  let catalogLoading = $state(false);
+  let catalogFailed = $state(false);
+  let catalogRetry = $state(0);
+
+  $effect(() => {
+    const requested = requestedTypeIds;
+    const base = apiBase;
+    catalogRetry;
+    if (!requested) return;
+    const controller = new AbortController();
+    catalogLoading = true;
+    catalogFailed = false;
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+    void readTypes(base, signal)
+      .then(catalog => {
+        if (!controller.signal.aborted) {
+          types = [...catalog].sort((a, b) => Number(requested.includes(b.id)) - Number(requested.includes(a.id)));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) catalogFailed = true;
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) catalogLoading = false;
+      });
+    return () => controller.abort();
+  });
   /**
    * Selected discussion-tab ID: comments, a contribution type ID or a temporary draft tab.
    */
@@ -328,6 +355,10 @@
     loading = true;
     error = '';
     node = null;
+    requestedTypeIds = null;
+    types = [];
+    catalogLoading = false;
+    catalogFailed = false;
     hiddenDetail = null;
     hiddenAuthor = false;
     hiddenFeedback = null;
@@ -417,20 +448,17 @@
         const entry = page.items.find((item) => discoveryCard(item));
         const display = entry && discoveryCard(entry);
         if (!display) throw new Error('Unavailable');
-        const [detail, content, catalog, reactions] = await Promise.all([
+        const [detail, content] = await Promise.all([
           readJson<NodeDetail>(apiBase, `nodes/${encodeURIComponent(display.id)}`, signal),
           readJson<ContentBlock[]>(
             apiBase,
             `nodes/${encodeURIComponent(display.id)}/description`,
             signal,
           ),
-          readTypes(apiBase, signal),
-          readReactions(display.id, signal, apiBase).catch(() => null),
         ]);
         if (detail.hidden) throw new Error('Unavailable');
         if (controller.signal.aborted) return;
-        node = { ...display, authorId: detail.authorId, reactions: reactions ?? display.reactions,
-          reactionCount: reactions ? reactions.reduce((sum, reaction) => sum + reaction.count, 0) : display.reactionCount };
+        node = { ...display, authorId: detail.authorId };
         hasMoreAncestors = !!entry!.card?.breadcrumbSegment?.continuationNodeId;
         blocks = content;
         average = entry!.averageVote;
@@ -438,11 +466,7 @@
         active = selectedType === 'subnodes' || display.childTypes?.some((type) => type.typeId === selectedType)
           ? selectedType
           : 'subnodes';
-        types = [...catalog].sort(
-          (a, b) =>
-            Number(detail.requestedTypeIds.includes(b.id)) -
-            Number(detail.requestedTypeIds.includes(a.id)),
-        );
+        requestedTypeIds = detail.requestedTypeIds ?? [];
       } catch {
         if (!controller.signal.aborted) error = 'This node is unavailable or could not be loaded.';
       } finally {
@@ -623,7 +647,7 @@
       onTabChange={(id) => void changeTab(id)}
       childFormOpen={createType !== null}
       createTypeSelection={createType ? (active === 'draft-new-type' ? 'new' : active) : ''}
-      childFormBusy={switching || childSubmitting}
+      childFormBusy={switching || childSubmitting || catalogLoading || catalogFailed}
       onCreateTypeChange={selectCreateType}
       onCloseChild={() => void changeTab(active === 'draft-new-type' ? 'subnodes' : active)}
       onAddChild={openChildForm}
@@ -649,6 +673,9 @@
         {#if node}<CommentsPanel nodeId={node.id} {focusCommentId} {apiBase}
           onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{/if}
       {/snippet}
+      {#if catalogFailed}
+        <p role="status">Could not load node types. <button type="button" onclick={() => catalogRetry++}>Retry node types</button></p>
+      {/if}
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType}<div class="child-form" use:connectDraftBranch>
           {#key createType}<LiveNodeForm

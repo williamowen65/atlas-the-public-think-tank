@@ -531,11 +531,6 @@
     justify-self: end;
     box-sizing: border-box;
   }
-  @media (max-width: 380px) {
-    .node-actions { grid-template-columns: minmax(0, 1fr); }
-    .node-actions :global(.report-control > .report-trigger),
-    .node-actions :global(.report-control > [role='status']) { grid-column: 1; }
-  }
   .discussion-actions button {
     font: inherit;
     min-height: 2.25rem;
@@ -546,6 +541,10 @@
     background: var(--atlas-surface);
   }
   @media (max-width: 560px) {
+    .node-actions { column-gap: .35rem; }
+    .discussion-actions { flex-wrap: nowrap; gap: .3rem; }
+    .discussion-actions button { white-space: nowrap; padding-inline: .35rem; }
+    .node-actions :global(.report-control > .report-trigger) { white-space: nowrap; }
     .discussion-actions [data-comments-toggle] {
       display: inline-flex;
       align-items: center;

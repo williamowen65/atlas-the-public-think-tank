@@ -210,6 +210,15 @@ test('SPA Read more opens a node page and comments and child filters support nav
   const comments = page.locator('.node-page').getByRole('button', { name: 'Comments (1)', exact: true });
   await expect(comments.locator('svg')).toBeVisible();
   await expect(comments.getByText('1', { exact: true })).toBeVisible();
+  const footerActions = page.locator('.node-page .node-actions');
+  const row = await Promise.all([
+    footerActions.getByRole('button', { name: /^Reactions/ }),
+    comments,
+    footerActions.getByRole('button', { name: 'Report node' }),
+  ].map(button => button.boundingBox()));
+  for (const box of row) {
+    expect(box!.y + box!.height / 2).toBeCloseTo(row[0]!.y + row[0]!.height / 2, 0);
+  }
   await comments.focus(); await page.keyboard.press('Enter');
   await expect(comments).toHaveAttribute('aria-expanded', 'true');
   const filter = page.locator('.subnode-toolbar select');
@@ -222,6 +231,27 @@ test('SPA Read more opens a node page and comments and child filters support nav
   await expect(comments.getByText('Comments (1)', { exact: true })).toBeVisible();
 });
 
+
+test('node content renders while the type catalog is pending', async ({ page }) => {
+  const urls = await mock(page);
+  let releaseCatalog!: () => void;
+  const catalogGate = new Promise<void>(resolve => { releaseCatalog = resolve; });
+  await page.route('**/atlas-public-api/catalog/node-types', async route => {
+    await catalogGate;
+    await route.fulfill({ json: types });
+  });
+  try {
+    await page.goto(`/nodes?id=${root}`);
+    await expect(page.getByText('The complete content belongs here.', { exact: true })).toBeVisible();
+    const addChild = page.getByRole('button', { name: 'Add a child node', exact: true });
+    await expect(addChild).toBeDisabled();
+    expect(urls.some(url => url.pathname.endsWith('/reactions'))).toBe(false);
+    releaseCatalog();
+    await expect(addChild).toBeEnabled();
+  } finally {
+    releaseCatalog();
+  }
+});
 
 test('visible nodes preload ancestry and reactions and reuse them when panels reopen', async ({ page }) => {
   const urls = await mock(page);
