@@ -380,6 +380,7 @@
     active = 'subnodes';
     void (async () => {
       try {
+        let checkedDetail: NodeDetail | undefined;
         if (id) {
           // The authenticated node-detail endpoint, not public discovery, determines access
           // to hidden originals. A public placeholder never contains editable content.
@@ -443,18 +444,20 @@
             }
             return;
           }
+          checkedDetail = detail;
         }
-        const page = await readDiscovery(apiBase, 1, '', signal, id || undefined);
-        const entry = page.items.find((item) => discoveryCard(item));
+        const readContent = (nodeId: string) =>
+          readJson<ContentBlock[]>(apiBase, `nodes/${encodeURIComponent(nodeId)}/description`, signal);
+        const [page, knownContent] = await Promise.all([
+          readDiscovery(apiBase, 1, '', signal, id || undefined),
+          id ? readContent(id) : undefined,
+        ]);
+        const entry = page.items.find(item => (!id || item.nodeId === id) && discoveryCard(item));
         const display = entry && discoveryCard(entry);
         if (!display) throw new Error('Unavailable');
         const [detail, content] = await Promise.all([
-          readJson<NodeDetail>(apiBase, `nodes/${encodeURIComponent(display.id)}`, signal),
-          readJson<ContentBlock[]>(
-            apiBase,
-            `nodes/${encodeURIComponent(display.id)}/description`,
-            signal,
-          ),
+          checkedDetail ?? readJson<NodeDetail>(apiBase, `nodes/${encodeURIComponent(display.id)}`, signal),
+          knownContent ?? readContent(display.id),
         ]);
         if (detail.hidden) throw new Error('Unavailable');
         if (controller.signal.aborted) return;

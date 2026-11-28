@@ -232,6 +232,25 @@ test('SPA Read more opens a node page and comments and child filters support nav
 });
 
 
+test('node content starts loading before its Discovery card returns', async ({ page }) => {
+  const urls = await mock(page);
+  let releaseCard!: () => void;
+  const cardGate = new Promise<void>(resolve => { releaseCard = resolve; });
+  await page.route('**/atlas-public-api/nodes?**', async route => {
+    if (new URL(route.request().url()).searchParams.get('NodeId') === root) await cardGate;
+    await route.fallback();
+  });
+  try {
+    await page.goto(`/nodes?id=${root}`);
+    await expect.poll(() => urls.some(url => url.pathname.endsWith(`/nodes/${root}/description`))).toBe(true);
+    expect(urls.some(url => url.pathname.endsWith(`/nodes/${root}`))).toBe(false);
+    releaseCard();
+    await expect(page.getByText('The complete content belongs here.', { exact: true })).toBeVisible();
+  } finally {
+    releaseCard();
+  }
+});
+
 test('node content renders while the type catalog is pending', async ({ page }) => {
   const urls = await mock(page);
   let releaseCatalog!: () => void;
