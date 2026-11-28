@@ -25,6 +25,7 @@
     "dev:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev\"",
     "storybook:ranking": "concurrently --kill-others --names RankingLab,Storybook \"dotnet run --project ../Atlas.RankingLab\" \"npm run storybook\"",
     "audit:discovery-cache": "node dev/auditDiscoveryCache.mjs",
+    "audit:performance": "node dev/auditPerformance.mjs",
     "dev:lan:api": "node dev/startLan.mjs",
     "test:lan-config": "node --test dev/lanEnvironment.test.mjs",
     "check:dev-proxy": "node dev/checkLocalApi.mjs"

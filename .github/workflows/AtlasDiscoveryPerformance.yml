@@ -1,0 +1,41 @@
+name: Atlas Discovery performance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-discovery-performance-demo
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: src/hosts/Atlas.Web
+    env:
+      ATLAS_DEMO_ORIGIN: ${{ vars.ATLAS_PERFORMANCE_DEMO_ORIGIN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
+      - name: Check demo configuration
+        run: test -n "$ATLAS_DEMO_ORIGIN" || (echo 'Set ATLAS_PERFORMANCE_DEMO_ORIGIN to the Atlas demo frontend origin.' && exit 1)
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium --only-shell
+      - name: Measure demo Discovery
+        run: npm run audit:performance -- "$ATLAS_DEMO_ORIGIN" demo
+      - name: Keep audit results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: atlas-discovery-performance
+          path: logs/observability/performance/*.json
+          retention-days: 14
