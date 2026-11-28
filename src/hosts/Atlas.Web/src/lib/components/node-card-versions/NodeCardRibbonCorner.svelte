@@ -57,7 +57,6 @@
   let reactionsOpen = $state(false);
   let reactionsVisited = $state(false);
   let visibleForPreload = $state(false);
-  const preloadRelationships = import.meta.env.VITE_ATLAS_PRELOAD_RELATIONSHIPS !== 'false';
   let childFilter = $state('');
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
@@ -154,7 +153,7 @@
       />
         {@render typeRow(undefined)}
       {:else if !relationshipContext}
-        <Breadcrumb expandable connectedCards preloadConnected={preloadRelationships && visibleForPreload && graphControls} connectedHeader={typeRow} items={node.breadcrumb}
+        <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
           originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
           loadOlder={loadOlderAncestors} />
       {:else}
@@ -208,7 +207,7 @@
         {#if reactionsVisited || (visibleForPreload && graphControls)}{@render reactions()}{/if}
       </div>
       <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
-        {#if subnodesVisited || (preloadRelationships && visibleForPreload && childCount > 0)}
+        {#if subnodesVisited}
           <div class="subnode-header">
             <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
             <label class="inline-filter">Node type

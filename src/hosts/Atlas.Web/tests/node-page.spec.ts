@@ -64,7 +64,7 @@ for (const preview of ['excerpt', 'carousel', 'sections'] as const) {
   });
 }
 
-test('visible feed cards preload one subnode page and load later pages on request', async ({ page }) => {
+test('unbundled subnodes load on click and reuse the first page', async ({ page }) => {
   await mock(page);
   const pages: number[] = [];
   await page.route('**/atlas-public-api/nodes?**', route => {
@@ -81,8 +81,8 @@ test('visible feed cards preload one subnode page and load later pages on reques
   const card = page.locator('article.node-card').first();
   const subnodes = card.locator('.subnode-section');
   await expect(subnodes).toBeHidden();
-  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
-  expect(pages).toEqual([1]);
+  await expect(subnodes.locator('.mini-node')).toHaveCount(0);
+  expect(pages).toEqual([]);
 
   await card.getByRole('button', { name: 'Show subnodes' }).click();
   await expect(subnodes).toBeVisible();
@@ -123,7 +123,7 @@ test('bundled subnodes skip the first request and load later pages on click', as
   const card = page.locator('article.node-card').first();
   const subnodes = card.locator('.subnode-section');
   await expect(subnodes).toBeHidden();
-  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
+  await expect(subnodes.locator('.mini-node')).toHaveCount(0);
   expect(pages).toEqual([]);
 
   await card.getByRole('button', { name: 'Show subnodes' }).click();

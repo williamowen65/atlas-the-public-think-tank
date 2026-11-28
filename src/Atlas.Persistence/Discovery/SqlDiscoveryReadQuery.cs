@@ -18,8 +18,7 @@ public sealed class SqlDiscoveryReadQuery(
     // The primary-constructor parameter is available throughout this class.
     // Console Program.cs creates one DiscoveryCache and passes it here. Tests and
     // other callers may omit it to run the same database query without cache reuse.
-    DiscoveryCache? cache = null,
-    bool batchSubnodes = false)
+    DiscoveryCache? cache = null)
     : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
     public DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => Read(query, null, true, true);
@@ -274,7 +273,7 @@ public sealed class SqlDiscoveryReadQuery(
                     ancestors = ReadAncestorPreviews(db, ancestorIds);
             }
 
-            var subnodes = batchSubnodes && paged && !includeHidden && query.NodeId is null && query.ParentNodeId is null
+            var subnodes = paged && !includeHidden && query.NodeId is null && query.ParentNodeId is null
                 ? ReadSubnodePreviews(db, cards.Values.Where(card => !card.IsHidden && card.ChildTypes.Any(type => type.Count > 0))
                     .Select(card => card.NodeId).ToArray())
                 : new Dictionary<Guid, DiscoverySubnodePreview>();

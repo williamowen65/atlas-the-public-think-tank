@@ -88,8 +88,7 @@ public sealed class DiscoveryEdgeCaseTests
         Assert.AreEqual("2 Ideas", actualChildren.Label);
         Assert.AreEqual(2, actualChildren.Count);
         Assert.IsNull(parentCard.SubnodePreview);
-        var batched = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache, batchSubnodes: true);
-        var preview = batched.DiscoverPage(new(SearchText: "Parent")).Items.Single(item => item.NodeId == parent.NodeId).Card!.SubnodePreview!;
+        var preview = query.DiscoverPage(new(SearchText: "Parent")).Items.Single(item => item.NodeId == parent.NodeId).Card!.SubnodePreview!;
         var childPage = query.DiscoverPage(new(ParentNodeId: parent.NodeId));
         CollectionAssert.AreEqual(childPage.Items.Select(item => item.NodeId).ToArray(),
             preview.Items.Select(item => item.NodeId).ToArray());
