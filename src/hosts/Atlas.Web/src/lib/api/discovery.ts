@@ -1,5 +1,5 @@
 import type { ContentBlock } from './nodePage';
-import type { BreadcrumbPage } from '../components/breadcrumb.types';
+import type { BreadcrumbItem, BreadcrumbPage } from '../components/breadcrumb.types';
 import type { NodeCardData } from '../components/node-card-versions/types';
 
 /** Optional discovery constraints translated into API query parameters. */
@@ -90,6 +90,7 @@ interface DiscoveryCard {
       nodeId: string;
       /** Display label supplied by the API. */
       label: string;
+      preview?: BreadcrumbItem['preview'];
     }[];
 
     /** Node ID marking ancestor continuation, or null if none remains. */
@@ -108,6 +109,7 @@ interface DiscoveryCard {
   /** Description supplied for this record. */
   description: string;
   previewBlocks?: ContentBlock[];
+  subnodePreview?: DiscoverySubnodePreview | null;
 
   /** Short introduction shown before full node content. */
 
@@ -149,6 +151,8 @@ interface DiscoveryItem {
 }
 
 /** Numbered discovery results with total count and continuation information. */
+export type DiscoverySubnodePreview = Pick<DiscoveryPage, 'items' | 'hasNextPage'>;
+
 export interface DiscoveryPage {
   /** Records in this page or segment, in endpoint order. */
   items: DiscoveryItem[];
@@ -267,6 +271,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     createdAt: card.createdAt,
     description: card.description ?? '',
     previewBlocks: card.previewBlocks,
+    subnodePreview: card.subnodePreview,
     communities:
       card.communities && card.communities.trim().toLowerCase() !== 'none'
         ? card.communities
@@ -277,7 +282,7 @@ export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCar
     breadcrumb: card.breadcrumbSegment
       ? [...card.breadcrumbSegment.items]
           .reverse()
-          .map((item) => ({ id: item.nodeId, title: item.label }))
+          .map((item) => ({ id: item.nodeId, title: item.label, preview: item.preview }))
       : card.breadcrumb
         ? [{ title: card.breadcrumb }]
         : [],

@@ -1,3 +1,4 @@
+import type { DiscoverySubnodePreview } from '../../api/discovery';
 import type { ContentBlock } from '../../api/nodePage';
 import type { Snippet } from 'svelte';
 import type { BreadcrumbItem, LoadOlderAncestors } from '../breadcrumb.types';
@@ -29,6 +30,7 @@ export interface NodeCardData {
 
   /** Rich feed preview supplied by Discovery. */
   previewBlocks?: ContentBlock[];
+  subnodePreview?: DiscoverySubnodePreview | null;
 
   /** Community display names associated with the node; these are not community IDs. */
   communities: string[];

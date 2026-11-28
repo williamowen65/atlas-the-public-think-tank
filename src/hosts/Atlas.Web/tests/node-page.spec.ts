@@ -64,6 +64,80 @@ for (const preview of ['excerpt', 'carousel', 'sections'] as const) {
   });
 }
 
+test('unbundled subnodes load on click and reuse the first page', async ({ page }) => {
+  await mock(page);
+  const pages: number[] = [];
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const params = new URL(route.request().url()).searchParams;
+    if (params.get('ParentNodeId') !== root) return route.fallback();
+    const number = Number(params.get('Page'));
+    pages.push(number);
+    const items = number === 1
+      ? [entry(child), entry('b1000000-0000-4000-8000-000000000003'), entry('b1000000-0000-4000-8000-000000000004')]
+      : [entry('b1000000-0000-4000-8000-000000000005')];
+    return route.fulfill({ json: { items, totalCount: 4, page: number, pageSize: 3, hasNextPage: number === 1 } });
+  });
+  await page.goto('/');
+  const card = page.locator('article.node-card').first();
+  const subnodes = card.locator('.subnode-section');
+  await expect(subnodes).toBeHidden();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(0);
+  expect(pages).toEqual([]);
+
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes).toBeVisible();
+  await card.getByRole('button', { name: 'Hide subnodes' }).click();
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
+  expect(pages).toEqual([1]);
+
+  await subnodes.getByRole('button', { name: 'Load more nodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(4);
+  expect(pages).toEqual([1, 2]);
+});
+
+test('bundled subnodes skip the first request and load later pages on click', async ({ page }) => {
+  await mock(page);
+  const pages: number[] = [];
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const params = new URL(route.request().url()).searchParams;
+    if (!params.has('ParentNodeId') && !params.has('NodeId')) {
+      const parent = entry();
+      return route.fulfill({ json: {
+        items: [{ ...parent, card: { ...parent.card, subnodePreview: {
+          items: [entry(child), entry('b1000000-0000-4000-8000-000000000003'), entry('b1000000-0000-4000-8000-000000000004')],
+          hasNextPage: true,
+        } } }],
+        page: 1, totalCount: 1, pageSize: 3, hasNextPage: false,
+      } });
+    }
+    if (params.get('ParentNodeId') !== root) return route.fallback();
+    const number = Number(params.get('Page'));
+    pages.push(number);
+    const items = number === 1
+      ? [entry(child), entry('b1000000-0000-4000-8000-000000000003'), entry('b1000000-0000-4000-8000-000000000004')]
+      : [entry('b1000000-0000-4000-8000-000000000005')];
+    return route.fulfill({ json: { items, totalCount: 4, page: number, pageSize: 3, hasNextPage: number === 1 } });
+  });
+  await page.goto('/');
+  const card = page.locator('article.node-card').first();
+  const subnodes = card.locator('.subnode-section');
+  await expect(subnodes).toBeHidden();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(0);
+  expect(pages).toEqual([]);
+
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes).toBeVisible();
+  await card.getByRole('button', { name: 'Hide subnodes' }).click();
+  await card.getByRole('button', { name: 'Show subnodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(3);
+  expect(pages).toEqual([]);
+
+  await subnodes.getByRole('button', { name: 'Load more nodes' }).click();
+  await expect(subnodes.locator('.mini-node')).toHaveCount(4);
+  expect(pages).toEqual([2]);
+});
+
 test('Read more opens the matching node story; filters load child feeds and a parented form', async ({ page }) => {
   const urls = await mock(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
@@ -176,6 +250,17 @@ test('SPA Read more opens a node page and comments and child filters support nav
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${root}`));
   await expect(page.locator('.node-page').getByText('The complete content belongs here.', { exact: true })).toHaveCSS('white-space', 'normal');
   const comments = page.locator('.node-page').getByRole('button', { name: 'Comments (1)', exact: true });
+  await expect(comments.locator('svg')).toBeVisible();
+  await expect(comments.getByText('1', { exact: true })).toBeVisible();
+  const footerActions = page.locator('.node-page .node-actions');
+  const row = await Promise.all([
+    footerActions.getByRole('button', { name: /^Reactions/ }),
+    comments,
+    footerActions.getByRole('button', { name: 'Report node' }),
+  ].map(button => button.boundingBox()));
+  for (const box of row) {
+    expect(box!.y + box!.height / 2).toBeCloseTo(row[0]!.y + row[0]!.height / 2, 0);
+  }
   await comments.focus(); await page.keyboard.press('Enter');
   await expect(comments).toHaveAttribute('aria-expanded', 'true');
   const filter = page.locator('.subnode-toolbar select');
@@ -183,8 +268,121 @@ test('SPA Read more opens a node page and comments and child filters support nav
   await expect(filter).toHaveValue(idea);
   await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.setViewportSize({ width: 1000, height: 844 });
+  await expect(comments.locator('svg')).toBeHidden();
+  await expect(comments.getByText('Comments (1)', { exact: true })).toBeVisible();
 });
 
+
+test('node content starts loading before its Discovery card returns', async ({ page }) => {
+  const urls = await mock(page);
+  let releaseCard!: () => void;
+  const cardGate = new Promise<void>(resolve => { releaseCard = resolve; });
+  await page.route('**/atlas-public-api/nodes?**', async route => {
+    if (new URL(route.request().url()).searchParams.get('NodeId') === root) await cardGate;
+    await route.fallback();
+  });
+  try {
+    await page.goto(`/nodes?id=${root}`);
+    await expect.poll(() => urls.some(url => url.pathname.endsWith(`/nodes/${root}/description`))).toBe(true);
+    expect(urls.some(url => url.pathname.endsWith(`/nodes/${root}`))).toBe(false);
+    releaseCard();
+    await expect(page.getByText('The complete content belongs here.', { exact: true })).toBeVisible();
+  } finally {
+    releaseCard();
+  }
+});
+
+test('node content renders while the type catalog is pending', async ({ page }) => {
+  const urls = await mock(page);
+  let releaseCatalog!: () => void;
+  const catalogGate = new Promise<void>(resolve => { releaseCatalog = resolve; });
+  await page.route('**/atlas-public-api/catalog/node-types', async route => {
+    await catalogGate;
+    await route.fulfill({ json: types });
+  });
+  try {
+    await page.goto(`/nodes?id=${root}`);
+    await expect(page.getByText('The complete content belongs here.', { exact: true })).toBeVisible();
+    const addChild = page.getByRole('button', { name: 'Add a child node', exact: true });
+    await expect(addChild).toBeDisabled();
+    expect(urls.some(url => url.pathname.endsWith('/reactions'))).toBe(false);
+    releaseCatalog();
+    await expect(addChild).toBeEnabled();
+  } finally {
+    releaseCatalog();
+  }
+});
+
+test('feed ancestry uses mini cards included in the Discovery response', async ({ page }) => {
+  const urls = await mock(page);
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.has('NodeId') || query.has('ParentNodeId')) return route.fallback();
+    const rootItem = entry();
+    return route.fulfill({ json: {
+      items: [{ ...rootItem, card: { ...rootItem.card, breadcrumbSegment: {
+        items: [{ nodeId: child, label: 'Idea · A bundled ancestor', preview: {
+          title: 'A bundled ancestor', typeName: 'Idea', status: 'Active', voteCount: 2, averageVote: 7,
+        } }],
+        continuationNodeId: null, hasAlternativeRoutes: false,
+      } } }],
+      page: 1, totalCount: 1, pageSize: 3, hasNextPage: false,
+    } });
+  });
+  await page.goto('/');
+  const card = page.getByRole('article', { name: 'A live question' });
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(card.getByRole('navigation', { name: 'Node ancestry' }).locator('.mini-node'))
+    .toContainText('A bundled ancestor');
+  expect(urls.some(url => url.searchParams.get('NodeId') === child)).toBe(false);
+});
+
+test('visible nodes preload ancestry and reactions and reuse them when panels reopen', async ({ page }) => {
+  const urls = await mock(page);
+  let reactionReads = 0;
+  await page.route('**/atlas-session-api/nodes/*/reactions', route => {
+    reactionReads++;
+    return route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] });
+  });
+  await page.route('**/atlas-public-api/nodes?**', route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('NodeId') !== root) return route.fallback();
+    const item = entry();
+    return route.fulfill({ json: { items: [{ ...item, card: { ...item.card, breadcrumbSegment: {
+      items: [{ nodeId: child, label: 'A child idea' }], continuationNodeId: null, hasAlternativeRoutes: false,
+    } } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(`/nodes?id=${root}`);
+  const card = page.locator('.node-page');
+  const ancestry = card.getByRole('navigation', { name: 'Node ancestry' });
+  const reactions = card.getByRole('button', { name: /^Reactions/ });
+  const ancestorReads = () => urls.filter(url => url.searchParams.get('NodeId') === child).length;
+
+  await expect(reactions).toBeVisible();
+  await expect(ancestry).toBeHidden();
+  await expect(card.locator('.reaction-controls')).toBeHidden();
+  await expect.poll(ancestorReads).toBe(1);
+  await expect.poll(() => reactionReads).toBeGreaterThan(0);
+
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(ancestry.locator('.mini-node')).toContainText('A child idea');
+  await card.getByRole('button', { name: 'Hide ancestry' }).click();
+  await expect(ancestry).toBeHidden();
+  await card.getByRole('button', { name: 'Show ancestry' }).click();
+  await expect(ancestry.locator('.mini-node')).toContainText('A child idea');
+  expect(ancestorReads()).toBe(1);
+
+  await reactions.click();
+  const panel = card.locator('.reaction-controls');
+  await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
+  await reactions.click();
+  await expect(panel).toBeHidden();
+  const readsBeforeReopen = reactionReads;
+  await reactions.click();
+  await expect(panel.getByRole('button', { name: /Helpful/ })).toBeVisible();
+  expect(reactionReads).toBe(readsBeforeReopen);
+});
 
 test('node page shows a sole parent in expandable ancestry and voting leaves content in place', async ({ page }) => {
   await mock(page);

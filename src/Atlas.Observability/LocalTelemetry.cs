@@ -123,7 +123,11 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
             name = "atlas.discovery.cache.request", operation_id = operationId,
             page = summary.Page, ranking_source = summary.Ranking.ToString(),
             memory_cards = summary.MemoryCards, redis_cards = summary.RedisCards,
-            sql_cards = summary.SqlCards, missing_cards = summary.MissingCards
+            sql_cards = summary.SqlCards, missing_cards = summary.MissingCards,
+            scope = summary.Scope, total_ms = summary.TotalMs, lock_ms = summary.LockWaitMs,
+            redis_page_ms = summary.RedisPageMs, sql_start_ms = summary.SqlStartMs,
+            revision_ms = summary.RevisionMs, count_ms = summary.SqlCountMs, rank_ms = summary.SqlRankMs,
+            cards_ms = summary.CardsMs, commit_publish_ms = summary.CommitAndPublishMs
         })));
     }
 

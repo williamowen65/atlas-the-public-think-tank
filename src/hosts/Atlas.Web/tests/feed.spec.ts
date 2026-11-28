@@ -31,7 +31,7 @@ test('isolated feed appends on scrolling, deduplicates, hides excluded cards and
   await page.setViewportSize({ width: 700, height: 400 });
   const requests = await mockFeed(page);
   await page.goto(feedStory);
-  await expect(page.locator('article')).toHaveCount(3);
+  await expect(page.getByRole('article', { name: 'Feed question 1' })).toBeVisible();
   await page.locator('.feed-tail').scrollIntoViewIfNeeded();
   await expect(page.locator('article')).toHaveCount(5);
   await expect(page.locator('.feed-tail').getByRole('status')).toContainText('caught up');
@@ -61,7 +61,7 @@ test('SPA composes the shared shell and live feed at narrow widths', async ({ pa
   await page.goto('http://127.0.0.1:4173');
   await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
   await expect(page.getByRole('banner')).toContainText('Atlas');
-  await expect(page.locator('article')).toHaveCount(3);
+  await expect(page.getByRole('article', { name: 'Feed question 1' })).toBeVisible();
   await expect(page.locator('article').getByRole('navigation', { name: 'Node ancestry' })).toHaveCount(0);
   await expect(page.locator('article').getByRole('button', { name: 'Show ancestry' })).toHaveCount(0);
   await expect(page.getByRole('contentinfo')).toContainText('The Public Think Tank');
@@ -75,9 +75,9 @@ test('Back from a node returns to the paginated feed and restores its card posit
   await page.setViewportSize({ width: 700, height: 400 });
   const requests = await mockFeed(page);
   await page.goto('/');
-  await expect(page.locator('.node-card')).toHaveCount(3);
-  await page.locator('.feed-tail').scrollIntoViewIfNeeded();
+  await expect.poll(() => requests.includes(2)).toBe(true);
   const card = page.getByRole('article', { name: 'Feed question 4' });
+  await card.scrollIntoViewIfNeeded();
   const open = card.getByRole('button', { name: 'Read more', exact: true });
   await expect(open).toBeVisible();
   await card.evaluate(element => window.scrollBy(0, element.getBoundingClientRect().top - 24));
@@ -124,6 +124,7 @@ for (const clipboardAvailable of [true, false]) {
     }, clipboardAvailable);
     await page.goto(`/nodes?id=${nodeId}&share=feed`);
     const card = page.getByRole('article', { name: 'Feed question 4' });
+  await card.scrollIntoViewIfNeeded();
     await expect(card).toBeVisible();
     await expect(card.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
     await card.getByRole('button', { name: 'Copy node link', exact: true }).click();

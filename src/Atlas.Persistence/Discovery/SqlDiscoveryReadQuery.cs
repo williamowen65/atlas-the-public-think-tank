@@ -92,8 +92,12 @@ public sealed class SqlDiscoveryReadQuery(
         // A cache shared by multiple query instances supplies their shared gate.
         // This process lock is separate from the database transaction locks below.
         // It coordinates misses/counters without storing or sharing a DbContext.
+        var readStarted = Stopwatch.GetTimestamp();
         lock (cache?.Gate ?? _uncachedGate)
         {
+            var lockWaitMs = Stopwatch.GetElapsedTime(readStarted).TotalMilliseconds;
+            var sqlCountMs = 0.0;
+            var sqlRankMs = 0.0;
             // 3. Create a fresh EF context. BindDatabase does not find/create a database:
             // it remembers this connection configuration and rejects reuse of the same
             // cache for a different one (whose IDs/revision numbers could overlap).
@@ -108,14 +112,20 @@ public sealed class SqlDiscoveryReadQuery(
             var pageKey = DiscoveryCache.PageKey(query, authoredIds, includeHidden);
             var externalPageKey = cachePage && external is not null ? cache!.ExternalKey("page:" + pageKey) : null;
             var memoryPage = cachePage ? cache?.PeekPage(pageKey) : null;
+            var redisPageStarted = Stopwatch.GetTimestamp();
             var remotePage = memoryPage is null && externalPageKey is not null
                 ? external!.ReadEntries<DiscoveryPage>([externalPageKey])[0]
                 : null;
+            var redisPageMs = memoryPage is null && externalPageKey is not null
+                ? Stopwatch.GetElapsedTime(redisPageStarted).TotalMilliseconds : 0;
             var candidateIds = (memoryPage ?? remotePage)?.Value.Items.Select(item => item.NodeId).ToArray() ?? [];
 
+            var sqlStarted = Stopwatch.GetTimestamp();
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
+            var sqlStartMs = Stopwatch.GetElapsedTime(sqlStarted).TotalMilliseconds;
             var revisionStarted = Stopwatch.GetTimestamp();
             var revision = DiscoveryEntityCache.ReadVersions(db, external is null ? [] : candidateIds);
+            var revisionMs = Stopwatch.GetElapsedTime(revisionStarted).TotalMilliseconds;
             Telemetry.MeasureDiscovery(DiscoveryPhase.RevisionCheck, DiscoveryMeasurementOutcome.Completed, revisionStarted);
 
             DiscoveryPage page = null!;
@@ -140,13 +150,17 @@ public sealed class SqlDiscoveryReadQuery(
                 // Build returns IQueryable: no candidates have been enumerated yet.
                 // TagWith adds a SQL comment for identifying this statement in plans/logs.
                 // Count executes a database aggregate, not an in-memory list count.
+                var countStarted = Stopwatch.GetTimestamp();
                 var total = filtered.TagWith("Discovery count").Count();
+
+                sqlCountMs = Stopwatch.GetElapsedTime(countStarted).TotalMilliseconds;
 
                 var offset = paged ? ((long)query.Page - 1) * IDiscoveryService.PageSize : 0;
                 // Count is an int, so an offset below total fits Skip(int). Test the
                 // long offset first to safely handle even int.MaxValue page numbers.
                 // The ternary returns an empty list beyond the total; otherwise ToList
                 // executes the ordered/paged SQL. Only selected rows reach the application.
+                var rankStarted = Stopwatch.GetTimestamp();
                 var rows = offset >= total
                     ? []
                     : filtered
@@ -167,6 +181,8 @@ public sealed class SqlDiscoveryReadQuery(
                         .TagWith("Discovery ranked page")
                         .ToList();
 
+                if (offset < total) sqlRankMs = Stopwatch.GetElapsedTime(rankStarted).TotalMilliseconds;
+
                 // Assign global ranks locally to the already selected rows, not to all nodes.
                 var items = rows.Select((row, index) => new RankedDiscoveryItem(
                     row.NodeId,
@@ -183,6 +199,7 @@ public sealed class SqlDiscoveryReadQuery(
             // cards collects both cache hits and database results for this response.
             // missing contains IDs whose display data is absent from the detail cache;
             // it does NOT mean the node is missing from the database.
+            var cardsStarted = Stopwatch.GetTimestamp();
             var cards = new Dictionary<Guid, DiscoveryCard>();
             var missing = new List<Guid>();
             // A page hit does not imply a card hit: the two layers have separate revisions.
@@ -244,6 +261,25 @@ public sealed class SqlDiscoveryReadQuery(
 
             // 9. Finish the consistent read before publishing any newly loaded entries.
             // Exceptions before this point leave these attempted results out of the cache.
+            // Attach the first ancestry segment in one query per Discovery page.
+            // Keep fresh vote totals out of the cached card metadata.
+            var ancestors = new Dictionary<Guid, AncestorPreview>();
+            if (paged && query.ParentNodeId is null)
+            {
+                var ancestorIds = cards.Values.Where(card => !card.IsHidden)
+                    .SelectMany(card => card.BreadcrumbSegment?.Items ?? [])
+                    .Select(item => item.NodeId).Distinct().ToArray();
+                if (ancestorIds.Length > 0)
+                    ancestors = ReadAncestorPreviews(db, ancestorIds);
+            }
+
+            var subnodes = paged && !includeHidden && query.NodeId is null && query.ParentNodeId is null
+                ? ReadSubnodePreviews(db, cards.Values.Where(card => !card.IsHidden && card.ChildTypes.Any(type => type.Count > 0))
+                    .Select(card => card.NodeId).ToArray())
+                : new Dictionary<Guid, DiscoverySubnodePreview>();
+
+            var cardsMs = Stopwatch.GetElapsedTime(cardsStarted).TotalMilliseconds;
+            var commitStarted = Stopwatch.GetTimestamp();
             transaction.Commit();
 
             // Publish only successfully completed committed reads. Detail entries are immutable
@@ -267,20 +303,110 @@ public sealed class SqlDiscoveryReadQuery(
                         external.Write(DetailKey(card.NodeId), revision.DetailVersion, card);
             }
 
+            var commitAndPublishMs = Stopwatch.GetElapsedTime(commitStarted).TotalMilliseconds;
+
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
             // separate from detail entries; personalized participant votes are not included.
             var result = page with
             {
                 Items = Array.AsReadOnly(page.Items
-                    .Select(item => item with { Card = cards.GetValueOrDefault(item.NodeId) })
+                    .Select(item =>
+                    {
+                        var card = WithAncestorPreviews(cards.GetValueOrDefault(item.NodeId), ancestors);
+                        return item with
+                        {
+                            Card = card is not null && subnodes.TryGetValue(item.NodeId, out var preview)
+                                ? card with { SubnodePreview = preview }
+                                : card
+                        };
+                    })
                     .ToArray())
             };
             var rankingSource = pageMiss ? DiscoveryCacheSource.Sql
                 : externalPage is not null ? DiscoveryCacheSource.Redis : DiscoveryCacheSource.ProcessMemory;
             Telemetry.RecordDiscoveryCache(new(page.Page, rankingSource, memoryCardCount,
-                externalCards.Count, loaded.Count, page.Items.Count - cards.Count));
+                externalCards.Count, loaded.Count, page.Items.Count - cards.Count)
+            {
+                Scope = query.NodeId is not null ? "node" : query.ParentNodeId is not null ? "subnodes"
+                    : query.SearchText is not null || authoredIds is not null || authorListing ? "filtered" : "discovery",
+                TotalMs = Stopwatch.GetElapsedTime(readStarted).TotalMilliseconds,
+                LockWaitMs = lockWaitMs,
+                RedisPageMs = redisPageMs,
+                SqlStartMs = sqlStartMs,
+                RevisionMs = revisionMs,
+                SqlCountMs = sqlCountMs,
+                SqlRankMs = sqlRankMs,
+                CardsMs = cardsMs,
+                CommitAndPublishMs = commitAndPublishMs
+            });
             return result;
         }
+    }
+
+    private static Dictionary<Guid, DiscoverySubnodePreview> ReadSubnodePreviews(AtlasDataContext db, Guid[] parentIds)
+    {
+        if (parentIds.Length == 0) return [];
+        var size = IDiscoveryService.PageSize;
+        var candidates = DiscoveryEfQuery.Build(db, new DiscoveryQuery(), null, false);
+        var links = db.Set<NodeParentRow>().AsNoTracking();
+        var parents = db.NodeRows.AsNoTracking().Where(node => parentIds.Contains(node.Id))
+            .Select(parent => new
+            {
+                parent.Id,
+                Children = candidates.Where(child => links.Any(link => link.ParentNodeId == parent.Id && link.NodeId == child.NodeId))
+                    .OrderByDescending(child => child.RankingScore)
+                    .ThenByDescending(child => child.VoteCount)
+                    .ThenByDescending(child => child.UpdatedAt)
+                    .ThenBy(child => EF.Functions.Collate(child.Title, DiscoveryTextCollation.Name))
+                    .ThenBy(child => EF.Functions.Collate(child.NodeId.ToString(), "Latin1_General_100_BIN2"))
+                    .Take(size + 1)
+                    .ToList()
+            })
+            .TagWith("Discovery batched first subnodes")
+            .ToList();
+        var ids = parents.SelectMany(parent => parent.Children.Take(size)).Select(child => child.NodeId).Distinct().ToArray();
+        var cards = ReadCards(db, ids);
+        return parents.ToDictionary(parent => parent.Id, parent => new DiscoverySubnodePreview(
+            Array.AsReadOnly(parent.Children.Take(size).Select((child, index) => new RankedDiscoveryItem(
+                child.NodeId, index + 1, child.RankingScore, child.VoteCount, child.AverageVote,
+                cards.GetValueOrDefault(child.NodeId))).ToArray()),
+            parent.Children.Count > size));
+    }
+
+    private static DiscoveryCard? WithAncestorPreviews(DiscoveryCard? card, Dictionary<Guid, AncestorPreview> ancestors)
+    {
+        if (card is null || card.IsHidden || card.BreadcrumbSegment is not { } segment || ancestors.Count == 0)
+            return card;
+
+        return card with
+        {
+            BreadcrumbSegment = segment with
+            {
+                Items = Array.AsReadOnly(segment.Items.Select(item =>
+                    item with { Preview = ancestors.GetValueOrDefault(item.NodeId) }).ToArray())
+            }
+        };
+    }
+
+    private static Dictionary<Guid, AncestorPreview> ReadAncestorPreviews(AtlasDataContext db, Guid[] ids)
+    {
+        return db.NodeRows.AsNoTracking()
+            .Where(node => ids.Contains(node.Id) && node.Status != "Archived" &&
+                !db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
+                    report.Status == 2 && report.VisibilityRestoredAt == null))
+            .Select(node => new
+            {
+                node.Id,
+                node.Title,
+                TypeName = db.NodeTypeRows.Where(type => type.Id == node.TypeId)
+                    .Select(type => type.Name).FirstOrDefault() ?? "Unknown",
+                VoteCount = db.VoteRows.Count(vote => vote.TargetType == "Node" && vote.TargetId == node.Id),
+                AverageVote = db.VoteRows.Where(vote => vote.TargetType == "Node" && vote.TargetId == node.Id)
+                    .Select(vote => (double?)vote.Value).Average()
+            })
+            .TagWith("Discovery ancestor mini cards")
+            .ToDictionary(row => row.Id, row => new AncestorPreview(
+                row.Title, row.TypeName, row.VoteCount, row.AverageVote));
     }
 
     /// <summary>Fresh, batched personalized values; intentionally excluded from shared caches.</summary>

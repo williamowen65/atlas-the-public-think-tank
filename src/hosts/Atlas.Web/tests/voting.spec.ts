@@ -195,6 +195,7 @@ for (const width of [1024, 640, 320]) {
     const card = page.locator('article').first();
     const summary = card.getByRole('button', { name: /Rate node importance/ });
     const body = card.locator('.body');
+    await expect(body.locator('[data-feed-preview-ready]')).toHaveAttribute('data-feed-preview-ready', 'true');
     const before = await body.boundingBox();
     await expect(card.locator('.node-type-row').getByRole('button', { name: /Rate node importance/ })).toBeVisible();
     await summary.click();

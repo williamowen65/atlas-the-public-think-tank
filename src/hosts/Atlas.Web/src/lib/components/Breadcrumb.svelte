@@ -24,11 +24,13 @@
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
   import AncestorNodeCard from './AncestorNodeCard.svelte';
+  import NodeCardMini from './node-card-versions/NodeCardMini.svelte';
   import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
     expandable = false,
     connectedCards = false,
+    preloadConnected = false,
     connectedHeader,
     onNavigate,
     hasMore = false,
@@ -44,6 +46,7 @@
     expandable?: boolean;
     /** Collapsed-by-default ancestry of compact cards inside the focused header. */
     connectedCards?: boolean;
+    preloadConnected?: boolean;
     /** Render the focused type row with the ancestry control, if ancestors exist. */
     connectedHeader?: Snippet<[Snippet | undefined]>;
     /**
@@ -65,6 +68,8 @@
    */
   const panelId = $props.id();
   let expanded = $state(false);
+  let connectedVisited = $state(false);
+  const connectedReady = $derived(connectedVisited || preloadConnected);
   let older = $state<BreadcrumbItem[]>([]);
   /**
    * Whether the alternative-parent menu is visible.
@@ -182,7 +187,9 @@
   const allItems = $derived(livePath ?? [...older, ...items]);
   $effect(() => {
     originId;
+    apiBase;
     expanded = false;
+    connectedVisited = false;
   });
   const liveChildAt = (index: number) =>
     index + 1 < allItems.length ? allItems[index + 1].id : originId;
@@ -192,6 +199,7 @@
     hasMore;
     loadOlder;
     originId;
+    apiBase;
     generation++;
     older = [];
     livePath = null;
@@ -204,14 +212,14 @@
     error = '';
   });
   $effect(() => {
-    if (!originId || !allItems.length || (connectedCards && !expanded)) return;
+    if (!originId || !allItems.length || (connectedCards && !connectedReady)) return;
     const controller = new AbortController();
     const ids =
-      expandable && !expanded
+      expandable && !connectedCards && !expanded
         ? [originId]
         : [...allItems.map((item) => item.id), originId].filter((id): id is string => !!id);
     void Promise.all(
-      ids.map(async (id) => {
+      [...new Set(ids)].filter(id => !untrack(() => liveChoices[id])).map(async (id) => {
         try {
           const response = await fetch(`${apiBase}/nodes/${encodeURIComponent(id)}/parents`, {
             signal: controller.signal,
@@ -341,7 +349,7 @@
 {#if expandable && connectedCards}
   {#if allItems.length}
     <nav class="ancestry connected-ancestry" id={panelId} aria-label="Node ancestry" hidden={!expanded}>
-      {#if expanded}
+      {#if connectedReady}
         {#if more && loadOlder}<div class="older-ancestry">{@render olderButton()}</div>{/if}
         {@render loadError()}
         <ol>{@render ancestorItems()}</ol>
@@ -408,7 +416,7 @@
     aria-label={expanded ? 'Hide ancestry' : 'Show ancestry'}
     title={expanded ? 'Hide ancestry' : 'Show ancestry'}
     aria-expanded={expanded} aria-controls={panelId}
-    onclick={() => { expanded = !expanded; if (!expanded) openRouteMenu = false; }}>
+    onclick={() => { connectedVisited = true; expanded = !expanded; if (!expanded) openRouteMenu = false; }}>
     <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="m3 10 5-5 5 5" />
@@ -446,7 +454,7 @@
 
 {#snippet ancestorItems()}
   {#each allItems as item, index (item.id ?? index)}
-    {#if !expandable || expanded || index === allItems.length - 1}
+    {#if connectedCards || !expandable || expanded || index === allItems.length - 1}
       <li style:z-index={expandable ? undefined : allItems.length - index}>
         {#if expandable && !connectedCards && expanded && index > 0}
           <svg
@@ -463,7 +471,12 @@
           </svg>
         {/if}
         {#if connectedCards && item.id}
-          <AncestorNodeCard id={item.id} title={item.title} {apiBase} {onNavigate} />
+          {#if item.preview}
+            <NodeCardMini node={{ id: item.id, title: item.preview.title, typeName: item.preview.typeName, status: 'Active' }} average={item.preview.averageVote}
+              totalVotes={item.preview.voteCount} {onNavigate} />
+          {:else}
+            <AncestorNodeCard id={item.id} title={item.title} {apiBase} {onNavigate} />
+          {/if}
         {:else}
         <div
           class="ancestor-title"

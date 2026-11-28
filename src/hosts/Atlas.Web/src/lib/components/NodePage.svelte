@@ -45,6 +45,8 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import CommentButtonLabel from "./CommentButtonLabel.svelte";
+  import { preloadWhenVisible } from "../actions/preloadWhenVisible";
   import { nodeTypeSelect } from '../actions/nodeTypeSelect';
   import CopyNodeLink from "./CopyNodeLink.svelte";
   import { relativeDate } from '../format/relativeDate';
@@ -174,6 +176,8 @@
    */
   const instance = $props.id();
   let reactionsOpen = $state(false);
+  let reactionsVisited = $state(false);
+  let visibleForPreload = $state(false);
   let commentsOpen = $state(false);
   $effect(() => { commentsOpen = commentsInitiallyOpen; });
   /**
@@ -275,7 +279,7 @@
 -->
 
 <div class="node-page-layout">
-<article class="node-page atlas-panel">
+<article use:preloadWhenVisible={() => visibleForPreload = true} class="node-page atlas-panel">
     {#if !inspectionOnly}<NodeEditControl
       corner
       {node}
@@ -299,7 +303,7 @@
     />
       {@render typeRow(undefined)}
     {:else}
-      <Breadcrumb expandable connectedCards connectedHeader={typeRow} items={node.breadcrumb}
+      <Breadcrumb expandable connectedCards preloadConnected={visibleForPreload && !inspectionOnly} connectedHeader={typeRow} items={node.breadcrumb}
         originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors}
         loadOlder={loadOlderAncestors} />
     {/if}
@@ -346,16 +350,19 @@
     <div class="node-actions" use:alignCommentControls>
       <div class="discussion-actions">
         <button type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-          onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+          onclick={() => { reactionsOpen = !reactionsOpen; reactionsVisited = true; }}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
         {#if commentsPanel}
           <button type="button" data-comments-toggle aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
-            onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
+            aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
+            onclick={() => commentsOpen = !commentsOpen}>
+            <CommentButtonLabel count={node.commentCount} />
+          </button>
         {/if}
       </div>
       {@render reportControl?.()}
     </div>
     <div class="reaction-controls" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-      {#if reactionsOpen}
+      {#if reactionsVisited || (visibleForPreload && !inspectionOnly)}
         {#if reactions}{@render reactions()}{:else}
           <div class="reactions" role="group" aria-label="Community reactions">
             {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
@@ -524,11 +531,6 @@
     justify-self: end;
     box-sizing: border-box;
   }
-  @media (max-width: 380px) {
-    .node-actions { grid-template-columns: minmax(0, 1fr); }
-    .node-actions :global(.report-control > .report-trigger),
-    .node-actions :global(.report-control > [role='status']) { grid-column: 1; }
-  }
   .discussion-actions button {
     font: inherit;
     min-height: 2.25rem;
@@ -537,6 +539,18 @@
     border-radius: var(--atlas-radius);
     color: var(--atlas-accent);
     background: var(--atlas-surface);
+  }
+  @media (max-width: 560px) {
+    .node-actions { column-gap: .35rem; }
+    .discussion-actions { flex-wrap: nowrap; gap: .3rem; }
+    .discussion-actions button { white-space: nowrap; padding-inline: .35rem; }
+    .node-actions :global(.report-control > .report-trigger) { white-space: nowrap; }
+    .discussion-actions [data-comments-toggle] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .25rem;
+    }
   }
   .discussion-actions button[aria-expanded='true'] { border-color: var(--atlas-accent); }
   .discussion-actions button:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }

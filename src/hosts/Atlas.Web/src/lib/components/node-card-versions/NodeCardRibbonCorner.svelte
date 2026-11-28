@@ -37,6 +37,8 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import CommentButtonLabel from "../CommentButtonLabel.svelte";
+  import { preloadWhenVisible } from "../../actions/preloadWhenVisible";
   import ActionButton from '../ActionButton.svelte';
   import CopyNodeLink from "../CopyNodeLink.svelte";
   import { relativeDate } from '../../format/relativeDate';
@@ -51,7 +53,10 @@
   import type { NodeCardProps } from './types';
   let detailsOpen = $state(false);
   let subnodesOpen = $state(false);
+  let subnodesVisited = $state(false);
   let reactionsOpen = $state(false);
+  let reactionsVisited = $state(false);
+  let visibleForPreload = $state(false);
   let childFilter = $state('');
   let fallbackDialog = $state<HTMLDialogElement>();
   let {
@@ -123,7 +128,7 @@
   description’s corner, with reactions and discussion links below.
 -->
 
-<article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
+<article use:preloadWhenVisible={() => visibleForPreload = true} class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
   {#if editOpensDetail}
     <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
   {:else}
@@ -199,10 +204,10 @@
     </div>
     {#if graphControls}
       <div class="graph-reactions" id={`${instance}-reactions`} hidden={!reactionsOpen}>
-        {#if reactionsOpen}{@render reactions()}{/if}
+        {#if reactionsVisited || (visibleForPreload && graphControls)}{@render reactions()}{/if}
       </div>
       <section class="subnode-section" id={`${instance}-subnodes`} aria-label="Subnodes" hidden={!subnodesOpen}>
-        {#if subnodesOpen}
+        {#if subnodesVisited}
           <div class="subnode-header">
             <strong>{childCount} {childCount === 1 ? 'Subnode' : 'Subnodes'}</strong>
             <label class="inline-filter">Node type
@@ -219,6 +224,7 @@
               <div class="subnode-import-placeholder"><LoadingPlaceholder kind="mini" label="Loading subnodes…" /></div>
             {:then { default: ChildFeed }}
               <ChildFeed parentId={node.id} typeId={childFilter || undefined} {apiBase}
+                initialSubnodes={childFilter ? undefined : node.subnodePreview ?? undefined}
                 {onOpenProfile} onOpenNode={openRelated} connected inline presentation="mini" />
             {:catch}
               <button type="button" onclick={() => openRelated(node.id, 'subnodes')}>Open subnodes on node page</button>
@@ -251,22 +257,17 @@
         <button class="details-toggle" type="button" aria-expanded={subnodesOpen} aria-controls={`${instance}-subnodes`}
           aria-label={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
           title={subnodesOpen ? 'Hide subnodes' : 'Show subnodes'}
-          onclick={() => subnodesOpen = !subnodesOpen}>
+          onclick={() => { subnodesOpen = !subnodesOpen; subnodesVisited = true; }}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>
       {/if}
       <button class="reaction-toggle" type="button" aria-expanded={reactionsOpen} aria-controls={`${instance}-reactions`}
-        onclick={() => reactionsOpen = !reactionsOpen}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
+        onclick={() => { reactionsOpen = !reactionsOpen; reactionsVisited = true; }}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
       <button class="comments-button" type="button"
         aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
         onclick={() => openRelated(node.id, 'comments')}>
-        <svg class="compact-icon" viewBox="0 0 24 24" width="20" height="20" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l1.8-3.6A8.5 8.5 0 1 1 21 11.5Z" />
-        </svg>
-        <span class="action-text">Comments ({node.commentCount})</span>
-        <span class="compact-count" aria-hidden="true">{node.commentCount}</span>
+        <CommentButtonLabel count={node.commentCount} />
       </button>
     </div>
   {:else}
@@ -586,7 +587,7 @@
     cursor: pointer;
   }
   .compact-read-more:disabled { background: var(--atlas-bg); border-color: var(--atlas-border); }
-  .compact-icon, .compact-count { display: none; }
+  .compact-icon { display: none; }
 
 
   .text-action {
@@ -638,7 +639,7 @@
       min-width: 2.25rem;
       padding-inline: .35rem;
     }
-    .compact-icon, .compact-count { display: block; }
+    .compact-icon { display: block; }
     .action-text { display: none; }
     .mobile-layout {
       --card-padding: 0.75rem;

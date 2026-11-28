@@ -7,6 +7,9 @@ public sealed record DiscoveryCard(Guid NodeId, string Title, string TypeName, s
 {
     public IReadOnlyList<DiscoveryPreviewBlock> PreviewBlocks { get; init; } = [];
 
+    /// <summary>Optional first unfiltered child page for feed expansion.</summary>
+    public DiscoverySubnodePreview? SubnodePreview { get; init; }
+
     public Guid? AuthorId { get; init; }
 
     /// <summary>Number of current votes on active, unsuppressed node reactions.</summary>
@@ -29,3 +32,5 @@ public sealed record DiscoveryPreviewContent(
     string? Markdown, string? Composition, string? Url, string? AltText,
     string? Caption, string? Layout, string? Title, string? Description,
     Guid? PollId, Guid? ChartId);
+
+public sealed record DiscoverySubnodePreview(IReadOnlyList<RankedDiscoveryItem> Items, bool HasNextPage);

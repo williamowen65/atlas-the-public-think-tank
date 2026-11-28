@@ -133,7 +133,7 @@ export const EquatorAndHorizon: Story = {
 
 export const Stress: Story = { args: { pinCount: 10000 } };
 
-export const UniformStress: Story = { args: { distribution: 'uniform', pinCount: 10000 } };
+export const UniformStress: Story = { args: { distribution: 'uniform', pinCount: 10000, targetFps: 10 } };
 
 export const MiniatureSparse: Story = {
   args: {
