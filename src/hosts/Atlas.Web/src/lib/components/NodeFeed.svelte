@@ -169,7 +169,7 @@
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) onLoadMore?.();
       },
-      { rootMargin: '0px 0px 600px 0px' },
+      { rootMargin: '0px 0px 1200px 0px' },
     );
     observer.observe(tail);
     return () => observer.disconnect();
