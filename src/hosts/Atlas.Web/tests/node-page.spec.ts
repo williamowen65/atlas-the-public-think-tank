@@ -208,6 +208,8 @@ test('SPA Read more opens a node page and comments and child filters support nav
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${root}`));
   await expect(page.locator('.node-page').getByText('The complete content belongs here.', { exact: true })).toHaveCSS('white-space', 'normal');
   const comments = page.locator('.node-page').getByRole('button', { name: 'Comments (1)', exact: true });
+  await expect(comments.locator('svg')).toBeVisible();
+  await expect(comments.getByText('1', { exact: true })).toBeVisible();
   await comments.focus(); await page.keyboard.press('Enter');
   await expect(comments).toHaveAttribute('aria-expanded', 'true');
   const filter = page.locator('.subnode-toolbar select');
@@ -215,6 +217,9 @@ test('SPA Read more opens a node page and comments and child filters support nav
   await expect(filter).toHaveValue(idea);
   await expect(page.getByRole('heading', { name: 'A child idea' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.setViewportSize({ width: 1000, height: 844 });
+  await expect(comments.locator('svg')).toBeHidden();
+  await expect(comments.getByText('Comments (1)', { exact: true })).toBeVisible();
 });
 
 

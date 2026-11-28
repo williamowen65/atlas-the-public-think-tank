@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import CommentButtonLabel from "../CommentButtonLabel.svelte";
   import { preloadWhenVisible } from "../../actions/preloadWhenVisible";
   import ActionButton from '../ActionButton.svelte';
   import CopyNodeLink from "../CopyNodeLink.svelte";
@@ -265,12 +266,7 @@
       <button class="comments-button" type="button"
         aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
         onclick={() => openRelated(node.id, 'comments')}>
-        <svg class="compact-icon" viewBox="0 0 24 24" width="20" height="20" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l1.8-3.6A8.5 8.5 0 1 1 21 11.5Z" />
-        </svg>
-        <span class="action-text">Comments ({node.commentCount})</span>
-        <span class="compact-count" aria-hidden="true">{node.commentCount}</span>
+        <CommentButtonLabel count={node.commentCount} />
       </button>
     </div>
   {:else}
@@ -590,7 +586,7 @@
     cursor: pointer;
   }
   .compact-read-more:disabled { background: var(--atlas-bg); border-color: var(--atlas-border); }
-  .compact-icon, .compact-count { display: none; }
+  .compact-icon { display: none; }
 
 
   .text-action {
@@ -642,7 +638,7 @@
       min-width: 2.25rem;
       padding-inline: .35rem;
     }
-    .compact-icon, .compact-count { display: block; }
+    .compact-icon { display: block; }
     .action-text { display: none; }
     .mobile-layout {
       --card-padding: 0.75rem;

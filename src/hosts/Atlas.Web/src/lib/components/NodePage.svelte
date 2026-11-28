@@ -45,6 +45,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import CommentButtonLabel from "./CommentButtonLabel.svelte";
   import { preloadWhenVisible } from "../actions/preloadWhenVisible";
   import { nodeTypeSelect } from '../actions/nodeTypeSelect';
   import CopyNodeLink from "./CopyNodeLink.svelte";
@@ -352,7 +353,10 @@
           onclick={() => { reactionsOpen = !reactionsOpen; reactionsVisited = true; }}>Reactions{reactionCount === undefined ? '' : ` (${reactionCount})`}</button>
         {#if commentsPanel}
           <button type="button" data-comments-toggle aria-expanded={commentsOpen} aria-controls={`${instance}-comments`}
-            onclick={() => commentsOpen = !commentsOpen}>Comments ({node.commentCount})</button>
+            aria-label={`Comments (${node.commentCount})`} title={`Comments (${node.commentCount})`}
+            onclick={() => commentsOpen = !commentsOpen}>
+            <CommentButtonLabel count={node.commentCount} />
+          </button>
         {/if}
       </div>
       {@render reportControl?.()}
@@ -540,6 +544,14 @@
     border-radius: var(--atlas-radius);
     color: var(--atlas-accent);
     background: var(--atlas-surface);
+  }
+  @media (max-width: 560px) {
+    .discussion-actions [data-comments-toggle] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .25rem;
+    }
   }
   .discussion-actions button[aria-expanded='true'] { border-color: var(--atlas-accent); }
   .discussion-actions button:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 2px; }
