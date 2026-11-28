@@ -43,7 +43,7 @@ for (const variant of [
 test('pin count and update rate controls remain available', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   // Uniform pins exercise the count and update rate without waiting for land geometry.
-  await page.goto(story + '&args=distribution:uniform;pinCount:10000;targetFps:10');
+  await page.goto(story.replace('--playground', '--uniform-stress'));
   await expect(page.locator('[data-demo-count]')).toHaveAttribute('data-demo-count', '10000');
   await expect(page.locator('[data-performance]')).toContainText('target 10 FPS');
   await expect
