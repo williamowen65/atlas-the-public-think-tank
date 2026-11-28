@@ -5,6 +5,8 @@ import { Counter } from 'k6/metrics';
 const failures = new Counter('discovery_failures');
 const vus = Number(__ENV.ATLAS_VUS);
 export const options = {
+  // The Docker host alias cannot match the local development certificate.
+  insecureSkipTLSVerify: __ENV.ATLAS_LOCAL_HTTPS === 'true',
   scenarios: {
     discovery: { executor: 'constant-vus', vus, duration: vus === 1 ? '20s' : '75s', gracefulStop: '10s' },
   },

@@ -12,7 +12,7 @@ The audit uses a standalone Playwright Chromium browser to measure the feed and 
    npm run dev:api
    ```
 
-3. In a second terminal in the web directory, run `npm run audit:performance`. It targets `http://localhost:5173` by default. The container reaches Vite through `host.docker.internal` and the browser uses localhost. If you started Vite on another port, pass the local frontend origin after `--`.
+3. In a second terminal in the web directory, run `npm run audit:performance`. It targets `http://localhost:5173` by default. The container reaches Vite through `host.docker.internal` and the browser uses localhost. If Vite printed a different port or uses HTTPS, pass its exact local frontend origin, for example `npm run audit:performance -- https://localhost:5173`. The audit accepts development certificates for local HTTPS and verifies certificates in demo mode.
 
 Each stage prints its report and saves it under the repo's ignored `logs/observability/performance/` directory. Start with the browser-only baseline, one k6 visitor, and the browser probes under 10 and 25 k6 visitors. Browser timings include first card and time without new cards after reaching the preceding feed tail. Prefetch can produce a zero wait. A short feed can produce too few samples for comparison, so use the same seed data and compare the individual waits as well as the summary. The k6 visitor count represents independent request loops with pauses for reading.
 

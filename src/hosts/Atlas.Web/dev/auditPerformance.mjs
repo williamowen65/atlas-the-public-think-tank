@@ -22,6 +22,7 @@ function startLoad(origin, local, vus) {
     '--mount', `type=bind,source=${scriptDirectory},target=/audit,readonly`,
     '-e', `ATLAS_URL=${target.origin}`,
     '-e', `ATLAS_HOST=${host}`,
+    '-e', `ATLAS_LOCAL_HTTPS=${local && target.protocol === 'https:'}`,
     '-e', `ATLAS_VUS=${vus}`,
     image, 'run', '--quiet', '/audit/discovery.js',
   );
@@ -103,10 +104,11 @@ async function main() {
   const [target = 'http://localhost:5173', mode = 'local', ...extra] = process.argv.slice(2);
   const origin = new URL(target);
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+  const localHttps = local && origin.protocol === 'https:';
   if (extra.length || origin.href !== origin.origin + '/' ||
-    (mode === 'local' ? !local || origin.protocol !== 'http:' :
+    (mode === 'local' ? !local || (!localHttps && origin.protocol !== 'http:') :
       mode !== 'demo' || origin.protocol !== 'https:' || local)) {
-    throw new Error('Usage: npm run audit:performance -- [http://localhost:5173] or -- https://<Atlas demo host> demo');
+    throw new Error('Usage: npm run audit:performance -- [http(s)://localhost:5173] or -- https://<Atlas demo host> demo');
   }
 
   const runId = randomUUID();
@@ -121,7 +123,7 @@ async function main() {
     const load = vus ? startLoad(origin.origin, local, vus) : undefined;
     const browserProbe = async () => {
       await load?.started;
-      const browser = await measureBrowser(origin.origin);
+      const browser = await measureBrowser(origin.origin, localHttps);
       if (load && !load.isActive()) throw new Error('k6 traffic ended before the browser probe completed.');
       return browser;
     };

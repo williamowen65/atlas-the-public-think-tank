@@ -1,9 +1,12 @@
 import { chromium } from '@playwright/test';
 
-export async function measureBrowser(origin) {
+export async function measureBrowser(origin, localHttps = false) {
   const browser = await chromium.launch();
   try {
-    const page = await browser.newPage({ viewport: { width: 700, height: 600 } });
+    const page = await browser.newPage({
+      viewport: { width: 700, height: 600 },
+      ignoreHTTPSErrors: localHttps,
+    });
     const feed = page.getByRole('region', { name: 'Node feed', exact: true }).first();
     const started = performance.now();
     await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 15_000 });
